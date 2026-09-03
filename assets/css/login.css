@@ -1,0 +1,146 @@
+/* =====================================================================
+   AGENDEI - Telas de autenticacao (login, cadastro, recuperacao)
+   ===================================================================== */
+
+.pagina-autenticacao {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--fundo);
+}
+
+.autenticacao-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.autenticacao-caixa {
+    width: 100%;
+    max-width: 940px;
+    display: grid;
+    grid-template-columns: 0.85fr 1fr;
+    background-color: var(--branco);
+    border: 1px solid var(--borda);
+    border-radius: var(--raio);
+    box-shadow: var(--sombra-media);
+    overflow: hidden;
+}
+
+.autenticacao-caixa.caixa-simples { max-width: 460px; grid-template-columns: 1fr; }
+
+.autenticacao-apresentacao {
+    background-color: var(--cor-primaria);
+    color: #C9DCE2;
+    padding: 34px 30px;
+    display: flex;
+    flex-direction: column;
+}
+
+.autenticacao-apresentacao .marca { color: var(--branco); margin-bottom: 28px; }
+.autenticacao-apresentacao .marca-simbolo { background-color: var(--branco); color: var(--cor-primaria); }
+
+.autenticacao-apresentacao h2 {
+    color: var(--branco);
+    font-size: 21px;
+    margin-bottom: 10px;
+}
+
+.autenticacao-apresentacao p { font-size: 14px; margin-bottom: 24px; }
+
+.lista-beneficios {
+    list-style: none;
+    margin: auto 0 0;
+    padding: 0;
+}
+
+.lista-beneficios li {
+    position: relative;
+    padding: 8px 0 8px 22px;
+    font-size: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.lista-beneficios li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 15px;
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    background-color: var(--cor-secundaria);
+}
+
+.autenticacao-formulario { padding: 34px 32px; }
+
+.autenticacao-formulario h1 {
+    font-size: 22px;
+    margin-bottom: 4px;
+}
+
+.autenticacao-formulario .subtitulo {
+    color: var(--texto-secundario);
+    font-size: 14px;
+    margin-bottom: 24px;
+}
+
+.linha-opcoes {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+    font-size: 13.5px;
+    flex-wrap: wrap;
+}
+
+.linha-opcoes .campo-checkbox { margin-bottom: 0; }
+
+.autenticacao-rodape {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid var(--borda);
+    font-size: 14px;
+    color: var(--texto-secundario);
+    text-align: center;
+}
+
+.autenticacao-rodape a { font-weight: 600; }
+
+.voltar-site {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 18px;
+    font-size: 13.5px;
+    color: var(--texto-secundario);
+}
+
+.voltar-site:hover { color: var(--cor-primaria); }
+
+.credenciais-demo {
+    margin-top: 20px;
+    padding: 12px 14px;
+    border: 1px dashed var(--borda-forte);
+    border-radius: var(--raio-pequeno);
+    background-color: #FBFCFC;
+    font-size: 12.5px;
+    color: var(--texto-secundario);
+    line-height: 1.7;
+}
+
+.credenciais-demo strong { color: var(--texto-principal); }
+
+@media (max-width: 820px) {
+    .autenticacao-caixa { grid-template-columns: 1fr; max-width: 520px; }
+    .autenticacao-apresentacao { display: none; }
+    .autenticacao-formulario { padding: 28px 22px; }
+}
+
+@media (max-width: 520px) {
+    .autenticacao-area { padding: 20px 14px; }
+    .autenticacao-formulario { padding: 24px 18px; }
+}

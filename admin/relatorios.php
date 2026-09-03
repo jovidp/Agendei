@@ -1,0 +1,211 @@
+<?php
+/**
+ * Relatorios gerenciais por periodo.
+ */
+require_once __DIR__ . '/../config/config.php';
+
+exigirLogin('admin');
+
+$periodo = get('periodo');
+
+$dataInicial = validarData(get('data_inicial')) ? get('data_inicial') : date('Y-m-01');
+$dataFinal   = validarData(get('data_final')) ? get('data_final') : date('Y-m-t');
+
+if ($periodo === 'hoje') {
+    $dataInicial = $dataFinal = date('Y-m-d');
+} elseif ($periodo === 'semana') {
+    $dataInicial = date('Y-m-d', strtotime('monday this week'));
+    $dataFinal   = date('Y-m-d', strtotime('sunday this week'));
+} elseif ($periodo === 'mes') {
+    $dataInicial = date('Y-m-01');
+    $dataFinal   = date('Y-m-t');
+} elseif ($periodo === 'mes_anterior') {
+    $dataInicial = date('Y-m-01', strtotime('first day of last month'));
+    $dataFinal   = date('Y-m-t', strtotime('last day of last month'));
+}
+
+if ($dataInicial > $dataFinal) {
+    [$dataInicial, $dataFinal] = [$dataFinal, $dataInicial];
+}
+
+$resumo        = Relatorio::resumoPorStatus($dataInicial, $dataFinal);
+$faturamento   = Relatorio::faturamento($dataInicial, $dataFinal);
+$realizado     = Relatorio::faturamento($dataInicial, $dataFinal, ['concluido']);
+$servicos      = Relatorio::servicosMaisAgendados($dataInicial, $dataFinal, 10);
+$profissionais = Relatorio::profissionaisMaisAtendimentos($dataInicial, $dataFinal, 10);
+$clientes      = Relatorio::clientesMaisFrequentes($dataInicial, $dataFinal, 10);
+$movimento     = Relatorio::movimentoPorDia($dataInicial, $dataFinal);
+
+$totalPeriodo = array_sum(array_column($resumo, 'total'));
+$taxaCancelamento = $totalPeriodo > 0
+    ? round(($resumo['cancelado']['total'] / $totalPeriodo) * 100)
+    : 0;
+
+$tituloPagina  = 'Relatorios';
+$subtituloTopo = 'Periodo de ' . formatarData($dataInicial) . ' a ' . formatarData($dataFinal);
+
+require_once RAIZ . '/includes/painel_header.php';
+?>
+
+<div class="cartao">
+    <form method="get" class="barra-filtros">
+        <div class="campo">
+            <label for="data_inicial">De</label>
+            <input type="date" id="data_inicial" name="data_inicial" value="<?= e($dataInicial) ?>">
+        </div>
+
+        <div class="campo">
+            <label for="data_final">Ate</label>
+            <input type="date" id="data_final" name="data_final" value="<?= e($dataFinal) ?>">
+        </div>
+
+        <div class="campo">
+            <button type="submit" class="btn">Aplicar periodo</button>
+        </div>
+
+        <div class="campo">
+            <span class="rotulo">Atalhos</span>
+            <div class="grupo-botoes">
+                <a href="?periodo=hoje" class="btn btn-contorno btn-pequeno">Hoje</a>
+                <a href="?periodo=semana" class="btn btn-contorno btn-pequeno">Semana</a>
+                <a href="?periodo=mes" class="btn btn-contorno btn-pequeno">Mes atual</a>
+                <a href="?periodo=mes_anterior" class="btn btn-contorno btn-pequeno">Mes anterior</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div class="grade-indicadores">
+    <div class="indicador indicador-destaque">
+        <span class="indicador-rotulo">Agendamentos</span>
+        <span class="indicador-valor"><?= (int) $totalPeriodo ?></span>
+        <span class="indicador-nota">Todos os status</span>
+    </div>
+    <div class="indicador indicador-positivo">
+        <span class="indicador-rotulo">Concluidos</span>
+        <span class="indicador-valor"><?= (int) $resumo['concluido']['total'] ?></span>
+        <span class="indicador-nota"><?= formatarMoeda($realizado) ?> faturados</span>
+    </div>
+    <div class="indicador">
+        <span class="indicador-rotulo">Faturamento previsto</span>
+        <span class="indicador-valor"><?= formatarMoeda($faturamento) ?></span>
+        <span class="indicador-nota">Exclui cancelamentos</span>
+    </div>
+    <div class="indicador indicador-negativo">
+        <span class="indicador-rotulo">Cancelamentos</span>
+        <span class="indicador-valor"><?= (int) $resumo['cancelado']['total'] ?></span>
+        <span class="indicador-nota"><?= (int) $taxaCancelamento ?>% do periodo</span>
+    </div>
+</div>
+
+<div class="grade-painel-igual">
+    <div class="cartao">
+        <div class="cartao-cabecalho"><h3>Servicos mais realizados</h3></div>
+
+        <?php if ($servicos === []): ?>
+            <div class="estado-vazio"><strong>Sem dados no periodo</strong><p>Nenhum agendamento registrado.</p></div>
+        <?php else: ?>
+            <div class="tabela-area">
+                <table class="tabela" style="min-width:auto">
+                    <thead>
+                        <tr><th>Servico</th><th>Agendamentos</th><th class="coluna-acoes">Valor</th></tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($servicos as $servico): ?>
+                            <tr>
+                                <td class="celula-principal"><?= e($servico['nome']) ?></td>
+                                <td><?= (int) $servico['total'] ?></td>
+                                <td class="coluna-acoes"><?= formatarMoeda($servico['valor_total']) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <div class="cartao">
+        <div class="cartao-cabecalho"><h3>Profissionais com mais atendimentos</h3></div>
+
+        <?php if ($profissionais === []): ?>
+            <div class="estado-vazio"><strong>Sem dados no periodo</strong><p>Nenhum atendimento registrado.</p></div>
+        <?php else: ?>
+            <div class="tabela-area">
+                <table class="tabela" style="min-width:auto">
+                    <thead>
+                        <tr><th>Profissional</th><th>Total</th><th>Concluidos</th><th class="coluna-acoes">Valor</th></tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($profissionais as $profissional): ?>
+                            <tr>
+                                <td class="celula-principal"><?= e($profissional['nome']) ?></td>
+                                <td><?= (int) $profissional['total'] ?></td>
+                                <td><?= (int) $profissional['concluidos'] ?></td>
+                                <td class="coluna-acoes"><?= formatarMoeda($profissional['valor_total']) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+
+<div class="grade-painel-igual">
+    <div class="cartao">
+        <div class="cartao-cabecalho"><h3>Clientes mais frequentes</h3></div>
+
+        <?php if ($clientes === []): ?>
+            <div class="estado-vazio"><strong>Sem dados no periodo</strong><p>Nenhum cliente atendido.</p></div>
+        <?php else: ?>
+            <div class="tabela-area">
+                <table class="tabela" style="min-width:auto">
+                    <thead>
+                        <tr><th>Cliente</th><th>Atendimentos</th><th>Ultimo</th><th class="coluna-acoes">Valor</th></tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($clientes as $cliente): ?>
+                            <tr>
+                                <td>
+                                    <span class="celula-principal"><?= e($cliente['nome']) ?></span>
+                                    <span class="celula-secundaria"><?= e(formatarTelefone($cliente['telefone'])) ?></span>
+                                </td>
+                                <td><?= (int) $cliente['total'] ?></td>
+                                <td><?= formatarData($cliente['ultimo_atendimento']) ?></td>
+                                <td class="coluna-acoes"><?= formatarMoeda($cliente['valor_total']) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <div class="cartao">
+        <div class="cartao-cabecalho"><h3>Movimento por dia</h3></div>
+
+        <?php if ($movimento === []): ?>
+            <div class="estado-vazio"><strong>Sem dados no periodo</strong><p>Nenhum agendamento no intervalo.</p></div>
+        <?php else: ?>
+            <div class="tabela-area" style="max-height:420px;overflow-y:auto">
+                <table class="tabela" style="min-width:auto">
+                    <thead>
+                        <tr><th>Data</th><th>Agendamentos</th><th>Cancelados</th><th class="coluna-acoes">Faturamento</th></tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($movimento as $dia): ?>
+                            <tr>
+                                <td class="celula-principal"><?= formatarData($dia['data_agendamento']) ?></td>
+                                <td><?= (int) $dia['total'] ?></td>
+                                <td><?= (int) $dia['cancelados'] ?></td>
+                                <td class="coluna-acoes"><?= formatarMoeda($dia['valor_total']) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+
+<?php require_once RAIZ . '/includes/painel_footer.php'; ?>

@@ -1,0 +1,450 @@
+/* =====================================================================
+   AGENDEI - Comportamentos gerais da interface
+   Namespace global: window.Agendei
+   ===================================================================== */
+
+(function () {
+    'use strict';
+
+    var Agendei = {};
+
+    // -----------------------------------------------------------------
+    // Notificacoes
+    // -----------------------------------------------------------------
+
+    function areaNotificacoes() {
+        var area = document.getElementById('notificacoes');
+        if (!area) {
+            area = document.createElement('div');
+            area.id = 'notificacoes';
+            document.body.appendChild(area);
+        }
+        return area;
+    }
+
+    /** Agendei.notificar('Salvo com sucesso.', 'sucesso'); */
+    Agendei.notificar = function (mensagem, tipo, duracao) {
+        var area = areaNotificacoes();
+        var caixa = document.createElement('div');
+
+        caixa.className = 'notificacao notificacao-' + (tipo || 'info');
+        caixa.setAttribute('role', 'status');
+        caixa.textContent = mensagem;
+
+        area.appendChild(caixa);
+
+        window.setTimeout(function () {
+            caixa.remove();
+        }, duracao || 4500);
+    };
+
+    // -----------------------------------------------------------------
+    // Modais
+    // -----------------------------------------------------------------
+
+    Agendei.abrirModal = function (id) {
+        var modal = document.getElementById(id);
+        if (!modal) {
+            return;
+        }
+        modal.classList.add('aberto');
+        document.body.style.overflow = 'hidden';
+
+        var primeiro = modal.querySelector('input, select, textarea, button');
+        if (primeiro) {
+            primeiro.focus();
+        }
+    };
+
+    Agendei.fecharModal = function (modal) {
+        if (typeof modal === 'string') {
+            modal = document.getElementById(modal);
+        }
+        if (!modal) {
+            return;
+        }
+        modal.classList.remove('aberto');
+        if (!document.querySelector('.modal.aberto')) {
+            document.body.style.overflow = '';
+        }
+    };
+
+    function iniciarModais() {
+        document.addEventListener('click', function (evento) {
+            var abrir = evento.target.closest('[data-modal]');
+            if (abrir) {
+                evento.preventDefault();
+                var modal = document.getElementById(abrir.getAttribute('data-modal'));
+                if (modal) {
+                    preencherModal(modal, abrir);
+                    Agendei.abrirModal(modal.id);
+                }
+                return;
+            }
+
+            if (evento.target.closest('[data-fechar-modal]')) {
+                evento.preventDefault();
+                Agendei.fecharModal(evento.target.closest('.modal'));
+                return;
+            }
+
+            if (evento.target.classList.contains('modal')) {
+                Agendei.fecharModal(evento.target);
+            }
+        });
+
+        document.addEventListener('keydown', function (evento) {
+            if (evento.key === 'Escape') {
+                var aberto = document.querySelector('.modal.aberto');
+                if (aberto) {
+                    Agendei.fecharModal(aberto);
+                }
+            }
+        });
+    }
+
+    /**
+     * Copia os atributos data-campo-* do gatilho para os elementos
+     * [data-preenche="campo"] e [name="campo"] dentro do modal.
+     */
+    function preencherModal(modal, gatilho) {
+        Array.prototype.forEach.call(gatilho.attributes, function (atributo) {
+            if (atributo.name.indexOf('data-campo-') !== 0) {
+                return;
+            }
+
+            var campo = atributo.name.replace('data-campo-', '');
+            var valor = atributo.value;
+
+            modal.querySelectorAll('[data-preenche="' + campo + '"]').forEach(function (elemento) {
+                elemento.textContent = valor;
+            });
+
+            modal.querySelectorAll('[name="' + campo + '"]').forEach(function (elemento) {
+                elemento.value = valor;
+            });
+        });
+    }
+
+    // -----------------------------------------------------------------
+    // Confirmacao (substitui o confirm nativo)
+    // -----------------------------------------------------------------
+
+    function criarModalConfirmacao() {
+        var modal = document.getElementById('modalConfirmacao');
+        if (modal) {
+            return modal;
+        }
+
+        modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.id = 'modalConfirmacao';
+        modal.innerHTML =
+            '<div class="modal-caixa" style="max-width:420px">' +
+                '<div class="modal-cabecalho">' +
+                    '<h3 data-confirmacao-titulo>Confirmar acao</h3>' +
+                    '<button type="button" class="modal-fechar" data-fechar-modal aria-label="Fechar">&times;</button>' +
+                '</div>' +
+                '<div class="modal-corpo"><p data-confirmacao-texto style="margin:0"></p></div>' +
+                '<div class="modal-rodape">' +
+                    '<button type="button" class="btn btn-contorno" data-fechar-modal>Cancelar</button>' +
+                    '<button type="button" class="btn btn-perigo" data-confirmacao-ok>Confirmar</button>' +
+                '</div>' +
+            '</div>';
+
+        document.body.appendChild(modal);
+        return modal;
+    }
+
+    /** Agendei.confirmar('Cancelar este agendamento?', callback, opcoes) */
+    Agendei.confirmar = function (mensagem, aoConfirmar, opcoes) {
+        opcoes = opcoes || {};
+
+        var modal = criarModalConfirmacao();
+        modal.querySelector('[data-confirmacao-titulo]').textContent = opcoes.titulo || 'Confirmar acao';
+        modal.querySelector('[data-confirmacao-texto]').textContent = mensagem;
+
+        var botao = modal.querySelector('[data-confirmacao-ok]');
+        botao.textContent = opcoes.rotulo || 'Confirmar';
+        botao.className = 'btn ' + (opcoes.classe || 'btn-perigo');
+
+        var novoBotao = botao.cloneNode(true);
+        botao.parentNode.replaceChild(novoBotao, botao);
+
+        novoBotao.addEventListener('click', function () {
+            Agendei.fecharModal(modal);
+            aoConfirmar();
+        });
+
+        Agendei.abrirModal('modalConfirmacao');
+    };
+
+    function iniciarConfirmacoes() {
+        document.addEventListener('click', function (evento) {
+            var elemento = evento.target.closest('[data-confirmar]');
+            if (!elemento) {
+                return;
+            }
+
+            evento.preventDefault();
+
+            Agendei.confirmar(elemento.getAttribute('data-confirmar'), function () {
+                if (elemento.tagName === 'A') {
+                    window.location.href = elemento.href;
+                    return;
+                }
+
+                var formulario = elemento.form || elemento.closest('form');
+                if (formulario) {
+                    if (elemento.name) {
+                        var oculto = document.createElement('input');
+                        oculto.type = 'hidden';
+                        oculto.name = elemento.name;
+                        oculto.value = elemento.value;
+                        formulario.appendChild(oculto);
+                    }
+                    formulario.submit();
+                }
+            }, {
+                titulo: elemento.getAttribute('data-confirmar-titulo') || 'Confirmar acao',
+                rotulo: elemento.getAttribute('data-confirmar-rotulo') || 'Confirmar'
+            });
+        });
+    }
+
+    // -----------------------------------------------------------------
+    // Menus
+    // -----------------------------------------------------------------
+
+    function iniciarMenus() {
+        var botaoMenu = document.querySelector('.botao-menu');
+        var menuSite = document.querySelector('.menu-site');
+
+        if (botaoMenu && menuSite) {
+            botaoMenu.addEventListener('click', function () {
+                menuSite.classList.toggle('aberto');
+            });
+        }
+
+        var botaoSidebar = document.querySelector('.botao-sidebar');
+        var sidebar = document.querySelector('.sidebar');
+        var fundo = document.querySelector('.sidebar-fundo');
+
+        if (botaoSidebar && sidebar) {
+            botaoSidebar.addEventListener('click', function () {
+                sidebar.classList.toggle('aberta');
+                if (fundo) {
+                    fundo.classList.toggle('visivel');
+                }
+            });
+        }
+
+        if (fundo && sidebar) {
+            fundo.addEventListener('click', function () {
+                sidebar.classList.remove('aberta');
+                fundo.classList.remove('visivel');
+            });
+        }
+    }
+
+    // -----------------------------------------------------------------
+    // Alertas
+    // -----------------------------------------------------------------
+
+    function iniciarAlertas() {
+        document.addEventListener('click', function (evento) {
+            if (evento.target.classList.contains('alerta-fechar')) {
+                evento.target.closest('.alerta').remove();
+            }
+        });
+    }
+
+    // -----------------------------------------------------------------
+    // Mascaras
+    // -----------------------------------------------------------------
+
+    Agendei.mascaraCpf = function (valor) {
+        valor = valor.replace(/\D/g, '').slice(0, 11);
+        return valor
+            .replace(/(\d{3})(\d)/, '$1.$2')
+            .replace(/(\d{3})(\d)/, '$1.$2')
+            .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    };
+
+    Agendei.mascaraTelefone = function (valor) {
+        valor = valor.replace(/\D/g, '').slice(0, 11);
+
+        if (valor.length <= 10) {
+            return valor
+                .replace(/(\d{2})(\d)/, '($1) $2')
+                .replace(/(\d{4})(\d{1,4})$/, '$1-$2');
+        }
+
+        return valor
+            .replace(/(\d{2})(\d)/, '($1) $2')
+            .replace(/(\d{5})(\d{1,4})$/, '$1-$2');
+    };
+
+    Agendei.mascaraCep = function (valor) {
+        return valor.replace(/\D/g, '').slice(0, 8).replace(/(\d{5})(\d{1,3})$/, '$1-$2');
+    };
+
+    Agendei.mascaraMoeda = function (valor) {
+        var numeros = valor.replace(/\D/g, '');
+        if (numeros === '') {
+            return '';
+        }
+        return (parseInt(numeros, 10) / 100).toFixed(2).replace('.', ',');
+    };
+
+    function iniciarMascaras() {
+        var mascaras = {
+            cpf: Agendei.mascaraCpf,
+            telefone: Agendei.mascaraTelefone,
+            cep: Agendei.mascaraCep,
+            moeda: Agendei.mascaraMoeda
+        };
+
+        document.querySelectorAll('[data-mascara]').forEach(function (campo) {
+            var funcao = mascaras[campo.getAttribute('data-mascara')];
+            if (!funcao) {
+                return;
+            }
+
+            campo.value = funcao(campo.value);
+
+            campo.addEventListener('input', function () {
+                campo.value = funcao(campo.value);
+            });
+        });
+    }
+
+    // -----------------------------------------------------------------
+    // Validacao de formularios
+    // -----------------------------------------------------------------
+
+    Agendei.marcarErro = function (campo, mensagem) {
+        campo.classList.add('invalido');
+
+        var alvo = campo.parentNode.querySelector('.mensagem-campo');
+        if (alvo) {
+            alvo.textContent = mensagem;
+            alvo.classList.add('visivel');
+        }
+    };
+
+    Agendei.limparErro = function (campo) {
+        campo.classList.remove('invalido');
+
+        var alvo = campo.parentNode.querySelector('.mensagem-campo');
+        if (alvo) {
+            alvo.textContent = '';
+            alvo.classList.remove('visivel');
+        }
+    };
+
+    Agendei.validarCpf = function (cpf) {
+        cpf = String(cpf).replace(/\D/g, '');
+
+        if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) {
+            return false;
+        }
+
+        for (var posicao = 9; posicao < 11; posicao++) {
+            var soma = 0;
+            for (var indice = 0; indice < posicao; indice++) {
+                soma += parseInt(cpf.charAt(indice), 10) * ((posicao + 1) - indice);
+            }
+            var digito = ((10 * soma) % 11) % 10;
+            if (parseInt(cpf.charAt(posicao), 10) !== digito) {
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    Agendei.validarEmail = function (email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(email).trim());
+    };
+
+    /** Evita duplo envio do formulario. */
+    function iniciarProtecaoEnvio() {
+        document.addEventListener('submit', function (evento) {
+            var formulario = evento.target;
+            if (evento.defaultPrevented || formulario.hasAttribute('data-sem-bloqueio')) {
+                return;
+            }
+
+            var botao = formulario.querySelector('button[type="submit"]');
+            if (!botao) {
+                return;
+            }
+
+            window.setTimeout(function () {
+                if (!formulario.querySelector('.invalido')) {
+                    botao.disabled = true;
+                    botao.dataset.textoOriginal = botao.textContent;
+                    botao.textContent = 'Aguarde...';
+                }
+            }, 10);
+        });
+    }
+
+    // -----------------------------------------------------------------
+    // Busca em tabelas
+    // -----------------------------------------------------------------
+
+    function iniciarBuscaTabela() {
+        document.querySelectorAll('[data-busca-tabela]').forEach(function (campo) {
+            var tabela = document.querySelector(campo.getAttribute('data-busca-tabela'));
+            if (!tabela) {
+                return;
+            }
+
+            campo.addEventListener('input', function () {
+                var termo = campo.value.trim().toLowerCase();
+                var visiveis = 0;
+
+                tabela.querySelectorAll('tbody tr[data-linha]').forEach(function (linha) {
+                    var combina = linha.textContent.toLowerCase().indexOf(termo) !== -1;
+                    linha.style.display = combina ? '' : 'none';
+                    if (combina) {
+                        visiveis++;
+                    }
+                });
+
+                var vazio = document.querySelector(campo.getAttribute('data-busca-vazio') || '#buscaSemResultado');
+                if (vazio) {
+                    vazio.classList.toggle('oculto', visiveis > 0);
+                }
+            });
+        });
+    }
+
+    /** Filtros que recarregam a pagina ao mudar. */
+    function iniciarFiltrosAutomaticos() {
+        document.querySelectorAll('[data-envia-ao-mudar]').forEach(function (campo) {
+            campo.addEventListener('change', function () {
+                if (campo.form) {
+                    campo.form.submit();
+                }
+            });
+        });
+    }
+
+    // -----------------------------------------------------------------
+
+    document.addEventListener('DOMContentLoaded', function () {
+        iniciarMenus();
+        iniciarAlertas();
+        iniciarModais();
+        iniciarConfirmacoes();
+        iniciarMascaras();
+        iniciarBuscaTabela();
+        iniciarFiltrosAutomaticos();
+        iniciarProtecaoEnvio();
+    });
+
+    window.Agendei = Agendei;
+})();

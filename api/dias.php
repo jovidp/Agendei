@@ -1,0 +1,50 @@
+<?php
+/**
+ * API: dias de um mes com pelo menos um horario livre.
+ * GET /api/dias.php?id_profissional=1&id_servico=2&mes=2026-09
+ */
+require_once __DIR__ . '/../config/config.php';
+
+exigirLogin();
+
+$idProfissional = (int) get('id_profissional');
+$idServico      = (int) get('id_servico');
+$mes            = get('mes', date('Y-m'));
+
+if ($idProfissional <= 0 || $idServico <= 0 || !preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $mes)) {
+    jsonResposta(['sucesso' => false, 'mensagem' => 'Parametros invalidos.', 'dias' => []], 400);
+}
+
+$ignorarAntecedencia = ehAdmin() || ehProfissional();
+
+$primeiroDoMes = $mes . '-01';
+$ultimoDoMes   = date('Y-m-t', strtotime($primeiroDoMes));
+
+// Nunca antes de hoje nem depois do limite configurado.
+$inicio = max($primeiroDoMes, date('Y-m-d'));
+
+$maximoDias = Configuracao::obterInteiro('antecedencia_maxima_dias', 60);
+$limite     = $maximoDias > 0 && !$ignorarAntecedencia
+    ? date('Y-m-d', strtotime("+{$maximoDias} days"))
+    : $ultimoDoMes;
+
+$fim = min($ultimoDoMes, $limite);
+
+$dias = [];
+
+if ($inicio <= $fim) {
+    $atual = $inicio;
+    while ($atual <= $fim) {
+        $slots = Disponibilidade::slots($idProfissional, $idServico, $atual, [
+            'ignorar_antecedencia' => $ignorarAntecedencia,
+        ]);
+
+        if ($slots !== []) {
+            $dias[] = $atual;
+        }
+
+        $atual = date('Y-m-d', strtotime($atual . ' +1 day'));
+    }
+}
+
+jsonResposta(['sucesso' => true, 'mes' => $mes, 'dias' => $dias]);
