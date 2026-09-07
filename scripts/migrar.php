@@ -97,6 +97,9 @@ $db->exec("CREATE TABLE IF NOT EXISTS administradores_master (
     PRIMARY KEY (id_master),
     UNIQUE KEY uk_master_email (email)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+require_once __DIR__ . '/migrar_diferenciais.php';
+migrarDiferenciais($db);
+
 $masterCriado = false;
 if (!(int) $db->query('SELECT COUNT(*) FROM administradores_master')->fetchColumn()) {
     $senhaMaster = 'agendei-master-2026';

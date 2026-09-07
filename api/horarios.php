@@ -1,4 +1,5 @@
 <?php
+
 /**
  * API: horarios livres de um profissional para um servico em uma data.
  * GET /api/horarios.php?id_profissional=1&id_servico=2&data=2026-09-10

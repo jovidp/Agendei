@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Historico de atendimentos anteriores do cliente.
  */

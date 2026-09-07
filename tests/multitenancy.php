@@ -1,6 +1,10 @@
 <?php
+
 /** Teste de integração em banco temporário. Nunca importa o SQL no banco de uso normal. */
-if (PHP_SAPI !== 'cli') { http_response_code(404); exit; }
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
 chdir(dirname(__DIR__));
 require_once 'config/database.php';
 if (($argv[1] ?? '') !== '--worker') {
@@ -15,7 +19,10 @@ if (($argv[1] ?? '') !== '--worker') {
         putenv('AGENDEI_DB_NAME=' . $nomeTeste);
         $processo = proc_open([PHP_BINARY, __FILE__, '--worker'], [0 => STDIN, 1 => STDOUT, 2 => STDERR], $pipes);
         $codigo = proc_close($processo);
-        if ($codigo !== 0) { $manter = false; throw new RuntimeException('Falha na integração.'); }
+        if ($codigo !== 0) {
+            $manter = false;
+            throw new RuntimeException('Falha na integração.');
+        }
         if ($manter) echo "TEST_DATABASE=$nomeTeste\n";
     } finally {
         if (!$manter) $db->exec("DROP DATABASE `$nomeTeste`");
@@ -114,12 +121,18 @@ foreach ($fixtures as $slug => $f) {
     Bloqueio::excluir($outro['bloqueio']);
     Agendamento::cancelar($outro['reserva']['id_agendamento'], (int) $f['admin']['id_usuario'], 'Tentativa cruzada');
     $rejeitou = false;
-    try { Profissional::definirServicos($f['profissional'], [$outro['servico']]); } catch (InvalidArgumentException $e) { $rejeitou = true; }
+    try {
+        Profissional::definirServicos($f['profissional'], [$outro['servico']]);
+    } catch (InvalidArgumentException $e) {
+        $rejeitou = true;
+    }
     verificar($rejeitou && Profissional::idsServicos($f['profissional']) === [$f['servico']], 'Troca inválida de serviços removeu vínculos válidos.');
     $rejeitou = false;
     try {
         bd()->exec('INSERT INTO profissional_servico (id_estabelecimento,id_profissional,id_servico) VALUES (' . Contexto::id() . ',' . $f['profissional'] . ',' . $outro['servico'] . ')');
-    } catch (PDOException $e) { $rejeitou = $e->getCode() === '23000'; }
+    } catch (PDOException $e) {
+        $rejeitou = $e->getCode() === '23000';
+    }
     verificar($rejeitou, 'Banco aceitou associação entre empresas.');
 }
 foreach ($fixtures as $slug => $f) {
@@ -131,6 +144,67 @@ foreach ($fixtures as $slug => $f) {
     verificar(Agendamento::porId($f['reserva']['id_agendamento'])['status'] !== 'cancelado', 'Mutação cruzada cancelou reserva.');
 }
 
+// Recursos diferenciais também respeitam a empresa e alteram o fluxo real da agenda.
+empresa('empresa-a');
+$f = $fixtures['empresa-a'];
+Configuracao::definir('pix_chave', 'teste@pix.local');
+Configuracao::definir('sinal_percentual', '25');
+Configuracao::definir('pontos_por_real', '2');
+Configuracao::definir('lembrete_horas', '72');
+
+Diferencial::criarPacote(['id_servico' => $f['servico'], 'nome' => 'Pacote teste', 'quantidade' => 1, 'validade_dias' => 30, 'preco' => 70]);
+$pacote = Diferencial::pacotes(true)[0];
+Diferencial::adquirirPacote($f['cliente'], (int) $pacote['id_pacote']);
+$compra = Diferencial::pacotesDoCliente($f['cliente'])[0];
+Diferencial::atualizarCompraPacote((int) $compra['id_cliente_pacote'], 'pago');
+$reservaPacote = Agendamento::criar(['id_cliente' => $f['cliente'], 'id_profissional' => $f['profissional'], 'id_servico' => $f['servico'], 'data' => $data, 'hora_inicio' => '11:00', 'observacao' => '', 'origem' => 'cliente'], ['ignorar_antecedencia' => true]);
+verificar($reservaPacote['sucesso'], 'Crédito de pacote não criou agendamento.');
+verificar((int) Diferencial::pacotesDoCliente($f['cliente'])[0]['creditos_restantes'] === 0, 'Crédito do pacote não foi consumido.');
+verificar(Diferencial::pagamentos($f['cliente']) === [], 'Agendamento coberto por pacote gerou sinal.');
+
+$reservaPix = Agendamento::criar(['id_cliente' => $f['cliente'], 'id_profissional' => $f['profissional'], 'id_servico' => $f['servico'], 'data' => $data, 'hora_inicio' => '13:00', 'observacao' => '', 'origem' => 'cliente'], ['ignorar_antecedencia' => true]);
+verificar($reservaPix['sucesso'] && count(Diferencial::pagamentos($f['cliente'])) === 1, 'Sinal Pix não foi gerado.');
+Diferencial::entrarLista($f['cliente'], $f['servico'], $f['profissional'], $data, 'tarde');
+verificar(count(Diferencial::listaDoCliente($f['cliente'])) === 1, 'Lista de espera não registrou preferência.');
+Agendamento::cancelar((int) $reservaPix['id_agendamento'], (int) $f['admin']['id_usuario'], 'Teste de encaixe');
+verificar(Diferencial::pagamentos($f['cliente'])[0]['status'] === 'cancelado', 'Sinal pendente não foi cancelado com a reserva.');
+verificar(count(Diferencial::notificacoesPendentes()) === 1, 'Cancelamento não gerou aviso de encaixe.');
+verificar(Diferencial::gerarLembretes() >= 1, 'Fila de lembretes não foi gerada.');
+
+Agendamento::alterarStatus((int) $f['reserva']['id_agendamento'], 'concluido');
+verificar((int) Cliente::porId($f['cliente'])['pontos_fidelidade'] === 160, 'Pontos de fidelidade não foram creditados.');
+Diferencial::avaliar($f['cliente'], (int) $f['reserva']['id_agendamento'], 5, 'Ótimo atendimento');
+verificar(count(Diferencial::avaliacoes($f['cliente'])) === 1, 'Avaliação não foi registrada.');
+Diferencial::atualizarComissao($f['profissional'], 30);
+verificar((float) Diferencial::comissoes('2000-01-01', '2100-01-01')[0]['comissao'] === 24.0, 'Comissão não foi calculada.');
+verificar(strlen(Diferencial::tokenCalendario($f['profissional'])) === 64, 'Token do calendário não foi criado.');
+verificar(isset(Diferencial::exportarCliente($f['cliente'])['agendamentos']), 'Exportação de privacidade incompleta.');
+
+$serieBase = Agendamento::criar(['id_cliente' => $f['cliente'], 'id_profissional' => $f['profissional'], 'id_servico' => $f['servico'], 'data' => $data, 'hora_inicio' => '14:00', 'observacao' => '', 'origem' => 'cliente'], ['ignorar_antecedencia' => true]);
+$serie = Diferencial::criarRecorrencias((int) $serieBase['id_agendamento'], 3);
+verificar($serie['criadas'] === 3, 'Agendamento recorrente não criou a série.');
+
+// O encerramento da conta remove os dados pessoais e fecha cobranças ainda abertas.
+$clientePrivacidade = Cliente::criar([
+    'nome' => 'Cliente Privacidade', 'email' => 'privacidade@teste.local',
+    'senha' => 'Teste12345!', 'telefone' => '11988887777', 'cpf' => '11144477735',
+]);
+$usuarioPrivacidade = (int) Cliente::porId($clientePrivacidade)['id_usuario'];
+$reservaPrivacidade = Agendamento::criar([
+    'id_cliente' => $clientePrivacidade, 'id_profissional' => $f['profissional'],
+    'id_servico' => $f['servico'], 'data' => $data, 'hora_inicio' => '15:00',
+    'observacao' => '', 'origem' => 'cliente',
+], ['ignorar_antecedencia' => true]);
+verificar($reservaPrivacidade['sucesso'] && count(Diferencial::pagamentos($clientePrivacidade)) === 1, 'Conta de privacidade não gerou a cobrança de teste.');
+Diferencial::anonimizarCliente($clientePrivacidade, $usuarioPrivacidade);
+verificar(Diferencial::pagamentos($clientePrivacidade)[0]['status'] === 'cancelado', 'Anonimização manteve cobrança pendente.');
+verificar(Cliente::porId($clientePrivacidade)['status'] === 'inativo', 'Anonimização não desativou a conta.');
+verificar(Agendamento::porId((int) $reservaPrivacidade['id_agendamento'])['status'] === 'cancelado', 'Anonimização não cancelou a reserva futura.');
+
+empresa('empresa-b');
+verificar(Diferencial::listaAdministrativa() === [], 'Lista de espera vazou entre estabelecimentos.');
+verificar(Diferencial::pagamentos() === [], 'Pagamentos vazaram entre estabelecimentos.');
+verificar(Diferencial::avaliacoes() === [], 'Avaliações vazaram entre estabelecimentos.');
 // A conta master é global e não assume silenciosamente o contexto de uma empresa.
 $master = Master::autenticar('master@agendei.com.br', 'agendei-master-2026');
 verificar($master !== null, 'Conta master inicial não autenticou.');
@@ -142,7 +216,7 @@ $empresasMaster = Estabelecimento::listarTodos();
 verificar(count($empresasMaster) === 3, 'Master não enxerga a lista consolidada de estabelecimentos.');
 foreach ($empresasMaster as $empresaMaster) verificar((int) $empresaMaster['admins_ativos'] >= ($empresaMaster['slug'] === 'agendei-studio' ? 0 : 1), 'Estabelecimento criado sem administrador.');
 Estabelecimento::criarAdministrador((int) $empresasMaster[array_search('empresa-a', array_column($empresasMaster, 'slug'), true)]['id_estabelecimento'], ['nome' => 'Segundo Admin', 'email' => 'segundo@teste.local', 'senha' => 'Teste12345!']);
-$empresaA = array_values(array_filter(Estabelecimento::listarTodos(), fn ($e) => $e['slug'] === 'empresa-a'))[0];
+$empresaA = array_values(array_filter(Estabelecimento::listarTodos(), fn($e) => $e['slug'] === 'empresa-a'))[0];
 verificar((int) $empresaA['admins_ativos'] === 2, 'Master não conseguiu criar administrador local adicional.');
 Master::personalizar((int) $master['id_master'], 'Central Agendei', Tema::valores(['cor_primaria' => '#334455', 'cor_secundaria' => '#8899AA', 'cor_fundo' => '#F4F5F6', 'fonte' => 'garamond']), null);
 Contexto::iniciar();
@@ -154,6 +228,10 @@ verificar(Tema::variaveis(['cor_primaria' => '#ffffff'])['--sobre-primaria'] ===
 $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=');
 verificar(Tema::logoValida(Tema::validarImagem($png)), 'Imagem válida recusada.');
 $rejeitou = false;
-try { Tema::validarImagem('<svg onload="alert(1)"></svg>'); } catch (InvalidArgumentException $e) { $rejeitou = true; }
+try {
+    Tema::validarImagem('<svg onload="alert(1)"></svg>');
+} catch (InvalidArgumentException $e) {
+    $rejeitou = true;
+}
 verificar($rejeitou, 'Logo ativa aceita.');
 echo "OK: $checagens verificações de isolamento, migração e identidade visual.\n";

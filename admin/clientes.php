@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Gestao de clientes e consulta do historico individual.
  */
@@ -71,7 +72,7 @@ if ($acaoTela === 'ver') {
 
     // Renderiza a estrutura comum do painel após preparar os dados desta tela.
     require_once RAIZ . '/includes/painel_header.php';
-    ?>
+?>
 
     <div class="grade-indicadores">
         <div class="indicador indicador-destaque">
@@ -98,7 +99,9 @@ if ($acaoTela === 'ver') {
 
     <div class="grade-painel">
         <div class="cartao">
-            <div class="cartao-cabecalho"><h3>Historico de agendamentos</h3></div>
+            <div class="cartao-cabecalho">
+                <h3>Historico de agendamentos</h3>
+            </div>
 
             <?php if ($agendamentos === []): ?>
                 <div class="estado-vazio">
@@ -137,22 +140,47 @@ if ($acaoTela === 'ver') {
 
         <div>
             <div class="cartao">
-                <div class="cartao-cabecalho"><h3>Dados do cliente</h3></div>
+                <div class="cartao-cabecalho">
+                    <h3>Dados do cliente</h3>
+                </div>
                 <div class="cartao-corpo">
                     <dl class="lista-detalhes">
-                        <div><dt>Nome</dt><dd><?= e($cliente['nome']) ?></dd></div>
-                        <div><dt>CPF</dt><dd><?= e(formatarCpf($cliente['cpf'])) ?></dd></div>
-                        <div><dt>Telefone</dt><dd><?= e(formatarTelefone($cliente['telefone'])) ?></dd></div>
-                        <div><dt>E-mail</dt><dd><?= e($cliente['email']) ?></dd></div>
-                        <div><dt>Nascimento</dt><dd><?= formatarData($cliente['data_nascimento']) ?></dd></div>
-                        <div><dt>Cadastro</dt><dd><?= formatarData($cliente['data_cadastro']) ?></dd></div>
-                        <div><dt>Situacao</dt><dd><?= badgeStatus($cliente['status']) ?></dd></div>
+                        <div>
+                            <dt>Nome</dt>
+                            <dd><?= e($cliente['nome']) ?></dd>
+                        </div>
+                        <div>
+                            <dt>CPF</dt>
+                            <dd><?= e(formatarCpf($cliente['cpf'])) ?></dd>
+                        </div>
+                        <div>
+                            <dt>Telefone</dt>
+                            <dd><?= e(formatarTelefone($cliente['telefone'])) ?></dd>
+                        </div>
+                        <div>
+                            <dt>E-mail</dt>
+                            <dd><?= e($cliente['email']) ?></dd>
+                        </div>
+                        <div>
+                            <dt>Nascimento</dt>
+                            <dd><?= formatarData($cliente['data_nascimento']) ?></dd>
+                        </div>
+                        <div>
+                            <dt>Cadastro</dt>
+                            <dd><?= formatarData($cliente['data_cadastro']) ?></dd>
+                        </div>
+                        <div>
+                            <dt>Situacao</dt>
+                            <dd><?= badgeStatus($cliente['status']) ?></dd>
+                        </div>
                     </dl>
                 </div>
             </div>
 
             <div class="cartao">
-                <div class="cartao-cabecalho"><h3>Observacoes internas</h3></div>
+                <div class="cartao-cabecalho">
+                    <h3>Observacoes internas</h3>
+                </div>
                 <div class="cartao-corpo">
                     <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post">
                         <?= campoCsrf() ?>
@@ -171,7 +199,7 @@ if ($acaoTela === 'ver') {
         </div>
     </div>
 
-    <?php
+<?php
     require_once RAIZ . '/includes/painel_footer.php';
     exit;
 }
@@ -257,7 +285,7 @@ require_once RAIZ . '/includes/painel_header.php';
                             <td><?= badgeStatus($cliente['status']) ?></td>
                             <td class="coluna-acoes">
                                 <a href="<?= url('admin/clientes.php?acao=ver&id=' . (int) $cliente['id_cliente']) ?>"
-                                   class="btn btn-contorno btn-pequeno">Historico</a>
+                                    class="btn btn-contorno btn-pequeno">Historico</a>
 
                                 <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
                                     <?= campoCsrf() ?>
@@ -265,9 +293,9 @@ require_once RAIZ . '/includes/painel_header.php';
                                     <input type="hidden" name="id_cliente" value="<?= (int) $cliente['id_cliente'] ?>">
                                     <input type="hidden" name="status" value="<?= $cliente['status'] === 'ativo' ? 'inativo' : 'ativo' ?>">
                                     <button type="submit" class="btn btn-contorno btn-pequeno"
-                                            <?= $cliente['status'] === 'ativo'
-                                                ? 'data-confirmar="Desativar ' . e($cliente['nome']) . '? O cliente perde o acesso ao sistema." data-confirmar-titulo="Desativar cliente" data-confirmar-rotulo="Desativar"'
-                                                : '' ?>>
+                                        <?= $cliente['status'] === 'ativo'
+                                            ? 'data-confirmar="Desativar ' . e($cliente['nome']) . '? O cliente perde o acesso ao sistema." data-confirmar-titulo="Desativar cliente" data-confirmar-rotulo="Desativar"'
+                                            : '' ?>>
                                         <?= $cliente['status'] === 'ativo' ? 'Desativar' : 'Ativar' ?>
                                     </button>
                                 </form>

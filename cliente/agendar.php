@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Fluxo de agendamento do cliente (servico -> profissional -> data -> horario -> confirmacao).
  * Toda a disponibilidade e validada novamente aqui, no servidor.
@@ -33,7 +34,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ]);
 
     if ($resultado['sucesso']) {
-        definirFlash('sucesso', 'Agendamento realizado com sucesso.');
+        $serie = Diferencial::criarRecorrencias((int) $resultado['id_agendamento'], (int) post('repeticoes', '1'));
+        $mensagem = $serie['criadas'] > 1
+            ? $serie['criadas'] . ' agendamentos recorrentes foram criados.'
+            : 'Agendamento realizado com sucesso.';
+        if ($serie['falhas']) {
+            $mensagem .= ' Algumas datas não estavam disponíveis.';
+        }
+        definirFlash('sucesso', $mensagem);
         redirecionar('cliente/agendar.php?sucesso=' . $resultado['id_agendamento']);
     }
 
@@ -69,13 +77,34 @@ require_once RAIZ . '/includes/painel_header.php';
         <p>Guarde os detalhes abaixo. Voce pode acompanhar ou cancelar pelo painel.</p>
 
         <dl class="lista-detalhes">
-            <div><dt>Servico</dt><dd><?= e($agendamentoConfirmado['nome_servico']) ?></dd></div>
-            <div><dt>Profissional</dt><dd><?= e($agendamentoConfirmado['nome_profissional']) ?></dd></div>
-            <div><dt>Data</dt><dd><?= e(dataExtenso($agendamentoConfirmado['data_agendamento'])) ?></dd></div>
-            <div><dt>Horario</dt><dd><?= formatarHora($agendamentoConfirmado['hora_inicio']) ?> as <?= formatarHora($agendamentoConfirmado['hora_fim']) ?></dd></div>
-            <div><dt>Duracao</dt><dd><?= e(duracaoTexto((int) $agendamentoConfirmado['duracao_minutos'])) ?></dd></div>
-            <div><dt>Valor</dt><dd><?= formatarMoeda($agendamentoConfirmado['valor']) ?></dd></div>
-            <div><dt>Status</dt><dd><?= badgeStatus($agendamentoConfirmado['status']) ?></dd></div>
+            <div>
+                <dt>Servico</dt>
+                <dd><?= e($agendamentoConfirmado['nome_servico']) ?></dd>
+            </div>
+            <div>
+                <dt>Profissional</dt>
+                <dd><?= e($agendamentoConfirmado['nome_profissional']) ?></dd>
+            </div>
+            <div>
+                <dt>Data</dt>
+                <dd><?= e(dataExtenso($agendamentoConfirmado['data_agendamento'])) ?></dd>
+            </div>
+            <div>
+                <dt>Horario</dt>
+                <dd><?= formatarHora($agendamentoConfirmado['hora_inicio']) ?> as <?= formatarHora($agendamentoConfirmado['hora_fim']) ?></dd>
+            </div>
+            <div>
+                <dt>Duracao</dt>
+                <dd><?= e(duracaoTexto((int) $agendamentoConfirmado['duracao_minutos'])) ?></dd>
+            </div>
+            <div>
+                <dt>Valor</dt>
+                <dd><?= formatarMoeda($agendamentoConfirmado['valor']) ?></dd>
+            </div>
+            <div>
+                <dt>Status</dt>
+                <dd><?= badgeStatus($agendamentoConfirmado['status']) ?></dd>
+            </div>
         </dl>
 
         <div class="grupo-botoes" style="justify-content:center">
@@ -109,8 +138,8 @@ require_once RAIZ . '/includes/painel_header.php';
     <?php endif; ?>
 
     <div class="fluxo-agendamento" id="fluxoAgendamento"
-         data-base="<?= e(url('')) ?>"
-         data-max-dias="<?= (int) $maximoDias ?>">
+        data-base="<?= e(url('')) ?>"
+        data-max-dias="<?= (int) $maximoDias ?>">
 
         <div>
             <div class="etapas">
@@ -130,18 +159,20 @@ require_once RAIZ . '/includes/painel_header.php';
 
                 <!-- Etapa 1 -->
                 <section class="cartao" data-painel="1">
-                    <div class="cartao-cabecalho"><h2>Escolha o servico</h2></div>
+                    <div class="cartao-cabecalho">
+                        <h2>Escolha o servico</h2>
+                    </div>
                     <div class="cartao-corpo">
                         <div class="lista-opcoes">
                             <?php foreach ($servicos as $servico): ?>
                                 <div class="opcao">
                                     <input type="radio" name="servico_opcao"
-                                           id="servico<?= (int) $servico['id_servico'] ?>"
-                                           value="<?= (int) $servico['id_servico'] ?>"
-                                           data-nome="<?= e($servico['nome']) ?>"
-                                           data-preco="<?= e($servico['preco']) ?>"
-                                           data-duracao="<?= (int) $servico['duracao_minutos'] ?>"
-                                           <?= $servicoSelecionado === (int) $servico['id_servico'] ? 'checked' : '' ?>>
+                                        id="servico<?= (int) $servico['id_servico'] ?>"
+                                        value="<?= (int) $servico['id_servico'] ?>"
+                                        data-nome="<?= e($servico['nome']) ?>"
+                                        data-preco="<?= e($servico['preco']) ?>"
+                                        data-duracao="<?= (int) $servico['duracao_minutos'] ?>"
+                                        <?= $servicoSelecionado === (int) $servico['id_servico'] ? 'checked' : '' ?>>
                                     <label for="servico<?= (int) $servico['id_servico'] ?>">
                                         <span class="opcao-conteudo">
                                             <strong><?= e($servico['nome']) ?></strong>
@@ -165,7 +196,9 @@ require_once RAIZ . '/includes/painel_header.php';
 
                 <!-- Etapa 2 -->
                 <section class="cartao oculto" data-painel="2">
-                    <div class="cartao-cabecalho"><h2>Escolha o profissional</h2></div>
+                    <div class="cartao-cabecalho">
+                        <h2>Escolha o profissional</h2>
+                    </div>
                     <div class="cartao-corpo">
                         <div id="listaProfissionais"></div>
 
@@ -194,7 +227,9 @@ require_once RAIZ . '/includes/painel_header.php';
 
                 <!-- Etapa 4 -->
                 <section class="cartao oculto" data-painel="4">
-                    <div class="cartao-cabecalho"><h2>Escolha o horario</h2></div>
+                    <div class="cartao-cabecalho">
+                        <h2>Escolha o horario</h2>
+                    </div>
                     <div class="cartao-corpo">
                         <div id="listaHorarios"></div>
 
@@ -207,21 +242,53 @@ require_once RAIZ . '/includes/painel_header.php';
 
                 <!-- Etapa 5 -->
                 <section class="cartao oculto" data-painel="5">
-                    <div class="cartao-cabecalho"><h2>Confirme os dados</h2></div>
+                    <div class="cartao-cabecalho">
+                        <h2>Confirme os dados</h2>
+                    </div>
                     <div class="cartao-corpo">
                         <dl class="lista-detalhes">
-                            <div><dt>Servico</dt><dd data-resumo="servico">-</dd></div>
-                            <div><dt>Profissional</dt><dd data-resumo="profissional">-</dd></div>
-                            <div><dt>Data</dt><dd data-resumo="data">-</dd></div>
-                            <div><dt>Horario</dt><dd data-resumo="hora">-</dd></div>
-                            <div><dt>Duracao</dt><dd data-resumo="duracao">-</dd></div>
-                            <div><dt>Valor</dt><dd data-resumo="preco">-</dd></div>
+                            <div>
+                                <dt>Servico</dt>
+                                <dd data-resumo="servico">-</dd>
+                            </div>
+                            <div>
+                                <dt>Profissional</dt>
+                                <dd data-resumo="profissional">-</dd>
+                            </div>
+                            <div>
+                                <dt>Data</dt>
+                                <dd data-resumo="data">-</dd>
+                            </div>
+                            <div>
+                                <dt>Horario</dt>
+                                <dd data-resumo="hora">-</dd>
+                            </div>
+                            <div>
+                                <dt>Duracao</dt>
+                                <dd data-resumo="duracao">-</dd>
+                            </div>
+                            <div>
+                                <dt>Valor</dt>
+                                <dd data-resumo="preco">-</dd>
+                            </div>
                         </dl>
 
-                        <div class="campo margem-topo">
-                            <label for="observacao">Observacao (opcional)</label>
-                            <textarea id="observacao" name="observacao" maxlength="500"
-                                      placeholder="Alguma preferencia ou informacao importante para o profissional?"></textarea>
+                        <div class="linha-campos margem-topo">
+                            <div class="campo">
+                                <label for="repeticoes">Repetir semanalmente</label>
+                                <select id="repeticoes" name="repeticoes">
+                                    <option value="1">Não repetir</option>
+                                    <option value="2">2 semanas</option>
+                                    <option value="4">4 semanas</option>
+                                    <option value="8">8 semanas</option>
+                                    <option value="12">12 semanas</option>
+                                </select>
+                            </div>
+                            <div class="campo">
+                                <label for="observacao">Observação (opcional)</label>
+                                <textarea id="observacao" name="observacao" maxlength="500"
+                                    placeholder="Alguma preferência importante?"></textarea>
+                            </div>
                         </div>
 
                         <div class="navegacao-etapa">

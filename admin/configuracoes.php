@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Dados do estabelecimento e regras de funcionamento do sistema.
  */
@@ -92,10 +93,14 @@ require_once RAIZ . '/includes/painel_header.php';
     </div>
 <?php endif; ?>
 
-<div class="cartao"><div class="cartao-corpo"><a href="<?= e(url('admin/aparencia.php')) ?>">Personalizar cores, fonte e logo do estabelecimento</a></div></div>
+<div class="cartao">
+    <div class="cartao-corpo"><a href="<?= e(url('admin/aparencia.php')) ?>">Personalizar cores, fonte e logo do estabelecimento</a></div>
+</div>
 
 <div class="cartao">
-    <div class="cartao-cabecalho"><h3>Dados do estabelecimento</h3></div>
+    <div class="cartao-cabecalho">
+        <h3>Dados do estabelecimento</h3>
+    </div>
     <div class="cartao-corpo">
         <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post">
             <?= campoCsrf() ?>
@@ -189,7 +194,9 @@ require_once RAIZ . '/includes/painel_header.php';
 </div>
 
 <div class="cartao">
-    <div class="cartao-cabecalho"><h3>Regras de agendamento</h3></div>
+    <div class="cartao-cabecalho">
+        <h3>Regras de agendamento</h3>
+    </div>
     <div class="cartao-corpo">
         <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post">
             <?= campoCsrf() ?>
@@ -199,14 +206,14 @@ require_once RAIZ . '/includes/painel_header.php';
                 <div class="campo">
                     <label for="antecedencia_minima_horas">Antecedencia minima (horas)</label>
                     <input type="number" id="antecedencia_minima_horas" name="antecedencia_minima_horas"
-                           min="0" max="72" value="<?= Configuracao::obterInteiro('antecedencia_minima_horas', 2) ?>">
+                        min="0" max="72" value="<?= Configuracao::obterInteiro('antecedencia_minima_horas', 2) ?>">
                     <span class="ajuda-campo">Tempo minimo entre o momento do agendamento e o atendimento.</span>
                 </div>
 
                 <div class="campo">
                     <label for="antecedencia_maxima_dias">Antecedencia maxima (dias)</label>
                     <input type="number" id="antecedencia_maxima_dias" name="antecedencia_maxima_dias"
-                           min="1" max="365" value="<?= Configuracao::obterInteiro('antecedencia_maxima_dias', 60) ?>">
+                        min="1" max="365" value="<?= Configuracao::obterInteiro('antecedencia_maxima_dias', 60) ?>">
                     <span class="ajuda-campo">Ate quantos dias no futuro o cliente pode agendar.</span>
                 </div>
             </div>
@@ -215,27 +222,27 @@ require_once RAIZ . '/includes/painel_header.php';
                 <div class="campo">
                     <label for="cancelamento_limite_horas">Limite para cancelamento (horas)</label>
                     <input type="number" id="cancelamento_limite_horas" name="cancelamento_limite_horas"
-                           min="0" max="72" value="<?= Configuracao::obterInteiro('cancelamento_limite_horas', 4) ?>">
+                        min="0" max="72" value="<?= Configuracao::obterInteiro('cancelamento_limite_horas', 4) ?>">
                     <span class="ajuda-campo">Ate quantas horas antes o cliente pode cancelar sozinho.</span>
                 </div>
 
                 <div class="campo">
                     <label for="intervalo_slots_minutos">Intervalo padrao entre horarios (minutos)</label>
                     <input type="number" id="intervalo_slots_minutos" name="intervalo_slots_minutos"
-                           min="5" max="120" step="5" value="<?= Configuracao::obterInteiro('intervalo_slots_minutos', 30) ?>">
+                        min="5" max="120" step="5" value="<?= Configuracao::obterInteiro('intervalo_slots_minutos', 30) ?>">
                     <span class="ajuda-campo">Valor sugerido ao cadastrar novas faixas de expediente.</span>
                 </div>
             </div>
 
             <div class="campo-checkbox">
                 <input type="checkbox" id="permitir_bloqueio_profissional" name="permitir_bloqueio_profissional" value="1"
-                       <?= Configuracao::ativa('permitir_bloqueio_profissional', true) ? 'checked' : '' ?>>
+                    <?= Configuracao::ativa('permitir_bloqueio_profissional', true) ? 'checked' : '' ?>>
                 <label for="permitir_bloqueio_profissional">Permitir que profissionais bloqueiem a propria agenda</label>
             </div>
 
             <div class="campo-checkbox">
                 <input type="checkbox" id="confirmar_automaticamente" name="confirmar_automaticamente" value="1"
-                       <?= Configuracao::ativa('confirmar_automaticamente') ? 'checked' : '' ?>>
+                    <?= Configuracao::ativa('confirmar_automaticamente') ? 'checked' : '' ?>>
                 <label for="confirmar_automaticamente">Confirmar automaticamente os agendamentos criados pelo cliente</label>
             </div>
 

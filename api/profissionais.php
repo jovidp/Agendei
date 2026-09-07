@@ -1,4 +1,5 @@
 <?php
+
 /**
  * API: profissionais ativos que executam um servico.
  * GET /api/profissionais.php?id_servico=1

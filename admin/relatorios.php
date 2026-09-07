@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Relatorios gerenciais por periodo.
  */
@@ -107,15 +108,23 @@ require_once RAIZ . '/includes/painel_header.php';
 
 <div class="grade-painel-igual">
     <div class="cartao">
-        <div class="cartao-cabecalho"><h3>Servicos mais realizados</h3></div>
+        <div class="cartao-cabecalho">
+            <h3>Servicos mais realizados</h3>
+        </div>
 
         <?php if ($servicos === []): ?>
-            <div class="estado-vazio"><strong>Sem dados no periodo</strong><p>Nenhum agendamento registrado.</p></div>
+            <div class="estado-vazio"><strong>Sem dados no periodo</strong>
+                <p>Nenhum agendamento registrado.</p>
+            </div>
         <?php else: ?>
             <div class="tabela-area">
                 <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela" style="min-width:auto">
                     <thead>
-                        <tr><th>Servico</th><th>Agendamentos</th><th class="coluna-acoes">Valor</th></tr>
+                        <tr>
+                            <th>Servico</th>
+                            <th>Agendamentos</th>
+                            <th class="coluna-acoes">Valor</th>
+                        </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($servicos as $servico): ?>
@@ -132,15 +141,24 @@ require_once RAIZ . '/includes/painel_header.php';
     </div>
 
     <div class="cartao">
-        <div class="cartao-cabecalho"><h3>Profissionais com mais atendimentos</h3></div>
+        <div class="cartao-cabecalho">
+            <h3>Profissionais com mais atendimentos</h3>
+        </div>
 
         <?php if ($profissionais === []): ?>
-            <div class="estado-vazio"><strong>Sem dados no periodo</strong><p>Nenhum atendimento registrado.</p></div>
+            <div class="estado-vazio"><strong>Sem dados no periodo</strong>
+                <p>Nenhum atendimento registrado.</p>
+            </div>
         <?php else: ?>
             <div class="tabela-area">
                 <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela" style="min-width:auto">
                     <thead>
-                        <tr><th>Profissional</th><th>Total</th><th>Concluidos</th><th class="coluna-acoes">Valor</th></tr>
+                        <tr>
+                            <th>Profissional</th>
+                            <th>Total</th>
+                            <th>Concluidos</th>
+                            <th class="coluna-acoes">Valor</th>
+                        </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($profissionais as $profissional): ?>
@@ -160,15 +178,24 @@ require_once RAIZ . '/includes/painel_header.php';
 
 <div class="grade-painel-igual">
     <div class="cartao">
-        <div class="cartao-cabecalho"><h3>Clientes mais frequentes</h3></div>
+        <div class="cartao-cabecalho">
+            <h3>Clientes mais frequentes</h3>
+        </div>
 
         <?php if ($clientes === []): ?>
-            <div class="estado-vazio"><strong>Sem dados no periodo</strong><p>Nenhum cliente atendido.</p></div>
+            <div class="estado-vazio"><strong>Sem dados no periodo</strong>
+                <p>Nenhum cliente atendido.</p>
+            </div>
         <?php else: ?>
             <div class="tabela-area">
                 <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela" style="min-width:auto">
                     <thead>
-                        <tr><th>Cliente</th><th>Atendimentos</th><th>Ultimo</th><th class="coluna-acoes">Valor</th></tr>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Atendimentos</th>
+                            <th>Ultimo</th>
+                            <th class="coluna-acoes">Valor</th>
+                        </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($clientes as $cliente): ?>
@@ -189,15 +216,24 @@ require_once RAIZ . '/includes/painel_header.php';
     </div>
 
     <div class="cartao">
-        <div class="cartao-cabecalho"><h3>Movimento por dia</h3></div>
+        <div class="cartao-cabecalho">
+            <h3>Movimento por dia</h3>
+        </div>
 
         <?php if ($movimento === []): ?>
-            <div class="estado-vazio"><strong>Sem dados no periodo</strong><p>Nenhum agendamento no intervalo.</p></div>
+            <div class="estado-vazio"><strong>Sem dados no periodo</strong>
+                <p>Nenhum agendamento no intervalo.</p>
+            </div>
         <?php else: ?>
             <div class="tabela-area" style="max-height:420px;overflow-y:auto">
                 <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela" style="min-width:auto">
                     <thead>
-                        <tr><th>Data</th><th>Agendamentos</th><th>Cancelados</th><th class="coluna-acoes">Faturamento</th></tr>
+                        <tr>
+                            <th>Data</th>
+                            <th>Agendamentos</th>
+                            <th>Cancelados</th>
+                            <th class="coluna-acoes">Faturamento</th>
+                        </tr>
                     </thead>
                     <tbody>
                         <?php foreach ($movimento as $dia): ?>

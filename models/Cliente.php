@@ -5,7 +5,7 @@
 class Cliente
 {
     private const CAMPOS = 'c.id_cliente, c.id_usuario, c.cpf, c.data_nascimento, c.observacoes,
-                            c.data_cadastro, u.nome, u.email, u.telefone, u.status';
+                            c.data_cadastro, c.pontos_fidelidade, u.nome, u.email, u.telefone, u.status';
 
     /** Cria usuario + cliente em uma unica transacao. Retorna o id_cliente. */
     public static function criar(array $dados): int

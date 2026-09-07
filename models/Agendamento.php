@@ -345,9 +345,9 @@ class Agendamento
             $consulta = $conexao->prepare(
                 'INSERT INTO agendamentos
                     (id_estabelecimento, id_cliente, id_profissional, id_servico, data_agendamento, hora_inicio, hora_fim,
-                     valor, status, observacao, origem)
+                     valor, status, observacao, origem, grupo_recorrencia)
                  VALUES (' . Contexto::id() . ', :cliente, :profissional, :servico, :data, :inicio, :fim,
-                     :valor, :status, :observacao, :origem)'
+                     :valor, :status, :observacao, :origem, :grupo_recorrencia)'
             );
 
             $consulta->execute([
@@ -363,11 +363,19 @@ class Agendamento
                 ':origem'       => in_array($dados['origem'] ?? '', ['cliente', 'admin', 'profissional'], true)
                     ? $dados['origem']
                     : 'cliente',
+                ':grupo_recorrencia' => $dados['grupo_recorrencia'] ?? null,
             ]);
 
             $idAgendamento = (int) $conexao->lastInsertId();
             // Confirma as alterações depois que todas as operações da transação terminam.
             $conexao->commit();
+            try {
+                if (!Diferencial::usarCreditoPacote($idAgendamento)) {
+                    Diferencial::criarPagamentoSinal($idAgendamento);
+                }
+            } catch (Throwable $erroRecurso) {
+                error_log('Agendamento criado, mas o benefício financeiro falhou: ' . $erroRecurso->getMessage());
+            }
 
             return ['sucesso' => true, 'erros' => [], 'id_agendamento' => $idAgendamento];
         } catch (Throwable $erro) {
@@ -395,24 +403,43 @@ class Agendamento
              WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_agendamento = :id'
         );
 
-        return $consulta->execute([':status' => $status, ':id' => $idAgendamento]);
+        $alterado = $consulta->execute([':status' => $status, ':id' => $idAgendamento]);
+        if ($alterado && $status === 'concluido') {
+            try {
+                Diferencial::pontuar($idAgendamento);
+            } catch (Throwable $erroRecurso) {
+                error_log('Status alterado, mas os pontos não foram creditados: ' . $erroRecurso->getMessage());
+            }
+        }
+        return $alterado;
     }
 
     /** Registra o cancelamento junto ao motivo e ao usuário responsável pela ação. */
     public static function cancelar(int $idAgendamento, ?int $idUsuario, ?string $motivo = null): bool
     {
         if ($idUsuario !== null && !Usuario::porId($idUsuario)) return false;
+        $agendamento = self::porId($idAgendamento);
+        if (!$agendamento) return false;
         $consulta = bd()->prepare(
             'UPDATE agendamentos
              SET status = "cancelado", motivo_cancelamento = :motivo, id_usuario_cancelou = :usuario
              WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_agendamento = :id AND status <> "cancelado"'
         );
 
-        return $consulta->execute([
+        $cancelado = $consulta->execute([
             ':motivo'  => $motivo ?: null,
             ':usuario' => $idUsuario,
             ':id'      => $idAgendamento,
         ]);
+        if ($cancelado && $consulta->rowCount()) {
+            try {
+                Diferencial::cancelarFinanceiro($agendamento);
+                Diferencial::avisarListaEspera($agendamento);
+            } catch (Throwable $erroRecurso) {
+                error_log('Cancelamento concluído, mas o aviso de encaixe falhou: ' . $erroRecurso->getMessage());
+            }
+        }
+        return $cancelado;
     }
 
     /** Altera somente a observação da reserva, usando null para um texto vazio. */

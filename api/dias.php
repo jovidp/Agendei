@@ -1,4 +1,5 @@
 <?php
+
 /**
  * API: dias de um mes com pelo menos um horario livre.
  * GET /api/dias.php?id_profissional=1&id_servico=2&mes=2026-09

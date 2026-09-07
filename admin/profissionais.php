@@ -1,4 +1,5 @@
 <?php
+
 /**
  * CRUD de profissionais e vinculo com os servicos executados.
  */
@@ -187,14 +188,14 @@ require_once RAIZ . '/includes/painel_header.php';
                     <div class="campo">
                         <label for="nome">Nome completo <span class="obrigatorio">*</span></label>
                         <input type="text" id="nome" name="nome" maxlength="120"
-                               value="<?= e($edicao['nome'] ?? post('nome')) ?>" required>
+                            value="<?= e($edicao['nome'] ?? post('nome')) ?>" required>
                     </div>
 
                     <div class="campo">
                         <label for="especialidade">Especialidade</label>
                         <input type="text" id="especialidade" name="especialidade" maxlength="120"
-                               value="<?= e($edicao['especialidade'] ?? post('especialidade')) ?>"
-                               placeholder="Ex.: Barbeiro, Cabeleireira">
+                            value="<?= e($edicao['especialidade'] ?? post('especialidade')) ?>"
+                            placeholder="Ex.: Barbeiro, Cabeleireira">
                     </div>
                 </div>
 
@@ -202,13 +203,13 @@ require_once RAIZ . '/includes/painel_header.php';
                     <div class="campo">
                         <label for="email">E-mail de acesso <span class="obrigatorio">*</span></label>
                         <input type="email" id="email" name="email" maxlength="150"
-                               value="<?= e($edicao['email'] ?? post('email')) ?>" required>
+                            value="<?= e($edicao['email'] ?? post('email')) ?>" required>
                     </div>
 
                     <div class="campo">
                         <label for="telefone">Telefone</label>
                         <input type="tel" id="telefone" name="telefone" data-mascara="telefone" inputmode="numeric"
-                               value="<?= e($edicao ? formatarTelefone($edicao['telefone']) : post('telefone')) ?>">
+                            value="<?= e($edicao ? formatarTelefone($edicao['telefone']) : post('telefone')) ?>">
                     </div>
                 </div>
 
@@ -249,8 +250,8 @@ require_once RAIZ . '/includes/painel_header.php';
                             <?php foreach ($servicosDisponiveis as $servico): ?>
                                 <div class="campo-checkbox">
                                     <input type="checkbox" id="servico<?= (int) $servico['id_servico'] ?>"
-                                           name="servicos[]" value="<?= (int) $servico['id_servico'] ?>"
-                                           <?= in_array((int) $servico['id_servico'], $servicosVinculados, true) ? 'checked' : '' ?>>
+                                        name="servicos[]" value="<?= (int) $servico['id_servico'] ?>"
+                                        <?= in_array((int) $servico['id_servico'], $servicosVinculados, true) ? 'checked' : '' ?>>
                                     <label for="servico<?= (int) $servico['id_servico'] ?>">
                                         <?= e($servico['nome']) ?>
                                         <?= $servico['status'] === 'inativo' ? ' (inativo)' : '' ?>
@@ -263,7 +264,7 @@ require_once RAIZ . '/includes/painel_header.php';
 
                 <div class="campo-checkbox">
                     <input type="checkbox" id="pode_bloquear_agenda" name="pode_bloquear_agenda" value="1"
-                           <?= (!$edicao || !empty($edicao['pode_bloquear_agenda'])) ? 'checked' : '' ?>>
+                        <?= (!$edicao || !empty($edicao['pode_bloquear_agenda'])) ? 'checked' : '' ?>>
                     <label for="pode_bloquear_agenda">Permitir que o profissional bloqueie a propria agenda</label>
                 </div>
 
@@ -336,9 +337,9 @@ require_once RAIZ . '/includes/painel_header.php';
                             <td><?= badgeStatus($profissional['status']) ?></td>
                             <td class="coluna-acoes">
                                 <a href="<?= url('admin/horarios.php?id_profissional=' . (int) $profissional['id_profissional']) ?>"
-                                   class="btn btn-contorno btn-pequeno">Horarios</a>
+                                    class="btn btn-contorno btn-pequeno">Horarios</a>
                                 <a href="<?= url('admin/profissionais.php?acao=editar&id=' . (int) $profissional['id_profissional']) ?>"
-                                   class="btn btn-contorno btn-pequeno">Editar</a>
+                                    class="btn btn-contorno btn-pequeno">Editar</a>
 
                                 <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
                                     <?= campoCsrf() ?>
@@ -356,9 +357,9 @@ require_once RAIZ . '/includes/painel_header.php';
                                         <input type="hidden" name="acao" value="excluir">
                                         <input type="hidden" name="id_profissional" value="<?= (int) $profissional['id_profissional'] ?>">
                                         <button type="submit" class="btn btn-perigo btn-pequeno"
-                                                data-confirmar="Excluir o cadastro de <?= e($profissional['nome']) ?>? O acesso ao sistema sera removido."
-                                                data-confirmar-titulo="Excluir profissional"
-                                                data-confirmar-rotulo="Excluir">
+                                            data-confirmar="Excluir o cadastro de <?= e($profissional['nome']) ?>? O acesso ao sistema sera removido."
+                                            data-confirmar-titulo="Excluir profissional"
+                                            data-confirmar-rotulo="Excluir">
                                             Excluir
                                         </button>
                                     </form>

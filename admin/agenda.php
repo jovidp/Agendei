@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Agenda visual do estabelecimento (visao por dia ou por semana).
  * Montada apenas com PHP, HTML, CSS e JavaScript, sem bibliotecas externas.
@@ -43,7 +44,7 @@ $inicioGrade = 8 * 60;
 $fimGrade    = 19 * 60;
 
 $profissionaisGrade = $idProfissional > 0
-    ? array_values(array_filter($profissionais, fn ($p) => (int) $p['id_profissional'] === $idProfissional))
+    ? array_values(array_filter($profissionais, fn($p) => (int) $p['id_profissional'] === $idProfissional))
     : $profissionais;
 
 $dataIteracao = $inicioPeriodo;
@@ -148,16 +149,16 @@ require_once RAIZ . '/includes/painel_header.php';
     <div class="agenda-barra">
         <div class="agenda-navegacao">
             <a href="?<?= e(http_build_query($parametrosBase + ['data' => $dataAnterior])) ?>"
-               class="btn btn-contorno btn-pequeno" aria-label="Periodo anterior">&lsaquo;</a>
+                class="btn btn-contorno btn-pequeno" aria-label="Periodo anterior">&lsaquo;</a>
             <a href="?<?= e(http_build_query($parametrosBase + ['data' => date('Y-m-d')])) ?>"
-               class="btn btn-contorno btn-pequeno">Hoje</a>
+                class="btn btn-contorno btn-pequeno">Hoje</a>
             <a href="?<?= e(http_build_query($parametrosBase + ['data' => $dataProxima])) ?>"
-               class="btn btn-contorno btn-pequeno" aria-label="Proximo periodo">&rsaquo;</a>
+                class="btn btn-contorno btn-pequeno" aria-label="Proximo periodo">&rsaquo;</a>
             <span class="agenda-data-atual"><?= e($rotuloPeriodo) ?></span>
         </div>
 
         <?php /* Filtros enviados na URL para permitir atualizar e compartilhar a consulta. */ ?><form method="get" class="agenda-navegacao">
-        <input type="hidden" name="estabelecimento" value="<?= e(Contexto::slug()) ?>">
+            <input type="hidden" name="estabelecimento" value="<?= e(Contexto::slug()) ?>">
             <input type="hidden" name="visao" value="<?= e($visao) ?>">
             <input type="hidden" name="data" value="<?= e($dataBase) ?>">
 
@@ -165,7 +166,7 @@ require_once RAIZ . '/includes/painel_header.php';
                 <option value="">Todos os profissionais</option>
                 <?php foreach ($profissionais as $profissional): ?>
                     <option value="<?= (int) $profissional['id_profissional'] ?>"
-                            <?= $idProfissional === (int) $profissional['id_profissional'] ? 'selected' : '' ?>>
+                        <?= $idProfissional === (int) $profissional['id_profissional'] ? 'selected' : '' ?>>
                         <?= e($profissional['nome']) ?>
                     </option>
                 <?php endforeach; ?>
@@ -173,9 +174,9 @@ require_once RAIZ . '/includes/painel_header.php';
 
             <span class="agenda-visoes">
                 <a href="?<?= e(http_build_query(array_filter(['visao' => 'dia', 'data' => $dataBase, 'id_profissional' => $idProfissional ?: null]))) ?>"
-                   class="<?= $visao === 'dia' ? 'ativo' : '' ?>">Dia</a>
+                    class="<?= $visao === 'dia' ? 'ativo' : '' ?>">Dia</a>
                 <a href="?<?= e(http_build_query(array_filter(['visao' => 'semana', 'data' => $dataBase, 'id_profissional' => $idProfissional ?: null]))) ?>"
-                   class="<?= $visao === 'semana' ? 'ativo' : '' ?>">Semana</a>
+                    class="<?= $visao === 'semana' ? 'ativo' : '' ?>">Semana</a>
             </span>
         </form>
     </div>
@@ -216,16 +217,16 @@ require_once RAIZ . '/includes/painel_header.php';
 
                                     <?php foreach ($eventos[$coluna['chave']][$minuto] ?? [] as $agendamento): ?>
                                         <button type="button" class="agenda-evento status-<?= e($agendamento['status']) ?>"
-                                                data-modal="modalAgenda"
-                                                data-campo-cliente="<?= e($agendamento['nome_cliente']) ?>"
-                                                data-campo-contato="<?= e(formatarTelefone($agendamento['telefone_cliente'])) ?>"
-                                                data-campo-servico="<?= e($agendamento['nome_servico']) ?>"
-                                                data-campo-profissional="<?= e($agendamento['nome_profissional']) ?>"
-                                                data-campo-data="<?= e(dataExtenso($agendamento['data_agendamento'])) ?>"
-                                                data-campo-horario="<?= formatarHora($agendamento['hora_inicio']) ?> as <?= formatarHora($agendamento['hora_fim']) ?>"
-                                                data-campo-valor="<?= formatarMoeda($agendamento['valor']) ?>"
-                                                data-campo-status="<?= e(ucfirst($agendamento['status'])) ?>"
-                                                data-campo-observacao="<?= e($agendamento['observacao'] ?: 'Sem observacoes.') ?>">
+                                            data-modal="modalAgenda"
+                                            data-campo-cliente="<?= e($agendamento['nome_cliente']) ?>"
+                                            data-campo-contato="<?= e(formatarTelefone($agendamento['telefone_cliente'])) ?>"
+                                            data-campo-servico="<?= e($agendamento['nome_servico']) ?>"
+                                            data-campo-profissional="<?= e($agendamento['nome_profissional']) ?>"
+                                            data-campo-data="<?= e(dataExtenso($agendamento['data_agendamento'])) ?>"
+                                            data-campo-horario="<?= formatarHora($agendamento['hora_inicio']) ?> as <?= formatarHora($agendamento['hora_fim']) ?>"
+                                            data-campo-valor="<?= formatarMoeda($agendamento['valor']) ?>"
+                                            data-campo-status="<?= e(ucfirst($agendamento['status'])) ?>"
+                                            data-campo-observacao="<?= e($agendamento['observacao'] ?: 'Sem observacoes.') ?>">
                                             <strong><?= formatarHora($agendamento['hora_inicio']) ?> <?= e(limitarTexto($agendamento['nome_cliente'], 18)) ?></strong>
                                             <span><?= e(limitarTexto($agendamento['nome_servico'], 22)) ?></span>
                                             <?php if ($visao === 'semana' && $idProfissional === 0): ?>
@@ -259,15 +260,42 @@ require_once RAIZ . '/includes/painel_header.php';
         </div>
         <div class="modal-corpo">
             <dl class="lista-detalhes">
-                <div><dt>Cliente</dt><dd data-preenche="cliente">-</dd></div>
-                <div><dt>Contato</dt><dd data-preenche="contato">-</dd></div>
-                <div><dt>Servico</dt><dd data-preenche="servico">-</dd></div>
-                <div><dt>Profissional</dt><dd data-preenche="profissional">-</dd></div>
-                <div><dt>Data</dt><dd data-preenche="data">-</dd></div>
-                <div><dt>Horario</dt><dd data-preenche="horario">-</dd></div>
-                <div><dt>Valor</dt><dd data-preenche="valor">-</dd></div>
-                <div><dt>Status</dt><dd data-preenche="status">-</dd></div>
-                <div><dt>Observacao</dt><dd data-preenche="observacao">-</dd></div>
+                <div>
+                    <dt>Cliente</dt>
+                    <dd data-preenche="cliente">-</dd>
+                </div>
+                <div>
+                    <dt>Contato</dt>
+                    <dd data-preenche="contato">-</dd>
+                </div>
+                <div>
+                    <dt>Servico</dt>
+                    <dd data-preenche="servico">-</dd>
+                </div>
+                <div>
+                    <dt>Profissional</dt>
+                    <dd data-preenche="profissional">-</dd>
+                </div>
+                <div>
+                    <dt>Data</dt>
+                    <dd data-preenche="data">-</dd>
+                </div>
+                <div>
+                    <dt>Horario</dt>
+                    <dd data-preenche="horario">-</dd>
+                </div>
+                <div>
+                    <dt>Valor</dt>
+                    <dd data-preenche="valor">-</dd>
+                </div>
+                <div>
+                    <dt>Status</dt>
+                    <dd data-preenche="status">-</dd>
+                </div>
+                <div>
+                    <dt>Observacao</dt>
+                    <dd data-preenche="observacao">-</dd>
+                </div>
             </dl>
         </div>
         <div class="modal-rodape">

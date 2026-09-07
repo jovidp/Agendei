@@ -124,3 +124,23 @@ e integracao com Google Calendar:
 - `configuracoes` permite novas regras sem alterar codigo.
 - `recuperar_senha.php` tem o ponto de integracao de envio de mensagens marcado.
 - Cada entidade tem seu model isolado, entao novos campos e tabelas nao afetam as telas.
+## Diferenciais comerciais
+
+O menu **Admin > Diferenciais** reúne os recursos opcionais de cada estabelecimento:
+
+- lista de espera com aviso quando um cancelamento libera uma vaga compatível;
+- fila de lembretes com mensagem pronta para WhatsApp;
+- cobrança de sinal por chave Pix e confirmação manual do pagamento;
+- agendamentos semanais recorrentes;
+- pontos de fidelidade creditados quando o atendimento é concluído;
+- pacotes de serviços com créditos e validade;
+- comissão por profissional e resumo mensal;
+- avaliações feitas somente após atendimentos concluídos;
+- feed iCalendar privado para Google Agenda, Outlook e Apple Calendar.
+
+O cliente acompanha esses recursos em **Meus benefícios**. Em **Privacidade**,
+pode baixar uma cópia de seus dados ou encerrar a conta com anonimização das
+informações pessoais. O envio automático pela API oficial do WhatsApp e a
+confirmação bancária automática do Pix exigem credenciais de fornecedores
+externos; sem elas, o sistema mantém a fila de mensagens, abre a conversa pronta
+e permite que o administrador confirme o recebimento.

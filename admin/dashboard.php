@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Dashboard administrativo com indicadores e listas de acompanhamento.
  */

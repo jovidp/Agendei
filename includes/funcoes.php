@@ -318,6 +318,14 @@ function badgeStatus(string $status): string
         'cancelado'  => 'Cancelado',
         'ativo'      => 'Ativo',
         'inativo'    => 'Inativo',
+        'aguardando' => 'Aguardando',
+        'avisado'    => 'Avisado',
+        'convertido' => 'Convertido',
+        'pendente'   => 'Pendente',
+        'pago'       => 'Pago',
+        'estornado'  => 'Estornado',
+        'publicada'  => 'Publicada',
+        'oculta'     => 'Oculta',
     ];
     $rotulo = $rotulos[$status] ?? ucfirst($status);
     return '<span class="badge badge-' . e($status) . '">' . e($rotulo) . '</span>';

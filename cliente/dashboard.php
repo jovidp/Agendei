@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Painel inicial do cliente.
  */

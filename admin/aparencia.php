@@ -1,4 +1,5 @@
 <?php
+
 /** Identidade visual da empresa vinculada ao administrador autenticado. */
 require_once __DIR__ . '/../config/config.php';
 exigirLogin('admin');
@@ -37,17 +38,23 @@ require_once RAIZ . '/includes/painel_header.php';
 $logoPrevia = !$removerLogo && Tema::logoValida($estabelecimento['logo'] ?? null) ? $estabelecimento['logo'] : '';
 ?>
 <?php if ($erros): ?>
-    <div class="alerta alerta-erro" role="alert"><ul><?php foreach ($erros as $mensagem): ?><li><?= e($mensagem) ?></li><?php endforeach; ?></ul></div>
+    <div class="alerta alerta-erro" role="alert">
+        <ul><?php foreach ($erros as $mensagem): ?><li><?= e($mensagem) ?></li><?php endforeach; ?></ul>
+    </div>
 <?php endif; ?>
 <div class="cartao">
-    <div class="cartao-cabecalho"><h3>Compartilhe com seus clientes</h3></div>
+    <div class="cartao-cabecalho">
+        <h3>Compartilhe com seus clientes</h3>
+    </div>
     <div class="cartao-corpo">
         <p>O cadastro por este link vincula o cliente ao seu estabelecimento.</p>
         <a class="link-estabelecimento" href="<?= e(url('index.php')) ?>" target="_blank" rel="noopener"><?= e(url('index.php')) ?></a>
     </div>
 </div>
 <div class="cartao">
-    <div class="cartao-cabecalho"><h3>Personalizar identidade visual</h3></div>
+    <div class="cartao-cabecalho">
+        <h3>Personalizar identidade visual</h3>
+    </div>
     <div class="cartao-corpo personalizacao-grade">
         <form method="post" enctype="multipart/form-data" id="formAparencia">
             <?= campoCsrf() ?>
@@ -69,7 +76,13 @@ $logoPrevia = !$removerLogo && Tema::logoValida($estabelecimento['logo'] ?? null
             <h3>Prévia</h3>
             <div class="tema-previa" id="previaTema" style="<?= e(Tema::estilo($valores)) ?>">
                 <div class="tema-previa-topo"><img class="marca-logo" id="previaLogo" <?= $logoPrevia === '' ? 'hidden' : 'src="' . e($logoPrevia) . '"' ?> alt=""><span class="marca-simbolo" id="previaInicial" <?= $logoPrevia !== '' ? 'hidden' : '' ?>><?= e(mb_substr($nome, 0, 1)) ?></span><strong id="previaNome"><?= e($nome) ?></strong></div>
-                <div class="tema-previa-corpo"><div class="cartao"><small>Agendamento online</small><h3>Seu próximo atendimento</h3><p>Escolha o serviço e encontre o melhor horário.</p><span class="etiqueta">Horários disponíveis</span><div><button class="btn" type="button" tabindex="-1">Agendar agora</button></div></div></div>
+                <div class="tema-previa-corpo">
+                    <div class="cartao"><small>Agendamento online</small>
+                        <h3>Seu próximo atendimento</h3>
+                        <p>Escolha o serviço e encontre o melhor horário.</p><span class="etiqueta">Horários disponíveis</span>
+                        <div><button class="btn" type="button" tabindex="-1">Agendar agora</button></div>
+                    </div>
+                </div>
             </div>
             <p class="ajuda-campo" id="avisoLogo" role="status">Prévia ilustrativa da identidade visual.</p>
         </div>

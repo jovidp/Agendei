@@ -18,6 +18,11 @@ if (!$profissional) {
     redirecionar('profissional/dashboard.php');
 }
 
+$tokenCalendario = Diferencial::tokenCalendario($idProfissional);
+$protocolo = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$urlCalendario = $protocolo . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . BASE_URL
+    . '/calendario.php?token=' . rawurlencode($tokenCalendario);
+
 $erros = [];
 
 // Processa o formulário enviado antes de montar o HTML da página.
@@ -180,6 +185,16 @@ require_once RAIZ . '/includes/painel_header.php';
                 </dl>
             </div>
         </div>
+    </div>
+</div>
+
+<div class="cartao">
+    <div class="cartao-cabecalho"><h3>Sincronizar agenda</h3></div>
+    <div class="cartao-corpo">
+        <p>Use este endereço privado para assinar seus compromissos no Google Agenda, Outlook ou Apple Calendar.</p>
+        <div class="campo"><label for="url_calendario">Endereço iCalendar</label><input id="url_calendario" value="<?= e($urlCalendario) ?>" readonly></div>
+        <a class="btn btn-contorno" href="<?= e($urlCalendario) ?>">Baixar calendário</a>
+        <p class="ajuda-campo margem-topo">Não compartilhe este endereço: ele permite visualizar sua agenda.</p>
     </div>
 </div>
 

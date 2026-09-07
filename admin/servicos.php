@@ -1,4 +1,5 @@
 <?php
+
 /**
  * CRUD de servicos.
  */
@@ -125,7 +126,7 @@ require_once RAIZ . '/includes/painel_header.php';
                 <div class="campo">
                     <label for="nome">Nome do servico <span class="obrigatorio">*</span></label>
                     <input type="text" id="nome" name="nome" maxlength="120"
-                           value="<?= e($edicao['nome'] ?? post('nome')) ?>" required>
+                        value="<?= e($edicao['nome'] ?? post('nome')) ?>" required>
                 </div>
 
                 <div class="campo">
@@ -138,13 +139,13 @@ require_once RAIZ . '/includes/painel_header.php';
                     <div class="campo">
                         <label for="preco">Preco (R$) <span class="obrigatorio">*</span></label>
                         <input type="text" id="preco" name="preco" data-mascara="moeda" inputmode="numeric"
-                               value="<?= e($edicao ? number_format((float) $edicao['preco'], 2, ',', '') : post('preco')) ?>" required>
+                            value="<?= e($edicao ? number_format((float) $edicao['preco'], 2, ',', '') : post('preco')) ?>" required>
                     </div>
 
                     <div class="campo">
                         <label for="duracao_minutos">Duracao (minutos) <span class="obrigatorio">*</span></label>
                         <input type="number" id="duracao_minutos" name="duracao_minutos" min="5" max="600" step="5"
-                               value="<?= (int) ($edicao['duracao_minutos'] ?? post('duracao_minutos', '30')) ?>" required>
+                            value="<?= (int) ($edicao['duracao_minutos'] ?? post('duracao_minutos', '30')) ?>" required>
                     </div>
 
                     <div class="campo">
@@ -158,7 +159,7 @@ require_once RAIZ . '/includes/painel_header.php';
 
                 <div class="campo-checkbox">
                     <input type="checkbox" id="destaque" name="destaque" value="1"
-                           <?= !empty($edicao['destaque']) ? 'checked' : '' ?>>
+                        <?= !empty($edicao['destaque']) ? 'checked' : '' ?>>
                     <label for="destaque">Exibir em destaque na pagina inicial</label>
                 </div>
 
@@ -233,7 +234,7 @@ require_once RAIZ . '/includes/painel_header.php';
                             <td><?= formatarData($servico['data_cadastro']) ?></td>
                             <td class="coluna-acoes">
                                 <a href="<?= url('admin/servicos.php?acao=editar&id=' . (int) $servico['id_servico']) ?>"
-                                   class="btn btn-contorno btn-pequeno">Editar</a>
+                                    class="btn btn-contorno btn-pequeno">Editar</a>
 
                                 <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
                                     <?= campoCsrf() ?>
@@ -251,9 +252,9 @@ require_once RAIZ . '/includes/painel_header.php';
                                         <input type="hidden" name="acao" value="excluir">
                                         <input type="hidden" name="id_servico" value="<?= (int) $servico['id_servico'] ?>">
                                         <button type="submit" class="btn btn-perigo btn-pequeno"
-                                                data-confirmar="Excluir o servico <?= e($servico['nome']) ?>? Esta acao nao pode ser desfeita."
-                                                data-confirmar-titulo="Excluir servico"
-                                                data-confirmar-rotulo="Excluir">
+                                            data-confirmar="Excluir o servico <?= e($servico['nome']) ?>? Esta acao nao pode ser desfeita."
+                                            data-confirmar-titulo="Excluir servico"
+                                            data-confirmar-rotulo="Excluir">
                                             Excluir
                                         </button>
                                     </form>

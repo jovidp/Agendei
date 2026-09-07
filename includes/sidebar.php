@@ -28,6 +28,7 @@ $menus = [
         ['rotulo' => 'Horarios',      'arquivo' => 'admin/horarios.php',      'icone' => 'horarios'],
         ['separador' => 'Gestao'],
         ['rotulo' => 'Relatorios',    'arquivo' => 'admin/relatorios.php',    'icone' => 'relatorios'],
+        ['rotulo' => 'Diferenciais',  'arquivo' => 'admin/diferenciais.php',  'icone' => 'novo'],
         ['rotulo' => 'Aparência', 'arquivo' => 'admin/aparencia.php', 'icone' => 'configuracoes'],
         ['rotulo' => 'Configuracoes', 'arquivo' => 'admin/configuracoes.php', 'icone' => 'configuracoes'],
     ],
@@ -44,8 +45,10 @@ $menus = [
         ['rotulo' => 'Novo agendamento',  'arquivo' => 'cliente/agendar.php',      'icone' => 'novo'],
         ['rotulo' => 'Meus agendamentos', 'arquivo' => 'cliente/agendamentos.php', 'icone' => 'agendamentos'],
         ['rotulo' => 'Historico',         'arquivo' => 'cliente/historico.php',    'icone' => 'historico'],
+        ['rotulo' => 'Meus beneficios',   'arquivo' => 'cliente/beneficios.php',   'icone' => 'novo'],
         ['separador' => 'Conta'],
         ['rotulo' => 'Meu perfil',        'arquivo' => 'cliente/perfil.php',       'icone' => 'perfil'],
+        ['rotulo' => 'Privacidade',        'arquivo' => 'cliente/privacidade.php',   'icone' => 'configuracoes'],
     ],
 ];
 

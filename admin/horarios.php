@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Expediente semanal e bloqueios de agenda dos profissionais.
  */
@@ -154,7 +155,7 @@ require_once RAIZ . '/includes/painel_header.php';
                 <option value="">Selecione um profissional</option>
                 <?php foreach ($profissionais as $item): ?>
                     <option value="<?= (int) $item['id_profissional'] ?>"
-                            <?= $idProfissional === (int) $item['id_profissional'] ? 'selected' : '' ?>>
+                        <?= $idProfissional === (int) $item['id_profissional'] ? 'selected' : '' ?>>
                         <?= e($item['nome']) ?><?= $item['status'] === 'inativo' ? ' (inativo)' : '' ?>
                     </option>
                 <?php endforeach; ?>
@@ -224,9 +225,9 @@ require_once RAIZ . '/includes/painel_header.php';
                                                 <input type="hidden" name="id_profissional" value="<?= $idProfissional ?>">
                                                 <input type="hidden" name="id_horario" value="<?= (int) $faixa['id_horario'] ?>">
                                                 <button type="submit" class="btn btn-perigo btn-pequeno"
-                                                        data-confirmar="Remover a faixa de <?= formatarHora($faixa['hora_inicio']) ?> as <?= formatarHora($faixa['hora_fim']) ?>?"
-                                                        data-confirmar-titulo="Remover faixa"
-                                                        data-confirmar-rotulo="Remover">
+                                                    data-confirmar="Remover a faixa de <?= formatarHora($faixa['hora_inicio']) ?> as <?= formatarHora($faixa['hora_fim']) ?>?"
+                                                    data-confirmar-titulo="Remover faixa"
+                                                    data-confirmar-rotulo="Remover">
                                                     Remover
                                                 </button>
                                             </form>
@@ -309,9 +310,9 @@ require_once RAIZ . '/includes/painel_header.php';
                                         <input type="hidden" name="id_profissional" value="<?= $idProfissional ?>">
                                         <input type="hidden" name="id_bloqueio" value="<?= (int) $bloqueio['id_bloqueio'] ?>">
                                         <button type="submit" class="btn btn-perigo btn-pequeno"
-                                                data-confirmar="Remover o bloqueio do dia <?= formatarData($bloqueio['data_bloqueio']) ?>?"
-                                                data-confirmar-titulo="Remover bloqueio"
-                                                data-confirmar-rotulo="Remover">
+                                            data-confirmar="Remover o bloqueio do dia <?= formatarData($bloqueio['data_bloqueio']) ?>?"
+                                            data-confirmar-titulo="Remover bloqueio"
+                                            data-confirmar-rotulo="Remover">
                                             Remover
                                         </button>
                                     </form>
