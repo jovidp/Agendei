@@ -5,9 +5,18 @@
 require_once RAIZ . '/includes/icones.php';
 
 $estabelecimento = $estabelecimento ?? Estabelecimento::dados();
-$pagina = paginaAtual();
+// Usa uma variável própria para não sobrescrever $pagina, que controla a paginação das telas.
+$paginaMenu = paginaAtual();
 
+// Define rótulo, destino e ícone dos links disponíveis para cada perfil.
 $menus = [
+    'master' => [
+        ['rotulo' => 'Visão geral', 'arquivo' => 'master/dashboard.php', 'icone' => 'dashboard'],
+        ['rotulo' => 'Estabelecimentos', 'arquivo' => 'master/estabelecimentos.php', 'icone' => 'clientes'],
+        ['separador' => 'Conta master'],
+        ['rotulo' => 'Aparência', 'arquivo' => 'master/aparencia.php', 'icone' => 'configuracoes'],
+        ['rotulo' => 'Meu perfil', 'arquivo' => 'master/perfil.php', 'icone' => 'perfil'],
+    ],
     'admin' => [
         ['rotulo' => 'Dashboard',     'arquivo' => 'admin/dashboard.php',     'icone' => 'dashboard'],
         ['rotulo' => 'Agenda',        'arquivo' => 'admin/agenda.php',        'icone' => 'agenda'],
@@ -19,6 +28,7 @@ $menus = [
         ['rotulo' => 'Horarios',      'arquivo' => 'admin/horarios.php',      'icone' => 'horarios'],
         ['separador' => 'Gestao'],
         ['rotulo' => 'Relatorios',    'arquivo' => 'admin/relatorios.php',    'icone' => 'relatorios'],
+        ['rotulo' => 'Aparência', 'arquivo' => 'admin/aparencia.php', 'icone' => 'configuracoes'],
         ['rotulo' => 'Configuracoes', 'arquivo' => 'admin/configuracoes.php', 'icone' => 'configuracoes'],
     ],
     'profissional' => [
@@ -40,16 +50,18 @@ $menus = [
 ];
 
 $rotulosPerfil = [
+    'master'       => 'Administrador master',
     'admin'        => 'Administrador',
     'profissional' => 'Profissional',
     'cliente'      => 'Cliente',
 ];
 
+// Seleciona os links do perfil autenticado; cada destino também valida o acesso no servidor.
 $itens = $menus[perfil()] ?? [];
 ?>
 <aside class="sidebar" id="sidebarPainel">
     <a href="<?= url('index.php') ?>" class="sidebar-marca">
-        <span class="marca-simbolo"><?= e(mb_substr($estabelecimento['nome'], 0, 1)) ?></span>
+        <?= Tema::marca($estabelecimento) ?>
         <?= e($estabelecimento['nome']) ?>
     </a>
 
@@ -68,7 +80,7 @@ $itens = $menus[perfil()] ?? [];
             <?php else: ?>
                 <li>
                     <a href="<?= url($item['arquivo']) ?>"
-                       class="<?= basename($item['arquivo']) === $pagina ? 'ativo' : '' ?>">
+                       class="<?= basename($item['arquivo']) === $paginaMenu ? 'ativo' : '' ?>">
                         <?= icone($item['icone']) ?>
                         <?= e($item['rotulo']) ?>
                     </a>
@@ -80,7 +92,7 @@ $itens = $menus[perfil()] ?? [];
     <div class="sidebar-rodape">
         <ul class="sidebar-menu" style="padding:0">
             <li>
-                <a href="<?= url('logout.php') ?>"><?= icone('sair') ?> Sair</a>
+                <a href="<?= url(ehMaster() ? 'master/logout.php' : 'logout.php') ?>"><?= icone('sair') ?> Sair</a>
             </li>
         </ul>
     </div>

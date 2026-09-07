@@ -1,7 +1,9 @@
 # Impede o acesso direto aos arquivos desta pasta pelo navegador.
+# Apache 2.4: nega requisições HTTP diretas; os includes internos do PHP continuam funcionando.
 <IfModule mod_authz_core.c>
     Require all denied
 </IfModule>
+# Compatibilidade com a forma de controle de acesso das versões anteriores do Apache.
 <IfModule !mod_authz_core.c>
     Order allow,deny
     Deny from all

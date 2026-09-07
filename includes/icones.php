@@ -5,6 +5,7 @@
  */
 function icone(string $nome, string $classe = 'sidebar-icone'): string
 {
+    // Catálogo de desenhos SVG indexados pelo nome utilizado nos menus e botões.
     $caminhos = [
         'dashboard'     => '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
         'agenda'        => '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',

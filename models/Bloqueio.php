@@ -4,13 +4,14 @@
  */
 class Bloqueio
 {
+    /** Busca o registro pelo identificador; retorna null quando ele não existe. */
     public static function porId(int $idBloqueio): ?array
     {
         $sql = 'SELECT b.*, u.nome AS nome_profissional
                 FROM bloqueios_agenda b
                 INNER JOIN profissionais p ON p.id_profissional = b.id_profissional
                 INNER JOIN usuarios u ON u.id_usuario = p.id_usuario
-                WHERE b.id_bloqueio = :id LIMIT 1';
+                WHERE b.id_estabelecimento = ' . Contexto::id() . ' AND b.id_bloqueio = :id LIMIT 1';
 
         $consulta = bd()->prepare($sql);
         $consulta->execute([':id' => $idBloqueio]);
@@ -20,7 +21,7 @@ class Bloqueio
     /** Filtros: id_profissional, data_inicial, data_final, futuros. */
     public static function listar(array $filtros = []): array
     {
-        $condicoes  = [];
+        $condicoes = ['b.id_estabelecimento = ' . Contexto::id()];
         $parametros = [];
 
         if (!empty($filtros['id_profissional'])) {
@@ -61,7 +62,7 @@ class Bloqueio
     {
         $consulta = bd()->prepare(
             'SELECT * FROM bloqueios_agenda
-             WHERE id_profissional = :profissional AND data_bloqueio = :data
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :profissional AND data_bloqueio = :data
              ORDER BY hora_inicio ASC'
         );
         $consulta->execute([':profissional' => $idProfissional, ':data' => $data]);
@@ -73,7 +74,7 @@ class Bloqueio
     {
         $consulta = bd()->prepare(
             'SELECT 1 FROM bloqueios_agenda
-             WHERE id_profissional = :profissional
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :profissional
                AND data_bloqueio = :data
                AND hora_inicio < :fim
                AND hora_fim > :inicio
@@ -90,12 +91,15 @@ class Bloqueio
         return (bool) $consulta->fetch();
     }
 
+    /** Registra uma indisponibilidade pontual e retorna o identificador do bloqueio. */
     public static function criar(array $dados): int
     {
+        if (!Profissional::porId((int) $dados['id_profissional'])) throw new InvalidArgumentException('Profissional não pertence ao estabelecimento.');
+        if (!empty($dados['id_usuario_criou']) && !Usuario::porId((int) $dados['id_usuario_criou'])) throw new InvalidArgumentException('Usuário não pertence ao estabelecimento.');
         $consulta = bd()->prepare(
             'INSERT INTO bloqueios_agenda
-                (id_profissional, data_bloqueio, hora_inicio, hora_fim, motivo, id_usuario_criou)
-             VALUES (:profissional, :data, :inicio, :fim, :motivo, :usuario)'
+                (id_estabelecimento, id_profissional, data_bloqueio, hora_inicio, hora_fim, motivo, id_usuario_criou)
+             VALUES (' . Contexto::id() . ', :profissional, :data, :inicio, :fim, :motivo, :usuario)'
         );
 
         $consulta->execute([
@@ -110,9 +114,10 @@ class Bloqueio
         return (int) bd()->lastInsertId();
     }
 
+    /** Executa a exclusão pelo ID; as restrições do banco continuam sendo aplicadas. */
     public static function excluir(int $idBloqueio): bool
     {
-        $consulta = bd()->prepare('DELETE FROM bloqueios_agenda WHERE id_bloqueio = :id');
+        $consulta = bd()->prepare('DELETE FROM bloqueios_agenda WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_bloqueio = :id');
         return $consulta->execute([':id' => $idBloqueio]);
     }
 
@@ -124,7 +129,7 @@ class Bloqueio
                 INNER JOIN clientes c ON c.id_cliente = a.id_cliente
                 INNER JOIN usuarios u ON u.id_usuario = c.id_usuario
                 INNER JOIN servicos s ON s.id_servico = a.id_servico
-                WHERE a.id_profissional = :profissional
+                WHERE a.id_estabelecimento = ' . Contexto::id() . ' AND a.id_profissional = :profissional
                   AND a.data_agendamento = :data
                   AND a.status IN ("agendado","confirmado")
                   AND a.hora_inicio < :fim

@@ -2,18 +2,23 @@
 /**
  * CRUD de servicos.
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/../config/config.php';
 
+// Restringe esta página a administradores autenticados.
 exigirLogin('admin');
 
 $erros = [];
 
+// Processa o formulário enviado antes de montar o HTML da página.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Confere o token da sessão antes de aceitar alterações enviadas pelo formulário.
     exigirCsrf();
 
     $acao       = post('acao');
     $idServico  = (int) post('id_servico');
 
+    // Valida os campos antes de criar ou atualizar o cadastro.
     if ($acao === 'salvar') {
         $dados = [
             'nome'            => post('nome'),
@@ -46,6 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Trata a mudança de status solicitada pelo formulário.
     if ($acao === 'status' && $idServico > 0) {
         $novoStatus = post('status') === 'ativo' ? 'ativo' : 'inativo';
         Servico::alterarStatus($idServico, $novoStatus);
@@ -53,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirecionar('admin/servicos.php');
     }
 
+    // Confere o registro e as regras aplicáveis antes da exclusão.
     if ($acao === 'excluir' && $idServico > 0) {
         if (!Servico::podeExcluir($idServico)) {
             definirFlash('erro', 'Este servico ja possui agendamentos e nao pode ser excluido. Desative-o para retirar da lista.');
@@ -81,12 +88,14 @@ $busca   = get('busca');
 $status  = get('status');
 $lista   = Servico::listar(array_filter(['busca' => $busca, 'status' => $status]));
 
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Servicos';
 $subtituloTopo = 'Cadastro, precos e duracao dos servicos';
 $acoesTopo     = $formularioAberto
     ? '<a href="' . url('admin/servicos.php') . '" class="btn btn-contorno btn-pequeno">Voltar para a lista</a>'
     : '<a href="' . url('admin/servicos.php?acao=novo') . '" class="btn btn-pequeno">Novo servico</a>';
 
+// Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
 ?>
 
@@ -108,7 +117,7 @@ require_once RAIZ . '/includes/painel_header.php';
             <h3><?= $edicao ? 'Editar servico' : 'Novo servico' ?></h3>
         </div>
         <div class="cartao-corpo">
-            <form method="post">
+            <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post">
                 <?= campoCsrf() ?>
                 <input type="hidden" name="acao" value="salvar">
                 <input type="hidden" name="id_servico" value="<?= (int) ($edicao['id_servico'] ?? 0) ?>">
@@ -164,7 +173,8 @@ require_once RAIZ . '/includes/painel_header.php';
 <?php endif; ?>
 
 <div class="cartao">
-    <form method="get" class="barra-filtros">
+    <?php /* Filtros enviados na URL para permitir atualizar e compartilhar a consulta. */ ?><form method="get" class="barra-filtros">
+        <input type="hidden" name="estabelecimento" value="<?= e(Contexto::slug()) ?>">
         <div class="campo campo-busca">
             <label for="busca">Buscar servico</label>
             <input type="search" id="busca" name="busca" value="<?= e($busca) ?>" placeholder="Nome ou descricao">
@@ -192,7 +202,7 @@ require_once RAIZ . '/includes/painel_header.php';
         </div>
     <?php else: ?>
         <div class="tabela-area">
-            <table class="tabela">
+            <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela">
                 <thead>
                     <tr>
                         <th>#</th>
@@ -225,7 +235,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                 <a href="<?= url('admin/servicos.php?acao=editar&id=' . (int) $servico['id_servico']) ?>"
                                    class="btn btn-contorno btn-pequeno">Editar</a>
 
-                                <form method="post" style="display:inline">
+                                <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
                                     <?= campoCsrf() ?>
                                     <input type="hidden" name="acao" value="status">
                                     <input type="hidden" name="id_servico" value="<?= (int) $servico['id_servico'] ?>">
@@ -236,7 +246,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                 </form>
 
                                 <?php if (Servico::podeExcluir((int) $servico['id_servico'])): ?>
-                                    <form method="post" style="display:inline">
+                                    <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
                                         <?= campoCsrf() ?>
                                         <input type="hidden" name="acao" value="excluir">
                                         <input type="hidden" name="id_servico" value="<?= (int) $servico['id_servico'] ?>">

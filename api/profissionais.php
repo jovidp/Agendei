@@ -3,8 +3,10 @@
  * API: profissionais ativos que executam um servico.
  * GET /api/profissionais.php?id_servico=1
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/../config/config.php';
 
+// Exige uma sessão autenticada para consultar os dados desta API.
 exigirLogin();
 
 $idServico = (int) get('id_servico');
@@ -15,6 +17,7 @@ if ($idServico <= 0 || !Servico::estaAtivo($idServico)) {
 
 $lista = [];
 
+// Devolve somente os campos necessários à escolha do profissional na interface.
 foreach (Profissional::porServico($idServico) as $profissional) {
     $lista[] = [
         'id_profissional' => (int) $profissional['id_profissional'],

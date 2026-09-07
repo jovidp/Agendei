@@ -3,7 +3,9 @@
  * Rodape das paginas publicas.
  * Variavel opcional: $jsExtra (array).
  */
+// Reutiliza os dados já consultados, buscando-os apenas quando o rodapé é incluído isoladamente.
 $estabelecimento = $estabelecimento ?? Estabelecimento::dados();
+// Recebe a lista de scripts específicos que serão carregados depois do JavaScript compartilhado.
 $jsExtra = $jsExtra ?? [];
 ?>
 </main>
@@ -13,7 +15,7 @@ $jsExtra = $jsExtra ?? [];
         <div class="rodape-colunas">
             <div>
                 <span class="marca">
-                    <span class="marca-simbolo"><?= e(mb_substr($estabelecimento['nome'], 0, 1)) ?></span>
+                    <?= Tema::marca($estabelecimento) ?>
                     <?= e($estabelecimento['nome']) ?>
                 </span>
                 <p><?= e(limitarTexto($estabelecimento['descricao'] ?? '', 180)) ?></p>
@@ -39,6 +41,7 @@ $jsExtra = $jsExtra ?? [];
                     <li><a href="<?= url('index.php#como-funciona') ?>">Como funciona</a></li>
                     <li><a href="<?= url('login.php') ?>">Entrar</a></li>
                     <li><a href="<?= url('cadastro.php') ?>">Criar conta</a></li>
+                    <?php if (!estaLogado()): ?><li><a href="<?= url('master/login.php') ?>">Área master</a></li><?php endif; ?>
                 </ul>
             </div>
         </div>

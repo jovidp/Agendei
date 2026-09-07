@@ -9,6 +9,7 @@ function iniciarSessao(): void
         return;
     }
 
+    // Restringe o cookie à aplicação, impede leitura por JavaScript e habilita secure sob HTTPS.
     session_set_cookie_params([
         'lifetime' => 0,
         'path'     => BASE_URL === '' ? '/' : BASE_URL,
@@ -25,16 +26,19 @@ function iniciarSessao(): void
 // Estado da sessao
 // ---------------------------------------------------------------------
 
+/** Indica se a sessão atual possui um identificador de usuário autenticado. */
 function estaLogado(): bool
 {
-    return !empty($_SESSION['usuario_id']);
+    return !empty($_SESSION['usuario_id']) || !empty($_SESSION['master_id']);
 }
 
+/** Retorna o ID da conta autenticada ou null quando não há login. */
 function usuarioId(): ?int
 {
     return isset($_SESSION['usuario_id']) ? (int) $_SESSION['usuario_id'] : null;
 }
 
+/** Recupera o nome salvo na sessão para exibição no painel. */
 function usuarioNome(): string
 {
     return $_SESSION['usuario_nome'] ?? '';
@@ -53,19 +57,28 @@ function perfilId(): ?int
     return isset($_SESSION['perfil_id']) ? (int) $_SESSION['perfil_id'] : null;
 }
 
+/** Verifica se o perfil da sessão é administrador. */
 function ehAdmin(): bool
 {
     return perfil() === 'admin';
 }
 
+/** Verifica se o perfil da sessão é profissional. */
 function ehProfissional(): bool
 {
     return perfil() === 'profissional';
 }
 
+/** Verifica se o perfil da sessão é cliente. */
 function ehCliente(): bool
 {
     return perfil() === 'cliente';
+}
+
+/** Verifica se a sessão pertence ao administrador global da plataforma. */
+function ehMaster(): bool
+{
+    return perfil() === 'master';
 }
 
 // ---------------------------------------------------------------------
@@ -98,8 +111,10 @@ function autenticar(string $email, string $senha): ?array
 /** Grava os dados do usuario na sessao. */
 function registrarSessao(array $usuario): void
 {
+    // Renova o identificador no login para não reutilizar a sessão anterior à autenticação.
     session_regenerate_id(true);
 
+    $_SESSION['estabelecimento_id'] = (int) $usuario['id_estabelecimento'];
     $_SESSION['usuario_id']    = (int) $usuario['id_usuario'];
     $_SESSION['usuario_nome']  = $usuario['nome'];
     $_SESSION['usuario_email'] = $usuario['email'];
@@ -109,6 +124,18 @@ function registrarSessao(array $usuario): void
     Usuario::registrarAcesso((int) $usuario['id_usuario']);
 }
 
+/** Registra uma sessão global sem associá-la a um estabelecimento. */
+function registrarSessaoMaster(array $master): void
+{
+    session_regenerate_id(true);
+    unset($_SESSION['usuario_id'], $_SESSION['estabelecimento_id'], $_SESSION['perfil_id']);
+    $_SESSION['master_id'] = (int) $master['id_master'];
+    $_SESSION['usuario_nome'] = $master['nome'];
+    $_SESSION['usuario_email'] = $master['email'];
+    $_SESSION['usuario_tipo'] = 'master';
+}
+
+/** Limpa os dados, expira o cookie e encerra a sessão no servidor. */
 function encerrarSessao(): void
 {
     $_SESSION = [];
@@ -132,6 +159,7 @@ function painelDe(?string $tipo): string
         'admin'        => 'admin/dashboard.php',
         'profissional' => 'profissional/dashboard.php',
         'cliente'      => 'cliente/dashboard.php',
+        'master'       => 'master/dashboard.php',
         default        => 'index.php',
     };
 }
@@ -150,7 +178,8 @@ function exigirLogin(array|string $tiposPermitidos = []): void
         }
         $_SESSION['redirecionar_apos_login'] = $_SERVER['REQUEST_URI'] ?? null;
         definirFlash('aviso', 'Faca login para continuar.');
-        redirecionar('login.php');
+        $permitidos = is_string($tiposPermitidos) ? [$tiposPermitidos] : $tiposPermitidos;
+        redirecionar(in_array('master', $permitidos, true) ? 'master/login.php' : 'login.php');
     }
 
     $tipos = is_string($tiposPermitidos) ? [$tiposPermitidos] : $tiposPermitidos;
@@ -220,6 +249,7 @@ function alterarSenhaUsuario(int $idUsuario, string $senhaAtual, string $novaSen
 // CSRF
 // ---------------------------------------------------------------------
 
+/** Gera e mantém um token aleatório na sessão para validar os formulários. */
 function tokenCsrf(): string
 {
     if (empty($_SESSION['csrf_token'])) {
@@ -234,6 +264,7 @@ function campoCsrf(): string
     return '<input type="hidden" name="csrf_token" value="' . e(tokenCsrf()) . '">';
 }
 
+/** Compara o token recebido com o da sessão usando hash_equals. */
 function csrfValido(?string $token): bool
 {
     return !empty($_SESSION['csrf_token'])

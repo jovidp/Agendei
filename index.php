@@ -2,24 +2,29 @@
 /**
  * Pagina inicial publica do estabelecimento.
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/config/config.php';
 
+// Consulta os dados institucionais e os cadastros que alimentam os cartões públicos.
 $estabelecimento = Estabelecimento::dados();
 $servicos        = Servico::destaques(6);
 $profissionais   = Profissional::ativos();
 $totalServicos   = Servico::total('ativo');
 
+// Clientes autenticados seguem para o agendamento; os demais passam pelo login.
 $linkAgendar = estaLogado() && ehCliente()
     ? url('cliente/agendar.php')
     : url('login.php?destino=agendar');
 
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina = $estabelecimento['nome'] . ' | Agendamento online';
 $paginaAtiva  = 'inicio';
 
+// Monta o cabeçalho público com os dados preparados nesta página.
 require_once RAIZ . '/includes/header.php';
 ?>
 
-<section class="destaque-principal">
+<?php /* Apresentação do estabelecimento e acesso principal ao agendamento. */ ?><section class="destaque-principal">
     <div class="container destaque-grade">
         <div class="destaque-texto">
             <span class="etiqueta">Agendamento online</span>
@@ -71,7 +76,7 @@ require_once RAIZ . '/includes/header.php';
     </div>
 </section>
 
-<section class="secao secao-clara" id="servicos">
+<?php /* Catálogo de serviços em destaque com preço e duração. */ ?><section class="secao secao-clara" id="servicos">
     <div class="container">
         <div class="secao-titulo">
             <h2>Servicos</h2>
@@ -103,7 +108,7 @@ require_once RAIZ . '/includes/header.php';
     </div>
 </section>
 
-<section class="secao" id="como-funciona">
+<?php /* Orientações sobre as etapas que o cliente percorre para reservar um horário. */ ?><section class="secao" id="como-funciona">
     <div class="container">
         <div class="secao-titulo">
             <h2>Como funciona</h2>
@@ -135,7 +140,7 @@ require_once RAIZ . '/includes/header.php';
     </div>
 </section>
 
-<section class="secao secao-clara" id="profissionais">
+<?php /* Apresentação dos profissionais ativos e de seus serviços. */ ?><section class="secao secao-clara" id="profissionais">
     <div class="container">
         <div class="secao-titulo">
             <h2>Profissionais</h2>
@@ -169,7 +174,7 @@ require_once RAIZ . '/includes/header.php';
     </div>
 </section>
 
-<section class="secao" id="contato">
+<?php /* Informações públicas de contato, endereço e funcionamento. */ ?><section class="secao" id="contato">
     <div class="container">
         <div class="secao-titulo">
             <h2>Contato e horarios</h2>

@@ -2,10 +2,13 @@
 /**
  * Dashboard administrativo com indicadores e listas de acompanhamento.
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/../config/config.php';
 
+// Restringe esta página a administradores autenticados.
 exigirLogin('admin');
 
+// Consulta os totais consolidados usados nos cartões do painel administrativo.
 $indicadores = Relatorio::indicadores();
 
 $proximos = Agendamento::listar([
@@ -20,12 +23,15 @@ $fimMes    = date('Y-m-t');
 
 $ranking   = Relatorio::servicosMaisAgendados($inicioMes, $fimMes, 5);
 $recentes  = Relatorio::agendamentosRecentes(5);
+// Usa o maior resultado do ranking como referência proporcional para as barras.
 $maiorTotal = $ranking !== [] ? (int) $ranking[0]['total'] : 0;
 
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Dashboard';
 $subtituloTopo = dataExtenso(date('Y-m-d'));
 $acoesTopo     = '<a href="' . url('admin/agendamentos.php?acao=novo') . '" class="btn btn-pequeno">Novo agendamento</a>';
 
+// Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
 ?>
 
@@ -76,7 +82,7 @@ require_once RAIZ . '/includes/painel_header.php';
             </div>
         <?php else: ?>
             <div class="tabela-area">
-                <table class="tabela">
+                <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela">
                     <thead>
                         <tr>
                             <th>Horario</th>

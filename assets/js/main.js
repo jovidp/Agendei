@@ -3,6 +3,7 @@
    Namespace global: window.Agendei
    ===================================================================== */
 
+// Isola as variáveis deste arquivo para evitar conflitos com os outros scripts.
 (function () {
     'use strict';
 
@@ -12,6 +13,7 @@
     // Notificacoes
     // -----------------------------------------------------------------
 
+    /** Reutiliza ou cria o recipiente das mensagens temporárias na página. */
     function areaNotificacoes() {
         var area = document.getElementById('notificacoes');
         if (!area) {
@@ -42,6 +44,7 @@
     // Modais
     // -----------------------------------------------------------------
 
+    /** Exibe a janela, bloqueia a rolagem de fundo e posiciona o foco no primeiro controle. */
     Agendei.abrirModal = function (id) {
         var modal = document.getElementById(id);
         if (!modal) {
@@ -56,6 +59,7 @@
         }
     };
 
+    /** Oculta a janela e libera a rolagem quando não há outro modal aberto. */
     Agendei.fecharModal = function (modal) {
         if (typeof modal === 'string') {
             modal = document.getElementById(modal);
@@ -69,6 +73,7 @@
         }
     };
 
+    /** Liga os controles de abertura e fechamento, incluindo clique no fundo e tecla Escape. */
     function iniciarModais() {
         document.addEventListener('click', function (evento) {
             var abrir = evento.target.closest('[data-modal]');
@@ -130,6 +135,7 @@
     // Confirmacao (substitui o confirm nativo)
     // -----------------------------------------------------------------
 
+    /** Cria uma única janela reutilizável para confirmar ações da interface. */
     function criarModalConfirmacao() {
         var modal = document.getElementById('modalConfirmacao');
         if (modal) {
@@ -168,6 +174,7 @@
         botao.textContent = opcoes.rotulo || 'Confirmar';
         botao.className = 'btn ' + (opcoes.classe || 'btn-perigo');
 
+        // Substitui o botão para descartar o evento da confirmação anterior e não repetir ações antigas.
         var novoBotao = botao.cloneNode(true);
         botao.parentNode.replaceChild(novoBotao, botao);
 
@@ -179,6 +186,7 @@
         Agendei.abrirModal('modalConfirmacao');
     };
 
+    /** Intercepta elementos com data-confirmar e executa a ação após a confirmação. */
     function iniciarConfirmacoes() {
         document.addEventListener('click', function (evento) {
             var elemento = evento.target.closest('[data-confirmar]');
@@ -216,6 +224,7 @@
     // Menus
     // -----------------------------------------------------------------
 
+    /** Controla a abertura dos menus e o fundo do menu lateral em telas pequenas. */
     function iniciarMenus() {
         var botaoMenu = document.querySelector('.botao-menu');
         var menuSite = document.querySelector('.menu-site');
@@ -251,6 +260,7 @@
     // Alertas
     // -----------------------------------------------------------------
 
+    /** Permite dispensar mensagens pelo botão de fechamento. */
     function iniciarAlertas() {
         document.addEventListener('click', function (evento) {
             if (evento.target.classList.contains('alerta-fechar')) {
@@ -263,6 +273,7 @@
     // Mascaras
     // -----------------------------------------------------------------
 
+    /** Formata até 11 dígitos com a pontuação de CPF durante a digitação. */
     Agendei.mascaraCpf = function (valor) {
         valor = valor.replace(/\D/g, '').slice(0, 11);
         return valor
@@ -271,6 +282,7 @@
             .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
     };
 
+    /** Formata o DDD e ajusta a separação para telefone fixo ou celular. */
     Agendei.mascaraTelefone = function (valor) {
         valor = valor.replace(/\D/g, '').slice(0, 11);
 
@@ -285,10 +297,12 @@
             .replace(/(\d{5})(\d{1,4})$/, '$1-$2');
     };
 
+    /** Limita o CEP a oito dígitos e insere o hífen de apresentação. */
     Agendei.mascaraCep = function (valor) {
         return valor.replace(/\D/g, '').slice(0, 8).replace(/(\d{5})(\d{1,3})$/, '$1-$2');
     };
 
+    /** Interpreta os dígitos como centavos e monta o valor com vírgula decimal. */
     Agendei.mascaraMoeda = function (valor) {
         var numeros = valor.replace(/\D/g, '');
         if (numeros === '') {
@@ -297,6 +311,7 @@
         return (parseInt(numeros, 10) / 100).toFixed(2).replace('.', ',');
     };
 
+    /** Aplica a máscara indicada em data-mascara ao valor inicial e durante a digitação. */
     function iniciarMascaras() {
         var mascaras = {
             cpf: Agendei.mascaraCpf,
@@ -323,6 +338,7 @@
     // Validacao de formularios
     // -----------------------------------------------------------------
 
+    /** Destaca o campo inválido e preenche sua mensagem de validação. */
     Agendei.marcarErro = function (campo, mensagem) {
         campo.classList.add('invalido');
 
@@ -333,6 +349,7 @@
         }
     };
 
+    /** Remove o destaque e a mensagem de erro associados ao campo. */
     Agendei.limparErro = function (campo) {
         campo.classList.remove('invalido');
 
@@ -343,6 +360,7 @@
         }
     };
 
+    /** Rejeita sequências repetidas e confere os dois dígitos verificadores do CPF. */
     Agendei.validarCpf = function (cpf) {
         cpf = String(cpf).replace(/\D/g, '');
 
@@ -364,6 +382,7 @@
         return true;
     };
 
+    /** Verifica se o texto tem um formato de e-mail aceito pela validação. */
     Agendei.validarEmail = function (email) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(email).trim());
     };
@@ -395,6 +414,7 @@
     // Busca em tabelas
     // -----------------------------------------------------------------
 
+    /** Filtra as linhas já carregadas na tabela conforme o texto digitado. */
     function iniciarBuscaTabela() {
         document.querySelectorAll('[data-busca-tabela]').forEach(function (campo) {
             var tabela = document.querySelector(campo.getAttribute('data-busca-tabela'));
@@ -435,6 +455,7 @@
 
     // -----------------------------------------------------------------
 
+    // Inicializa os comportamentos somente depois que os elementos da página estão disponíveis.
     document.addEventListener('DOMContentLoaded', function () {
         iniciarMenus();
         iniciarAlertas();

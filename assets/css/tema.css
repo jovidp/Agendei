@@ -1,0 +1,33 @@
+/* Complementa o layout padrão com as variáveis da identidade de cada empresa. */
+body { font-family: var(--fonte-interface); }
+.marca-logo { width: auto; max-width: 96px; height: 42px; object-fit: contain; flex-shrink: 0; }
+#previaLogo[hidden], #previaInicial[hidden] { display: none !important; }
+.sidebar-marca { height: auto; min-height: 60px; padding-top: 10px; padding-bottom: 10px; flex-wrap: wrap; overflow-wrap: anywhere; }
+.sidebar-marca .marca-logo { max-width: 72px; height: 36px; }
+.marca { overflow-wrap: anywhere; }
+.btn { color: var(--sobre-primaria); }
+.btn:hover { color: var(--sobre-primaria); }
+.btn-secundario, .btn-secundario:hover { color: var(--sobre-secundaria); }
+.btn-contorno, .btn-texto { color: var(--cor-primaria); }
+.btn-contorno:hover, .btn-texto:hover { color: var(--cor-primaria-escura); }
+.btn-perigo, .btn-perigo:hover { color: #fff; }
+.sidebar-marca, .sidebar-perfil strong, .sidebar-perfil span, .sidebar-menu a,
+.sidebar-menu a:hover, .sidebar-menu a.ativo, .sidebar-menu .separador,
+.autenticacao-apresentacao, .autenticacao-apresentacao h2, .autenticacao-apresentacao .marca {
+    color: var(--sobre-primaria);
+}
+.sidebar-perfil .avatar { color: var(--sobre-primaria); }
+.etapa.ativa .etapa-numero, .horario.selecionado, .calendario-dia.selecionado,
+.agenda-visoes a.ativo, .paginacao-links .atual, .passo-numero { color: var(--sobre-primaria); }
+.etapa.concluida .etapa-numero { color: var(--sobre-secundaria); }
+.personalizacao-grade { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 1fr); gap: 24px; align-items: start; }
+.tema-previa { border: 1px solid var(--borda); border-radius: var(--raio); overflow: hidden; background: var(--fundo); font-family: var(--fonte-interface); }
+.tema-previa-topo { padding: 20px; background: var(--cor-primaria); color: var(--sobre-primaria); display: flex; align-items: center; gap: 12px; }
+.tema-previa-corpo { padding: 24px; }
+.tema-previa-corpo .cartao { padding: 20px; margin: 0; }
+.tema-previa small { display: block; margin-bottom: 10px; color: var(--texto-secundario); }
+.tema-previa .etiqueta { background: var(--cor-secundaria-clara); color: var(--cor-secundaria-escura); margin-bottom: 16px; }
+.campo input[type="color"] { padding: 4px; width: 100%; height: 44px; cursor: pointer; border: 1px solid var(--borda); border-radius: var(--raio); background: var(--branco); }
+.campo input[type="file"] { display: block; width: 100%; padding: 10px; border: 1px solid var(--borda); border-radius: var(--raio); font: inherit; margin-bottom: 6px; }
+.link-estabelecimento { overflow-wrap: anywhere; }
+@media (max-width: 900px) { .personalizacao-grade { grid-template-columns: 1fr; } }

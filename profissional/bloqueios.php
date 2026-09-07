@@ -2,16 +2,22 @@
 /**
  * Bloqueios da propria agenda, quando o administrador permite.
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/../config/config.php';
 
+// Restringe esta página a profissionais autenticados.
 exigirLogin('profissional');
 
+// Obtém o profissional da sessão para restringir os dados à sua própria agenda.
 $idProfissional = perfilId();
 
+// Combina a configuração geral com a permissão individual para liberar bloqueios da própria agenda.
 $permitido = Configuracao::ativa('permitir_bloqueio_profissional', true)
     && Profissional::podeBloquearAgenda($idProfissional);
 
+// Processa o formulário enviado antes de montar o HTML da página.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Confere o token da sessão antes de aceitar alterações enviadas pelo formulário.
     exigirCsrf();
 
     if (!$permitido) {
@@ -21,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $acao = post('acao');
 
+    // Valida os dados recebidos e solicita a criação do registro.
     if ($acao === 'criar') {
         $data       = post('data_bloqueio');
         $horaInicio = post('hora_inicio') ?: '00:00';
@@ -54,6 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Confere o registro e as regras aplicáveis antes da exclusão.
     if ($acao === 'excluir') {
         $bloqueio = Bloqueio::porId((int) post('id_bloqueio'));
 
@@ -70,12 +78,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $bloqueios = Bloqueio::listar(['id_profissional' => $idProfissional]);
 
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Bloqueios';
 $subtituloTopo = 'Folgas e indisponibilidades da sua agenda';
 $acoesTopo     = $permitido
     ? '<button type="button" class="btn btn-pequeno" data-modal="modalBloqueio">Novo bloqueio</button>'
     : '';
 
+// Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
 ?>
 
@@ -98,7 +108,7 @@ require_once RAIZ . '/includes/painel_header.php';
         </div>
     <?php else: ?>
         <div class="tabela-area">
-            <table class="tabela">
+            <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela">
                 <thead>
                     <tr>
                         <th>Data</th>
@@ -118,7 +128,7 @@ require_once RAIZ . '/includes/painel_header.php';
                             <td><?= $futuro ? '<span class="badge badge-agendado">Ativo</span>' : '<span class="badge badge-concluido">Encerrado</span>' ?></td>
                             <td class="coluna-acoes">
                                 <?php if ($permitido && $futuro): ?>
-                                    <form method="post" style="display:inline">
+                                    <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
                                         <?= campoCsrf() ?>
                                         <input type="hidden" name="acao" value="excluir">
                                         <input type="hidden" name="id_bloqueio" value="<?= (int) $bloqueio['id_bloqueio'] ?>">
@@ -140,8 +150,8 @@ require_once RAIZ . '/includes/painel_header.php';
 </div>
 
 <?php if ($permitido): ?>
-    <div class="modal" id="modalBloqueio">
-        <form method="post" class="modal-caixa">
+    <?php /* Janela controlada pelo JavaScript para detalhes ou ações da página. */ ?><div class="modal" id="modalBloqueio">
+        <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" class="modal-caixa">
             <?= campoCsrf() ?>
             <input type="hidden" name="acao" value="criar">
 

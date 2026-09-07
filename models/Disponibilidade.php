@@ -31,6 +31,7 @@ class Disponibilidade
 
         $duracao   = (int) $servico['duracao_minutos'];
         $diaSemana = (int) date('w', strtotime($data));
+        // Combina o expediente do dia com os agendamentos ocupados e os bloqueios existentes.
         $faixas    = Horario::faixasAtivas($idProfissional, $diaSemana);
 
         if ($faixas === []) {
@@ -51,6 +52,7 @@ class Disponibilidade
             $inicioFaixa = horaParaMinutos($faixa['hora_inicio']);
             $fimFaixa    = horaParaMinutos($faixa['hora_fim']);
 
+            // Avança pelo intervalo da faixa e só oferece inícios cuja duração inteira cabe no expediente.
             for ($minuto = $inicioFaixa; $minuto + $duracao <= $fimFaixa; $minuto += $intervalo) {
                 $inicio = minutosParaHora($minuto);
                 $fim    = minutosParaHora($minuto + $duracao);
@@ -65,6 +67,7 @@ class Disponibilidade
                     continue;
                 }
 
+                // Usa o horário inicial como chave para não repetir opções vindas de faixas sobrepostas.
                 $slots[substr($inicio, 0, 5)] = [
                     'inicio' => substr($inicio, 0, 5),
                     'fim'    => substr($fim, 0, 5),
@@ -72,6 +75,7 @@ class Disponibilidade
             }
         }
 
+        // Ordena os horários antes de retornar uma lista sequencial para a API.
         ksort($slots);
         return array_values($slots);
     }
@@ -226,6 +230,7 @@ class Disponibilidade
             $outroInicio = horaParaMinutos($intervalo['hora_inicio']);
             $outroFim    = horaParaMinutos($intervalo['hora_fim']);
 
+            // Há conflito somente com sobreposição; terminar exatamente quando outro começa é permitido.
             if ($inicioMinutos < $outroFim && $fimMinutos > $outroInicio) {
                 return true;
             }

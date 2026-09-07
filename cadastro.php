@@ -2,10 +2,13 @@
 /**
  * Cadastro de novos clientes.
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/config/config.php';
 
+// Encaminha quem já está autenticado ao painel, evitando repetir o fluxo de acesso.
 bloquearSeLogado();
 
+// Acumula falhas de validação para reapresentar o formulário sem criar um cadastro incompleto.
 $erros = [];
 $dados = [
     'nome'            => '',
@@ -15,7 +18,9 @@ $dados = [
     'email'           => '',
 ];
 
+// Processa o formulário enviado antes de montar o HTML da página.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Confere o token da sessão antes de aceitar alterações enviadas pelo formulário.
     exigirCsrf();
 
     $dados['nome']            = post('nome');
@@ -60,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $erros[] = 'Ja existe uma conta cadastrada com este CPF.';
     }
 
+    // Só cria a conta quando todos os dados obrigatórios passam pela validação do servidor.
     if ($erros === []) {
         try {
             Cliente::criar([
@@ -88,6 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $estabelecimento = Estabelecimento::dados();
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
 ?>
 <!DOCTYPE html>
@@ -98,6 +105,7 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
     <title><?= e($tituloPagina) ?></title>
     <link rel="stylesheet" href="<?= url('assets/css/style.css') ?>">
     <link rel="stylesheet" href="<?= url('assets/css/login.css') ?>">
+    <?php require RAIZ . '/includes/tema.php'; ?>
 </head>
 <body class="pagina-autenticacao">
 
@@ -105,7 +113,7 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
     <div class="autenticacao-caixa">
         <div class="autenticacao-apresentacao">
             <span class="marca">
-                <span class="marca-simbolo"><?= e(mb_substr($estabelecimento['nome'], 0, 1)) ?></span>
+                <?= Tema::marca($estabelecimento) ?>
                 <?= e($estabelecimento['nome']) ?>
             </span>
             <h2>Crie sua conta</h2>
@@ -137,7 +145,7 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
                 </div>
             <?php endif; ?>
 
-            <form method="post" id="formCadastro" novalidate>
+            <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" id="formCadastro" novalidate>
                 <?= campoCsrf() ?>
 
                 <div class="campo">

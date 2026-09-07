@@ -13,14 +13,17 @@ class Database
     private const SENHA   = '';
     private const CHARSET = 'utf8mb4';
 
+    // Mantém a conexão em memória para evitar abrir uma nova a cada consulta.
     private static ?PDO $conexao = null;
 
+    /** Abre a conexão PDO no primeiro uso e reutiliza a mesma instância na requisição. */
     public static function conexao(): PDO
     {
         if (self::$conexao === null) {
             $dsn = 'mysql:host=' . self::HOST . ';port=' . self::PORTA
-                . ';dbname=' . self::BANCO . ';charset=' . self::CHARSET;
+                . ';dbname=' . (getenv('AGENDEI_DB_NAME') ?: self::BANCO) . ';charset=' . self::CHARSET;
 
+            // Usa exceções, resultados associativos e consultas preparadas nativas do PDO.
             $opcoes = [
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

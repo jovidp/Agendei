@@ -7,6 +7,7 @@ class Relatorio
     /** Indicadores do dashboard administrativo. */
     public static function indicadores(): array
     {
+        // Define os períodos usados pelos indicadores diários, semanais e mensais.
         $hoje         = date('Y-m-d');
         $inicioSemana = date('Y-m-d', strtotime('monday this week'));
         $fimSemana    = date('Y-m-d', strtotime('sunday this week'));
@@ -45,6 +46,7 @@ class Relatorio
     /** Soma dos valores dos agendamentos que nao foram cancelados. */
     public static function faturamento(string $dataInicial, string $dataFinal, ?array $status = null): float
     {
+        // Por padrão, o total inclui reservas agendadas e confirmadas; apenas concluídas representa o realizado.
         $status = $status ?? ['agendado', 'confirmado', 'concluido'];
         $marcadores = [];
         $parametros = [':inicio' => $dataInicial, ':fim' => $dataFinal];
@@ -57,7 +59,7 @@ class Relatorio
 
         $sql = 'SELECT COALESCE(SUM(valor), 0) AS total
                 FROM agendamentos
-                WHERE data_agendamento BETWEEN :inicio AND :fim
+                WHERE id_estabelecimento = ' . Contexto::id() . ' AND data_agendamento BETWEEN :inicio AND :fim
                   AND status IN (' . implode(', ', $marcadores) . ')';
 
         $consulta = bd()->prepare($sql);
@@ -72,7 +74,7 @@ class Relatorio
                        COALESCE(SUM(CASE WHEN a.status <> "cancelado" THEN a.valor ELSE 0 END), 0) AS valor_total
                 FROM agendamentos a
                 INNER JOIN servicos s ON s.id_servico = a.id_servico
-                WHERE a.data_agendamento BETWEEN :inicio AND :fim
+                WHERE a.id_estabelecimento = ' . Contexto::id() . ' AND a.data_agendamento BETWEEN :inicio AND :fim
                   AND a.status <> "cancelado"
                 GROUP BY s.id_servico, s.nome
                 ORDER BY total DESC, s.nome ASC
@@ -94,7 +96,7 @@ class Relatorio
                 FROM agendamentos a
                 INNER JOIN profissionais p ON p.id_profissional = a.id_profissional
                 INNER JOIN usuarios u ON u.id_usuario = p.id_usuario
-                WHERE a.data_agendamento BETWEEN :inicio AND :fim
+                WHERE a.id_estabelecimento = ' . Contexto::id() . ' AND a.data_agendamento BETWEEN :inicio AND :fim
                 GROUP BY p.id_profissional, u.nome
                 ORDER BY total DESC, u.nome ASC
                 LIMIT ' . (int) $limite;
@@ -114,7 +116,7 @@ class Relatorio
                 FROM agendamentos a
                 INNER JOIN clientes c ON c.id_cliente = a.id_cliente
                 INNER JOIN usuarios u ON u.id_usuario = c.id_usuario
-                WHERE a.data_agendamento BETWEEN :inicio AND :fim
+                WHERE a.id_estabelecimento = ' . Contexto::id() . ' AND a.data_agendamento BETWEEN :inicio AND :fim
                   AND a.status <> "cancelado"
                 GROUP BY c.id_cliente, u.nome, u.telefone
                 ORDER BY total DESC, u.nome ASC
@@ -130,12 +132,13 @@ class Relatorio
     {
         $sql = 'SELECT status, COUNT(*) AS total, COALESCE(SUM(valor), 0) AS valor_total
                 FROM agendamentos
-                WHERE data_agendamento BETWEEN :inicio AND :fim
+                WHERE id_estabelecimento = ' . Contexto::id() . ' AND data_agendamento BETWEEN :inicio AND :fim
                 GROUP BY status';
 
         $consulta = bd()->prepare($sql);
         $consulta->execute([':inicio' => $dataInicial, ':fim' => $dataFinal]);
 
+        // Inicializa todas as situações com zero para manter os cartões mesmo sem resultados no período.
         $resumo = [];
         foreach (Agendamento::STATUS as $status) {
             $resumo[$status] = ['total' => 0, 'valor_total' => 0.0];
@@ -158,7 +161,7 @@ class Relatorio
                        SUM(CASE WHEN status = "cancelado" THEN 1 ELSE 0 END) AS cancelados,
                        COALESCE(SUM(CASE WHEN status <> "cancelado" THEN valor ELSE 0 END), 0) AS valor_total
                 FROM agendamentos
-                WHERE data_agendamento BETWEEN :inicio AND :fim
+                WHERE id_estabelecimento = ' . Contexto::id() . ' AND data_agendamento BETWEEN :inicio AND :fim
                 GROUP BY data_agendamento
                 ORDER BY data_agendamento ASC';
 
@@ -178,7 +181,7 @@ class Relatorio
                 INNER JOIN profissionais p ON p.id_profissional = a.id_profissional
                 INNER JOIN usuarios up ON up.id_usuario = p.id_usuario
                 INNER JOIN servicos s ON s.id_servico = a.id_servico
-                ORDER BY a.data_criacao DESC
+                WHERE a.id_estabelecimento = ' . Contexto::id() . ' ORDER BY a.data_criacao DESC
                 LIMIT ' . (int) $limite;
 
         return bd()->query($sql)->fetchAll();
@@ -188,6 +191,7 @@ class Relatorio
     public static function ocupacaoDoDia(int $idProfissional, string $data): array
     {
         $diaSemana = (int) date('w', strtotime($data));
+        // Compara minutos de atendimentos com minutos de expediente para calcular a ocupação do dia.
         $minutosExpediente = 0;
 
         foreach (Horario::faixasAtivas($idProfissional, $diaSemana) as $faixa) {
@@ -197,7 +201,7 @@ class Relatorio
         $consulta = bd()->prepare(
             'SELECT COALESCE(SUM(TIMESTAMPDIFF(MINUTE, hora_inicio, hora_fim)), 0) AS minutos
              FROM agendamentos
-             WHERE id_profissional = :profissional
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :profissional
                AND data_agendamento = :data
                AND status IN ("agendado","confirmado","concluido")'
         );

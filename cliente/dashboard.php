@@ -2,12 +2,16 @@
 /**
  * Painel inicial do cliente.
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/../config/config.php';
 
+// Restringe esta página a clientes autenticados.
 exigirLogin('cliente');
 
+// Usa o perfil da sessão para consultar e alterar os dados do próprio cliente.
 $idCliente = perfilId();
 
+// Prepara as próximas reservas e destaca a primeira no resumo da conta.
 $proximos = Agendamento::proximosDoCliente($idCliente, 5);
 $proximo  = $proximos[0] ?? null;
 
@@ -29,10 +33,12 @@ $totais = [
     'cancelados' => Agendamento::totalPorCliente($idCliente, 'cancelado'),
 ];
 
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Dashboard';
 $subtituloTopo = 'Resumo da sua conta';
 $acoesTopo     = '<a href="' . url('cliente/agendar.php') . '" class="btn btn-pequeno">Novo agendamento</a>';
 
+// Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
 ?>
 
@@ -111,7 +117,7 @@ require_once RAIZ . '/includes/painel_header.php';
             </div>
         <?php else: ?>
             <div class="tabela-area">
-                <table class="tabela">
+                <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela">
                     <thead>
                         <tr>
                             <th>Data</th>

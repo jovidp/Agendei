@@ -11,6 +11,7 @@ class Cliente
     public static function criar(array $dados): int
     {
         $conexao = bd();
+        // Agrupa as gravações para confirmar o conjunto ou desfazê-lo em caso de falha.
         $conexao->beginTransaction();
 
         try {
@@ -24,8 +25,8 @@ class Cliente
             ]);
 
             $consulta = $conexao->prepare(
-                'INSERT INTO clientes (id_usuario, cpf, data_nascimento)
-                 VALUES (:id_usuario, :cpf, :data_nascimento)'
+                'INSERT INTO clientes (id_estabelecimento, id_usuario, cpf, data_nascimento)
+                 VALUES (' . Contexto::id() . ', :id_usuario, :cpf, :data_nascimento)'
             );
             $consulta->execute([
                 ':id_usuario'      => $idUsuario,
@@ -34,39 +35,44 @@ class Cliente
             ]);
 
             $idCliente = (int) $conexao->lastInsertId();
+            // Confirma as alterações depois que todas as operações da transação terminam.
             $conexao->commit();
 
             return $idCliente;
         } catch (Throwable $erro) {
+            // Desfaz as operações pendentes para não deixar dados parcialmente gravados.
             $conexao->rollBack();
             throw $erro;
         }
     }
 
+    /** Busca o registro pelo identificador; retorna null quando ele não existe. */
     public static function porId(int $idCliente): ?array
     {
         $sql = 'SELECT ' . self::CAMPOS . '
                 FROM clientes c
-                INNER JOIN usuarios u ON u.id_usuario = c.id_usuario
-                WHERE c.id_cliente = :id LIMIT 1';
+                INNER JOIN usuarios u ON u.id_usuario = c.id_usuario AND u.id_estabelecimento = ' . Contexto::id() . '
+                WHERE c.id_estabelecimento = ' . Contexto::id() . ' AND c.id_cliente = :id LIMIT 1';
 
         $consulta = bd()->prepare($sql);
         $consulta->execute([':id' => $idCliente]);
         return $consulta->fetch() ?: null;
     }
 
+    /** Localiza os dados do perfil a partir do identificador da conta de acesso. */
     public static function porUsuario(int $idUsuario): ?array
     {
         $sql = 'SELECT ' . self::CAMPOS . '
                 FROM clientes c
-                INNER JOIN usuarios u ON u.id_usuario = c.id_usuario
-                WHERE c.id_usuario = :id LIMIT 1';
+                INNER JOIN usuarios u ON u.id_usuario = c.id_usuario AND u.id_estabelecimento = ' . Contexto::id() . '
+                WHERE c.id_estabelecimento = ' . Contexto::id() . ' AND c.id_usuario = :id LIMIT 1';
 
         $consulta = bd()->prepare($sql);
         $consulta->execute([':id' => $idUsuario]);
         return $consulta->fetch() ?: null;
     }
 
+    /** Detecta CPF duplicado, desconsiderando o próprio cliente durante a edição. */
     public static function cpfEmUso(string $cpf, ?int $ignorarIdCliente = null): bool
     {
         $cpf = apenasNumeros($cpf);
@@ -74,7 +80,7 @@ class Cliente
             return false;
         }
 
-        $sql = 'SELECT id_cliente FROM clientes WHERE cpf = :cpf';
+        $sql = 'SELECT id_cliente FROM clientes WHERE id_estabelecimento = ' . Contexto::id() . ' AND cpf = :cpf';
         $parametros = [':cpf' => $cpf];
 
         if ($ignorarIdCliente !== null) {
@@ -95,9 +101,9 @@ class Cliente
         [$where, $parametros] = self::montarFiltros($filtros);
 
         $sql = 'SELECT ' . self::CAMPOS . ',
-                       (SELECT COUNT(*) FROM agendamentos a WHERE a.id_cliente = c.id_cliente) AS total_agendamentos
+                       (SELECT COUNT(*) FROM agendamentos a WHERE a.id_estabelecimento = ' . Contexto::id() . ' AND a.id_cliente = c.id_cliente) AS total_agendamentos
                 FROM clientes c
-                INNER JOIN usuarios u ON u.id_usuario = c.id_usuario
+                INNER JOIN usuarios u ON u.id_usuario = c.id_usuario AND u.id_estabelecimento = ' . Contexto::id() . '
                 ' . $where . '
                 ORDER BY u.nome ASC';
 
@@ -110,28 +116,32 @@ class Cliente
         return $consulta->fetchAll();
     }
 
+    /** Conta os registros com os mesmos filtros da listagem, sem aplicar paginação. */
     public static function contar(array $filtros = []): int
     {
         [$where, $parametros] = self::montarFiltros($filtros);
 
         $sql = 'SELECT COUNT(*) AS total
                 FROM clientes c
-                INNER JOIN usuarios u ON u.id_usuario = c.id_usuario ' . $where;
+                INNER JOIN usuarios u ON u.id_usuario = c.id_usuario AND u.id_estabelecimento = ' . Contexto::id() . ' ' . $where;
 
         $consulta = bd()->prepare($sql);
         $consulta->execute($parametros);
         return (int) ($consulta->fetch()['total'] ?? 0);
     }
 
+    /** Separa as condições SQL dos valores enviados ao PDO para reutilizar os filtros. */
     private static function montarFiltros(array $filtros): array
     {
-        $condicoes  = [];
+        $condicoes = ['c.id_estabelecimento = ' . Contexto::id()];
         $parametros = [];
 
         if (!empty($filtros['busca'])) {
-            $condicoes[] = '(u.nome LIKE :busca OR u.email LIKE :busca OR c.cpf LIKE :buscaNumeros)';
+            $condicoes[] = '(u.nome LIKE :busca OR u.email LIKE :buscaEmail OR c.cpf LIKE :buscaNumeros)';
             $parametros[':busca']        = '%' . $filtros['busca'] . '%';
-            $parametros[':buscaNumeros'] = '%' . apenasNumeros($filtros['busca']) . '%';
+            $parametros[':buscaEmail'] = $parametros[':busca'];
+            $numerosBusca = apenasNumeros($filtros['busca']);
+            $parametros[':buscaNumeros'] = '%' . ($numerosBusca !== '' ? $numerosBusca : $filtros['busca']) . '%';
         }
 
         if (!empty($filtros['status'])) {
@@ -148,7 +158,7 @@ class Cliente
     {
         $consulta = bd()->prepare(
             'UPDATE clientes SET cpf = :cpf, data_nascimento = :data_nascimento, observacoes = :observacoes
-             WHERE id_cliente = :id'
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_cliente = :id'
         );
 
         return $consulta->execute([
@@ -159,14 +169,15 @@ class Cliente
         ]);
     }
 
+    /** Conta os registros cadastrados, restringindo pelo status quando informado. */
     public static function total(?string $status = null): int
     {
         $sql = 'SELECT COUNT(*) AS total FROM clientes c
-                INNER JOIN usuarios u ON u.id_usuario = c.id_usuario';
+                INNER JOIN usuarios u ON u.id_usuario = c.id_usuario AND u.id_estabelecimento = ' . Contexto::id() . '';
         $parametros = [];
 
         if ($status !== null) {
-            $sql .= ' WHERE u.status = :status';
+            $sql .= ' WHERE u.id_estabelecimento = ' . Contexto::id() . ' AND u.status = :status';
             $parametros[':status'] = $status;
         }
 
@@ -175,9 +186,10 @@ class Cliente
         return (int) ($consulta->fetch()['total'] ?? 0);
     }
 
+    /** Conta os clientes cadastrados a partir da data recebida. */
     public static function cadastradosDesde(string $data): int
     {
-        $consulta = bd()->prepare('SELECT COUNT(*) AS total FROM clientes WHERE data_cadastro >= :data');
+        $consulta = bd()->prepare('SELECT COUNT(*) AS total FROM clientes WHERE id_estabelecimento = ' . Contexto::id() . ' AND data_cadastro >= :data');
         $consulta->execute([':data' => $data]);
         return (int) ($consulta->fetch()['total'] ?? 0);
     }

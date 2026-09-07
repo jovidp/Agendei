@@ -2,11 +2,15 @@
 /**
  * Gestao de clientes e consulta do historico individual.
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/../config/config.php';
 
+// Restringe esta página a administradores autenticados.
 exigirLogin('admin');
 
+// Processa o formulário enviado antes de montar o HTML da página.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Confere o token da sessão antes de aceitar alterações enviadas pelo formulário.
     exigirCsrf();
 
     $idCliente = (int) post('id_cliente');
@@ -60,10 +64,12 @@ if ($acaoTela === 'ver') {
         }
     }
 
+    // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
     $tituloPagina  = 'Cliente';
     $subtituloTopo = $cliente['nome'];
     $acoesTopo     = '<a href="' . url('admin/clientes.php') . '" class="btn btn-contorno btn-pequeno">Voltar para a lista</a>';
 
+    // Renderiza a estrutura comum do painel após preparar os dados desta tela.
     require_once RAIZ . '/includes/painel_header.php';
     ?>
 
@@ -101,7 +107,7 @@ if ($acaoTela === 'ver') {
                 </div>
             <?php else: ?>
                 <div class="tabela-area">
-                    <table class="tabela">
+                    <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela">
                         <thead>
                             <tr>
                                 <th>Data</th>
@@ -148,7 +154,7 @@ if ($acaoTela === 'ver') {
             <div class="cartao">
                 <div class="cartao-cabecalho"><h3>Observacoes internas</h3></div>
                 <div class="cartao-corpo">
-                    <form method="post">
+                    <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post">
                         <?= campoCsrf() ?>
                         <input type="hidden" name="acao" value="observacoes">
                         <input type="hidden" name="id_cliente" value="<?= (int) $cliente['id_cliente'] ?>">
@@ -176,6 +182,7 @@ if ($acaoTela === 'ver') {
 $busca     = get('busca');
 $status    = get('status');
 $porPagina = 15;
+// Mantém a página como inteiro positivo para calcular a listagem e sua navegação.
 $pagina    = max(1, (int) get('pagina', '1'));
 
 $filtros = array_filter(['busca' => $busca, 'status' => $status]);
@@ -185,14 +192,17 @@ $lista   = Cliente::listar($filtros + [
     'deslocamento' => ($pagina - 1) * $porPagina,
 ]);
 
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Clientes';
 $subtituloTopo = $total . ' cliente(s) cadastrado(s)';
 
+// Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
 ?>
 
 <div class="cartao">
-    <form method="get" class="barra-filtros">
+    <?php /* Filtros enviados na URL para permitir atualizar e compartilhar a consulta. */ ?><form method="get" class="barra-filtros">
+        <input type="hidden" name="estabelecimento" value="<?= e(Contexto::slug()) ?>">
         <div class="campo campo-busca">
             <label for="busca">Buscar cliente</label>
             <input type="search" id="busca" name="busca" value="<?= e($busca) ?>" placeholder="Nome, e-mail ou CPF">
@@ -219,7 +229,7 @@ require_once RAIZ . '/includes/painel_header.php';
         </div>
     <?php else: ?>
         <div class="tabela-area">
-            <table class="tabela">
+            <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela">
                 <thead>
                     <tr>
                         <th>#</th>
@@ -249,7 +259,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                 <a href="<?= url('admin/clientes.php?acao=ver&id=' . (int) $cliente['id_cliente']) ?>"
                                    class="btn btn-contorno btn-pequeno">Historico</a>
 
-                                <form method="post" style="display:inline">
+                                <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
                                     <?= campoCsrf() ?>
                                     <input type="hidden" name="acao" value="status">
                                     <input type="hidden" name="id_cliente" value="<?= (int) $cliente['id_cliente'] ?>">

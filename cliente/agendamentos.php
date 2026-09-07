@@ -2,18 +2,24 @@
 /**
  * Lista de agendamentos do cliente, com detalhes e cancelamento.
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/../config/config.php';
 
+// Restringe esta página a clientes autenticados.
 exigirLogin('cliente');
 
+// Usa o perfil da sessão para consultar e alterar os dados do próprio cliente.
 $idCliente = perfilId();
 
+// Processa o formulário enviado antes de montar o HTML da página.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Confere o token da sessão antes de aceitar alterações enviadas pelo formulário.
     exigirCsrf();
 
     $idAgendamento = (int) post('id_agendamento');
     $agendamento   = Agendamento::porId($idAgendamento);
 
+    // Recusa tentativas de alterar agendamentos de outro cliente, mesmo com um ID válido.
     if (!$agendamento || (int) $agendamento['id_cliente'] !== $idCliente) {
         definirFlash('erro', 'Agendamento nao encontrado.');
     } elseif (!Agendamento::clientePodeCancelar($agendamento)) {
@@ -29,8 +35,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $status      = get('status');
 $porPagina   = 10;
+// Mantém a página como inteiro positivo para calcular a listagem e sua navegação.
 $pagina      = max(1, (int) get('pagina', '1'));
 
+// Reúne os critérios usados para consultar a lista e calcular os totais.
 $filtros = [
     'id_cliente' => $idCliente,
     'ordem'      => 'desc',
@@ -48,16 +56,19 @@ $agendamentos = Agendamento::listar($filtros + [
 
 $limiteCancelamento = Configuracao::obterInteiro('cancelamento_limite_horas', 4);
 
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Meus agendamentos';
 $subtituloTopo = 'Acompanhe e gerencie seus atendimentos';
 $acoesTopo     = '<a href="' . url('cliente/agendar.php') . '" class="btn btn-pequeno">Novo agendamento</a>';
 
+// Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
 ?>
 
 <div class="cartao">
     <div class="barra-filtros">
-        <form method="get" class="barra-filtros" style="padding:0;border:0;background:none;flex:1">
+        <?php /* Filtros enviados na URL para permitir atualizar e compartilhar a consulta. */ ?><form method="get" class="barra-filtros" style="padding:0;border:0;background:none;flex:1">
+        <input type="hidden" name="estabelecimento" value="<?= e(Contexto::slug()) ?>">
             <div class="campo campo-busca">
                 <label for="busca">Buscar</label>
                 <input type="search" id="busca" placeholder="Servico ou profissional"
@@ -86,7 +97,7 @@ require_once RAIZ . '/includes/painel_header.php';
         </div>
     <?php else: ?>
         <div class="tabela-area">
-            <table class="tabela" id="tabelaAgendamentos">
+            <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela" id="tabelaAgendamentos">
                 <thead>
                     <tr>
                         <th>Data</th>
@@ -153,7 +164,7 @@ require_once RAIZ . '/includes/painel_header.php';
 </p>
 
 <!-- Modal de detalhes -->
-<div class="modal" id="modalDetalhes">
+<?php /* Janela controlada pelo JavaScript para detalhes ou ações da página. */ ?><div class="modal" id="modalDetalhes">
     <div class="modal-caixa">
         <div class="modal-cabecalho">
             <h3>Detalhes do agendamento</h3>
@@ -178,8 +189,8 @@ require_once RAIZ . '/includes/painel_header.php';
 </div>
 
 <!-- Modal de cancelamento -->
-<div class="modal" id="modalCancelar">
-    <form method="post" class="modal-caixa">
+<?php /* Janela controlada pelo JavaScript para detalhes ou ações da página. */ ?><div class="modal" id="modalCancelar">
+    <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" class="modal-caixa">
         <?= campoCsrf() ?>
         <input type="hidden" name="id_agendamento" value="">
 

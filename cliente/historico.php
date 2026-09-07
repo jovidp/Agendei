@@ -2,23 +2,29 @@
 /**
  * Historico de atendimentos anteriores do cliente.
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/../config/config.php';
 
+// Restringe esta página a clientes autenticados.
 exigirLogin('cliente');
 
+// Usa o perfil da sessão para consultar e alterar os dados do próprio cliente.
 $idCliente = perfilId();
 
 $dataInicial = get('data_inicial');
 $dataFinal   = get('data_final');
 $porPagina   = 10;
+// Mantém a página como inteiro positivo para calcular a listagem e sua navegação.
 $pagina      = max(1, (int) get('pagina', '1'));
 
+// Reúne os critérios usados para consultar a lista e calcular os totais.
 $filtros = [
     'id_cliente' => $idCliente,
     'ate_hoje'   => true,
     'ordem'      => 'desc',
 ];
 
+// Aplica os limites de data somente quando o formato recebido é válido.
 if (validarData($dataInicial)) {
     $filtros['data_inicial'] = $dataInicial;
 }
@@ -40,9 +46,11 @@ foreach (Agendamento::listar($filtros + ['status' => 'concluido']) as $registro)
     $valorTotal += (float) $registro['valor'];
 }
 
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Historico';
 $subtituloTopo = 'Atendimentos ja realizados';
 
+// Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
 ?>
 
@@ -70,7 +78,8 @@ require_once RAIZ . '/includes/painel_header.php';
 </div>
 
 <div class="cartao">
-    <form method="get" class="barra-filtros">
+    <?php /* Filtros enviados na URL para permitir atualizar e compartilhar a consulta. */ ?><form method="get" class="barra-filtros">
+        <input type="hidden" name="estabelecimento" value="<?= e(Contexto::slug()) ?>">
         <div class="campo">
             <label for="data_inicial">De</label>
             <input type="date" id="data_inicial" name="data_inicial" value="<?= e($dataInicial) ?>">
@@ -96,7 +105,7 @@ require_once RAIZ . '/includes/painel_header.php';
         </div>
     <?php else: ?>
         <div class="tabela-area">
-            <table class="tabela">
+            <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela">
                 <thead>
                     <tr>
                         <th>Data</th>

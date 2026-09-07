@@ -4,7 +4,9 @@
  * Variaveis opcionais: $tituloPagina, $subtituloTopo, $acoesTopo (HTML), $cssExtra (array).
  */
 $estabelecimento = Estabelecimento::dados();
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina    = $tituloPagina ?? 'Painel';
+// Recebe os estilos específicos da tela além dos estilos comuns do painel.
 $cssExtra        = $cssExtra ?? [];
 ?>
 <!DOCTYPE html>
@@ -19,10 +21,11 @@ $cssExtra        = $cssExtra ?? [];
     <?php foreach ($cssExtra as $arquivo): ?>
         <link rel="stylesheet" href="<?= url('assets/css/' . $arquivo) ?>">
     <?php endforeach; ?>
+    <?php require RAIZ . '/includes/tema.php'; ?>
 </head>
 <body>
 
-<div class="painel">
+<?php /* Estrutura comum que reúne menu lateral, título e área de conteúdo da tela. */ ?><div class="painel">
     <?php require RAIZ . '/includes/sidebar.php'; ?>
     <div class="sidebar-fundo"></div>
 

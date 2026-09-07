@@ -3,10 +3,13 @@
  * Agenda visual do estabelecimento (visao por dia ou por semana).
  * Montada apenas com PHP, HTML, CSS e JavaScript, sem bibliotecas externas.
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/../config/config.php';
 
+// Restringe esta página a administradores autenticados.
 exigirLogin('admin');
 
+// Normaliza a visão e a data antes de calcular o período mostrado na agenda.
 $visao          = get('visao') === 'semana' ? 'semana' : 'dia';
 $dataBase       = validarData(get('data')) ? get('data') : date('Y-m-d');
 $idProfissional = (int) get('id_profissional');
@@ -69,6 +72,7 @@ $fimGrade    = (int) (ceil($fimGrade / 30) * 30);
 // Distribuicao dos eventos pelas celulas
 // ---------------------------------------------------------------------
 /** Encaixa o horario na linha da grade, sem deixar nada fora do intervalo exibido. */
+// Converte cada horário em uma linha da grade visual usada para posicionar os eventos.
 $linhaDaGrade = static function (string $hora) use ($inicioGrade, $fimGrade): int {
     $slot = (int) (floor(horaParaMinutos($hora) / 30) * 30);
     return max($inicioGrade, min($slot, $fimGrade - 30));
@@ -131,10 +135,12 @@ $rotuloPeriodo = $visao === 'semana'
     ? formatarData($inicioPeriodo) . ' a ' . formatarData($fimPeriodo)
     : dataExtenso($dataBase);
 
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Agenda';
 $subtituloTopo = count($agendamentos) . ' agendamento(s) no periodo';
 $acoesTopo     = '<a href="' . url('admin/agendamentos.php?acao=novo') . '" class="btn btn-pequeno">Novo agendamento</a>';
 
+// Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
 ?>
 
@@ -150,7 +156,8 @@ require_once RAIZ . '/includes/painel_header.php';
             <span class="agenda-data-atual"><?= e($rotuloPeriodo) ?></span>
         </div>
 
-        <form method="get" class="agenda-navegacao">
+        <?php /* Filtros enviados na URL para permitir atualizar e compartilhar a consulta. */ ?><form method="get" class="agenda-navegacao">
+        <input type="hidden" name="estabelecimento" value="<?= e(Contexto::slug()) ?>">
             <input type="hidden" name="visao" value="<?= e($visao) ?>">
             <input type="hidden" name="data" value="<?= e($dataBase) ?>">
 
@@ -244,7 +251,7 @@ require_once RAIZ . '/includes/painel_header.php';
     <?php endif; ?>
 </div>
 
-<div class="modal" id="modalAgenda">
+<?php /* Janela controlada pelo JavaScript para detalhes ou ações da página. */ ?><div class="modal" id="modalAgenda">
     <div class="modal-caixa">
         <div class="modal-cabecalho">
             <h3>Detalhes do atendimento</h3>

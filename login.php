@@ -1,15 +1,18 @@
 <?php
-/**
- * Autenticacao de clientes, profissionais e administradores.
- */
+/** Autentica a conta e encaminha o usuário para a área correspondente ao seu perfil. */
+
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/config/config.php';
 
+// Encaminha quem já está autenticado ao painel, evitando repetir o fluxo de acesso.
 bloquearSeLogado();
 
 $erros = [];
 $email = '';
 
+// Processa o formulário enviado antes de montar o HTML da página.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Confere o token da sessão antes de aceitar alterações enviadas pelo formulário.
     exigirCsrf();
 
     $email = mb_strtolower(post('email'));
@@ -23,11 +26,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($erros === []) {
+        // Delega a conferência do e-mail, da senha e do status da conta à autenticação compartilhada.
         $usuario = autenticar($email, $senha);
 
         if ($usuario === null) {
             $erros[] = 'E-mail ou senha incorretos.';
         } else {
+            // Guarda a identidade autenticada antes de encaminhar ao destino permitido.
             registrarSessao($usuario);
             definirFlash('sucesso', 'Bem-vindo(a), ' . explode(' ', $usuario['nome'])[0] . '.');
             header('Location: ' . destinoAposLogin());
@@ -37,6 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $estabelecimento = Estabelecimento::dados();
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina = 'Entrar | ' . $estabelecimento['nome'];
 ?>
 <!DOCTYPE html>
@@ -47,6 +53,7 @@ $tituloPagina = 'Entrar | ' . $estabelecimento['nome'];
     <title><?= e($tituloPagina) ?></title>
     <link rel="stylesheet" href="<?= url('assets/css/style.css') ?>">
     <link rel="stylesheet" href="<?= url('assets/css/login.css') ?>">
+    <?php require RAIZ . '/includes/tema.php'; ?>
 </head>
 <body class="pagina-autenticacao">
 
@@ -54,7 +61,7 @@ $tituloPagina = 'Entrar | ' . $estabelecimento['nome'];
     <div class="autenticacao-caixa">
         <div class="autenticacao-apresentacao">
             <span class="marca">
-                <span class="marca-simbolo"><?= e(mb_substr($estabelecimento['nome'], 0, 1)) ?></span>
+                <?= Tema::marca($estabelecimento) ?>
                 <?= e($estabelecimento['nome']) ?>
             </span>
             <h2>Agendamento sem complicacao</h2>
@@ -81,7 +88,7 @@ $tituloPagina = 'Entrar | ' . $estabelecimento['nome'];
                 </div>
             <?php endif; ?>
 
-            <form method="post" id="formLogin" novalidate>
+            <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" id="formLogin" novalidate>
                 <?= campoCsrf() ?>
 
                 <div class="campo">

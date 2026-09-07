@@ -6,10 +6,13 @@
  * A lista aqui e apenas para a interface. O PHP valida tudo novamente
  * no momento de gravar o agendamento.
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/../config/config.php';
 
+// Exige uma sessão autenticada para consultar os dados desta API.
 exigirLogin();
 
+// Lê o profissional, serviço, data e eventual reserva a desconsiderar no cálculo.
 $idProfissional = (int) get('id_profissional');
 $idServico      = (int) get('id_servico');
 $data           = get('data');
@@ -25,6 +28,7 @@ $opcoes = [
     'ignorar_agendamento'  => $ignorar > 0 ? $ignorar : null,
 ];
 
+// Centraliza o cálculo de vagas na mesma classe usada pelas regras de agendamento.
 $horarios = Disponibilidade::slots($idProfissional, $idServico, $data, $opcoes);
 
 jsonResposta([

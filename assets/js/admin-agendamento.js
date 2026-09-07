@@ -3,6 +3,7 @@
    Carrega profissionais e horarios livres conforme a selecao.
    ===================================================================== */
 
+// Isola as variáveis deste arquivo para evitar conflitos com os outros scripts.
 (function () {
     'use strict';
 
@@ -20,7 +21,10 @@
 
     var profissionalFixo = formulario.getAttribute('data-profissional-fixo');
 
+    /** Consulta a API com o cabeçalho de AJAX e converte a resposta em um objeto. */
     function buscarJson(caminho) {
+        var empresa = document.querySelector('meta[name="estabelecimento"]').content;
+        caminho += (caminho.indexOf('?') === -1 ? '?' : '&') + 'estabelecimento=' + encodeURIComponent(empresa);
         return fetch(base + caminho, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(function (resposta) {
                 if (!resposta.ok) {
@@ -30,6 +34,7 @@
             });
     }
 
+    /** Remove as opções antigas e restaura a opção de orientação do campo. */
     function limparSelect(select, textoPadrao) {
         select.innerHTML = '';
         var opcao = document.createElement('option');
@@ -38,6 +43,7 @@
         select.appendChild(opcao);
     }
 
+    /** Busca na API os profissionais vinculados ao serviço selecionado. */
     function carregarProfissionais() {
         if (!campoProfissional || profissionalFixo) {
             return;
@@ -70,6 +76,7 @@
             });
     }
 
+    /** Atualiza as opções de horário para o serviço, profissional e data selecionados. */
     function carregarHorarios() {
         var idProfissional = profissionalFixo || (campoProfissional ? campoProfissional.value : '');
 
@@ -115,6 +122,7 @@
             });
     }
 
+    // Ao mudar o serviço, recarrega os profissionais e descarta opções de horário dependentes.
     campoServico.addEventListener('change', function () {
         carregarProfissionais();
         limparSelect(campoHora, 'Selecione servico, profissional e data');

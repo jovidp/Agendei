@@ -4,9 +4,11 @@
    e e validada novamente pelo PHP no momento de gravar.
    ===================================================================== */
 
+// Isola as variáveis deste arquivo para evitar conflitos com os outros scripts.
 (function () {
     'use strict';
 
+    // Só executa o fluxo quando o contêiner de agendamento está presente na página.
     var fluxo = document.getElementById('fluxoAgendamento');
     if (!fluxo) {
         return;
@@ -15,6 +17,7 @@
     var base = fluxo.getAttribute('data-base') || '/';
     var maximoDias = parseInt(fluxo.getAttribute('data-max-dias'), 10) || 60;
 
+    // Guarda as escolhas atuais; alterações nas etapas anteriores exigem atualizar as opções seguintes.
     var estado = {
         servico: null,
         profissional: null,
@@ -41,25 +44,30 @@
     // Utilitarios
     // -----------------------------------------------------------------
 
+    /** Cria a data do primeiro dia do mês usado como referência no calendário. */
     function primeiroDiaDoMes(data) {
         return new Date(data.getFullYear(), data.getMonth(), 1);
     }
 
+    /** Converte a data local para YYYY-MM-DD, formato esperado pela API. */
     function paraTexto(data) {
         var mes = String(data.getMonth() + 1).padStart(2, '0');
         var dia = String(data.getDate()).padStart(2, '0');
         return data.getFullYear() + '-' + mes + '-' + dia;
     }
 
+    /** Reorganiza uma data YYYY-MM-DD para exibição em DD/MM/YYYY. */
     function formatarDataBr(texto) {
         var partes = texto.split('-');
         return partes[2] + '/' + partes[1] + '/' + partes[0];
     }
 
+    /** Formata o preço do resumo em reais com duas casas decimais. */
     function formatarMoeda(valor) {
         return 'R$ ' + Number(valor).toFixed(2).replace('.', ',');
     }
 
+    /** Transforma a duração em minutos em um texto compacto de horas e minutos. */
     function duracaoTexto(minutos) {
         minutos = parseInt(minutos, 10);
         if (minutos < 60) {
@@ -80,7 +88,10 @@
             .replace(/'/g, '&#39;');
     }
 
+    /** Consulta a API com o cabeçalho de AJAX e converte a resposta em um objeto. */
     function buscarJson(caminho) {
+        var empresa = document.querySelector('meta[name="estabelecimento"]').content;
+        caminho += (caminho.indexOf('?') === -1 ? '?' : '&') + 'estabelecimento=' + encodeURIComponent(empresa);
         return fetch(base + caminho, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(function (resposta) {
                 if (!resposta.ok) {
@@ -90,6 +101,7 @@
             });
     }
 
+    /** Localiza o elemento HTML da etapa informada. */
     function painel(numero) {
         return fluxo.querySelector('[data-painel="' + numero + '"]');
     }
@@ -98,6 +110,7 @@
     // Navegacao entre etapas
     // -----------------------------------------------------------------
 
+    /** Atualiza a etapa visível e os indicadores de progresso do agendamento. */
     function irParaEtapa(numero) {
         etapaAtual = numero;
 
@@ -114,6 +127,7 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    /** Confere se a escolha obrigatória da etapa atual já foi preenchida. */
     function podeAvancar(de) {
         if (de === 1 && !estado.servico) {
             Agendei.notificar('Escolha um servico para continuar.', 'aviso');
@@ -157,6 +171,7 @@
     // Etapa 2 - profissional
     // -----------------------------------------------------------------
 
+    /** Busca na API os profissionais vinculados ao serviço selecionado. */
     function carregarProfissionais() {
         listaProfissionais.innerHTML = '<p class="carregando-horarios">Carregando profissionais...</p>';
 
@@ -208,6 +223,7 @@
     // Etapa 3 - calendario
     // -----------------------------------------------------------------
 
+    /** Consulta os dias com vagas no mês para habilitar as datas do calendário. */
     function carregarDiasDisponiveis() {
         if (!estado.profissional || !estado.servico) {
             return Promise.resolve();
@@ -229,6 +245,7 @@
             });
     }
 
+    /** Monta a grade do mês e associa os eventos de navegação e seleção de data. */
     function renderizarCalendario() {
         var hoje = new Date();
         hoje.setHours(0, 0, 0, 0);
@@ -302,6 +319,7 @@
         });
     }
 
+    /** Exibe a mensagem de carregamento e monta o calendário após consultar as vagas do mês. */
     function abrirCalendario() {
         areaCalendario.innerHTML = '<p class="carregando-horarios">Carregando dias...</p>';
         carregarDiasDisponiveis().then(renderizarCalendario);
@@ -311,6 +329,7 @@
     // Etapa 4 - horarios
     // -----------------------------------------------------------------
 
+    /** Atualiza as opções de horário para o serviço, profissional e data selecionados. */
     function carregarHorarios() {
         listaHorarios.innerHTML = '<p class="carregando-horarios">Buscando horarios disponiveis...</p>';
 
@@ -378,6 +397,7 @@
     // Resumo e confirmacao
     // -----------------------------------------------------------------
 
+    /** Atualiza os elementos de resumo identificados pela chave recebida. */
     function definirResumo(chave, texto, preenchido) {
         fluxo.querySelectorAll('[data-resumo="' + chave + '"]').forEach(function (elemento) {
             elemento.textContent = texto;
@@ -388,6 +408,7 @@
         });
     }
 
+    /** Sincroniza o resumo e os campos ocultos com as escolhas atuais do cliente. */
     function atualizarResumo() {
         definirResumo('servico', estado.servico ? estado.servico.nome : 'Nao selecionado', !!estado.servico);
         definirResumo('profissional', estado.profissional ? estado.profissional.nome : 'Nao selecionado', !!estado.profissional);

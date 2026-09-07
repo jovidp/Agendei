@@ -2,17 +2,22 @@
 /**
  * Dados do estabelecimento e regras de funcionamento do sistema.
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/../config/config.php';
 
+// Restringe esta página a administradores autenticados.
 exigirLogin('admin');
 
 $erros = [];
 
+// Processa o formulário enviado antes de montar o HTML da página.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Confere o token da sessão antes de aceitar alterações enviadas pelo formulário.
     exigirCsrf();
 
     $acao = post('acao');
 
+    // Valida os dados institucionais exibidos nas páginas públicas.
     if ($acao === 'estabelecimento') {
         $nome  = post('nome');
         $email = post('email');
@@ -47,6 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Atualiza as configurações que controlam agendamentos e cancelamentos.
     if ($acao === 'regras') {
         $regras = [
             'antecedencia_minima_horas' => max(0, min(72, (int) post('antecedencia_minima_horas'))),
@@ -69,9 +75,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $estabelecimento = Estabelecimento::dados();
 
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Configuracoes';
 $subtituloTopo = 'Dados do estabelecimento e regras de agendamento';
 
+// Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
 ?>
 
@@ -84,10 +92,12 @@ require_once RAIZ . '/includes/painel_header.php';
     </div>
 <?php endif; ?>
 
+<div class="cartao"><div class="cartao-corpo"><a href="<?= e(url('admin/aparencia.php')) ?>">Personalizar cores, fonte e logo do estabelecimento</a></div></div>
+
 <div class="cartao">
     <div class="cartao-cabecalho"><h3>Dados do estabelecimento</h3></div>
     <div class="cartao-corpo">
-        <form method="post">
+        <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post">
             <?= campoCsrf() ?>
             <input type="hidden" name="acao" value="estabelecimento">
 
@@ -181,7 +191,7 @@ require_once RAIZ . '/includes/painel_header.php';
 <div class="cartao">
     <div class="cartao-cabecalho"><h3>Regras de agendamento</h3></div>
     <div class="cartao-corpo">
-        <form method="post">
+        <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post">
             <?= campoCsrf() ?>
             <input type="hidden" name="acao" value="regras">
 

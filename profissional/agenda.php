@@ -2,13 +2,18 @@
 /**
  * Agenda do profissional: visao por dia (com acoes) ou por semana.
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/../config/config.php';
 
+// Restringe esta página a profissionais autenticados.
 exigirLogin('profissional');
 
+// Obtém o profissional da sessão para restringir os dados à sua própria agenda.
 $idProfissional = perfilId();
 
+// Processa o formulário enviado antes de montar o HTML da página.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Confere o token da sessão antes de aceitar alterações enviadas pelo formulário.
     exigirCsrf();
 
     $idAgendamento = (int) post('id_agendamento');
@@ -19,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'data'  => get('data'),
     ]));
 
+    // Confere a propriedade da reserva antes de permitir uma ação do profissional.
     if (!$agendamento || (int) $agendamento['id_profissional'] !== $idProfissional) {
         definirFlash('erro', 'Agendamento nao encontrado na sua agenda.');
     } elseif (!in_array($novoStatus, ['confirmado', 'concluido'], true)) {
@@ -59,9 +65,11 @@ $rotuloPeriodo = $visao === 'semana'
     ? formatarData($inicioPeriodo) . ' a ' . formatarData($fimPeriodo)
     : dataExtenso($dataBase);
 
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Minha agenda';
 $subtituloTopo = count($agendamentos) . ' atendimento(s) no periodo';
 
+// Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
 ?>
 
@@ -105,7 +113,7 @@ require_once RAIZ . '/includes/painel_header.php';
             </div>
         <?php else: ?>
             <div class="tabela-area">
-                <table class="tabela">
+                <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela">
                     <thead>
                         <tr>
                             <th>Horario</th>
@@ -137,7 +145,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                 <td><?= badgeStatus($agendamento['status']) ?></td>
                                 <td class="coluna-acoes">
                                     <?php if ($agendamento['status'] === 'agendado'): ?>
-                                        <form method="post" style="display:inline">
+                                        <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
                                             <?= campoCsrf() ?>
                                             <input type="hidden" name="id_agendamento" value="<?= (int) $agendamento['id_agendamento'] ?>">
                                             <input type="hidden" name="status" value="confirmado">
@@ -146,7 +154,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                     <?php endif; ?>
 
                                     <?php if (in_array($agendamento['status'], ['agendado', 'confirmado'], true) && Agendamento::jaComecou($agendamento)): ?>
-                                        <form method="post" style="display:inline">
+                                        <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
                                             <?= campoCsrf() ?>
                                             <input type="hidden" name="id_agendamento" value="<?= (int) $agendamento['id_agendamento'] ?>">
                                             <input type="hidden" name="status" value="concluido">

@@ -2,18 +2,23 @@
 /**
  * CRUD de profissionais e vinculo com os servicos executados.
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/../config/config.php';
 
+// Restringe esta página a administradores autenticados.
 exigirLogin('admin');
 
 $erros = [];
 
+// Processa o formulário enviado antes de montar o HTML da página.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Confere o token da sessão antes de aceitar alterações enviadas pelo formulário.
     exigirCsrf();
 
     $acao           = post('acao');
     $idProfissional = (int) post('id_profissional');
 
+    // Valida os campos antes de criar ou atualizar o cadastro.
     if ($acao === 'salvar') {
         $profissional = $idProfissional > 0 ? Profissional::porId($idProfissional) : null;
 
@@ -93,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Trata a mudança de status solicitada pelo formulário.
     if ($acao === 'status' && $idProfissional > 0) {
         $profissional = Profissional::porId($idProfissional);
         if ($profissional) {
@@ -103,6 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirecionar('admin/profissionais.php');
     }
 
+    // Confere o registro e as regras aplicáveis antes da exclusão.
     if ($acao === 'excluir' && $idProfissional > 0) {
         $profissional = Profissional::porId($idProfissional);
         $totalAgendamentos = Agendamento::contar(['id_profissional' => $idProfissional]);
@@ -144,12 +151,14 @@ $status = get('status');
 $lista  = Profissional::listar(array_filter(['busca' => $busca, 'status' => $status]));
 $servicosDisponiveis = Servico::listar();
 
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Profissionais';
 $subtituloTopo = 'Equipe, servicos executados e acesso ao sistema';
 $acoesTopo     = $formularioAberto
     ? '<a href="' . url('admin/profissionais.php') . '" class="btn btn-contorno btn-pequeno">Voltar para a lista</a>'
     : '<a href="' . url('admin/profissionais.php?acao=novo') . '" class="btn btn-pequeno">Novo profissional</a>';
 
+// Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
 ?>
 
@@ -169,7 +178,7 @@ require_once RAIZ . '/includes/painel_header.php';
             <h3><?= $edicao ? 'Editar profissional' : 'Novo profissional' ?></h3>
         </div>
         <div class="cartao-corpo">
-            <form method="post">
+            <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post">
                 <?= campoCsrf() ?>
                 <input type="hidden" name="acao" value="salvar">
                 <input type="hidden" name="id_profissional" value="<?= (int) ($edicao['id_profissional'] ?? 0) ?>">
@@ -269,7 +278,8 @@ require_once RAIZ . '/includes/painel_header.php';
 <?php endif; ?>
 
 <div class="cartao">
-    <form method="get" class="barra-filtros">
+    <?php /* Filtros enviados na URL para permitir atualizar e compartilhar a consulta. */ ?><form method="get" class="barra-filtros">
+        <input type="hidden" name="estabelecimento" value="<?= e(Contexto::slug()) ?>">
         <div class="campo campo-busca">
             <label for="busca">Buscar profissional</label>
             <input type="search" id="busca" name="busca" value="<?= e($busca) ?>" placeholder="Nome, e-mail ou especialidade">
@@ -297,7 +307,7 @@ require_once RAIZ . '/includes/painel_header.php';
         </div>
     <?php else: ?>
         <div class="tabela-area">
-            <table class="tabela">
+            <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela">
                 <thead>
                     <tr>
                         <th>#</th>
@@ -330,7 +340,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                 <a href="<?= url('admin/profissionais.php?acao=editar&id=' . (int) $profissional['id_profissional']) ?>"
                                    class="btn btn-contorno btn-pequeno">Editar</a>
 
-                                <form method="post" style="display:inline">
+                                <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
                                     <?= campoCsrf() ?>
                                     <input type="hidden" name="acao" value="status">
                                     <input type="hidden" name="id_profissional" value="<?= (int) $profissional['id_profissional'] ?>">
@@ -341,7 +351,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                 </form>
 
                                 <?php if (Agendamento::contar(['id_profissional' => (int) $profissional['id_profissional']]) === 0): ?>
-                                    <form method="post" style="display:inline">
+                                    <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
                                         <?= campoCsrf() ?>
                                         <input type="hidden" name="acao" value="excluir">
                                         <input type="hidden" name="id_profissional" value="<?= (int) $profissional['id_profissional'] ?>">

@@ -2,6 +2,7 @@
    AGENDEI - Estilos base e componentes compartilhados
    ===================================================================== */
 
+/* Variáveis de cores, medidas e efeitos compartilhadas por todas as telas. */
 :root {
     --cor-primaria: #1F4E5F;
     --cor-primaria-escura: #173B48;
@@ -32,6 +33,7 @@
     --transicao: 0.15s ease;
 }
 
+/* Inclui bordas e preenchimento no cálculo das dimensões dos elementos. */
 * {
     box-sizing: border-box;
 }
@@ -92,6 +94,7 @@ hr {
 .margem-topo { margin-top: 20px; }
 .oculto { display: none !important; }
 
+/* Centraliza o conteúdo público e limita sua largura em monitores grandes. */
 .container {
     width: 100%;
     max-width: 1140px;
@@ -103,6 +106,7 @@ hr {
    Botoes
    --------------------------------------------------------------------- */
 
+/* Base visual dos botões; as classes seguintes especializam cor, tamanho e estado. */
 .btn {
     display: inline-flex;
     align-items: center;
@@ -267,6 +271,7 @@ textarea.invalido:focus {
     color: var(--texto-secundario);
 }
 
+/* Distribui os campos do formulário em colunas com espaçamento uniforme. */
 .linha-campos {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -316,6 +321,7 @@ legend {
    Cartoes
    --------------------------------------------------------------------- */
 
+/* Superfície comum para agrupar formulários, listas e resumos. */
 .cartao {
     background-color: var(--branco);
     border: 1px solid var(--borda);
@@ -354,6 +360,7 @@ legend {
    Alertas e notificacoes
    --------------------------------------------------------------------- */
 
+/* Apresentação das mensagens de retorno das operações do servidor. */
 .alerta {
     display: flex;
     align-items: flex-start;
@@ -398,6 +405,7 @@ legend {
     max-width: 340px;
 }
 
+/* Mensagens temporárias criadas pelo JavaScript sobre o conteúdo da página. */
 .notificacao {
     display: flex;
     align-items: flex-start;
@@ -425,6 +433,7 @@ legend {
    Badges
    --------------------------------------------------------------------- */
 
+/* Rótulos compactos que identificam os estados dos cadastros e agendamentos. */
 .badge {
     display: inline-block;
     padding: 3px 9px;
@@ -449,6 +458,7 @@ legend {
    Tabelas
    --------------------------------------------------------------------- */
 
+/* Permite rolagem horizontal da tabela quando as colunas excedem a largura disponível. */
 .tabela-area {
     width: 100%;
     overflow-x: auto;
@@ -528,6 +538,7 @@ legend {
     font-size: 15px;
 }
 
+/* Organiza a contagem dos resultados e os links de navegação entre páginas. */
 .paginacao {
     display: flex;
     align-items: center;
@@ -570,6 +581,7 @@ legend {
    Modal
    --------------------------------------------------------------------- */
 
+/* Sobreposição de tela usada como fundo das janelas abertas pelo JavaScript. */
 .modal {
     position: fixed;
     inset: 0;
@@ -649,6 +661,7 @@ legend {
    Cabecalho publico
    --------------------------------------------------------------------- */
 
+/* Barra superior de navegação das páginas públicas. */
 .cabecalho-site {
     background-color: var(--branco);
     border-bottom: 1px solid var(--borda);
@@ -741,6 +754,7 @@ legend {
    Rodape publico
    --------------------------------------------------------------------- */
 
+/* Área de informações institucionais e contatos ao final das páginas públicas. */
 .rodape-site {
     background-color: var(--cor-primaria);
     color: #C9D9DE;
@@ -813,6 +827,7 @@ legend {
     padding: 56px 0;
 }
 
+/* Distribui o texto de apresentação e o cartão de atendimento na página inicial. */
 .destaque-grade {
     display: grid;
     grid-template-columns: 1.15fr 0.85fr;
@@ -873,6 +888,7 @@ legend {
 .cartao-destaque-lista span { color: var(--texto-secundario); }
 .cartao-destaque-lista strong { font-weight: 600; }
 
+/* Organiza os cartões de serviços em colunas. */
 .grade-servicos {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
@@ -942,6 +958,7 @@ legend {
 .passo h3 { font-size: 15px; margin-bottom: 4px; }
 .passo p { color: var(--texto-secundario); font-size: 14px; margin: 0; }
 
+/* Organiza os cartões da equipe na apresentação pública. */
 .grade-profissionais {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -988,6 +1005,7 @@ legend {
     background-color: #F9FAFA;
 }
 
+/* Distribui as informações de contato e funcionamento. */
 .grade-contato {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1031,12 +1049,14 @@ legend {
    Responsivo
    --------------------------------------------------------------------- */
 
+/* Ajusta a disposição dos componentes para janelas de até 980 pixels. */
 @media (max-width: 980px) {
     .destaque-grade { grid-template-columns: 1fr; gap: 30px; }
     .rodape-colunas { grid-template-columns: 1fr 1fr; }
     .grade-contato { grid-template-columns: 1fr; }
 }
 
+/* Ajusta a disposição dos componentes para janelas de até 760 pixels. */
 @media (max-width: 760px) {
     body { font-size: 14.5px; }
     h1 { font-size: 26px; }
@@ -1075,6 +1095,7 @@ legend {
     .chamada-final { padding: 22px; }
 }
 
+/* Ajusta a disposição dos componentes para janelas de até 520 pixels. */
 @media (max-width: 520px) {
     .container { padding: 0 14px; }
     .destaque-acoes .btn { width: 100%; }

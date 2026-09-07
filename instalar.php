@@ -8,6 +8,7 @@
  *
  * APAGUE ESTE ARQUIVO depois de executar em producao.
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/config/config.php';
 
 $mensagens   = [];
@@ -16,15 +17,24 @@ $jaInstalado = false;
 $executado   = false;
 
 try {
+    // Detecta usuários existentes para evitar repetir a carga inicial de demonstração.
     $jaInstalado = (bool) bd()->query('SELECT 1 FROM usuarios LIMIT 1')->fetch();
 } catch (Throwable $falha) {
     $erro = 'As tabelas nao foram encontradas. Importe o arquivo banco.sql antes de continuar. Detalhe: '
         . $falha->getMessage();
 }
 
+// Só inicia a carga por POST quando as tabelas existem e ainda não há usuários.
 if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
     try {
         $senhaPadrao = 'agendei123';
+
+        // A conta global fica fora dos usuários vinculados aos estabelecimentos.
+        if (!(int) bd()->query('SELECT COUNT(*) FROM administradores_master')->fetchColumn()) {
+            $consulta = bd()->prepare('INSERT INTO administradores_master (nome, email, senha_hash) VALUES (?, ?, ?)');
+            $consulta->execute(['Administrador Master', 'master@agendei.com.br', password_hash('agendei-master-2026', PASSWORD_DEFAULT)]);
+            $mensagens[] = 'Administrador master criado: master@agendei.com.br';
+        }
 
         // ---------------------------------------------------------
         // Administrador
@@ -37,7 +47,7 @@ if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
             'tipo'     => 'admin',
         ]);
 
-        $consulta = bd()->prepare('INSERT INTO administradores (id_usuario, nivel) VALUES (:id, "super")');
+        $consulta = bd()->prepare('INSERT INTO administradores (id_estabelecimento, id_usuario, nivel) VALUES (' . Contexto::id() . ', :id, "super")');
         $consulta->execute([':id' => $idUsuarioAdmin]);
         $mensagens[] = 'Administrador criado: admin@agendei.com.br';
 
@@ -45,6 +55,7 @@ if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
         // Profissionais
         // ---------------------------------------------------------
         $servicos = Servico::listar();
+        // Indexa os serviços pelo nome para vincular corretamente os profissionais de exemplo.
         $idsPorNome = [];
         foreach ($servicos as $servico) {
             $idsPorNome[$servico['nome']] = (int) $servico['id_servico'];
@@ -191,6 +202,7 @@ if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
     <title>Instalacao | <?= e(NOME_SISTEMA) ?></title>
     <link rel="stylesheet" href="<?= url('assets/css/style.css') ?>">
     <link rel="stylesheet" href="<?= url('assets/css/login.css') ?>">
+    <?php require RAIZ . '/includes/tema.php'; ?>
 </head>
 <body class="pagina-autenticacao">
 
@@ -216,7 +228,7 @@ if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
                     </span>
                 </div>
 
-                <form method="post">
+                <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post">
                     <button type="submit" class="btn btn-bloco btn-grande">Executar instalacao</button>
                 </form>
             <?php elseif ($erro === null): ?>
@@ -234,7 +246,9 @@ if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
                         Administrador: admin@agendei.com.br<br>
                         Profissional: marcos@agendei.com.br<br>
                         Cliente: cliente@agendei.com.br<br>
-                        Senha de todos: agendei123
+                        Senha de todos: agendei123<br><br>
+                        Master: master@agendei.com.br<br>
+                        Senha master inicial: agendei-master-2026
                     </div>
                 <?php endif; ?>
 

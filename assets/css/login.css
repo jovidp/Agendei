@@ -2,6 +2,7 @@
    AGENDEI - Telas de autenticacao (login, cadastro, recuperacao)
    ===================================================================== */
 
+/* Base das páginas de entrada, cadastro e recuperação de senha. */
 .pagina-autenticacao {
     min-height: 100vh;
     display: flex;
@@ -9,6 +10,7 @@
     background-color: var(--fundo);
 }
 
+/* Centraliza o formulário na área disponível da janela. */
 .autenticacao-area {
     flex: 1;
     display: flex;
@@ -17,6 +19,7 @@
     padding: 40px 20px;
 }
 
+/* Divide o cartão em apresentação institucional e área do formulário. */
 .autenticacao-caixa {
     width: 100%;
     max-width: 940px;
@@ -29,8 +32,10 @@
     overflow: hidden;
 }
 
+/* Variante de uma coluna para formulários menores, como recuperação de senha. */
 .autenticacao-caixa.caixa-simples { max-width: 460px; grid-template-columns: 1fr; }
 
+/* Painel com identidade visual e informações de apoio ao cadastro. */
 .autenticacao-apresentacao {
     background-color: var(--cor-primaria);
     color: #C9DCE2;
@@ -74,6 +79,7 @@
     background-color: var(--cor-secundaria);
 }
 
+/* Define o espaço interno dedicado aos campos e às ações de autenticação. */
 .autenticacao-formulario { padding: 34px 32px; }
 
 .autenticacao-formulario h1 {
@@ -134,12 +140,14 @@
 
 .credenciais-demo strong { color: var(--texto-principal); }
 
+/* Ajusta a disposição dos componentes para janelas de até 820 pixels. */
 @media (max-width: 820px) {
     .autenticacao-caixa { grid-template-columns: 1fr; max-width: 520px; }
     .autenticacao-apresentacao { display: none; }
     .autenticacao-formulario { padding: 28px 22px; }
 }
 
+/* Ajusta a disposição dos componentes para janelas de até 520 pixels. */
 @media (max-width: 520px) {
     .autenticacao-area { padding: 20px 14px; }
     .autenticacao-formulario { padding: 24px 18px; }

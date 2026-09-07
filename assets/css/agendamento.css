@@ -2,6 +2,7 @@
    AGENDEI - Fluxo de agendamento em etapas
    ===================================================================== */
 
+/* Divide a tela entre as etapas de escolha e o resumo da reserva. */
 .fluxo-agendamento {
     display: grid;
     grid-template-columns: 1fr 300px;
@@ -13,6 +14,7 @@
    Indicador de etapas
    --------------------------------------------------------------------- */
 
+/* Barra de progresso que acompanha a etapa ativa e as etapas concluídas. */
 .etapas {
     display: flex;
     gap: 0;
@@ -89,6 +91,7 @@
 
 .opcao { position: relative; }
 
+/* Oculta o controle nativo para apresentar a opção como cartão associado ao label. */
 .opcao input[type="radio"] {
     position: absolute;
     opacity: 0;
@@ -112,12 +115,14 @@
 
 .opcao label:hover { border-color: var(--borda-forte); }
 
+/* Destaca visualmente o cartão correspondente à opção selecionada. */
 .opcao input[type="radio"]:checked + label {
     border-color: var(--cor-primaria);
     box-shadow: 0 0 0 2px rgba(31, 78, 95, 0.12);
     background-color: #FCFDFD;
 }
 
+/* Mantém visível o foco de navegação por teclado no cartão da opção. */
 .opcao input[type="radio"]:focus-visible + label {
     outline: 2px solid var(--cor-primaria);
     outline-offset: 2px;
@@ -191,6 +196,7 @@
 .calendario-navegacao button:hover:not(:disabled) { border-color: var(--cor-primaria); color: var(--cor-primaria); }
 .calendario-navegacao button:disabled { opacity: 0.4; cursor: not-allowed; }
 
+/* Distribui os dias do mês nas sete colunas da semana. */
 .calendario-grade {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -221,6 +227,7 @@
 
 .calendario-dia:hover:not(:disabled) { background-color: var(--cor-primaria-clara); }
 
+/* Diferencia datas que o JavaScript tornou indisponíveis para seleção. */
 .calendario-dia:disabled {
     color: #C3C9CD;
     cursor: not-allowed;
@@ -262,6 +269,7 @@
 
 .horario:hover { border-color: var(--cor-primaria); color: var(--cor-primaria); }
 
+/* Destaca o horário escolhido antes da confirmação. */
 .horario.selecionado {
     background-color: var(--cor-primaria);
     border-color: var(--cor-primaria);
@@ -289,6 +297,7 @@
    Resumo lateral
    --------------------------------------------------------------------- */
 
+/* Mantém as escolhas reunidas em um resumo ao lado das etapas. */
 .resumo-agendamento {
     position: sticky;
     top: 84px;
@@ -342,6 +351,7 @@
    Confirmacao
    --------------------------------------------------------------------- */
 
+/* Apresenta o resultado da reserva criada pelo servidor. */
 .confirmacao {
     max-width: 560px;
     margin: 0 auto;
@@ -385,11 +395,13 @@
     flex-wrap: wrap;
 }
 
+/* Ajusta a disposição dos componentes para janelas de até 1000 pixels. */
 @media (max-width: 1000px) {
     .fluxo-agendamento { grid-template-columns: 1fr; }
     .resumo-agendamento { position: static; }
 }
 
+/* Ajusta a disposição dos componentes para janelas de até 700 pixels. */
 @media (max-width: 700px) {
     .etapas { flex-wrap: wrap; }
     .etapa { flex: 1 1 50%; border-bottom: 1px solid var(--borda); }

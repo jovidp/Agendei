@@ -3,18 +3,22 @@
    As mesmas regras sao aplicadas novamente no PHP.
    ===================================================================== */
 
+// Isola as variáveis deste arquivo para evitar conflitos com os outros scripts.
 (function () {
     'use strict';
 
+    /** Lê o valor do campo e remove espaços nas extremidades. */
     function valor(formulario, nome) {
         var campo = formulario.elements[nome];
         return campo ? campo.value.trim() : '';
     }
 
+    /** Localiza um campo pelo atributo name dentro do formulário. */
     function campo(formulario, nome) {
         return formulario.elements[nome] || null;
     }
 
+    /** Apresenta ou limpa o erro do campo conforme o resultado da condição recebida. */
     function verificar(formulario, nome, condicao, mensagem) {
         var elemento = campo(formulario, nome);
         if (!elemento) {
@@ -30,6 +34,7 @@
         return false;
     }
 
+    /** Remove a indicação de erro quando o usuário volta a editar o campo. */
     function limparAoDigitar(formulario) {
         formulario.querySelectorAll('input, select, textarea').forEach(function (elemento) {
             elemento.addEventListener('input', function () {
@@ -40,6 +45,7 @@
         });
     }
 
+    /** Leva o foco ao primeiro campo inválido para orientar a correção. */
     function focarPrimeiroErro(formulario) {
         var invalido = formulario.querySelector('.invalido');
         if (invalido) {
@@ -51,6 +57,7 @@
     // Login
     // -----------------------------------------------------------------
 
+    /** Valida os campos de acesso no navegador antes de enviar o formulário ao PHP. */
     function iniciarLogin() {
         var formulario = document.getElementById('formLogin');
         if (!formulario) {
@@ -79,6 +86,7 @@
     // Cadastro
     // -----------------------------------------------------------------
 
+    /** Confere os dados de cadastro e a confirmação de senha antes do envio. */
     function iniciarCadastro() {
         var formulario = document.getElementById('formCadastro');
         if (!formulario) {
@@ -122,6 +130,7 @@
     // Alteracao de senha (perfil)
     // -----------------------------------------------------------------
 
+    /** Confere a nova senha e sua confirmação nos formulários de alteração. */
     function iniciarTrocaSenha() {
         var formulario = document.getElementById('formSenha');
         if (!formulario) {
@@ -149,6 +158,7 @@
     // Dados pessoais (perfil)
     // -----------------------------------------------------------------
 
+    /** Valida os dados pessoais editáveis do perfil antes do envio. */
     function iniciarPerfil() {
         var formulario = document.getElementById('formPerfil');
         if (!formulario) {
@@ -179,6 +189,7 @@
         });
     }
 
+    // Inicializa os comportamentos somente depois que os elementos da página estão disponíveis.
     document.addEventListener('DOMContentLoaded', function () {
         iniciarLogin();
         iniciarCadastro();

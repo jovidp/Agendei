@@ -3,19 +3,25 @@
  * Fluxo de agendamento do cliente (servico -> profissional -> data -> horario -> confirmacao).
  * Toda a disponibilidade e validada novamente aqui, no servidor.
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/../config/config.php';
 
+// Restringe esta página a clientes autenticados.
 exigirLogin('cliente');
 
+// Usa o perfil da sessão para consultar e alterar os dados do próprio cliente.
 $idCliente = perfilId();
 $erros     = [];
 $servicoSelecionado = 0;
 
+// Processa o formulário enviado antes de montar o HTML da página.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Confere o token da sessão antes de aceitar alterações enviadas pelo formulário.
     exigirCsrf();
 
     $servicoSelecionado = (int) post('id_servico');
 
+    // Envia a escolha para as regras do servidor; disponibilidade e preço não dependem do navegador.
     $resultado = Agendamento::criar([
         'id_cliente'      => $idCliente,
         'id_profissional' => (int) post('id_profissional'),
@@ -37,6 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $agendamentoConfirmado = null;
 if (get('sucesso') !== '') {
     $possivel = Agendamento::porId((int) get('sucesso'));
+    // Só exibe a confirmação se a reserva pertence ao cliente da sessão.
     if ($possivel && (int) $possivel['id_cliente'] === $idCliente) {
         $agendamentoConfirmado = $possivel;
     }
@@ -44,11 +51,13 @@ if (get('sucesso') !== '') {
 
 $servicos       = Servico::ativosComProfissional();
 $maximoDias     = Configuracao::obterInteiro('antecedencia_maxima_dias', 60);
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina   = 'Novo agendamento';
 $subtituloTopo  = 'Escolha o servico, o profissional e o melhor horario';
 $cssExtra       = ['agendamento.css'];
 $jsExtra        = ['agendamento.js'];
 
+// Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
 ?>
 
@@ -112,7 +121,7 @@ require_once RAIZ . '/includes/painel_header.php';
                 <div class="etapa" data-etapa="5"><span class="etapa-numero">5</span><span class="etapa-texto">Confirmacao</span></div>
             </div>
 
-            <form method="post" id="formAgendamento">
+            <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" id="formAgendamento">
                 <?= campoCsrf() ?>
                 <input type="hidden" name="id_servico" id="campoServico">
                 <input type="hidden" name="id_profissional" id="campoProfissional">

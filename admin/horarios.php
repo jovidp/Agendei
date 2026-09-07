@@ -2,13 +2,17 @@
 /**
  * Expediente semanal e bloqueios de agenda dos profissionais.
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/../config/config.php';
 
+// Restringe esta página a administradores autenticados.
 exigirLogin('admin');
 
 $idProfissional = (int) get('id_profissional');
 
+// Processa o formulário enviado antes de montar o HTML da página.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Confere o token da sessão antes de aceitar alterações enviadas pelo formulário.
     exigirCsrf();
 
     $acao           = post('acao');
@@ -21,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirecionar('admin/horarios.php');
     }
 
+    // Confere a faixa de expediente antes de cadastrá-la no dia escolhido.
     if ($acao === 'adicionar_horario') {
         $diaSemana  = (int) post('dia_semana');
         $horaInicio = post('hora_inicio');
@@ -51,18 +56,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirecionar($retorno);
     }
 
+    // Ativa ou desativa uma faixa de expediente cadastrada.
     if ($acao === 'status_horario') {
         Horario::alterarStatus((int) post('id_horario'), post('status'));
         definirFlash('sucesso', 'Faixa atualizada.');
         redirecionar($retorno);
     }
 
+    // Remove a faixa de expediente selecionada.
     if ($acao === 'excluir_horario') {
         Horario::excluir((int) post('id_horario'));
         definirFlash('sucesso', 'Faixa removida.');
         redirecionar($retorno);
     }
 
+    // Replica o expediente do dia de origem para os dias selecionados.
     if ($acao === 'replicar') {
         $diaOrigem   = (int) post('dia_origem');
         $diasDestino = array_map('intval', (array) ($_POST['dias_destino'] ?? []));
@@ -82,6 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirecionar($retorno);
     }
 
+    // Valida a indisponibilidade e verifica os atendimentos afetados pelo intervalo.
     if ($acao === 'criar_bloqueio') {
         $data       = post('data_bloqueio');
         $horaInicio = post('hora_inicio') ?: '00:00';
@@ -115,6 +124,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirecionar($retorno);
     }
 
+    // Remove a indisponibilidade selecionada da agenda.
     if ($acao === 'excluir_bloqueio') {
         Bloqueio::excluir((int) post('id_bloqueio'));
         definirFlash('sucesso', 'Bloqueio removido.');
@@ -127,14 +137,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $profissionais = Profissional::listar();
 $profissional  = $idProfissional > 0 ? Profissional::porId($idProfissional) : null;
 
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Horarios';
 $subtituloTopo = $profissional ? $profissional['nome'] : 'Expediente e bloqueios da equipe';
 
+// Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
 ?>
 
 <div class="cartao">
-    <form method="get" class="barra-filtros">
+    <?php /* Filtros enviados na URL para permitir atualizar e compartilhar a consulta. */ ?><form method="get" class="barra-filtros">
+        <input type="hidden" name="estabelecimento" value="<?= e(Contexto::slug()) ?>">
         <div class="campo campo-busca">
             <label for="id_profissional">Profissional</label>
             <select id="id_profissional" name="id_profissional" data-envia-ao-mudar>
@@ -194,7 +207,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                             <span>Intervalos de <?= (int) $faixa['intervalo_minutos'] ?> min</span>
                                         </div>
                                         <div class="grupo-botoes">
-                                            <form method="post" style="display:inline">
+                                            <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
                                                 <?= campoCsrf() ?>
                                                 <input type="hidden" name="acao" value="status_horario">
                                                 <input type="hidden" name="id_profissional" value="<?= $idProfissional ?>">
@@ -205,7 +218,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                                 </button>
                                             </form>
 
-                                            <form method="post" style="display:inline">
+                                            <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
                                                 <?= campoCsrf() ?>
                                                 <input type="hidden" name="acao" value="excluir_horario">
                                                 <input type="hidden" name="id_profissional" value="<?= $idProfissional ?>">
@@ -228,7 +241,7 @@ require_once RAIZ . '/includes/painel_header.php';
         </div>
 
         <div class="cartao-rodape">
-            <form method="post" class="barra-filtros" style="padding:0;border:0;background:none">
+            <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" class="barra-filtros" style="padding:0;border:0;background:none">
                 <?= campoCsrf() ?>
                 <input type="hidden" name="acao" value="replicar">
                 <input type="hidden" name="id_profissional" value="<?= $idProfissional ?>">
@@ -274,7 +287,7 @@ require_once RAIZ . '/includes/painel_header.php';
             </div>
         <?php else: ?>
             <div class="tabela-area">
-                <table class="tabela">
+                <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela">
                     <thead>
                         <tr>
                             <th>Data</th>
@@ -290,7 +303,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                 <td><?= formatarHora($bloqueio['hora_inicio']) ?> as <?= formatarHora($bloqueio['hora_fim']) ?></td>
                                 <td><?= e($bloqueio['motivo'] ?: '-') ?></td>
                                 <td class="coluna-acoes">
-                                    <form method="post" style="display:inline">
+                                    <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
                                         <?= campoCsrf() ?>
                                         <input type="hidden" name="acao" value="excluir_bloqueio">
                                         <input type="hidden" name="id_profissional" value="<?= $idProfissional ?>">
@@ -312,8 +325,8 @@ require_once RAIZ . '/includes/painel_header.php';
     </div>
 
     <!-- Modal: nova faixa de expediente -->
-    <div class="modal" id="modalHorario">
-        <form method="post" class="modal-caixa">
+    <?php /* Janela controlada pelo JavaScript para detalhes ou ações da página. */ ?><div class="modal" id="modalHorario">
+        <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" class="modal-caixa">
             <?= campoCsrf() ?>
             <input type="hidden" name="acao" value="adicionar_horario">
             <input type="hidden" name="id_profissional" value="<?= $idProfissional ?>">
@@ -359,8 +372,8 @@ require_once RAIZ . '/includes/painel_header.php';
     </div>
 
     <!-- Modal: novo bloqueio -->
-    <div class="modal" id="modalBloqueio">
-        <form method="post" class="modal-caixa">
+    <?php /* Janela controlada pelo JavaScript para detalhes ou ações da página. */ ?><div class="modal" id="modalBloqueio">
+        <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" class="modal-caixa">
             <?= campoCsrf() ?>
             <input type="hidden" name="acao" value="criar_bloqueio">
             <input type="hidden" name="id_profissional" value="<?= $idProfissional ?>">

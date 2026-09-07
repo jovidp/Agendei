@@ -4,25 +4,28 @@
  */
 class Usuario
 {
+    /** Busca o registro pelo identificador; retorna null quando ele não existe. */
     public static function porId(int $idUsuario): ?array
     {
-        $sql = 'SELECT * FROM usuarios WHERE id_usuario = :id LIMIT 1';
+        $sql = 'SELECT * FROM usuarios WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id LIMIT 1';
         $consulta = bd()->prepare($sql);
         $consulta->execute([':id' => $idUsuario]);
         return $consulta->fetch() ?: null;
     }
 
+    /** Busca a conta pelo e-mail para autenticação e recuperação de acesso. */
     public static function porEmail(string $email): ?array
     {
-        $sql = 'SELECT * FROM usuarios WHERE email = :email LIMIT 1';
+        $sql = 'SELECT * FROM usuarios WHERE id_estabelecimento = ' . Contexto::id() . ' AND email = :email LIMIT 1';
         $consulta = bd()->prepare($sql);
         $consulta->execute([':email' => mb_strtolower(trim($email))]);
         return $consulta->fetch() ?: null;
     }
 
+    /** Verifica e-mail duplicado, ignorando a própria conta quando o ID é informado. */
     public static function emailEmUso(string $email, ?int $ignorarIdUsuario = null): bool
     {
-        $sql = 'SELECT id_usuario FROM usuarios WHERE email = :email';
+        $sql = 'SELECT id_usuario FROM usuarios WHERE id_estabelecimento = ' . Contexto::id() . ' AND email = :email';
         $parametros = [':email' => mb_strtolower(trim($email))];
 
         if ($ignorarIdUsuario !== null) {
@@ -41,8 +44,8 @@ class Usuario
      */
     public static function criar(array $dados): int
     {
-        $sql = 'INSERT INTO usuarios (nome, email, senha_hash, telefone, tipo, status)
-                VALUES (:nome, :email, :senha_hash, :telefone, :tipo, :status)';
+        $sql = 'INSERT INTO usuarios (id_estabelecimento, nome, email, senha_hash, telefone, tipo, status)
+                VALUES (' . Contexto::id() . ', :nome, :email, :senha_hash, :telefone, :tipo, :status)';
 
         $consulta = bd()->prepare($sql);
         $consulta->execute([
@@ -57,10 +60,11 @@ class Usuario
         return (int) bd()->lastInsertId();
     }
 
+    /** Persiste os campos editáveis do cadastro identificado pelo ID. */
     public static function atualizar(int $idUsuario, array $dados): bool
     {
         $sql = 'UPDATE usuarios SET nome = :nome, email = :email, telefone = :telefone
-                WHERE id_usuario = :id';
+                WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id';
 
         $consulta = bd()->prepare($sql);
         return $consulta->execute([
@@ -71,34 +75,38 @@ class Usuario
         ]);
     }
 
+    /** Gera um novo hash antes de substituir a senha armazenada. */
     public static function atualizarSenha(int $idUsuario, string $senhaPura): bool
     {
-        $consulta = bd()->prepare('UPDATE usuarios SET senha_hash = :hash WHERE id_usuario = :id');
+        $consulta = bd()->prepare('UPDATE usuarios SET senha_hash = :hash WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id');
         return $consulta->execute([
             ':hash' => password_hash($senhaPura, PASSWORD_DEFAULT),
             ':id'   => $idUsuario,
         ]);
     }
 
+    /** Compara a senha fornecida com o hash da conta usando password_verify. */
     public static function senhaConfere(int $idUsuario, string $senha): bool
     {
-        $consulta = bd()->prepare('SELECT senha_hash FROM usuarios WHERE id_usuario = :id LIMIT 1');
+        $consulta = bd()->prepare('SELECT senha_hash FROM usuarios WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id LIMIT 1');
         $consulta->execute([':id' => $idUsuario]);
         $registro = $consulta->fetch();
 
         return $registro && password_verify($senha, $registro['senha_hash']);
     }
 
+    /** Atualiza a situação do registro identificado pelo ID. */
     public static function alterarStatus(int $idUsuario, string $status): bool
     {
         $status = $status === 'ativo' ? 'ativo' : 'inativo';
-        $consulta = bd()->prepare('UPDATE usuarios SET status = :status WHERE id_usuario = :id');
+        $consulta = bd()->prepare('UPDATE usuarios SET status = :status WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id');
         return $consulta->execute([':status' => $status, ':id' => $idUsuario]);
     }
 
+    /** Atualiza a data do último acesso após o login. */
     public static function registrarAcesso(int $idUsuario): void
     {
-        $consulta = bd()->prepare('UPDATE usuarios SET ultimo_acesso = NOW() WHERE id_usuario = :id');
+        $consulta = bd()->prepare('UPDATE usuarios SET ultimo_acesso = NOW() WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id');
         $consulta->execute([':id' => $idUsuario]);
     }
 
@@ -117,7 +125,7 @@ class Usuario
 
         [$tabela, $coluna] = $mapa[$tipo];
 
-        $consulta = bd()->prepare("SELECT {$coluna} FROM {$tabela} WHERE id_usuario = :id LIMIT 1");
+        $consulta = bd()->prepare("SELECT {$coluna} FROM {$tabela} WHERE id_estabelecimento = " . Contexto::id() . " AND id_usuario = :id LIMIT 1");
         $consulta->execute([':id' => $idUsuario]);
         $registro = $consulta->fetch();
 
@@ -136,35 +144,38 @@ class Usuario
         $consulta = bd()->prepare(
             'UPDATE usuarios
              SET token_recuperacao = :token, token_expiracao = DATE_ADD(NOW(), INTERVAL :horas HOUR)
-             WHERE id_usuario = :id'
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id'
         );
         $consulta->execute([':token' => $token, ':horas' => $validadeHoras, ':id' => $idUsuario]);
 
         return $token;
     }
 
+    /** Busca a conta associada ao token de recuperação ainda válido. */
     public static function porTokenRecuperacao(string $token): ?array
     {
         $consulta = bd()->prepare(
             'SELECT * FROM usuarios
-             WHERE token_recuperacao = :token AND token_expiracao > NOW() AND status = "ativo"
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND token_recuperacao = :token AND token_expiracao > NOW() AND status = "ativo"
              LIMIT 1'
         );
         $consulta->execute([':token' => $token]);
         return $consulta->fetch() ?: null;
     }
 
+    /** Invalida o token após a recuperação para impedir sua reutilização. */
     public static function limparTokenRecuperacao(int $idUsuario): void
     {
         $consulta = bd()->prepare(
-            'UPDATE usuarios SET token_recuperacao = NULL, token_expiracao = NULL WHERE id_usuario = :id'
+            'UPDATE usuarios SET token_recuperacao = NULL, token_expiracao = NULL WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id'
         );
         $consulta->execute([':id' => $idUsuario]);
     }
 
+    /** Executa a exclusão pelo ID; as restrições do banco continuam sendo aplicadas. */
     public static function excluir(int $idUsuario): bool
     {
-        $consulta = bd()->prepare('DELETE FROM usuarios WHERE id_usuario = :id');
+        $consulta = bd()->prepare('DELETE FROM usuarios WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id');
         return $consulta->execute([':id' => $idUsuario]);
     }
 }

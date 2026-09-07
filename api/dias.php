@@ -3,10 +3,13 @@
  * API: dias de um mes com pelo menos um horario livre.
  * GET /api/dias.php?id_profissional=1&id_servico=2&mes=2026-09
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/../config/config.php';
 
+// Exige uma sessão autenticada para consultar os dados desta API.
 exigirLogin();
 
+// Lê os IDs e o mês da URL antes de validar os parâmetros da consulta.
 $idProfissional = (int) get('id_profissional');
 $idServico      = (int) get('id_servico');
 $mes            = get('mes', date('Y-m'));
@@ -15,6 +18,7 @@ if ($idProfissional <= 0 || $idServico <= 0 || !preg_match('/^\d{4}-(0[1-9]|1[0-
     jsonResposta(['sucesso' => false, 'mensagem' => 'Parametros invalidos.', 'dias' => []], 400);
 }
 
+// Permite a consulta interna da equipe sem os limites de antecedência aplicados ao cliente.
 $ignorarAntecedencia = ehAdmin() || ehProfissional();
 
 $primeiroDoMes = $mes . '-01';
@@ -34,6 +38,7 @@ $dias = [];
 
 if ($inicio <= $fim) {
     $atual = $inicio;
+    // Consulta cada data do intervalo e inclui apenas os dias com pelo menos uma vaga.
     while ($atual <= $fim) {
         $slots = Disponibilidade::slots($idProfissional, $idServico, $atual, [
             'ignorar_antecedencia' => $ignorarAntecedencia,

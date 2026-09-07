@@ -3,14 +3,18 @@
  * Consulta do expediente e dos servicos do profissional.
  * A alteracao do expediente e feita pelo administrador.
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/../config/config.php';
 
+// Restringe esta página a profissionais autenticados.
 exigirLogin('profissional');
 
+// Obtém o profissional da sessão para restringir os dados à sua própria agenda.
 $idProfissional = perfilId();
 $horariosPorDia = Horario::agrupadoPorDia($idProfissional);
 $servicos       = Profissional::servicos($idProfissional);
 
+// Acumula os minutos das faixas ativas para apresentar a carga horária semanal.
 $minutosSemana = 0;
 foreach ($horariosPorDia as $faixas) {
     foreach ($faixas as $faixa) {
@@ -20,9 +24,11 @@ foreach ($horariosPorDia as $faixas) {
     }
 }
 
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Meus horarios';
 $subtituloTopo = 'Expediente cadastrado e servicos executados';
 
+// Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
 ?>
 
@@ -87,7 +93,7 @@ require_once RAIZ . '/includes/painel_header.php';
         </div>
     <?php else: ?>
         <div class="tabela-area">
-            <table class="tabela">
+            <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela">
                 <thead>
                     <tr><th>Servico</th><th>Duracao</th><th>Preco</th><th class="coluna-acoes">Status</th></tr>
                 </thead>

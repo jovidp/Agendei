@@ -2,6 +2,10 @@
 
 Sistema web completo de agendamento (PHP + MySQL + HTML/CSS/JS puros, sem frameworks).
 
+O sistema aceita vários estabelecimentos no mesmo banco. Contas, clientes,
+profissionais, serviços, horários e agendamentos carregam o vínculo da empresa,
+e as chaves do banco impedem associações entre estabelecimentos diferentes.
+
 ## Requisitos
 
 - PHP 8.0 ou superior (extensao PDO MySQL habilitada)
@@ -19,6 +23,10 @@ Sistema web completo de agendamento (PHP + MySQL + HTML/CSS/JS puros, sem framew
    O script cria o banco `agendei`, todas as tabelas, os servicos de exemplo,
    os dados do estabelecimento e as configuracoes iniciais.
 3. Ajuste as credenciais do banco em `config/database.php` (apenas neste arquivo).
+   Para atualizar uma base criada pela versão anterior, execute uma vez:
+   ```
+   php scripts/migrar.php
+   ```
 4. Acesse `http://localhost/agendei/instalar.php` e clique em **Executar instalacao**.
    Serao criados o administrador, tres profissionais com expediente configurado,
    um cliente de demonstracao e alguns agendamentos.
@@ -31,8 +39,15 @@ Sistema web completo de agendamento (PHP + MySQL + HTML/CSS/JS puros, sem framew
 | Administrador | admin@agendei.com.br      | agendei123  |
 | Profissional  | marcos@agendei.com.br     | agendei123  |
 | Cliente       | cliente@agendei.com.br    | agendei123  |
+| Master        | master@agendei.com.br     | agendei-master-2026 |
 
 Altere as senhas apos o primeiro acesso.
+
+O administrador master entra em `master/login.php`. Ele cria cada estabelecimento
+junto com sua primeira conta administrativa. O administrador local cadastra sua
+equipe e seus serviços, compartilha o link exclusivo mostrado em **Aparência** e
+personaliza nome, logo, cores e fonte. Clientes cadastrados por esse link recebem
+o mesmo vínculo e veem apenas os serviços e profissionais daquela empresa.
 
 ## Estrutura do projeto
 

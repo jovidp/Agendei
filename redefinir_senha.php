@@ -1,16 +1,19 @@
 <?php
-/**
- * Redefinicao de senha a partir do token enviado ao usuario.
- */
+/** Valida o token de recuperação e permite cadastrar uma nova senha. */
+
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/config/config.php';
 
+// Encaminha quem já está autenticado ao painel, evitando repetir o fluxo de acesso.
 bloquearSeLogado();
 
+// Recebe o token da URL na abertura e do campo oculto após o envio do formulário.
 $token   = $_SERVER['REQUEST_METHOD'] === 'POST' ? post('token') : get('token');
 $usuario = $token !== '' ? Usuario::porTokenRecuperacao($token) : null;
 $erros   = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $usuario !== null) {
+    // Confere o token da sessão antes de aceitar alterações enviadas pelo formulário.
     exigirCsrf();
 
     $senha       = post('nova_senha');
@@ -25,6 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $usuario !== null) {
 
     if ($erros === []) {
         Usuario::atualizarSenha((int) $usuario['id_usuario'], $senha);
+        // Consome o token após a troca de senha para que o link não possa ser usado novamente.
         Usuario::limparTokenRecuperacao((int) $usuario['id_usuario']);
 
         definirFlash('sucesso', 'Senha redefinida com sucesso. Faca login com a nova senha.');
@@ -42,12 +46,14 @@ $estabelecimento = Estabelecimento::dados();
     <title>Redefinir senha | <?= e($estabelecimento['nome']) ?></title>
     <link rel="stylesheet" href="<?= url('assets/css/style.css') ?>">
     <link rel="stylesheet" href="<?= url('assets/css/login.css') ?>">
+    <?php require RAIZ . '/includes/tema.php'; ?>
 </head>
 <body class="pagina-autenticacao">
 
 <div class="autenticacao-area">
     <div class="autenticacao-caixa caixa-simples">
         <div class="autenticacao-formulario">
+            <div class="marca"><?= Tema::marca($estabelecimento) ?> <?= e($estabelecimento['nome']) ?></div>
             <a href="<?= url('login.php') ?>" class="voltar-site">&larr; Voltar para o login</a>
 
             <h1>Redefinir senha</h1>
@@ -65,7 +71,7 @@ $estabelecimento = Estabelecimento::dados();
                     <div class="alerta alerta-erro"><span class="alerta-texto"><?= e($erros[0]) ?></span></div>
                 <?php endif; ?>
 
-                <form method="post" id="formSenha" novalidate>
+                <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" id="formSenha" novalidate>
                     <?= campoCsrf() ?>
                     <input type="hidden" name="token" value="<?= e($token) ?>">
 

@@ -1,20 +1,19 @@
 <?php
-/**
- * Solicitacao de recuperacao de senha.
- *
- * O token e gravado no banco e o link de redefinicao e gerado aqui.
- * O envio por e-mail/WhatsApp deve ser plugado no ponto indicado abaixo,
- * sem alterar o restante do fluxo.
- */
+/** Gera o token e o link de recuperação de senha; o envio por mensagem ainda depende de integração. */
+
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/config/config.php';
 
+// Encaminha quem já está autenticado ao painel, evitando repetir o fluxo de acesso.
 bloquearSeLogado();
 
 $enviado = false;
 $linkGerado = null;
 $erro = '';
 
+// Processa o formulário enviado antes de montar o HTML da página.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Confere o token da sessão antes de aceitar alterações enviadas pelo formulário.
     exigirCsrf();
 
     $email = mb_strtolower(post('email'));
@@ -28,13 +27,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $token = Usuario::gerarTokenRecuperacao((int) $usuario['id_usuario']);
             $link  = url('redefinir_senha.php?token=' . $token);
 
-            // Ponto de integracao: envio do link por e-mail ou WhatsApp.
+
+            // Exibe o link apenas em desenvolvimento; o envio por e-mail ou WhatsApp ainda não está implementado.
             if (AMBIENTE === 'desenvolvimento') {
                 $linkGerado = $link;
             }
         }
 
-        // Mensagem sempre igual, para nao revelar quais e-mails existem.
+
+        // Mantém a mesma confirmação para e-mails existentes ou ausentes, evitando revelar cadastros.
         $enviado = true;
     }
 }
@@ -49,12 +50,14 @@ $estabelecimento = Estabelecimento::dados();
     <title>Recuperar senha | <?= e($estabelecimento['nome']) ?></title>
     <link rel="stylesheet" href="<?= url('assets/css/style.css') ?>">
     <link rel="stylesheet" href="<?= url('assets/css/login.css') ?>">
+    <?php require RAIZ . '/includes/tema.php'; ?>
 </head>
 <body class="pagina-autenticacao">
 
 <div class="autenticacao-area">
     <div class="autenticacao-caixa caixa-simples">
         <div class="autenticacao-formulario">
+            <div class="marca"><?= Tema::marca($estabelecimento) ?> <?= e($estabelecimento['nome']) ?></div>
             <a href="<?= url('login.php') ?>" class="voltar-site">&larr; Voltar para o login</a>
 
             <h1>Recuperar senha</h1>
@@ -79,7 +82,7 @@ $estabelecimento = Estabelecimento::dados();
                     </div>
                 <?php endif; ?>
             <?php else: ?>
-                <form method="post" novalidate>
+                <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" novalidate>
                     <?= campoCsrf() ?>
 
                     <div class="campo">

@@ -2,8 +2,10 @@
 /**
  * Relatorios gerenciais por periodo.
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/../config/config.php';
 
+// Restringe esta página a administradores autenticados.
 exigirLogin('admin');
 
 $periodo = get('periodo');
@@ -24,12 +26,14 @@ if ($periodo === 'hoje') {
     $dataFinal   = date('Y-m-t', strtotime('last day of last month'));
 }
 
+// Corrige a ordem das datas para que as consultas recebam um intervalo válido.
 if ($dataInicial > $dataFinal) {
     [$dataInicial, $dataFinal] = [$dataFinal, $dataInicial];
 }
 
 $resumo        = Relatorio::resumoPorStatus($dataInicial, $dataFinal);
 $faturamento   = Relatorio::faturamento($dataInicial, $dataFinal);
+// Separa os valores de serviços concluídos do total que também considera reservas futuras.
 $realizado     = Relatorio::faturamento($dataInicial, $dataFinal, ['concluido']);
 $servicos      = Relatorio::servicosMaisAgendados($dataInicial, $dataFinal, 10);
 $profissionais = Relatorio::profissionaisMaisAtendimentos($dataInicial, $dataFinal, 10);
@@ -41,14 +45,17 @@ $taxaCancelamento = $totalPeriodo > 0
     ? round(($resumo['cancelado']['total'] / $totalPeriodo) * 100)
     : 0;
 
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Relatorios';
 $subtituloTopo = 'Periodo de ' . formatarData($dataInicial) . ' a ' . formatarData($dataFinal);
 
+// Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
 ?>
 
 <div class="cartao">
-    <form method="get" class="barra-filtros">
+    <?php /* Filtros enviados na URL para permitir atualizar e compartilhar a consulta. */ ?><form method="get" class="barra-filtros">
+        <input type="hidden" name="estabelecimento" value="<?= e(Contexto::slug()) ?>">
         <div class="campo">
             <label for="data_inicial">De</label>
             <input type="date" id="data_inicial" name="data_inicial" value="<?= e($dataInicial) ?>">
@@ -106,7 +113,7 @@ require_once RAIZ . '/includes/painel_header.php';
             <div class="estado-vazio"><strong>Sem dados no periodo</strong><p>Nenhum agendamento registrado.</p></div>
         <?php else: ?>
             <div class="tabela-area">
-                <table class="tabela" style="min-width:auto">
+                <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela" style="min-width:auto">
                     <thead>
                         <tr><th>Servico</th><th>Agendamentos</th><th class="coluna-acoes">Valor</th></tr>
                     </thead>
@@ -131,7 +138,7 @@ require_once RAIZ . '/includes/painel_header.php';
             <div class="estado-vazio"><strong>Sem dados no periodo</strong><p>Nenhum atendimento registrado.</p></div>
         <?php else: ?>
             <div class="tabela-area">
-                <table class="tabela" style="min-width:auto">
+                <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela" style="min-width:auto">
                     <thead>
                         <tr><th>Profissional</th><th>Total</th><th>Concluidos</th><th class="coluna-acoes">Valor</th></tr>
                     </thead>
@@ -159,7 +166,7 @@ require_once RAIZ . '/includes/painel_header.php';
             <div class="estado-vazio"><strong>Sem dados no periodo</strong><p>Nenhum cliente atendido.</p></div>
         <?php else: ?>
             <div class="tabela-area">
-                <table class="tabela" style="min-width:auto">
+                <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela" style="min-width:auto">
                     <thead>
                         <tr><th>Cliente</th><th>Atendimentos</th><th>Ultimo</th><th class="coluna-acoes">Valor</th></tr>
                     </thead>
@@ -188,7 +195,7 @@ require_once RAIZ . '/includes/painel_header.php';
             <div class="estado-vazio"><strong>Sem dados no periodo</strong><p>Nenhum agendamento no intervalo.</p></div>
         <?php else: ?>
             <div class="tabela-area" style="max-height:420px;overflow-y:auto">
-                <table class="tabela" style="min-width:auto">
+                <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela" style="min-width:auto">
                     <thead>
                         <tr><th>Data</th><th>Agendamentos</th><th>Cancelados</th><th class="coluna-acoes">Faturamento</th></tr>
                     </thead>

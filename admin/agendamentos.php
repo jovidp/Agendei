@@ -2,17 +2,22 @@
 /**
  * Gestao de agendamentos: listagem, criacao manual, mudanca de status e cancelamento.
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/../config/config.php';
 
+// Restringe esta página a administradores autenticados.
 exigirLogin('admin');
 
 $erros = [];
 
+// Processa o formulário enviado antes de montar o HTML da página.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Confere o token da sessão antes de aceitar alterações enviadas pelo formulário.
     exigirCsrf();
 
     $acao = post('acao');
 
+    // Valida os dados recebidos e solicita a criação do registro.
     if ($acao === 'criar') {
         $resultado = Agendamento::criar([
             'id_cliente'      => (int) post('id_cliente'),
@@ -32,6 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $erros = $resultado['erros'];
     }
 
+    // Trata a mudança de status solicitada pelo formulário.
     if ($acao === 'status') {
         $idAgendamento = (int) post('id_agendamento');
         $novoStatus    = post('status');
@@ -47,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirecionar('admin/agendamentos.php');
     }
 
+    // Trata o cancelamento do agendamento e o motivo informado.
     if ($acao === 'cancelar') {
         $idAgendamento = (int) post('id_agendamento');
 
@@ -69,11 +76,13 @@ if ($acaoTela === 'novo' || $erros !== []) {
     $clientes = Cliente::listar(['status' => 'ativo']);
     $servicos = Servico::ativosComProfissional();
 
+    // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
     $tituloPagina  = 'Novo agendamento';
     $subtituloTopo = 'Criacao manual pelo balcao';
     $acoesTopo     = '<a href="' . url('admin/agendamentos.php') . '" class="btn btn-contorno btn-pequeno">Voltar para a lista</a>';
     $jsExtra       = ['admin-agendamento.js'];
 
+    // Renderiza a estrutura comum do painel após preparar os dados desta tela.
     require_once RAIZ . '/includes/painel_header.php';
     ?>
 
@@ -97,7 +106,7 @@ if ($acaoTela === 'novo' || $erros !== []) {
         <div class="cartao">
             <div class="cartao-cabecalho"><h3>Dados do agendamento</h3></div>
             <div class="cartao-corpo">
-                <form method="post" id="formAgendamentoManual" data-base="<?= e(url('')) ?>">
+                <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" id="formAgendamentoManual" data-base="<?= e(url('')) ?>">
                     <?= campoCsrf() ?>
                     <input type="hidden" name="acao" value="criar">
 
@@ -184,6 +193,7 @@ $filtros = array_filter([
 ]);
 
 $porPagina = 15;
+// Mantém a página como inteiro positivo para calcular a listagem e sua navegação.
 $pagina    = max(1, (int) get('pagina', '1'));
 
 $total = Agendamento::contar($filtros);
@@ -196,15 +206,18 @@ $lista = Agendamento::listar($filtros + [
 $profissionais = Profissional::listar();
 $servicos      = Servico::listar();
 
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Agendamentos';
 $subtituloTopo = $total . ' registro(s) encontrado(s)';
 $acoesTopo     = '<a href="' . url('admin/agendamentos.php?acao=novo') . '" class="btn btn-pequeno">Novo agendamento</a>';
 
+// Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
 ?>
 
 <div class="cartao">
-    <form method="get" class="barra-filtros">
+    <?php /* Filtros enviados na URL para permitir atualizar e compartilhar a consulta. */ ?><form method="get" class="barra-filtros">
+        <input type="hidden" name="estabelecimento" value="<?= e(Contexto::slug()) ?>">
         <div class="campo campo-busca">
             <label for="busca">Buscar</label>
             <input type="search" id="busca" name="busca" value="<?= e(get('busca')) ?>" placeholder="Cliente, profissional ou servico">
@@ -277,7 +290,7 @@ require_once RAIZ . '/includes/painel_header.php';
         </div>
     <?php else: ?>
         <div class="tabela-area">
-            <table class="tabela">
+            <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela">
                 <thead>
                     <tr>
                         <th>#</th>
@@ -325,7 +338,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                 </button>
 
                                 <?php if ($agendamento['status'] === 'agendado'): ?>
-                                    <form method="post" style="display:inline">
+                                    <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
                                         <?= campoCsrf() ?>
                                         <input type="hidden" name="acao" value="status">
                                         <input type="hidden" name="id_agendamento" value="<?= (int) $agendamento['id_agendamento'] ?>">
@@ -335,7 +348,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                 <?php endif; ?>
 
                                 <?php if (in_array($agendamento['status'], ['agendado', 'confirmado'], true)): ?>
-                                    <form method="post" style="display:inline">
+                                    <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
                                         <?= campoCsrf() ?>
                                         <input type="hidden" name="acao" value="status">
                                         <input type="hidden" name="id_agendamento" value="<?= (int) $agendamento['id_agendamento'] ?>">
@@ -361,7 +374,7 @@ require_once RAIZ . '/includes/painel_header.php';
     <?php endif; ?>
 </div>
 
-<div class="modal" id="modalDetalhes">
+<?php /* Janela controlada pelo JavaScript para detalhes ou ações da página. */ ?><div class="modal" id="modalDetalhes">
     <div class="modal-caixa">
         <div class="modal-cabecalho">
             <h3>Detalhes do agendamento</h3>
@@ -387,8 +400,8 @@ require_once RAIZ . '/includes/painel_header.php';
     </div>
 </div>
 
-<div class="modal" id="modalCancelar">
-    <form method="post" class="modal-caixa">
+<?php /* Janela controlada pelo JavaScript para detalhes ou ações da página. */ ?><div class="modal" id="modalCancelar">
+    <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" class="modal-caixa">
         <?= campoCsrf() ?>
         <input type="hidden" name="acao" value="cancelar">
         <input type="hidden" name="id_agendamento" value="">

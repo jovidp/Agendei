@@ -7,6 +7,7 @@ class Agendamento
 {
     public const STATUS = ['agendado', 'confirmado', 'concluido', 'cancelado'];
 
+    // Reutiliza a seleção de campos e as junções que acrescentam nomes aos dados da reserva.
     private const SELECAO = 'a.*,
         uc.nome AS nome_cliente, uc.telefone AS telefone_cliente, uc.email AS email_cliente,
         c.cpf AS cpf_cliente,
@@ -25,10 +26,11 @@ class Agendamento
     // Consultas
     // -----------------------------------------------------------------
 
+    /** Busca o registro pelo identificador; retorna null quando ele não existe. */
     public static function porId(int $idAgendamento): ?array
     {
         $consulta = bd()->prepare(
-            'SELECT ' . self::SELECAO . self::JUNCOES . ' WHERE a.id_agendamento = :id LIMIT 1'
+            'SELECT ' . self::SELECAO . self::JUNCOES . ' WHERE a.id_estabelecimento = ' . Contexto::id() . ' AND a.id_agendamento = :id LIMIT 1'
         );
         $consulta->execute([':id' => $idAgendamento]);
         return $consulta->fetch() ?: null;
@@ -56,6 +58,7 @@ class Agendamento
         return $consulta->fetchAll();
     }
 
+    /** Conta os registros com os mesmos filtros da listagem, sem aplicar paginação. */
     public static function contar(array $filtros = []): int
     {
         [$where, $parametros] = self::montarFiltros($filtros);
@@ -65,9 +68,10 @@ class Agendamento
         return (int) ($consulta->fetch()['total'] ?? 0);
     }
 
+    /** Separa as condições SQL dos valores enviados ao PDO para reutilizar os filtros. */
     private static function montarFiltros(array $filtros): array
     {
-        $condicoes  = [];
+        $condicoes = ['a.id_estabelecimento = ' . Contexto::id()];
         $parametros = [];
 
         if (!empty($filtros['id_cliente'])) {
@@ -129,8 +133,10 @@ class Agendamento
         }
 
         if (!empty($filtros['busca'])) {
-            $condicoes[] = '(uc.nome LIKE :busca OR up.nome LIKE :busca OR s.nome LIKE :busca)';
+            $condicoes[] = '(uc.nome LIKE :busca OR up.nome LIKE :buscaProfissional OR s.nome LIKE :buscaServico)';
             $parametros[':busca'] = '%' . $filtros['busca'] . '%';
+            $parametros[':buscaProfissional'] = $parametros[':busca'];
+            $parametros[':buscaServico'] = $parametros[':busca'];
         }
 
         $where = $condicoes ? 'WHERE ' . implode(' AND ', $condicoes) : '';
@@ -160,6 +166,7 @@ class Agendamento
         ]);
     }
 
+    /** Seleciona os próximos agendamentos do cliente para o resumo do painel. */
     public static function proximosDoCliente(int $idCliente, int $limite = 5): array
     {
         return self::listar([
@@ -175,7 +182,7 @@ class Agendamento
     public static function ocupacoesDoDia(int $idProfissional, string $data, ?int $ignorarAgendamento = null): array
     {
         $sql = 'SELECT hora_inicio, hora_fim FROM agendamentos
-                WHERE id_profissional = :profissional
+                WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :profissional
                   AND data_agendamento = :data
                   AND status IN ("agendado","confirmado","concluido")';
 
@@ -205,7 +212,7 @@ class Agendamento
         bool $bloquearLinhas = false
     ): bool {
         $sql = 'SELECT id_agendamento FROM agendamentos
-                WHERE id_profissional = :profissional
+                WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :profissional
                   AND data_agendamento = :data
                   AND status IN ("agendado","confirmado","concluido")
                   AND hora_inicio < :fim
@@ -241,7 +248,7 @@ class Agendamento
         ?int $ignorarAgendamento = null
     ): bool {
         $sql = 'SELECT id_agendamento FROM agendamentos
-                WHERE id_cliente = :cliente
+                WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_cliente = :cliente
                   AND data_agendamento = :data
                   AND status IN ("agendado","confirmado")
                   AND hora_inicio < :fim
@@ -297,9 +304,11 @@ class Agendamento
         }
 
         $conexao = bd();
+        // Agrupa as gravações para confirmar o conjunto ou desfazê-lo em caso de falha.
         $conexao->beginTransaction();
 
         try {
+            // Revalida a disponibilidade dentro da transação, pois a consulta da interface pode estar desatualizada.
             $erros = Disponibilidade::validar(
                 [
                     'id_profissional' => $idProfissional,
@@ -314,10 +323,12 @@ class Agendamento
             );
 
             if ($erros !== []) {
+                // Desfaz as operações pendentes para não deixar dados parcialmente gravados.
                 $conexao->rollBack();
                 return ['sucesso' => false, 'erros' => $erros];
             }
 
+            // Obtém preço e duração no servidor para calcular o horário final e registrar o valor da reserva.
             $servico = Servico::porId($idServico);
             $horaFim = somarMinutos($horaInicio, (int) $servico['duracao_minutos']);
 
@@ -333,10 +344,9 @@ class Agendamento
 
             $consulta = $conexao->prepare(
                 'INSERT INTO agendamentos
-                    (id_cliente, id_profissional, id_servico, data_agendamento, hora_inicio, hora_fim,
+                    (id_estabelecimento, id_cliente, id_profissional, id_servico, data_agendamento, hora_inicio, hora_fim,
                      valor, status, observacao, origem)
-                 VALUES
-                    (:cliente, :profissional, :servico, :data, :inicio, :fim,
+                 VALUES (' . Contexto::id() . ', :cliente, :profissional, :servico, :data, :inicio, :fim,
                      :valor, :status, :observacao, :origem)'
             );
 
@@ -356,6 +366,7 @@ class Agendamento
             ]);
 
             $idAgendamento = (int) $conexao->lastInsertId();
+            // Confirma as alterações depois que todas as operações da transação terminam.
             $conexao->commit();
 
             return ['sucesso' => true, 'erros' => [], 'id_agendamento' => $idAgendamento];
@@ -372,6 +383,7 @@ class Agendamento
     // Mudanca de status
     // -----------------------------------------------------------------
 
+    /** Atualiza a situação do registro identificado pelo ID. */
     public static function alterarStatus(int $idAgendamento, string $status): bool
     {
         if (!in_array($status, self::STATUS, true)) {
@@ -380,18 +392,20 @@ class Agendamento
 
         $consulta = bd()->prepare(
             'UPDATE agendamentos SET status = :status, motivo_cancelamento = NULL, id_usuario_cancelou = NULL
-             WHERE id_agendamento = :id'
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_agendamento = :id'
         );
 
         return $consulta->execute([':status' => $status, ':id' => $idAgendamento]);
     }
 
+    /** Registra o cancelamento junto ao motivo e ao usuário responsável pela ação. */
     public static function cancelar(int $idAgendamento, ?int $idUsuario, ?string $motivo = null): bool
     {
+        if ($idUsuario !== null && !Usuario::porId($idUsuario)) return false;
         $consulta = bd()->prepare(
             'UPDATE agendamentos
              SET status = "cancelado", motivo_cancelamento = :motivo, id_usuario_cancelou = :usuario
-             WHERE id_agendamento = :id AND status <> "cancelado"'
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_agendamento = :id AND status <> "cancelado"'
         );
 
         return $consulta->execute([
@@ -401,9 +415,10 @@ class Agendamento
         ]);
     }
 
+    /** Altera somente a observação da reserva, usando null para um texto vazio. */
     public static function atualizarObservacao(int $idAgendamento, ?string $observacao): bool
     {
-        $consulta = bd()->prepare('UPDATE agendamentos SET observacao = :observacao WHERE id_agendamento = :id');
+        $consulta = bd()->prepare('UPDATE agendamentos SET observacao = :observacao WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_agendamento = :id');
         return $consulta->execute([':observacao' => $observacao ?: null, ':id' => $idAgendamento]);
     }
 
@@ -426,8 +441,10 @@ class Agendamento
         return strtotime($agendamento['data_agendamento'] . ' ' . $agendamento['hora_inicio']) <= time();
     }
 
+    /** Reutiliza a contagem de agendamentos com o cliente e o status solicitados. */
     public static function totalPorCliente(int $idCliente, ?string $status = null): int
     {
+        // Reúne os critérios usados para consultar a lista e calcular os totais.
         $filtros = ['id_cliente' => $idCliente];
         if ($status !== null) {
             $filtros['status'] = $status;

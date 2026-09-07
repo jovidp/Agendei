@@ -2,6 +2,7 @@
    AGENDEI - Layout dos paineis (admin, profissional e cliente)
    ===================================================================== */
 
+/* Estrutura externa das áreas de administrador, cliente e profissional. */
 .painel {
     display: flex;
     min-height: 100vh;
@@ -11,6 +12,7 @@
    Sidebar
    --------------------------------------------------------------------- */
 
+/* Mantém a navegação fixa e permite rolagem própria quando há muitos itens. */
 .sidebar {
     position: fixed;
     top: 0;
@@ -146,6 +148,7 @@
    Area de conteudo
    --------------------------------------------------------------------- */
 
+/* Reserva espaço para a barra lateral e ocupa a largura restante da tela. */
 .painel-conteudo {
     flex: 1;
     min-width: 0;
@@ -154,6 +157,7 @@
     flex-direction: column;
 }
 
+/* Alinha título, subtítulo e ações principais da página. */
 .topo-painel {
     position: sticky;
     top: 0;
@@ -236,6 +240,7 @@
    Indicadores
    --------------------------------------------------------------------- */
 
+/* Distribui os cartões de totais do dashboard. */
 .grade-indicadores {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -388,6 +393,7 @@
 .agenda-visoes a:last-child { border-right: 0; }
 .agenda-visoes a.ativo { background-color: var(--cor-primaria); color: var(--branco); }
 
+/* Mantém a grade da agenda acessível por rolagem horizontal em telas estreitas. */
 .agenda-area { overflow-x: auto; }
 
 .agenda-tabela {
@@ -437,6 +443,7 @@
     white-space: nowrap;
 }
 
+/* Cartão de um atendimento na agenda; as classes de status definem suas cores. */
 .agenda-evento {
     display: block;
     width: 100%;
@@ -462,6 +469,7 @@
 .agenda-evento.status-concluido  { border-left-color: var(--texto-secundario); background-color: #F1F3F4; }
 .agenda-evento.status-cancelado  { border-left-color: var(--erro); background-color: var(--erro-claro); }
 
+/* Diferencia os intervalos indisponíveis dos cartões de atendimento. */
 .agenda-bloqueio {
     display: block;
     border: 1px dashed var(--borda-forte);
@@ -501,6 +509,7 @@
    Horarios do profissional
    --------------------------------------------------------------------- */
 
+/* Organiza as colunas de dias na apresentação semanal. */
 .grade-dias {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -551,6 +560,7 @@
    Perfil e resumos
    --------------------------------------------------------------------- */
 
+/* Destaca a data e as informações da próxima reserva no painel do cliente. */
 .resumo-destaque {
     display: flex;
     align-items: center;
@@ -592,11 +602,13 @@
    Responsivo
    --------------------------------------------------------------------- */
 
+/* Ajusta a disposição dos componentes para janelas de até 1080 pixels. */
 @media (max-width: 1080px) {
     .grade-painel { grid-template-columns: 1fr; }
     .grade-painel-igual { grid-template-columns: 1fr; }
 }
 
+/* Ajusta a disposição dos componentes para janelas de até 900 pixels. */
 @media (max-width: 900px) {
     .sidebar {
         transform: translateX(-100%);
@@ -615,6 +627,7 @@
     .topo-painel { padding: 0 16px; }
 }
 
+/* Ajusta a disposição dos componentes para janelas de até 620 pixels. */
 @media (max-width: 620px) {
     .topo-painel h1 { font-size: 15px; }
     .topo-painel .subtitulo-topo { display: none; }

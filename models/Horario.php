@@ -5,9 +5,10 @@
  */
 class Horario
 {
+    /** Busca o registro pelo identificador; retorna null quando ele não existe. */
     public static function porId(int $idHorario): ?array
     {
-        $consulta = bd()->prepare('SELECT * FROM horarios_profissionais WHERE id_horario = :id LIMIT 1');
+        $consulta = bd()->prepare('SELECT * FROM horarios_profissionais WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_horario = :id LIMIT 1');
         $consulta->execute([':id' => $idHorario]);
         return $consulta->fetch() ?: null;
     }
@@ -17,7 +18,7 @@ class Horario
     {
         $consulta = bd()->prepare(
             'SELECT * FROM horarios_profissionais
-             WHERE id_profissional = :id
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :id
              ORDER BY dia_semana ASC, hora_inicio ASC'
         );
         $consulta->execute([':id' => $idProfissional]);
@@ -29,7 +30,7 @@ class Horario
     {
         $consulta = bd()->prepare(
             'SELECT * FROM horarios_profissionais
-             WHERE id_profissional = :id AND dia_semana = :dia AND status = "ativo"
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :id AND dia_semana = :dia AND status = "ativo"
              ORDER BY hora_inicio ASC'
         );
         $consulta->execute([':id' => $idProfissional, ':dia' => $diaSemana]);
@@ -52,7 +53,7 @@ class Horario
     public static function existeSobreposicao(int $idProfissional, int $diaSemana, string $inicio, string $fim, ?int $ignorarId = null): bool
     {
         $sql = 'SELECT id_horario FROM horarios_profissionais
-                WHERE id_profissional = :profissional
+                WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :profissional
                   AND dia_semana = :dia
                   AND hora_inicio < :fim
                   AND hora_fim > :inicio';
@@ -74,12 +75,13 @@ class Horario
         return (bool) $consulta->fetch();
     }
 
+    /** Cadastra uma faixa de expediente vinculada ao profissional e ao dia da semana. */
     public static function criar(array $dados): int
     {
         $consulta = bd()->prepare(
             'INSERT INTO horarios_profissionais
-                (id_profissional, dia_semana, hora_inicio, hora_fim, intervalo_minutos, status)
-             VALUES (:profissional, :dia, :inicio, :fim, :intervalo, :status)'
+                (id_estabelecimento, id_profissional, dia_semana, hora_inicio, hora_fim, intervalo_minutos, status)
+             VALUES (' . Contexto::id() . ', :profissional, :dia, :inicio, :fim, :intervalo, :status)'
         );
 
         $consulta->execute([
@@ -94,13 +96,14 @@ class Horario
         return (int) bd()->lastInsertId();
     }
 
+    /** Persiste os campos editáveis do cadastro identificado pelo ID. */
     public static function atualizar(int $idHorario, array $dados): bool
     {
         $consulta = bd()->prepare(
             'UPDATE horarios_profissionais
              SET dia_semana = :dia, hora_inicio = :inicio, hora_fim = :fim,
                  intervalo_minutos = :intervalo, status = :status
-             WHERE id_horario = :id'
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_horario = :id'
         );
 
         return $consulta->execute([
@@ -113,24 +116,27 @@ class Horario
         ]);
     }
 
+    /** Atualiza a situação do registro identificado pelo ID. */
     public static function alterarStatus(int $idHorario, string $status): bool
     {
         $status = $status === 'ativo' ? 'ativo' : 'inativo';
-        $consulta = bd()->prepare('UPDATE horarios_profissionais SET status = :status WHERE id_horario = :id');
+        $consulta = bd()->prepare('UPDATE horarios_profissionais SET status = :status WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_horario = :id');
         return $consulta->execute([':status' => $status, ':id' => $idHorario]);
     }
 
+    /** Executa a exclusão pelo ID; as restrições do banco continuam sendo aplicadas. */
     public static function excluir(int $idHorario): bool
     {
-        $consulta = bd()->prepare('DELETE FROM horarios_profissionais WHERE id_horario = :id');
+        $consulta = bd()->prepare('DELETE FROM horarios_profissionais WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_horario = :id');
         return $consulta->execute([':id' => $idHorario]);
     }
 
+    /** Verifica a existência de expediente ativo para o profissional. */
     public static function possuiExpediente(int $idProfissional): bool
     {
         $consulta = bd()->prepare(
             'SELECT 1 FROM horarios_profissionais
-             WHERE id_profissional = :id AND status = "ativo" LIMIT 1'
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :id AND status = "ativo" LIMIT 1'
         );
         $consulta->execute([':id' => $idProfissional]);
         return (bool) $consulta->fetch();

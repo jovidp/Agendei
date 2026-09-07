@@ -2,10 +2,13 @@
 /**
  * Dados pessoais e senha do profissional.
  */
+// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/../config/config.php';
 
+// Restringe esta página a profissionais autenticados.
 exigirLogin('profissional');
 
+// Obtém o profissional da sessão para restringir os dados à sua própria agenda.
 $idProfissional = perfilId();
 $idUsuario      = usuarioId();
 $profissional   = Profissional::porId($idProfissional);
@@ -17,10 +20,13 @@ if (!$profissional) {
 
 $erros = [];
 
+// Processa o formulário enviado antes de montar o HTML da página.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Confere o token da sessão antes de aceitar alterações enviadas pelo formulário.
     exigirCsrf();
     $acao = post('acao');
 
+    // Valida e atualiza as informações pessoais do perfil.
     if ($acao === 'dados') {
         $nome     = post('nome');
         $email    = mb_strtolower(post('email'));
@@ -54,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Encaminha a troca de senha à validação da senha atual e da confirmação.
     if ($acao === 'senha') {
         $erros = alterarSenhaUsuario($idUsuario, post('senha_atual'), post('nova_senha'), post('confirmar_senha'));
 
@@ -64,10 +71,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Meu perfil';
 $subtituloTopo = 'Seus dados de cadastro e acesso';
 $jsExtra       = ['login.js'];
 
+// Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
 ?>
 
@@ -84,7 +93,7 @@ require_once RAIZ . '/includes/painel_header.php';
     <div class="cartao">
         <div class="cartao-cabecalho"><h3>Dados profissionais</h3></div>
         <div class="cartao-corpo">
-            <form method="post" id="formPerfil" novalidate>
+            <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" id="formPerfil" novalidate>
                 <?= campoCsrf() ?>
                 <input type="hidden" name="acao" value="dados">
 
@@ -130,7 +139,7 @@ require_once RAIZ . '/includes/painel_header.php';
         <div class="cartao">
             <div class="cartao-cabecalho"><h3>Alterar senha</h3></div>
             <div class="cartao-corpo">
-                <form method="post" id="formSenha" novalidate>
+                <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" id="formSenha" novalidate>
                     <?= campoCsrf() ?>
                     <input type="hidden" name="acao" value="senha">
 

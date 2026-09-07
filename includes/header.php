@@ -4,7 +4,9 @@
  * Variaveis opcionais: $tituloPagina, $cssExtra (array), $paginaAtiva.
  */
 $estabelecimento = Estabelecimento::dados();
+// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina    = $tituloPagina ?? $estabelecimento['nome'];
+// As páginas podem informar folhas de estilo adicionais ao layout compartilhado.
 $cssExtra        = $cssExtra ?? [];
 $paginaAtiva     = $paginaAtiva ?? '';
 ?>
@@ -19,13 +21,14 @@ $paginaAtiva     = $paginaAtiva ?? '';
     <?php foreach ($cssExtra as $arquivo): ?>
         <link rel="stylesheet" href="<?= url('assets/css/' . $arquivo) ?>">
     <?php endforeach; ?>
+    <?php require RAIZ . '/includes/tema.php'; ?>
 </head>
 <body>
 
-<header class="cabecalho-site">
+<?php /* Cabeçalho público com identidade do estabelecimento e navegação do site. */ ?><header class="cabecalho-site">
     <div class="container cabecalho-conteudo">
         <a href="<?= url('index.php') ?>" class="marca">
-            <span class="marca-simbolo"><?= e(mb_substr($estabelecimento['nome'], 0, 1)) ?></span>
+            <?= Tema::marca($estabelecimento) ?>
             <?= e($estabelecimento['nome']) ?>
         </a>
 
