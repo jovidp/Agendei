@@ -48,7 +48,10 @@ $jsExtra = $jsExtra ?? [];
 
         <div class="rodape-base">
             <span>&copy; <?= date('Y') ?> <?= e($estabelecimento['nome']) ?>. Todos os direitos reservados.</span>
-            <span>Sistema de agendamento <?= e(NOME_SISTEMA) ?></span>
+            <span class="rodape-credito">
+                Sistema de agendamento
+                <?= marcaSistema(18, true, 'marca-sistema-discreta') ?>
+            </span>
         </div>
     </div>
 </footer>

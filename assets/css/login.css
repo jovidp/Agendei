@@ -10,6 +10,18 @@
   background-color: var(--fundo);
 }
 
+/* Assinatura do produto, abaixo do cartao e presa ao pe da janela. */
+.assinatura-sistema {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0 20px 28px;
+  font-size: 13px;
+  color: var(--texto-secundario);
+}
+
 /* Centraliza o formulário na área disponível da janela. */
 .autenticacao-area {
   flex: 1;
@@ -184,4 +196,15 @@
   .autenticacao-formulario {
     padding: 24px 18px;
   }
+}
+
+/* ---------------------------------------------------------------------
+   Campo do codigo do aplicativo autenticador (dois_fatores.php)
+   Digitos largos e espacados, para conferir de relance contra o celular.
+   --------------------------------------------------------------------- */
+.campo-codigo {
+  font-family: ui-monospace, "SFMono-Regular", "Cascadia Mono", Consolas, monospace;
+  font-size: 1.6rem;
+  letter-spacing: 0.35em;
+  text-align: center;
 }

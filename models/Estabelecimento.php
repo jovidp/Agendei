@@ -92,6 +92,49 @@ class Estabelecimento
         return bd()->query($sql)->fetchAll();
     }
 
+    /**
+     * Uso real de cada empresa, para a administracao global.
+     *
+     * A listagem comum conta cadastro: quantos clientes, quantos servicos. Isso
+     * nao diz se a empresa esta viva — uma base cadastrada em janeiro e
+     * abandonada em fevereiro continua "grande". Aqui o que conta e movimento:
+     * agendamentos criados na janela, clientes novos e a ultima vez que alguem
+     * da equipe entrou no sistema.
+     */
+    public static function uso(int $dias = 30): array
+    {
+        $corte = date('Y-m-d H:i:s', strtotime('-' . max(1, $dias) . ' days'));
+
+        $sql = 'SELECT e.id_estabelecimento, e.nome, e.slug, e.status,
+                       (SELECT COUNT(*) FROM agendamentos a
+                         WHERE a.id_estabelecimento = e.id_estabelecimento) AS agendamentos_total,
+                       (SELECT COUNT(*) FROM agendamentos a
+                         WHERE a.id_estabelecimento = e.id_estabelecimento
+                           AND a.data_criacao > :corte) AS agendamentos_periodo,
+                       (SELECT COUNT(*) FROM agendamentos a
+                         WHERE a.id_estabelecimento = e.id_estabelecimento
+                           AND a.data_criacao > :corteCancelados
+                           AND a.status = \'cancelado\') AS cancelados_periodo,
+                       (SELECT COUNT(*) FROM clientes c
+                         WHERE c.id_estabelecimento = e.id_estabelecimento
+                           AND c.data_cadastro > :corteClientes) AS clientes_novos,
+                       (SELECT COUNT(*) FROM clientes c
+                         WHERE c.id_estabelecimento = e.id_estabelecimento) AS clientes_total,
+                       (SELECT MAX(u.ultimo_acesso) FROM usuarios u
+                         WHERE u.id_estabelecimento = e.id_estabelecimento) AS ultimo_acesso
+                FROM estabelecimento e
+                ORDER BY e.nome';
+
+        $consulta = bd()->prepare($sql);
+        $consulta->execute([
+            ':corte'           => $corte,
+            ':corteCancelados' => $corte,
+            ':corteClientes'   => $corte,
+        ]);
+
+        return $consulta->fetchAll();
+    }
+
     public static function porIdGlobal(int $id): ?array
     {
         $q = bd()->prepare('SELECT * FROM estabelecimento WHERE id_estabelecimento = ? LIMIT 1');
@@ -132,6 +175,90 @@ class Estabelecimento
             if ($db->inTransaction()) $db->rollBack();
             throw $erro;
         }
+    }
+
+    // -----------------------------------------------------------------
+    // Manutencao das contas administrativas pelo master
+    //
+    // Os metodos de Usuario:: filtram por Contexto::id(), que na area master
+    // vale zero — nenhum deles serve aqui. Por isso estas consultas recebem o
+    // id da empresa explicitamente e o repetem no WHERE: e o mesmo isolamento
+    // do resto do sistema, so que declarado no lugar de herdado da sessao.
+    // -----------------------------------------------------------------
+
+    /** Le uma conta administrativa garantindo que ela pertence a empresa informada. */
+    public static function administrador(int $id, int $idUsuario): ?array
+    {
+        $q = bd()->prepare('SELECT id_usuario, id_estabelecimento, nome, email, login, tipo, status, ultimo_acesso
+                            FROM usuarios
+                            WHERE id_estabelecimento = ? AND id_usuario = ? AND tipo = \'admin\' LIMIT 1');
+        $q->execute([$id, $idUsuario]);
+        return $q->fetch() ?: null;
+    }
+
+    /**
+     * ID do registro em administradores, consultado pela empresa informada.
+     * Usuario::idDoPerfil() nao serve aqui: ele filtra pelo Contexto, que na
+     * area master nao aponta para empresa nenhuma.
+     */
+    public static function idAdministrador(int $id, int $idUsuario): ?int
+    {
+        $q = bd()->prepare('SELECT id_administrador FROM administradores
+                            WHERE id_estabelecimento = ? AND id_usuario = ? LIMIT 1');
+        $q->execute([$id, $idUsuario]);
+        $registro = $q->fetch();
+        return $registro ? (int) $registro['id_administrador'] : null;
+    }
+
+    /** Quantas contas administrativas da empresa continuam podendo entrar. */
+    public static function administradoresAtivos(int $id, ?int $ignorarIdUsuario = null): int
+    {
+        $sql = 'SELECT COUNT(*) FROM usuarios
+                WHERE id_estabelecimento = ? AND tipo = \'admin\' AND status = \'ativo\'';
+        $parametros = [$id];
+
+        if ($ignorarIdUsuario !== null) {
+            $sql .= ' AND id_usuario <> ?';
+            $parametros[] = $ignorarIdUsuario;
+        }
+
+        $q = bd()->prepare($sql);
+        $q->execute($parametros);
+        return (int) $q->fetchColumn();
+    }
+
+    /**
+     * Redefine a senha de um administrador local.
+     *
+     * O token de recuperacao pendente e descartado junto: se alguem pediu
+     * "esqueci minha senha" e o master atendeu por outro caminho, o link
+     * antigo nao pode continuar valendo.
+     */
+    public static function definirSenhaAdministrador(int $id, int $idUsuario, string $senha): bool
+    {
+        $q = bd()->prepare('UPDATE usuarios
+                            SET senha_hash = ?, token_recuperacao = NULL, token_expiracao = NULL
+                            WHERE id_estabelecimento = ? AND id_usuario = ? AND tipo = \'admin\'');
+        return $q->execute([password_hash($senha, PASSWORD_DEFAULT), $id, $idUsuario]);
+    }
+
+    /**
+     * Liga ou desliga o acesso de um administrador local.
+     *
+     * Desligar o ultimo administrador ativo deixaria a empresa sem ninguem
+     * capaz de abrir o proprio painel, entao a operacao e recusada.
+     */
+    public static function alterarStatusAdministrador(int $id, int $idUsuario, string $status): bool
+    {
+        $status = $status === 'ativo' ? 'ativo' : 'inativo';
+
+        if ($status === 'inativo' && self::administradoresAtivos($id, $idUsuario) === 0) {
+            return false;
+        }
+
+        $q = bd()->prepare('UPDATE usuarios SET status = ?
+                            WHERE id_estabelecimento = ? AND id_usuario = ? AND tipo = \'admin\'');
+        return $q->execute([$status, $id, $idUsuario]);
     }
 
     /** Endereco em linha unica para exibicao. */

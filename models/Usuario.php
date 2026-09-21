@@ -269,4 +269,85 @@ class Usuario
         $consulta = bd()->prepare('DELETE FROM usuarios WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id');
         return $consulta->execute([':id' => $idUsuario]);
     }
+
+    // -----------------------------------------------------------------
+    // Segundo fator por codigo (TOTP)
+    // -----------------------------------------------------------------
+
+    /** Indica se a conta ja concluiu o cadastro do aplicativo autenticador. */
+    public static function totpAtivo(?array $usuario): bool
+    {
+        return !empty($usuario['totp_ativado_em']) && Totp::decifrar($usuario['totp_segredo'] ?? null) !== '';
+    }
+
+    /** Segredo aberto da conta, ou string vazia quando nao ha nenhum guardado. */
+    public static function totpSegredo(?array $usuario): string
+    {
+        return Totp::decifrar($usuario['totp_segredo'] ?? null);
+    }
+
+    /**
+     * Guarda um segredo novo ainda nao confirmado.
+     *
+     * O cadastro so vale depois que o usuario digita um codigo gerado por ele
+     * (totpAtivar). Ate la o segredo fica no banco sem data de ativacao, entao
+     * o login continua pedindo a pergunta cadastral: ninguem se tranca fora da
+     * conta por ter aberto a tela de cadastro e desistido no meio.
+     */
+    public static function totpPreparar(int $idUsuario, string $segredo): void
+    {
+        $consulta = bd()->prepare(
+            'UPDATE usuarios
+             SET totp_segredo = :segredo, totp_ativado_em = NULL, totp_ultimo_contador = NULL
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id'
+        );
+        $consulta->execute([':segredo' => Totp::cifrar($segredo), ':id' => $idUsuario]);
+    }
+
+    /** Confirma o cadastro do aplicativo: a partir daqui o login pede o codigo. */
+    public static function totpAtivar(int $idUsuario, int $contadorUsado): void
+    {
+        $consulta = bd()->prepare(
+            'UPDATE usuarios
+             SET totp_ativado_em = NOW(), totp_ultimo_contador = :contador
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id'
+        );
+        $consulta->execute([':contador' => $contadorUsado, ':id' => $idUsuario]);
+    }
+
+    /** Desliga o codigo e apaga o segredo; a conta volta a pergunta cadastral. */
+    public static function totpDesativar(int $idUsuario): void
+    {
+        $consulta = bd()->prepare(
+            'UPDATE usuarios
+             SET totp_segredo = NULL, totp_ativado_em = NULL, totp_ultimo_contador = NULL
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id'
+        );
+        $consulta->execute([':id' => $idUsuario]);
+    }
+
+    /**
+     * Aceita a janela usada apenas se ela for posterior a ultima aproveitada.
+     *
+     * Sem esta trava, um codigo visto por cima do ombro — ou capturado num
+     * computador comprometido — continuaria valendo pelo resto dos 30 segundos
+     * e ainda pela janela de tolerancia. Devolve false quando o codigo ja foi
+     * usado, e a tela trata como codigo invalido.
+     */
+    public static function totpContadorUsado(int $idUsuario, array $usuario, int $contador): bool
+    {
+        $ultimo = $usuario['totp_ultimo_contador'] ?? null;
+
+        if ($ultimo !== null && $contador <= (int) $ultimo) {
+            return false;
+        }
+
+        $consulta = bd()->prepare(
+            'UPDATE usuarios SET totp_ultimo_contador = :contador
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id'
+        );
+        $consulta->execute([':contador' => $contador, ':id' => $idUsuario]);
+
+        return true;
+    }
 }

@@ -26,7 +26,7 @@ foreach (['der.png', 'der.svg', 'der.jpg'] as $arquivo) {
 // Entidades exibidas no diagrama: [x, y, titulo, [campos], destaque]
 $entidades = [
     ['x' => 20,  'y' => 20,  'nome' => 'estabelecimento', 'campos' => ['id_estabelecimento (PK)', 'nome', 'slug', 'cores / logo'], 'tipo' => 'base'],
-    ['x' => 20,  'y' => 190, 'nome' => 'usuarios',        'campos' => ['id_usuario (PK)', 'id_estabelecimento (FK)', 'nome, email, senha_hash', 'login (6 letras)', 'nome_materno, data_nascimento', 'cep, logradouro, numero', 'bairro, cidade, uf', 'sexo, telefone, telefone_fixo', 'tipo, status'], 'tipo' => 'auth'],
+    ['x' => 20,  'y' => 190, 'nome' => 'usuarios',        'campos' => ['id_usuario (PK)', 'id_estabelecimento (FK)', 'nome, email, senha_hash', 'login (6 letras)', 'nome_materno, data_nascimento', 'cep, logradouro, numero', 'bairro, cidade, uf', 'sexo, telefone, telefone_fixo', 'totp_segredo, totp_ativado_em', 'tipo, status'], 'tipo' => 'auth'],
     ['x' => 330, 'y' => 20,  'nome' => 'clientes',        'campos' => ['id_cliente (PK)', 'id_usuario (FK)', 'cpf', 'data_nascimento', 'pontos_fidelidade'], 'tipo' => 'perfil'],
     ['x' => 330, 'y' => 190, 'nome' => 'administradores', 'campos' => ['id_administrador (PK)', 'id_usuario (FK)', 'nivel'], 'tipo' => 'perfil'],
     ['x' => 330, 'y' => 330, 'nome' => 'profissionais',   'campos' => ['id_profissional (PK)', 'id_usuario (FK)', 'especialidade'], 'tipo' => 'perfil'],
@@ -151,9 +151,14 @@ require_once RAIZ . '/includes/painel_header.php';
                     <td>O perfil master corresponde a <code>admin</code> e o comum a <code>cliente</code>. O controle de acesso le esse valor da sessao.</td>
                 </tr>
                 <tr>
-                    <td class="celula-principal">Dados do 2FA</td>
+                    <td class="celula-principal">2FA por codigo</td>
+                    <td><code>usuarios.totp_segredo</code>, <code>totp_ativado_em</code>, <code>totp_ultimo_contador</code></td>
+                    <td>Caminho padrao do segundo fator. O segredo fica cifrado; a data so e preenchida depois que o usuario confirma um codigo, e o contador guarda a janela ja usada para impedir repetir o mesmo codigo. As tres colunas se repetem em <code>administradores_master</code>.</td>
+                </tr>
+                <tr>
+                    <td class="celula-principal">2FA por pergunta (reserva)</td>
                     <td><code>usuarios.nome_materno</code>, <code>data_nascimento</code>, <code>cep</code></td>
-                    <td>Ficam na tabela comum a todos os perfis para que master e comum respondam as mesmas perguntas.</td>
+                    <td>Atende quem ainda nao cadastrou o aplicativo autenticador. Ficam na tabela comum a todos os perfis para que master e comum respondam as mesmas perguntas.</td>
                 </tr>
                 <tr>
                     <td class="celula-principal">Login de 6 letras</td>

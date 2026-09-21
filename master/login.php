@@ -3,18 +3,41 @@
 define('AREA_MASTER', true);
 require_once __DIR__ . '/../config/config.php';
 bloquearSeLogado();
+
+// Um desafio de codigo em andamento nao pode ficar preso a uma tentativa anterior.
+cancelarSegundoFatorMaster();
+
 $erros = [];
 $email = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exigirCsrf();
     $email = mb_strtolower(post('email'));
     $senha = post('senha');
-    if (!validarEmail($email) || $senha === '') {
+
+    // A conta master administra todos os estabelecimentos: aqui a tolerancia a
+    // tentativas erradas e a menor do sistema.
+    $bloqueio = conferirBloqueio(['master_ip' => ipCliente()]);
+
+    if ($bloqueio !== '') {
+        $erros[] = $bloqueio;
+    } elseif (!validarEmail($email) || $senha === '') {
         $erros[] = 'Informe o e-mail e a senha da conta master.';
     } else {
         $master = Master::autenticar($email, $senha);
-        if (!$master) $erros[] = 'E-mail ou senha incorretos.';
-        else {
+        if (!$master) {
+            anotarFalha('master_ip', ipCliente());
+            atrasarResposta();
+            registrarEventoSeguranca('master_login_falha', ['email' => mb_substr($email, 0, 60)]);
+            $erros[] = 'E-mail ou senha incorretos.';
+        } else {
+            limparFalhas('master_ip', ipCliente());
+
+            if (Master::totpAtivo($master)) {
+                // A sessao master so abre depois do codigo: aqui fica so o desafio.
+                iniciarSegundoFatorMaster($master);
+                redirecionar('master/dois_fatores.php');
+            }
+
             registrarSessaoMaster($master);
             definirFlash('sucesso', 'Bem-vindo(a) à administração master.');
             redirecionar('master/dashboard.php');
@@ -53,6 +76,8 @@ $estabelecimento = Contexto::dados();
         </div>
     </div>
 </div>
+<?php require RAIZ . '/includes/assinatura_sistema.php'; ?>
+
 <script src="<?= url('assets/js/main.js') ?>"></script>
 <script src="<?= url('assets/js/login.js') ?>"></script>
 </body>

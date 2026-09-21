@@ -10,6 +10,8 @@ CREATE DATABASE IF NOT EXISTS `agendei` DEFAULT CHARACTER SET utf8mb4 COLLATE ut
 USE `agendei`;
 
 SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS `estabelecimento_plano`;
+DROP TABLE IF EXISTS `planos`;
 DROP TABLE IF EXISTS `avaliacoes`;
 DROP TABLE IF EXISTS `cliente_pacotes`;
 DROP TABLE IF EXISTS `pacotes`;
@@ -78,6 +80,9 @@ CREATE TABLE `administradores_master` (
   `cor_fundo` char(7) NOT NULL DEFAULT '#F3F5F8',
   `fonte` varchar(30) NOT NULL DEFAULT 'padrao',
   `logo` mediumtext DEFAULT NULL,
+  `totp_segredo` varchar(255) DEFAULT NULL,
+  `totp_ativado_em` datetime DEFAULT NULL,
+  `totp_ultimo_contador` bigint(20) DEFAULT NULL,
   `ultimo_acesso` datetime DEFAULT NULL,
   `data_criacao` datetime NOT NULL DEFAULT current_timestamp(),
   `data_atualizacao` datetime DEFAULT NULL ON UPDATE current_timestamp(),
@@ -109,6 +114,9 @@ CREATE TABLE `usuarios` (
   `uf` char(2) DEFAULT NULL,
   `tipo` enum('cliente','profissional','admin') NOT NULL DEFAULT 'cliente',
   `status` enum('ativo','inativo') NOT NULL DEFAULT 'ativo',
+  `totp_segredo` varchar(255) DEFAULT NULL,
+  `totp_ativado_em` datetime DEFAULT NULL,
+  `totp_ultimo_contador` bigint(20) DEFAULT NULL,
   `token_recuperacao` varchar(64) DEFAULT NULL,
   `token_expiracao` datetime DEFAULT NULL,
   `ultimo_acesso` datetime DEFAULT NULL,
@@ -483,7 +491,7 @@ CREATE TABLE `logs_autenticacao` (
   `cpf` char(11) DEFAULT NULL,
   `perfil` varchar(20) DEFAULT NULL,
   `evento` enum('login_sucesso','login_falha','2fa_sucesso','2fa_falha','2fa_bloqueio','logout') NOT NULL,
-  `fator_2fa` enum('nome_materno','data_nascimento','cep') DEFAULT NULL,
+  `fator_2fa` enum('nome_materno','data_nascimento','cep','totp') DEFAULT NULL,
   `ip` varchar(45) DEFAULT NULL,
   `data_hora` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id_log`),
@@ -491,6 +499,86 @@ CREATE TABLE `logs_autenticacao` (
   KEY `idx_logs_nome` (`nome`),
   KEY `idx_logs_cpf` (`cpf`),
   CONSTRAINT `fk_logs_estabelecimento` FOREIGN KEY (`id_estabelecimento`) REFERENCES `estabelecimento` (`id_estabelecimento`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- PLANOS DE CONTRATACAO
+-- Tetos que a administracao master aplica a um estabelecimento: equipe,
+-- catalogo e volume de agendamentos no mes.
+--
+-- Limite NULL significa "sem teto", e estabelecimento sem vinculo continua
+-- sem limite nenhum: a funcionalidade nasce sem mudar quem ja usa o sistema.
+-- ---------------------------------------------------------------------
+CREATE TABLE `planos` (
+  `id_plano` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `nome` varchar(60) NOT NULL,
+  `descricao` varchar(255) DEFAULT NULL,
+  `limite_profissionais` int(10) unsigned DEFAULT NULL,
+  `limite_servicos` int(10) unsigned DEFAULT NULL,
+  `limite_agendamentos_mes` int(10) unsigned DEFAULT NULL,
+  `status` enum('ativo','inativo') NOT NULL DEFAULT 'ativo',
+  `data_criacao` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_plano`),
+  UNIQUE KEY `uk_planos_nome` (`nome`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Um estabelecimento tem um plano de cada vez: a chave primaria e o proprio
+-- vinculo, entao a troca substitui a linha em vez de empilhar historico.
+CREATE TABLE `estabelecimento_plano` (
+  `id_estabelecimento` int(10) unsigned NOT NULL,
+  `id_plano` int(10) unsigned NOT NULL,
+  `data_inicio` datetime NOT NULL DEFAULT current_timestamp(),
+  `observacao` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id_estabelecimento`),
+  KEY `idx_ep_plano` (`id_plano`),
+  CONSTRAINT `fk_ep_estabelecimento` FOREIGN KEY (`id_estabelecimento`) REFERENCES `estabelecimento` (`id_estabelecimento`),
+  CONSTRAINT `fk_ep_plano` FOREIGN KEY (`id_plano`) REFERENCES `planos` (`id_plano`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- AUDITORIA DA ADMINISTRACAO MASTER
+-- Registro do que a conta global faz: empresas criadas, acessos ligados e
+-- desligados, senhas redefinidas e bloqueios liberados.
+--
+-- Nome do master e nome da empresa ficam gravados na propria linha, e nao por
+-- chave estrangeira: o historico precisa continuar legivel depois que a conta
+-- ou o estabelecimento citado deixar de existir.
+-- ---------------------------------------------------------------------
+DROP TABLE IF EXISTS `logs_master`;
+CREATE TABLE `logs_master` (
+  `id_log_master` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `id_master` int(10) unsigned DEFAULT NULL,
+  `master_nome` varchar(120) NOT NULL DEFAULT '',
+  `master_email` varchar(150) NOT NULL DEFAULT '',
+  `acao` varchar(40) NOT NULL,
+  `id_estabelecimento` int(10) unsigned DEFAULT NULL,
+  `estabelecimento_nome` varchar(120) DEFAULT NULL,
+  `alvo` varchar(150) DEFAULT NULL,
+  `detalhe` varchar(255) DEFAULT NULL,
+  `ip` varchar(45) DEFAULT NULL,
+  `data_hora` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_log_master`),
+  KEY `idx_logs_master_data` (`data_hora`),
+  KEY `idx_logs_master_acao` (`acao`),
+  KEY `idx_logs_master_empresa` (`id_estabelecimento`,`data_hora`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- TENTATIVAS DE ACESSO
+-- Contador usado pelo controle de forca bruta (includes/seguranca.php).
+--
+-- Fica fora do escopo de estabelecimento de proposito: o bloqueio protege
+-- tambem a area master, que nao pertence a empresa nenhuma. Guarda apenas o
+-- hash da origem, nunca o e-mail ou o IP em texto claro.
+-- ---------------------------------------------------------------------
+DROP TABLE IF EXISTS `tentativas_acesso`;
+CREATE TABLE `tentativas_acesso` (
+  `id_tentativa` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `escopo` varchar(30) NOT NULL,
+  `chave` char(64) NOT NULL,
+  `data_hora` datetime NOT NULL,
+  PRIMARY KEY (`id_tentativa`),
+  KEY `idx_tentativa_busca` (`escopo`,`chave`,`data_hora`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------

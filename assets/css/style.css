@@ -645,6 +645,20 @@ legend {
   white-space: nowrap;
 }
 
+/* Numero que ja bateu no teto do plano: some do resto sem virar erro. */
+.texto-aviso {
+  color: var(--aviso);
+  font-weight: 600;
+}
+
+/* Botoes e formularios curtos dentro de uma celula de acoes. */
+.tabela .acoes-tabela {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 .tabela .celula-principal {
   font-weight: 600;
   color: var(--texto-principal);
@@ -874,11 +888,50 @@ legend {
   justify-content: center;
   width: 32px;
   height: 32px;
-  border-radius: var(--raio-pequeno);
+  /* Segue o arredondamento do simbolo do sistema para as duas marcas combinarem. */
+  border-radius: 9px;
   background-color: var(--cor-primaria);
   color: var(--branco);
   font-size: 15px;
   font-weight: 700;
+}
+
+/* ---------------------------------------------------------------------
+   Marca do sistema
+   --------------------------------------------------------------------- */
+
+/* Assinatura do produto. Mantem as cores proprias mesmo dentro do tema da empresa. */
+.marca-sistema {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.015em;
+  color: #1f4e5f;
+}
+
+.marca-sistema-simbolo {
+  display: block;
+  flex-shrink: 0;
+}
+
+/* Versao de fundo escuro: rodape publico e menu lateral dos paineis. */
+.marca-sistema-invertida {
+  color: var(--branco);
+}
+
+/* Creditos e assinaturas de apoio, onde a marca acompanha um texto corrido. */
+.marca-sistema-discreta {
+  font-size: 14px;
+  font-weight: 600;
+  gap: 7px;
+}
+
+/* Titulo da tela logo abaixo da assinatura, nas telas assinadas pelo sistema. */
+.titulo-apos-marca {
+  margin-top: 24px;
 }
 
 .menu-site {
@@ -1006,6 +1059,13 @@ legend {
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+/* Mantem o texto do credito na mesma linha de base do simbolo do sistema. */
+.rodape-credito {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* ---------------------------------------------------------------------

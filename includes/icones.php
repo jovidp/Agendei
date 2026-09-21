@@ -21,6 +21,7 @@ function icone(string $nome, string $classe = 'sidebar-icone'): string
         'novo'          => '<path d="M12 5v14M5 12h14"/>',
         'sair'          => '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
         'bloqueio'      => '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+        'saude'         => '<path d="M3 12h4l2.5-6 4 12 2.5-6H21"/>',
         'voltar'        => '<path d="m15 18-6-6 6-6"/>',
         'avancar'       => '<path d="m9 18 6-6-6-6"/>',
     ];

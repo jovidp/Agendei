@@ -94,6 +94,8 @@ $estabelecimento = Estabelecimento::dados();
     </div>
 </div>
 
+<?php require RAIZ . '/includes/assinatura_sistema.php'; ?>
+
 <div id="notificacoes"></div>
 <script src="<?= url('assets/js/main.js') ?>"></script>
 <script src="<?= url('assets/js/login.js') ?>"></script>

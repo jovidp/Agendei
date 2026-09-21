@@ -24,9 +24,13 @@ if ($usuario === null || $usuario['status'] !== 'ativo') {
 }
 
 $fator = (string) $pendente['fator'];
+$ehCodigo = segundoFatorEhCodigo($fator);
 
-// Enunciados definidos na especificacao do projeto.
+// Enunciados: o codigo do aplicativo e o caminho padrao; as perguntas
+// cadastrais, previstas na especificacao, atendem quem ainda nao cadastrou o
+// aplicativo autenticador.
 $pergunta = match ($fator) {
+    'totp'            => 'Digite o codigo do seu aplicativo autenticador',
     'nome_materno'    => 'Qual o nome da sua mae?',
     'data_nascimento' => 'Qual a data do seu nascimento?',
     'cep'             => 'Qual o CEP do seu endereco?',
@@ -42,9 +46,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $resposta = post('resposta');
 
-    if ($resposta === '') {
-        $erros[] = 'Informe a resposta.';
-    } elseif (respostaSegundoFatorConfere($fator, $resposta, $usuario)) {
+    // O desafio ja se encerra em tres erros, mas nada impedia recomecar o login
+    // e sortear outra pergunta sem limite. O freio por origem fecha esse laco.
+    $bloqueio = conferirBloqueio(['fator_ip' => ipCliente()]);
+
+    if ($bloqueio !== '') {
+        $erros[] = $bloqueio;
+    } elseif ($resposta === '') {
+        $erros[] = $ehCodigo ? 'Informe o codigo do aplicativo.' : 'Informe a resposta.';
+    } elseif (conferirSegundoFator($fator, $resposta, $usuario)) {
         LogAutenticacao::registrar('2fa_sucesso', (string) $pendente['identificador'], $usuario, $fator, cpfDoUsuario($usuario));
         cancelarSegundoFator();
 
@@ -55,6 +65,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     } else {
         $_SESSION['segundo_fator']['tentativas'] = (int) $pendente['tentativas'] + 1;
+        anotarFalha('fator_ip', ipCliente());
+        atrasarResposta();
         LogAutenticacao::registrar('2fa_falha', (string) $pendente['identificador'], $usuario, $fator, cpfDoUsuario($usuario));
 
         // A especificacao encerra o fluxo na terceira tentativa sem exito.
@@ -66,7 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $restantes = tentativasRestantesSegundoFator();
-        $erros[] = 'Resposta incorreta. Voce ainda tem ' . $restantes . ($restantes === 1 ? ' tentativa.' : ' tentativas.');
+        $erros[] = ($ehCodigo ? 'Codigo incorreto ou ja utilizado.' : 'Resposta incorreta.')
+            . ' Voce ainda tem ' . $restantes . ($restantes === 1 ? ' tentativa.' : ' tentativas.');
     }
 }
 
@@ -94,21 +107,35 @@ $tituloPagina = 'Verificacao em duas etapas | ' . $estabelecimento['nome'];
                 <?= Tema::marca($estabelecimento) ?>
                 <?= e($estabelecimento['nome']) ?>
             </span>
-            <h2>Mais uma confirmacao</h2>
-            <p>Para proteger sua conta, confirmamos um dado que so voce informou no cadastro.</p>
+            <?php if ($ehCodigo): ?>
+                <h2>Confirme com seu aplicativo</h2>
+                <p>Abra o aplicativo autenticador no seu celular e digite o codigo que aparece para o Agendei.</p>
 
-            <ul class="lista-beneficios">
-                <li>A pergunta muda a cada acesso</li>
-                <li>Nenhum codigo por e-mail ou SMS</li>
-                <li>Sua sessao so abre apos a confirmacao</li>
-            </ul>
+                <ul class="lista-beneficios">
+                    <li>O codigo muda a cada 30 segundos</li>
+                    <li>Funciona sem internet no celular</li>
+                    <li>Cada codigo vale uma unica vez</li>
+                </ul>
+            <?php else: ?>
+                <h2>Mais uma confirmacao</h2>
+                <p>Para proteger sua conta, confirmamos um dado que so voce informou no cadastro.</p>
+
+                <ul class="lista-beneficios">
+                    <li>A pergunta muda a cada acesso</li>
+                    <li>Nenhum codigo por e-mail ou SMS</li>
+                    <li>Sua sessao so abre apos a confirmacao</li>
+                </ul>
+            <?php endif; ?>
         </div>
 
         <div class="autenticacao-formulario">
             <a href="<?= url('login.php') ?>" class="voltar-site">&larr; Voltar ao login</a>
 
             <h1>Verificacao em duas etapas</h1>
-            <p class="subtitulo">Ola, <?= e(explode(' ', $usuario['nome'])[0]) ?>. Responda para concluir a entrada.</p>
+            <p class="subtitulo">
+                Ola, <?= e(explode(' ', $usuario['nome'])[0]) ?>.
+                <?= $ehCodigo ? 'Informe o codigo para concluir a entrada.' : 'Responda para concluir a entrada.' ?>
+            </p>
 
             <?php if ($erros !== []): ?>
                 <div class="alerta alerta-erro">
@@ -121,7 +148,12 @@ $tituloPagina = 'Verificacao em duas etapas | ' . $estabelecimento['nome'];
 
                 <div class="campo">
                     <label for="resposta"><?= e($pergunta) ?></label>
-                    <?php if ($fator === 'cep'): ?>
+                    <?php if ($ehCodigo): ?>
+                        <?php /* autocomplete one-time-code deixa o celular oferecer o codigo direto do teclado. */ ?>
+                        <input type="text" id="resposta" name="resposta" class="campo-codigo"
+                               inputmode="numeric" pattern="[0-9 ]*" maxlength="7" placeholder="000000"
+                               autocomplete="one-time-code" required autofocus>
+                    <?php elseif ($fator === 'cep'): ?>
                         <input type="text" id="resposta" name="resposta" data-mascara="cep"
                                inputmode="numeric" placeholder="00000-000" autocomplete="off" required autofocus>
                     <?php elseif ($fator === 'data_nascimento'): ?>
@@ -133,7 +165,12 @@ $tituloPagina = 'Verificacao em duas etapas | ' . $estabelecimento['nome'];
                     <?php endif; ?>
                     <span class="mensagem-campo"></span>
                     <span class="ajuda-campo">
-                        Tentativas restantes: <?= (int) tentativasRestantesSegundoFator() ?> de 3.
+                        <?php if ($ehCodigo): ?>
+                            Seis digitos, sem espacos. Tentativas restantes:
+                            <?= (int) tentativasRestantesSegundoFator() ?> de 3.
+                        <?php else: ?>
+                            Tentativas restantes: <?= (int) tentativasRestantesSegundoFator() ?> de 3.
+                        <?php endif; ?>
                     </span>
                 </div>
 
@@ -141,11 +178,18 @@ $tituloPagina = 'Verificacao em duas etapas | ' . $estabelecimento['nome'];
             </form>
 
             <p class="autenticacao-rodape">
-                Nao reconhece esta pergunta? <a href="<?= url('logout.php') ?>">Cancelar e sair</a>
+                <?php if ($ehCodigo): ?>
+                    Perdeu o acesso ao aplicativo? Procure o administrador do estabelecimento.
+                    <a href="<?= url('logout.php') ?>">Cancelar e sair</a>
+                <?php else: ?>
+                    Nao reconhece esta pergunta? <a href="<?= url('logout.php') ?>">Cancelar e sair</a>
+                <?php endif; ?>
             </p>
         </div>
     </div>
 </div>
+
+<?php require RAIZ . '/includes/assinatura_sistema.php'; ?>
 
 <div id="notificacoes"></div>
 <script src="<?= url('assets/js/main.js') ?>"></script>

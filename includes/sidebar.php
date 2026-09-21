@@ -13,9 +13,17 @@ $menus = [
     'master' => [
         ['rotulo' => 'Visão geral', 'arquivo' => 'master/dashboard.php', 'icone' => 'dashboard'],
         ['rotulo' => 'Estabelecimentos', 'arquivo' => 'master/estabelecimentos.php', 'icone' => 'clientes'],
+        ['rotulo' => 'Uso da plataforma', 'arquivo' => 'master/uso.php', 'icone' => 'relatorios'],
+        ['rotulo' => 'Planos e limites', 'arquivo' => 'master/planos.php', 'icone' => 'servicos'],
+        ['separador' => 'Plataforma'],
+        ['rotulo' => 'Segurança', 'arquivo' => 'master/seguranca.php', 'icone' => 'bloqueio'],
+        ['rotulo' => 'Auditoria', 'arquivo' => 'master/auditoria.php', 'icone' => 'historico'],
+        ['rotulo' => 'Saúde do sistema', 'arquivo' => 'master/saude.php', 'icone' => 'saude'],
         ['separador' => 'Conta master'],
+        ['rotulo' => 'Contas master', 'arquivo' => 'master/contas.php', 'icone' => 'profissionais'],
         ['rotulo' => 'Aparência', 'arquivo' => 'master/aparencia.php', 'icone' => 'configuracoes'],
         ['rotulo' => 'Meu perfil', 'arquivo' => 'master/perfil.php', 'icone' => 'perfil'],
+        ['rotulo' => 'Verificacao em 2 etapas', 'arquivo' => 'master/autenticador.php', 'icone' => 'bloqueio'],
     ],
     'admin' => [
         ['rotulo' => 'Dashboard',     'arquivo' => 'admin/dashboard.php',     'icone' => 'dashboard'],
@@ -35,6 +43,7 @@ $menus = [
         ['rotulo' => 'Diferenciais',  'arquivo' => 'admin/diferenciais.php',  'icone' => 'novo'],
         ['rotulo' => 'Aparência', 'arquivo' => 'admin/aparencia.php', 'icone' => 'configuracoes'],
         ['rotulo' => 'Configuracoes', 'arquivo' => 'admin/configuracoes.php', 'icone' => 'configuracoes'],
+        ['rotulo' => 'Verificacao em 2 etapas', 'arquivo' => 'autenticador.php', 'icone' => 'bloqueio'],
     ],
     'profissional' => [
         ['rotulo' => 'Dashboard',      'arquivo' => 'profissional/dashboard.php', 'icone' => 'dashboard'],
@@ -43,6 +52,7 @@ $menus = [
         ['rotulo' => 'Bloqueios',      'arquivo' => 'profissional/bloqueios.php', 'icone' => 'bloqueio'],
         ['separador' => 'Conta'],
         ['rotulo' => 'Meu perfil',     'arquivo' => 'profissional/perfil.php',    'icone' => 'perfil'],
+        ['rotulo' => 'Verificacao em 2 etapas', 'arquivo' => 'autenticador.php', 'icone' => 'bloqueio'],
     ],
     'cliente' => [
         ['rotulo' => 'Dashboard',         'arquivo' => 'cliente/dashboard.php',    'icone' => 'dashboard'],
@@ -53,6 +63,7 @@ $menus = [
         ['separador' => 'Conta'],
         ['rotulo' => 'Meu perfil',        'arquivo' => 'cliente/perfil.php',       'icone' => 'perfil'],
         ['rotulo' => 'Privacidade',        'arquivo' => 'cliente/privacidade.php',   'icone' => 'configuracoes'],
+        ['rotulo' => 'Verificacao em 2 etapas', 'arquivo' => 'autenticador.php', 'icone' => 'bloqueio'],
         ['rotulo' => 'Modelo do BD',      'arquivo' => 'modelo_bd.php',            'icone' => 'relatorios'],
     ],
 ];

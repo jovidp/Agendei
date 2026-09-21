@@ -21,10 +21,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $identificador = mb_strtolower(post('identificador'));
     $senha = post('senha');
 
-    if ($identificador === '') {
+    // A senha do usuario comum tem oito letras por exigencia da especificacao,
+    // o que da um espaco de busca pequeno. O freio por conta e por origem e o
+    // que impede transformar esse formulario num teste de dicionario.
+    $bloqueio = conferirBloqueio([
+        'login_ip'    => ipCliente(),
+        'login_conta' => $identificador,
+    ]);
+
+    if ($bloqueio !== '') {
+        $erros[] = $bloqueio;
+    }
+
+    if ($erros === [] && $identificador === '') {
         $erros[] = 'Informe seu login.';
     }
-    if ($senha === '') {
+    if ($erros === [] && $senha === '') {
         $erros[] = 'Informe sua senha.';
     }
 
@@ -33,12 +45,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $usuario = autenticar($identificador, $senha);
 
         if ($usuario === null) {
+            // Cada falha conta nos dois baldes: o da conta alvo e o da origem.
+            anotarFalha('login_conta', $identificador);
+            anotarFalha('login_ip', ipCliente());
+            atrasarResposta();
+
             $erros[] = 'Login ou senha incorretos.';
         } elseif (exigeSegundoFator($usuario)) {
+            // Senha correta ja limpa o balde da conta: o segundo fator tem freio proprio.
+            limparFalhas('login_conta', $identificador);
             // A sessao so e aberta depois do segundo fator: aqui fica apenas o desafio pendente.
             iniciarSegundoFator($usuario, $identificador);
             redirecionar('dois_fatores.php');
         } else {
+            // Entrada concluida: a conta deixa de arrastar o historico de falhas.
+            limparFalhas('login_conta', $identificador);
+
             // Guarda a identidade autenticada antes de encaminhar ao destino permitido.
             registrarSessao($usuario);
             definirFlash('sucesso', 'Bem-vindo(a), ' . explode(' ', $usuario['nome'])[0] . '.');
@@ -129,6 +151,8 @@ $tituloPagina = 'Entrar | ' . $estabelecimento['nome'];
         </div>
     </div>
 </div>
+
+<?php require RAIZ . '/includes/assinatura_sistema.php'; ?>
 
 <div id="notificacoes"></div>
 <script src="<?= url('assets/js/main.js') ?>"></script>

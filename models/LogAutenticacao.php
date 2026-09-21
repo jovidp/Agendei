@@ -81,6 +81,94 @@ class LogAutenticacao
         return (int) ($consulta->fetch()['total'] ?? 0);
     }
 
+    // -----------------------------------------------------------------
+    // Consulta global (area master)
+    //
+    // As consultas acima presas a Contexto::id() servem ao painel de cada
+    // empresa. O master precisa do oposto: enxergar a plataforma inteira para
+    // perceber uma varredura de senhas que toca varios estabelecimentos e que,
+    // vista de dentro de um deles, pareceria um punhado de erros comuns.
+    // -----------------------------------------------------------------
+
+    /** Listagem sem recorte por empresa. Aceita os mesmos limites de paginacao. */
+    public static function listarGlobal(array $filtros = []): array
+    {
+        [$where, $parametros] = self::montarFiltrosGlobais($filtros);
+
+        $sql = 'SELECT l.*, e.nome AS estabelecimento_nome, e.slug AS estabelecimento_slug
+                FROM logs_autenticacao l
+                LEFT JOIN estabelecimento e ON e.id_estabelecimento = l.id_estabelecimento
+                ' . $where . '
+                ORDER BY l.data_hora DESC, l.id_log DESC';
+
+        if (!empty($filtros['limite'])) {
+            $sql .= ' LIMIT ' . (int) $filtros['limite'] . ' OFFSET ' . (int) ($filtros['deslocamento'] ?? 0);
+        }
+
+        $consulta = bd()->prepare($sql);
+        $consulta->execute($parametros);
+        return $consulta->fetchAll();
+    }
+
+    /** Conta os registros da listagem global com os mesmos filtros. */
+    public static function contarGlobal(array $filtros = []): int
+    {
+        [$where, $parametros] = self::montarFiltrosGlobais($filtros);
+
+        $consulta = bd()->prepare('SELECT COUNT(*) FROM logs_autenticacao l ' . $where);
+        $consulta->execute($parametros);
+        return (int) $consulta->fetchColumn();
+    }
+
+    /**
+     * Resumo por evento dentro de uma janela de horas.
+     * Alimenta os indicadores do painel de seguranca.
+     */
+    public static function resumoGlobal(int $horas = 24): array
+    {
+        $consulta = bd()->prepare(
+            'SELECT evento, COUNT(*) AS total FROM logs_autenticacao
+             WHERE data_hora > :limite GROUP BY evento'
+        );
+        $consulta->execute([':limite' => date('Y-m-d H:i:s', time() - $horas * 3600)]);
+
+        $resumo = [];
+        foreach ($consulta->fetchAll() as $linha) {
+            $resumo[(string) $linha['evento']] = (int) $linha['total'];
+        }
+        return $resumo;
+    }
+
+    /** Condicoes da consulta global: empresa, evento e termo livre. */
+    private static function montarFiltrosGlobais(array $filtros): array
+    {
+        $condicoes  = ['1 = 1'];
+        $parametros = [];
+
+        if (!empty($filtros['estabelecimento'])) {
+            $condicoes[] = 'l.id_estabelecimento = :estabelecimento';
+            $parametros[':estabelecimento'] = (int) $filtros['estabelecimento'];
+        }
+
+        if (!empty($filtros['evento']) && in_array($filtros['evento'], self::EVENTOS, true)) {
+            $condicoes[] = 'l.evento = :evento';
+            $parametros[':evento'] = $filtros['evento'];
+        }
+
+        $busca = trim((string) ($filtros['busca'] ?? ''));
+        if ($busca !== '') {
+            $como = Sql::como();
+            $condicoes[] = '(l.nome ' . $como . ' :busca'
+                . ' OR l.login_informado ' . $como . ' :buscaLogin'
+                . ' OR l.ip ' . $como . ' :buscaIp)';
+            $parametros[':busca']      = '%' . $busca . '%';
+            $parametros[':buscaLogin'] = '%' . $busca . '%';
+            $parametros[':buscaIp']    = '%' . $busca . '%';
+        }
+
+        return ['WHERE ' . implode(' AND ', $condicoes), $parametros];
+    }
+
     /** Separa as condições SQL dos valores enviados ao PDO para reutilizar os filtros. */
     private static function montarFiltros(array $filtros): array
     {

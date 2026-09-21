@@ -165,6 +165,53 @@
   flex-direction: column;
 }
 
+/* ---------------------------------------------------------------------
+   Faixa de simulacao
+   Aparece quando o master entra no painel de um estabelecimento. Fica colada
+   no topo e acima da barra de titulo, que desce a mesma altura: o aviso nao
+   pode sumir na rolagem nem tapar o titulo da tela.
+   --------------------------------------------------------------------- */
+
+.faixa-simulacao {
+  position: sticky;
+  top: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 44px;
+  padding: 8px 24px;
+  background-color: var(--aviso-claro);
+  border-bottom: 2px solid var(--aviso);
+  color: var(--texto-principal);
+  font-size: 13.5px;
+}
+
+.faixa-simulacao form {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.com-simulacao .topo-painel {
+  top: 44px;
+}
+
+@media (max-width: 640px) {
+  .faixa-simulacao {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 16px;
+  }
+
+  /* Empilhada, a faixa deixa de ter altura fixa: a barra de titulo volta a
+     grudar no topo em vez de flutuar sobre um espaco vazio. */
+  .com-simulacao .topo-painel {
+    position: static;
+  }
+}
+
 /* Alinha título, subtítulo e ações principais da página. */
 .topo-painel {
   position: sticky;
@@ -778,5 +825,69 @@
     display: flex;
     align-items: baseline;
     gap: 8px;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Verificacao em duas etapas (autenticador.php)
+   --------------------------------------------------------------------- */
+
+/* Campo de codigo: digitos largos e espacados, para conferir de relance. */
+.campo-codigo {
+  font-family: ui-monospace, "SFMono-Regular", "Cascadia Mono", Consolas, monospace;
+  font-size: 1.5rem;
+  letter-spacing: 0.35em;
+  text-align: center;
+  max-width: 260px;
+}
+
+/* Lado a lado no desktop, empilhado no celular. */
+.autenticador-configuracao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 28px;
+}
+
+.autenticador-qr {
+  /* Fundo branco fixo e margem propria: o leitor precisa de contraste alto,
+     entao este bloco nao acompanha o tema escuro do resto do painel. */
+  background: #fff;
+  padding: 12px;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  flex: 0 0 auto;
+}
+
+.autenticador-qr .qrcode {
+  display: block;
+  width: 200px;
+  height: 200px;
+}
+
+.autenticador-chave {
+  flex: 1 1 260px;
+  min-width: 240px;
+}
+
+/* A chave digitada a mao precisa ser facil de ler caractere a caractere. */
+.autenticador-segredo code {
+  display: inline-block;
+  font-family: ui-monospace, "SFMono-Regular", "Cascadia Mono", Consolas, monospace;
+  font-size: 1.05rem;
+  letter-spacing: 0.12em;
+  line-height: 1.7;
+  padding: 10px 14px;
+  background: var(--fundo);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-pequeno);
+  user-select: all;
+  word-break: break-all;
+}
+
+@media (max-width: 640px) {
+  .autenticador-qr .qrcode {
+    width: 170px;
+    height: 170px;
   }
 }

@@ -23,13 +23,27 @@ $cssExtra        = $cssExtra ?? [];
     <?php endforeach; ?>
     <?php require RAIZ . '/includes/tema.php'; ?>
 </head>
-<body>
+<body class="<?= ehSimulacao() ? 'com-simulacao' : '' ?>">
 
 <?php /* Estrutura comum que reúne menu lateral, título e área de conteúdo da tela. */ ?><div class="painel">
     <?php require RAIZ . '/includes/sidebar.php'; ?>
     <div class="sidebar-fundo"></div>
 
     <div class="painel-conteudo">
+<?php if (ehSimulacao()): $simulacao = simulacaoAtual(); ?>
+        <?php /* O aviso acompanha a rolagem: ninguem deve esquecer que esta no painel de outra pessoa. */ ?>
+        <div class="faixa-simulacao" role="status">
+            <span>
+                Voce esta no painel de <strong><?= e($estabelecimento['nome']) ?></strong>
+                como <strong><?= e(usuarioNome()) ?></strong>, pela conta master de <?= e($simulacao['master_nome']) ?>.
+            </span>
+            <form method="post" action="<?= url('master/simular.php') ?>">
+                <?= campoCsrf() ?>
+                <input type="hidden" name="acao" value="sair">
+                <button type="submit" class="btn btn-pequeno">Voltar para a administracao master</button>
+            </form>
+        </div>
+<?php endif; ?>
         <div class="topo-painel">
             <button type="button" class="botao-sidebar" aria-label="Abrir menu"><span></span></button>
             <div>

@@ -12,9 +12,21 @@ if (PHP_SAPI !== 'cli') {
 
 chdir(dirname(__DIR__));
 
+// Constantes que o segundo fator por codigo consulta ao proteger o segredo.
+// Aqui nao ha segredo cifrado para ler, mas definir evita depender de ordem.
+define('AMBIENTE', 'desenvolvimento');
+define('RAIZ', dirname(__DIR__));
+
 // Carrega apenas os arquivos de funcoes: nenhuma consulta e feita neste teste.
 require_once 'includes/funcoes.php';
 require_once 'includes/auth.php';
+
+// Usuario e Totp entram porque exigeSegundoFator() precisa saber se a conta ja
+// cadastrou o aplicativo autenticador. Carregar as classes nao abre conexao:
+// so a chamada de um metodo que consulta o banco faria isso, e nenhuma ocorre
+// neste teste.
+require_once 'models/Totp.php';
+require_once 'models/Usuario.php';
 
 $total = 0;
 $falhas = 0;

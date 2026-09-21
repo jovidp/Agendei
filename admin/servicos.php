@@ -40,6 +40,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $erros[] = 'A duracao deve estar entre 5 e 600 minutos.';
         }
 
+        // O teto do plano vale para catalogo novo; editar o que ja existe
+        // continua liberado, inclusive para quem passou do limite antes.
+        if ($idServico === 0) {
+            $limitePlano = Plano::bloqueio('servicos', Contexto::id());
+            if ($limitePlano !== null) {
+                $erros[] = $limitePlano;
+            }
+        }
+
         if ($erros === []) {
             if ($idServico > 0) {
                 Servico::atualizar($idServico, $dados);

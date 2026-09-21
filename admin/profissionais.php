@@ -53,6 +53,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $erros[] = 'Selecione ao menos um servico executado pelo profissional.';
         }
 
+        // O teto do plano vale para equipe nova e para reativacao: os dois
+        // aumentam o numero de profissionais ativos. Editar quem ja esta
+        // ativo continua liberado.
+        $viraAtivo = !$profissional || ($status === 'ativo' && ($profissional['status'] ?? '') !== 'ativo');
+        if ($viraAtivo) {
+            $limitePlano = Plano::bloqueio('profissionais', Contexto::id());
+            if ($limitePlano !== null) {
+                $erros[] = $limitePlano;
+            }
+        }
+
         if ($erros === []) {
             try {
                 if ($profissional) {

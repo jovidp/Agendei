@@ -18,9 +18,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $email = mb_strtolower(post('email'));
 
-    if (!validarEmail($email)) {
+    // Sem freio, este formulario serve para descobrir quais e-mails existem
+    // (pelo tempo de resposta) e para inundar a caixa de quem tem conta.
+    $bloqueio = conferirBloqueio(['recuperar_ip' => ipCliente()]);
+
+    if ($bloqueio !== '') {
+        $erro = $bloqueio;
+    } elseif (!validarEmail($email)) {
         $erro = 'Informe um e-mail valido.';
     } else {
+        // Toda solicitacao conta, tenha o e-mail cadastro ou nao: contar so os
+        // acertos devolveria justamente a informacao que queremos esconder.
+        anotarFalha('recuperar_ip', ipCliente());
+
         $usuario = Usuario::porEmail($email);
 
         if ($usuario && $usuario['status'] === 'ativo') {
@@ -101,6 +111,8 @@ $estabelecimento = Estabelecimento::dados();
         </div>
     </div>
 </div>
+
+<?php require RAIZ . '/includes/assinatura_sistema.php'; ?>
 
 <div id="notificacoes"></div>
 <script src="<?= url('assets/js/main.js') ?>"></script>

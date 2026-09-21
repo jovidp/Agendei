@@ -61,6 +61,8 @@ define('NOME_SISTEMA', 'Agendei');
 require_once RAIZ . '/config/database.php';
 require_once RAIZ . '/includes/funcoes.php';
 require_once RAIZ . '/includes/auth.php';
+require_once RAIZ . '/includes/seguranca.php';
+require_once RAIZ . '/includes/marca.php';
 
 /** Carregamento automatico dos models. */
 spl_autoload_register(function (string $classe): void {
@@ -70,11 +72,25 @@ spl_autoload_register(function (string $classe): void {
     }
 });
 
+// Cabecalhos de defesa saem antes de qualquer byte de conteudo, para que
+// nenhuma resposta do sistema — nem uma tela de erro — fique sem politica.
+aplicarCabecalhosSeguranca();
+
 // Abre a sessÃ£o antes de qualquer saÃ­da HTML para permitir o envio dos cookies.
 iniciarSessao();
 
 // Resolve a empresa antes de consultar cadastros ou renderizar a identidade visual.
 Contexto::iniciar();
+
+// Derruba sessao vencida por inatividade, por tempo total ou usada em outro
+// navegador. Roda depois do Contexto para que o redirecionamento preserve a empresa.
+validarSessao();
+
+// Pagina de quem esta autenticado nao pode ficar no cache do navegador: sem isto
+// o botao voltar depois do logout ainda mostra agenda e dados pessoais.
+if (estaLogado()) {
+    impedirCacheAutenticado();
+}
 
 /**
  * Excecoes nao tratadas terminam na tela de erro do sistema.

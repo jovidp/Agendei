@@ -105,6 +105,23 @@ html[data-contraste="alto"] .marca-simbolo {
   outline: 1px solid var(--borda);
 }
 
+/* A marca do sistema e repintada: o azul da marca nao se le sobre o fundo preto. */
+html[data-contraste="alto"] .marca-sistema {
+  color: var(--texto-principal);
+}
+html[data-contraste="alto"] .marca-corpo {
+  fill: var(--texto-principal);
+}
+html[data-contraste="alto"] .marca-faixa {
+  fill: var(--cor-secundaria);
+}
+html[data-contraste="alto"] .marca-abas {
+  stroke: var(--texto-principal);
+}
+html[data-contraste="alto"] .marca-check {
+  stroke: #000000;
+}
+
 html[data-contraste="alto"] .btn {
   border: 1px solid var(--borda-forte);
 }

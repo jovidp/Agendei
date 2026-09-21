@@ -88,6 +88,36 @@ Perfil de infraestrutura, com login separado em `master/login.php`. Cria cada
 estabelecimento junto com sua primeira conta administrativa e acompanha o uso da
 plataforma. Não participa da operação diária de nenhum estabelecimento.
 
+A área master reúne quatro grupos de tela:
+
+- **Contas e acesso** — criação de estabelecimentos, manutenção dos
+  administradores locais (ativar, desativar, redefinir senha) e das próprias
+  contas globais. Duas regras são garantidas no modelo, e não apenas na tela:
+  a última conta master ativa nunca é desligada e um estabelecimento ativo
+  nunca fica sem administrador ativo.
+- **Suporte** — a opção *Entrar no painel* abre o painel de um estabelecimento
+  em nome de um administrador dele, para atender um chamado sem redefinir a
+  senha de quem pediu ajuda. Enquanto dura, uma faixa fixa no topo identifica a
+  simulação, o campo `ultimo_acesso` da conta não é alterado e a entrada e a
+  saída ficam registradas na auditoria.
+- **Acompanhamento** — *Uso da plataforma* mostra movimento (agendamentos
+  criados, clientes novos e último acesso) em janelas de 7, 30 ou 90 dias, o que
+  separa a empresa ativa daquela que só tem cadastro antigo; *Saúde do sistema*
+  responde, sem abrir o servidor, se o banco responde, se as tabelas de apoio
+  existem, se o ambiente está em modo de produção e se o instalador continua
+  publicado.
+- **Governança** — *Auditoria* registra toda ação da conta global (empresa
+  criada, acesso alterado, senha redefinida, bloqueio liberado, simulação
+  iniciada e encerrada) com autor, alvo, data e origem; *Segurança* consolida o
+  log de autenticação de todas as empresas e permite liberar um bloqueio do
+  controle de força bruta; *Planos e limites* define tetos de profissionais,
+  serviços e agendamentos por mês.
+
+Os limites do plano são conferidos na criação, nunca sobre o que já existe:
+baixar o plano de uma empresa não apaga nada, apenas impede o crescimento até
+que ela volte para dentro do teto. Empresa sem plano continua sem limite, que é
+o comportamento original do sistema.
+
 ## 4. Funcionamento Geral
 
 O funcionamento é baseado na interação entre o estabelecimento e seus clientes.
@@ -185,24 +215,72 @@ diretamente na barra do navegador também é bloqueado.
 
 ## 7. Autenticação em Duas Etapas (2FA)
 
-Depois de validar login e senha, o sistema ainda não abre a sessão. Ele sorteia
-uma entre três perguntas pessoais cadastradas na conta e encaminha o usuário
-para `dois_fatores.php`:
+Depois de validar login e senha, o sistema ainda não abre a sessão: encaminha o
+usuário para `dois_fatores.php`, onde a identidade é confirmada por um segundo
+fator. O sistema oferece dois caminhos, e escolhe automaticamente qual aplicar.
+
+### 7.1 Código de uso único (caminho padrão)
+
+Quando a conta tem um aplicativo autenticador cadastrado, o segundo fator é um
+**código de seis dígitos que muda a cada 30 segundos**, gerado no celular por
+Google Authenticator, Microsoft Authenticator, Authy, 2FAS ou equivalente.
+
+O código segue o padrão TOTP, definido nas normas RFC 6238 e RFC 4226: servidor
+e aplicativo compartilham um segredo de 160 bits e derivam dele, por HMAC-SHA1,
+o mesmo número a cada intervalo de tempo. Nada trafega pela rede no momento da
+conferência, de modo que o recurso não depende de envio de e-mail nem de SMS, e
+funciona mesmo com o celular sem conexão.
+
+O cadastro é feito na tela **Verificação em 2 etapas**, disponível no menu de
+todos os perfis. O sistema gera o segredo, apresenta-o como QR code e também em
+texto, para digitação manual. O QR é desenhado pelo próprio servidor
+(`models/QrCode.php`), sem recorrer a serviço externo: como o endereço
+`otpauth://` carrega o segredo da conta, enviá-lo a terceiros anularia a
+proteção pretendida.
+
+A ativação só se conclui depois que o usuário digita um código válido, o que
+prova que o aplicativo leu o segredo corretamente. Até lá a conta continua
+usando o caminho anterior, de forma que ninguém fique impedido de entrar por ter
+interrompido a configuração.
+
+Três cuidados complementam o mecanismo:
+
+- o segredo é gravado **cifrado** no banco, com AES-256-GCM, e a chave vem de
+  variável de ambiente — um vazamento da base não permite gerar códigos;
+- cada código vale **uma única vez**: a janela de tempo já aproveitada fica
+  registrada na conta, o que impede reapresentar um código observado;
+- a conferência tolera até 30 segundos de diferença entre o relógio do celular
+  e o do servidor, para cada lado.
+
+### 7.2 Pergunta cadastral (caminho de reserva)
+
+Para as contas que ainda não cadastraram o aplicativo, o sistema sorteia uma
+entre três perguntas pessoais informadas no cadastro:
 
 - nome da mãe;
 - data de nascimento;
 - CEP.
 
-A sessão só é aberta depois que a resposta correta é informada. A comparação
-ignora acentos, maiúsculas e máscaras: a data aceita tanto `10/03/1990` quanto
-`1990-03-10`, e o CEP aceita com ou sem hífen.
+A comparação ignora acentos, maiúsculas e máscaras: a data aceita tanto
+`10/03/1990` quanto `1990-03-10`, e o CEP aceita com ou sem hífen. Os dados que
+respondem às perguntas ficam na tabela `usuarios`, e não em `clientes`, para que
+o perfil administrador também passe pelo segundo fator.
 
-O usuário tem **três tentativas**. Na terceira tentativa sem êxito o sistema
-exibe a mensagem `3 tentativas sem sucesso! Favor realizar Login novamente.`,
-descarta o fluxo pendente e devolve o usuário à tela de login.
+Uma conta que tenha aplicativo cadastrado **nunca** recebe a pergunta: manter os
+dois caminhos abertos em paralelo reduziria a segurança ao elo mais fraco, já
+que nome da mãe, data de nascimento e CEP não são segredos para quem convive com
+a pessoa.
 
-Os dados que respondem às perguntas ficam na tabela `usuarios`, e não em
-`clientes`, para que o perfil master também passe pelo segundo fator.
+### 7.3 Regras comuns aos dois caminhos
+
+A sessão só é aberta depois que o segundo fator é confirmado. O usuário tem
+**três tentativas**; na terceira sem êxito o sistema exibe a mensagem
+`3 tentativas sem sucesso! Favor realizar Login novamente.`, descarta o fluxo
+pendente e devolve o usuário à tela de login.
+
+A conta de administração global (master) também passa pelo segundo fator por
+código, em fluxo próprio (`master/dois_fatores.php`), por ser a credencial de
+maior alcance do sistema.
 
 Essa etapa reduz o risco de acesso indevido mesmo quando a senha do usuário é
 descoberta por terceiros.
@@ -421,7 +499,20 @@ Todas as tabelas de dados operacionais carregam a coluna `id_estabelecimento`.
 `lista_espera`, `notificacoes`, `pagamentos`, `fidelidade_movimentos`,
 `pacotes`, `cliente_pacotes` e `avaliacoes`.
 
-### 17.3 Relacionamentos
+### 17.3 Tabelas da administração da plataforma
+
+`logs_master` guarda a trilha de auditoria da conta global; `tentativas_acesso`
+é o contador do controle de força bruta; `planos` e `estabelecimento_plano`
+descrevem os tetos contratados. As três primeiras ficam fora do recorte de
+estabelecimento de propósito — a auditoria e o bloqueio protegem também a área
+master, que não pertence a empresa nenhuma.
+
+`logs_master` repete a desnormalização de `logs_autenticacao`: o nome do autor e
+o da empresa são gravados por cópia, sem chave estrangeira, para que o histórico
+continue legível depois que a conta ou o estabelecimento citado deixar de
+existir.
+
+### 17.4 Relacionamentos
 
 Um usuário é cliente, profissional ou administrador. Um agendamento pertence a
 um cliente, a um profissional e a um serviço. Um profissional possui vários
@@ -502,15 +593,16 @@ agendamentos. Após a instalação, o arquivo `instalar.php` deve ser apagado.
 
 ### 19.2 Testes automatizados
 
-O projeto acompanha três suítes executáveis por linha de comando:
+O projeto acompanha quatro suítes executáveis por linha de comando:
 
 | Comando | O que verifica |
 |---------|----------------|
 | `php tests/requisitos.php` | Regras de validação do cadastro e comportamento do 2FA (não usa banco) |
 | `php tests/fluxo_projeto.php` | Cadastro, login, 2FA, registro de log e exclusão de usuário |
 | `php tests/multitenancy.php` | Isolamento dos dados entre estabelecimentos |
+| `php tests/master.php` | Auditoria da administração master, contas globais, manutenção dos administradores locais e bloqueios de força bruta |
 
-As duas últimas criam e descartam um banco temporário próprio e nunca tocam a
+As três últimas criam e descartam um banco temporário próprio e nunca tocam a
 base de uso normal.
 
 ## 20. Segurança

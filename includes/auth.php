@@ -9,16 +9,33 @@ function iniciarSessao(): void
         return;
     }
 
+    // O modo estrito faz o PHP recusar um identificador de sessao que ele nunca
+    // emitiu. Sem isso, basta um link com o ID escolhido pelo atacante para
+    // fixar a sessao da vitima antes mesmo dela digitar a senha.
+    ini_set('session.use_strict_mode', '1');
+    // O identificador viaja so no cookie: nada de sessao presa na URL, que
+    // vazaria pelo Referer, pelo historico e pelo log do servidor.
+    ini_set('session.use_only_cookies', '1');
+    ini_set('session.use_trans_sid', '0');
+    // Entropia cheia no identificador gerado pelo PHP.
+    ini_set('session.sid_length', '48');
+    ini_set('session.sid_bits_per_character', '6');
+
     // Restringe o cookie à aplicação, impede leitura por JavaScript e habilita secure sob HTTPS.
     session_set_cookie_params([
         'lifetime' => 0,
         'path'     => BASE_URL === '' ? '/' : BASE_URL,
         'httponly' => true,
+        // Strict quebraria a volta de um link externo para o painel; Lax ja impede
+        // que um POST vindo de outro site carregue o cookie junto.
         'samesite' => 'Lax',
         'secure'   => requisicaoSegura(),
     ]);
 
-    session_name('AGENDEI_SESSAO');
+    // O prefixo __Host- so e aceito pelo navegador com Secure, path=/ e sem Domain.
+    // Quando as tres condicoes valem, ele impede que um subdominio vizinho
+    // sobrescreva o cookie de sessao do sistema.
+    session_name(requisicaoSegura() && BASE_URL === '' ? '__Host-AGENDEI_SESSAO' : 'AGENDEI_SESSAO');
     session_start();
 }
 
@@ -203,21 +220,79 @@ function fatoresDisponiveis(array $usuario): array
 /** Indica se a conta deve passar pelo segundo fator antes de abrir a sessao. */
 function exigeSegundoFator(array $usuario): bool
 {
+    // O aplicativo autenticador vale para qualquer perfil: quem cadastrou um
+    // codigo passa por ele, inclusive o profissional, que nao entra na regra
+    // de perfis da especificacao.
+    if (Usuario::totpAtivo($usuario)) {
+        return true;
+    }
+
     return in_array($usuario['tipo'] ?? '', perfisComSegundoFator(), true)
         && fatoresDisponiveis($usuario) !== [];
 }
 
-/** Sorteia a pergunta e guarda o desafio pendente, sem autenticar a conta. */
+/**
+ * Escolhe o desafio e guarda o pendente, sem autenticar a conta.
+ *
+ * Quem tem aplicativo autenticador cadastrado sempre cai no codigo — ele e o
+ * fator forte, e deixar a pergunta cadastral disponivel em paralelo rebaixaria
+ * a seguranca da conta ao elo mais fraco. A pergunta continua existindo apenas
+ * para quem ainda nao cadastrou o aplicativo.
+ */
 function iniciarSegundoFator(array $usuario, string $identificador): void
 {
-    $fatores = fatoresDisponiveis($usuario);
+    $usaCodigo = Usuario::totpAtivo($usuario);
 
     $_SESSION['segundo_fator'] = [
         'usuario_id'    => (int) $usuario['id_usuario'],
         'identificador' => $identificador,
-        'fator'         => array_rand($fatores),
+        'fator'         => $usaCodigo ? 'totp' : array_rand(fatoresDisponiveis($usuario)),
         'tentativas'    => 0,
     ];
+}
+
+/** Indica se o desafio em andamento e o codigo do aplicativo autenticador. */
+function segundoFatorEhCodigo(?string $fator): bool
+{
+    return $fator === 'totp';
+}
+
+// ---------------------------------------------------------------------
+// Segundo fator da conta master
+//
+// Fica em funcoes proprias porque a conta master nao esta em usuarios: o
+// desafio pendente e outro, e a sessao aberta no fim tambem.
+// ---------------------------------------------------------------------
+
+/** Guarda o desafio pendente da conta master, sem abrir a sessao. */
+function iniciarSegundoFatorMaster(array $master): void
+{
+    $_SESSION['segundo_fator_master'] = [
+        'master_id'  => (int) $master['id_master'],
+        'tentativas' => 0,
+    ];
+}
+
+/** Desafio master pendente, ou null quando nao ha nenhum em andamento. */
+function segundoFatorMasterPendente(): ?array
+{
+    $pendente = $_SESSION['segundo_fator_master'] ?? null;
+
+    return is_array($pendente) && !empty($pendente['master_id']) ? $pendente : null;
+}
+
+/** Descarta o desafio master pendente. */
+function cancelarSegundoFatorMaster(): void
+{
+    unset($_SESSION['segundo_fator_master']);
+}
+
+/** Tentativas que ainda restam no desafio master, das tres previstas. */
+function tentativasRestantesSegundoFatorMaster(): int
+{
+    $pendente = segundoFatorMasterPendente();
+
+    return $pendente === null ? 0 : max(0, 3 - (int) $pendente['tentativas']);
 }
 
 /** Desafio pendente da sessao, ou null quando nao ha 2FA em andamento. */
@@ -240,6 +315,35 @@ function tentativasRestantesSegundoFator(): int
     $pendente = segundoFatorPendente();
 
     return $pendente === null ? 0 : max(0, 3 - (int) $pendente['tentativas']);
+}
+
+/**
+ * Confere a resposta do desafio pendente, seja qual for o tipo.
+ *
+ * Ponto unico de entrada das telas: o codigo do aplicativo precisa de uma
+ * checagem extra que a pergunta cadastral nao tem — a janela usada nao pode
+ * ser a mesma de um acesso anterior —, e essa diferenca fica escondida aqui.
+ */
+function conferirSegundoFator(string $fator, string $resposta, array $usuario): bool
+{
+    if (!segundoFatorEhCodigo($fator)) {
+        return respostaSegundoFatorConfere($fator, $resposta, $usuario);
+    }
+
+    $contadorUsado = null;
+
+    if (!Totp::confere(Usuario::totpSegredo($usuario), $resposta, $contadorUsado)) {
+        return false;
+    }
+
+    // Codigo certo, porem de uma janela ja aproveitada: recusado como se
+    // estivesse errado. E o que impede reapresentar um codigo observado.
+    if (!Usuario::totpContadorUsado((int) $usuario['id_usuario'], $usuario, (int) $contadorUsado)) {
+        registrarEventoSeguranca('totp_reapresentado', ['usuario' => (int) $usuario['id_usuario']]);
+        return false;
+    }
+
+    return true;
 }
 
 /**
@@ -286,11 +390,18 @@ function registrarSessao(array $usuario): void
     $_SESSION['usuario_tipo']  = $usuario['tipo'];
     $_SESSION['perfil_id']     = Usuario::idDoPerfil((int) $usuario['id_usuario'], $usuario['tipo']);
 
+    // Marca os instantes que controlam inatividade, duracao maxima e dispositivo.
+    marcarInicioSessao();
+
     Usuario::registrarAcesso((int) $usuario['id_usuario']);
 }
 
-/** Registra uma sessão global sem associá-la a um estabelecimento. */
-function registrarSessaoMaster(array $master): void
+/**
+ * Registra uma sessão global sem associá-la a um estabelecimento.
+ * $auditar sai como falso na volta de uma simulacao: ali nao houve login novo,
+ * e a auditoria ja recebe o evento proprio de fim de simulacao.
+ */
+function registrarSessaoMaster(array $master, bool $auditar = true): void
 {
     session_regenerate_id(true);
     unset($_SESSION['usuario_id'], $_SESSION['estabelecimento_id'], $_SESSION['perfil_id']);
@@ -298,6 +409,100 @@ function registrarSessaoMaster(array $master): void
     $_SESSION['usuario_nome'] = $master['nome'];
     $_SESSION['usuario_email'] = $master['email'];
     $_SESSION['usuario_tipo'] = 'master';
+
+    marcarInicioSessao();
+    registrarEventoSeguranca('master_login', ['id' => (int) $master['id_master']]);
+
+    // A auditoria comeca na entrada: sem ela, as acoes registradas depois nao
+    // teriam como ser amarradas a uma sessao e a um horario de acesso.
+    if ($auditar) {
+        LogMaster::registrar('login');
+    }
+}
+
+// ---------------------------------------------------------------------
+// Simulacao: o master vendo o painel de um estabelecimento
+//
+// Existe para o suporte. Sem ela, a unica forma de o master enxergar o que o
+// cliente esta vendo era redefinir a senha do administrador local — ou seja,
+// tirar o acesso de quem pediu ajuda para poder ajudar.
+//
+// A sessao vira a do administrador, mas guarda a marca de quem a abriu: o
+// aviso no topo da tela nao sai enquanto durar, e a volta so restaura a conta
+// master registrada aqui dentro, nunca uma vinda do formulario.
+// ---------------------------------------------------------------------
+
+/** Indica se a sessao atual e um master vendo o painel de outra pessoa. */
+function ehSimulacao(): bool
+{
+    return !empty($_SESSION['simulacao']['master_id']);
+}
+
+/** Dados da simulacao em andamento, ou null quando nao ha uma. */
+function simulacaoAtual(): ?array
+{
+    return ehSimulacao() ? $_SESSION['simulacao'] : null;
+}
+
+/**
+ * Troca a sessao master pela do administrador local indicado.
+ * $perfilId vem do chamador porque Usuario::idDoPerfil() se apoia no
+ * Contexto, que na area master nao aponta para empresa nenhuma.
+ */
+function iniciarSimulacao(array $usuario, array $master, ?int $perfilId): void
+{
+    session_regenerate_id(true);
+
+    unset($_SESSION['master_id']);
+    $_SESSION['estabelecimento_id'] = (int) $usuario['id_estabelecimento'];
+    $_SESSION['usuario_id']    = (int) $usuario['id_usuario'];
+    $_SESSION['usuario_nome']  = $usuario['nome'];
+    $_SESSION['usuario_email'] = $usuario['email'];
+    $_SESSION['usuario_login'] = ($usuario['login'] ?? '') ?: $usuario['email'];
+    $_SESSION['usuario_tipo']  = $usuario['tipo'];
+    $_SESSION['perfil_id']     = $perfilId;
+
+    $_SESSION['simulacao'] = [
+        'master_id'   => (int) $master['id_master'],
+        'master_nome' => (string) $master['nome'],
+        'usuario'     => (string) $usuario['nome'],
+        'inicio'      => time(),
+    ];
+
+    marcarInicioSessao();
+
+    // Usuario::registrarAcesso() fica de fora de proposito: "ultimo acesso" diz
+    // quando o responsavel entrou, e o master no lugar dele nao pode
+    // reescrever esse dado — ele e usado para saber se a conta esta em uso.
+    registrarEventoSeguranca('simulacao_iniciada', [
+        'master'  => (int) $master['id_master'],
+        'usuario' => (int) $usuario['id_usuario'],
+    ]);
+}
+
+/**
+ * Desfaz a simulacao e devolve a sessao a conta master que a abriu.
+ * Retorna o registro do master restaurado, ou null se ele nao puder mais entrar.
+ */
+function encerrarSimulacao(): ?array
+{
+    $simulacao = simulacaoAtual();
+    unset($_SESSION['simulacao']);
+
+    if ($simulacao === null) {
+        return null;
+    }
+
+    // A conta pode ter sido desativada enquanto a simulacao corria.
+    $master = Master::porId((int) $simulacao['master_id']);
+    if (!$master || $master['status'] !== 'ativo') {
+        return null;
+    }
+
+    registrarSessaoMaster($master, false);
+    registrarEventoSeguranca('simulacao_encerrada', ['master' => (int) $master['id_master']]);
+
+    return $master;
 }
 
 /** Limpa os dados, expira o cookie e encerra a sessão no servidor. */
@@ -350,6 +555,13 @@ function exigirLogin(array|string $tiposPermitidos = []): void
     $tipos = is_string($tiposPermitidos) ? [$tiposPermitidos] : $tiposPermitidos;
 
     if ($tipos !== [] && !in_array(perfil(), $tipos, true)) {
+        // Conta autenticada tentando area de outro perfil e sinal de sondagem:
+        // fica no log para que a tentativa seja visivel mesmo sendo barrada.
+        registrarEventoSeguranca('acesso_negado', [
+            'perfil'    => (string) perfil(),
+            'exigido'   => implode('|', $tipos),
+            'usuario'   => (int) (usuarioId() ?? 0),
+        ]);
         if (ehRequisicaoAjax()) {
             jsonResposta(['sucesso' => false, 'mensagem' => 'Voce nao tem permissao para esta acao.'], 403);
         }
@@ -444,6 +656,33 @@ function csrfValido(?string $token): bool
         && hash_equals($_SESSION['csrf_token'], $token);
 }
 
+/**
+ * Confere se o POST partiu de uma pagina do proprio sistema.
+ *
+ * Segunda barreira, independente do token: o navegador preenche Origin em todo
+ * POST entre sites, e o valor nao pode ser forjado por JavaScript de outra
+ * origem. Se o cabecalho nao vier (cliente antigo, proxy que remove), a
+ * verificacao se abstem e o token continua sendo a defesa principal.
+ */
+function origemConfere(): bool
+{
+    $origem = (string) ($_SERVER['HTTP_ORIGIN'] ?? '');
+
+    if ($origem === '') {
+        $referencia = (string) ($_SERVER['HTTP_REFERER'] ?? '');
+        if ($referencia === '') {
+            return true;
+        }
+        $partes = parse_url($referencia);
+        $origem = ($partes['scheme'] ?? '') . '://' . ($partes['host'] ?? '')
+            . (isset($partes['port']) ? ':' . $partes['port'] : '');
+    }
+
+    $esperado = (requisicaoSegura() ? 'https://' : 'http://') . (string) ($_SERVER['HTTP_HOST'] ?? '');
+
+    return hash_equals($esperado, $origem);
+}
+
 /** Interrompe o processamento de um POST sem token valido. */
 function exigirCsrf(): void
 {
@@ -451,7 +690,11 @@ function exigirCsrf(): void
         return;
     }
 
-    if (!csrfValido($_POST['csrf_token'] ?? null)) {
+    if (!csrfValido($_POST['csrf_token'] ?? null) || !origemConfere()) {
+        registrarEventoSeguranca('csrf_recusado', [
+            'origem' => (string) ($_SERVER['HTTP_ORIGIN'] ?? '-'),
+            'perfil' => (string) perfil(),
+        ]);
         if (ehRequisicaoAjax()) {
             jsonResposta(['sucesso' => false, 'mensagem' => 'Requisicao invalida. Recarregue a pagina.'], 419);
         }

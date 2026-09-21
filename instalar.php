@@ -11,6 +11,35 @@
 // Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/config/config.php';
 
+/**
+ * Em producao o instalador so existe para quem conhece a chave.
+ *
+ * Esta pagina cria o administrador e a conta master com senhas padrao que estao
+ * escritas na documentacao do projeto. Um banco ainda vazio — servidor novo,
+ * migracao interrompida, restauracao pela metade — deixaria qualquer visitante
+ * criar essas contas e entrar como dono do sistema. A chave vem da variavel de
+ * ambiente AGENDEI_TOKEN_INSTALACAO; sem ela definida, a pagina simplesmente
+ * nao existe em producao.
+ */
+if (AMBIENTE === 'producao') {
+    $chaveEsperada = (string) (getenv('AGENDEI_TOKEN_INSTALACAO') ?: '');
+    $chaveRecebida = get('chave');
+
+    // Poucas tentativas por origem impedem que a chave seja descoberta por repeticao.
+    if (conferirBloqueio(['instalador_ip' => ipCliente()]) !== '') {
+        http_response_code(404);
+        exit;
+    }
+
+    if ($chaveEsperada === '' || !hash_equals($chaveEsperada, $chaveRecebida)) {
+        anotarFalha('instalador_ip', ipCliente());
+        registrarEventoSeguranca('instalador_recusado');
+        atrasarResposta();
+        http_response_code(404);
+        exit;
+    }
+}
+
 $mensagens   = [];
 $erro        = null;
 $jaInstalado = false;
@@ -245,7 +274,8 @@ if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
 <div class="autenticacao-area">
     <div class="autenticacao-caixa caixa-simples">
         <div class="autenticacao-formulario">
-            <h1>Instalacao do <?= e(NOME_SISTEMA) ?></h1>
+            <?= marcaSistema(36) ?>
+            <h1 class="titulo-apos-marca">Instalacao do sistema</h1>
             <p class="subtitulo">Criacao dos usuarios iniciais e dos dados de demonstracao.</p>
 
             <?php if ($erro !== null): ?>

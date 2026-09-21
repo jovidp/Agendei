@@ -49,7 +49,7 @@ Escreva em português do Brasil, em tom técnico e objetivo.
 - **Motor de agenda**: os horários livres são calculados a partir do expediente
   semanal do profissional (`horarios_profissionais`), descontando os
   agendamentos ativos e os bloqueios (`bloqueios_agenda`).
-- O banco tem 20 tabelas.
+- O banco tem 24 tabelas.
 
 ## Dicionário de dados
 
@@ -97,6 +97,14 @@ Observações importantes para o modelo:
 - `nome_materno`, `data_nascimento` e `cep` são os três dados que respondem às
   perguntas do segundo fator de autenticação. Ficam aqui, e não em `clientes`,
   porque o administrador também passa pelo 2FA.
+- `totp_segredo` VARCHAR(255), `totp_ativado_em` DATETIME e
+  `totp_ultimo_contador` BIGINT sustentam o segundo fator por código de uso
+  único (TOTP, RFC 6238), que é o caminho padrão do 2FA. O segredo é gravado
+  cifrado; `totp_ativado_em` só é preenchido depois que o usuário confirma um
+  código, e enquanto estiver nulo a conta continua usando a pergunta cadastral;
+  `totp_ultimo_contador` guarda a janela de 30 s já aproveitada, para impedir
+  que o mesmo código seja apresentado duas vezes. As três colunas se repetem em
+  `administradores_master`, que tem seu próprio fluxo de segundo fator.
 - O `login` tem exatamente 6 letras e a senha exatamente 8 letras (regra de
   negócio validada na aplicação, gravada com hash).
 
@@ -187,7 +195,7 @@ Colunas: `id_usuario` INT UNSIGNED NULL (**sem chave estrangeira**),
 `login_informado` VARCHAR(150) NN, `nome` VARCHAR(120) NN DEFAULT '',
 `cpf` CHAR(11), `perfil` VARCHAR(20),
 `evento` ENUM('login_sucesso','login_falha','2fa_sucesso','2fa_falha','2fa_bloqueio','logout') NN,
-`fator_2fa` ENUM('nome_materno','data_nascimento','cep'),
+`fator_2fa` ENUM('nome_materno','data_nascimento','cep','totp'),
 `ip` VARCHAR(45), `data_hora` DATETIME DEFAULT CURRENT_TIMESTAMP.
 `nome` e `cpf` são gravados por cópia e a tabela **não tem FK para `usuarios`**:
 é uma desnormalização proposital, para que o histórico de acessos sobreviva à
@@ -264,6 +272,47 @@ Colunas: `nota` TINYINT UNSIGNED NN (CHECK entre 1 e 5),
 UNIQUE: `(id_estabelecimento, id_agendamento)` — uma avaliação por atendimento,
 e só é permitida depois que o agendamento fica com status `concluido`.
 
+### 21. logs_master
+PK `id_log_master` BIGINT UNSIGNED AI.
+Colunas: `id_master` INT UNSIGNED NULL (**sem chave estrangeira**),
+`master_nome` VARCHAR(120) NN DEFAULT '', `master_email` VARCHAR(150) NN DEFAULT '',
+`acao` VARCHAR(40) NN, `id_estabelecimento` INT UNSIGNED NULL
+(**sem chave estrangeira**), `estabelecimento_nome` VARCHAR(120),
+`alvo` VARCHAR(150), `detalhe` VARCHAR(255), `ip` VARCHAR(45),
+`data_hora` DATETIME DEFAULT CURRENT_TIMESTAMP.
+Trilha de auditoria das ações da conta global: criação de estabelecimentos,
+ativação e desativação de acessos, redefinição de senhas e liberação de
+bloqueios. Segue a mesma desnormalização proposital de `logs_autenticacao` —
+nome do master e nome da empresa gravados por cópia, sem FK — para que o
+histórico sobreviva à exclusão da conta ou do estabelecimento citado.
+
+### 22. tentativas_acesso
+PK `id_tentativa` BIGINT UNSIGNED AI.
+Colunas: `escopo` VARCHAR(30) NN, `chave` CHAR(64) NN,
+`data_hora` DATETIME NN. Índice: `(escopo, chave, data_hora)`.
+Contador do controle de força bruta. **Não possui `id_estabelecimento`**: o
+bloqueio protege também a área master, que não pertence a empresa nenhuma.
+Guarda apenas o hash SHA-256 da origem (IP ou identificador digitado), nunca o
+valor em texto claro, e os registros são descartados após 24 horas.
+
+### 23. planos
+PK `id_plano` INT UNSIGNED AI.
+Colunas: `nome` VARCHAR(60) NN UNIQUE, `descricao` VARCHAR(255),
+`limite_profissionais` INT UNSIGNED, `limite_servicos` INT UNSIGNED,
+`limite_agendamentos_mes` INT UNSIGNED, `status` ENUM('ativo','inativo'),
+`data_criacao` DATETIME.
+Cada limite nulo significa "sem teto". **Não possui `id_estabelecimento`**: o
+catálogo de planos é global, mantido pela administração master.
+
+### 24. estabelecimento_plano
+PK `id_estabelecimento` INT UNSIGNED — que é também FK → estabelecimento.
+FK `id_plano` → planos.
+Colunas: `data_inicio` DATETIME, `observacao` VARCHAR(255).
+A chave primária ser o próprio `id_estabelecimento` é o que garante, no banco,
+que uma empresa tem no máximo um plano de cada vez: trocar de plano substitui a
+linha em vez de acumular histórico. Empresa sem linha aqui não tem limite
+nenhum, que é o comportamento original do sistema.
+
 ## Relacionamentos e cardinalidades
 
 | Relacionamento | Cardinalidade |
@@ -289,5 +338,8 @@ e só é permitida depois que o agendamento fica com status `concluido`.
 | clientes **adquire** pacotes | N:N, resolvido por `cliente_pacotes` |
 | cliente_pacotes **custeia** agendamentos | 1:N opcional |
 | agendamentos **recebe** avaliacoes | 1:1 opcional |
+| administradores_master **executa** logs_master | 1:N (sem FK: os dados do autor são copiados para a linha) |
+| logs_master **cita** estabelecimento | 1:N opcional (sem FK, pelo mesmo motivo) |
+| estabelecimento **contrata** planos | N:1 opcional, resolvido por `estabelecimento_plano` (1:1 do lado da empresa) |
 
 --- FIM DO PROMPT ---

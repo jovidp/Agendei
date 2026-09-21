@@ -295,6 +295,15 @@ class Agendamento
             $horaInicio .= ':00';
         }
 
+        // O teto do plano e conferido aqui, e nao nas telas, porque o
+        // agendamento nasce por tres caminhos — painel do admin, area do
+        // cliente e encaixe do profissional. Uma regra comercial checada em
+        // tres lugares vira tres regras diferentes na primeira alteracao.
+        $limite = Plano::bloqueio('agendamentos_mes', Contexto::id());
+        if ($limite !== null) {
+            return ['sucesso' => false, 'erros' => [$limite]];
+        }
+
         $cliente = Cliente::porId($idCliente);
         if (!$cliente) {
             return ['sucesso' => false, 'erros' => ['Cliente nao encontrado.']];

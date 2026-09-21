@@ -36,6 +36,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Confere o token da sessão antes de aceitar alterações enviadas pelo formulário.
     exigirCsrf();
 
+    // Cadastro aberto ao publico: o freio por origem evita que um script encha
+    // a base de contas falsas e, de quebra, use o CPF ja cadastrado como oraculo.
+    $bloqueioCadastro = conferirBloqueio(['cadastro_ip' => ipCliente()]);
+    if ($bloqueioCadastro !== '') {
+        $erros[] = $bloqueioCadastro;
+    }
+    anotarFalha('cadastro_ip', ipCliente());
+
     foreach (array_keys($dados) as $campo) {
         $dados[$campo] = post($campo);
     }
@@ -369,6 +377,8 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
         </div>
     </div>
 </div>
+
+<?php require RAIZ . '/includes/assinatura_sistema.php'; ?>
 
 <div id="notificacoes"></div>
 <script src="<?= url('assets/js/main.js') ?>"></script>

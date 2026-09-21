@@ -61,6 +61,27 @@ equipe e seus serviços, compartilha o link exclusivo mostrado em **Aparência**
 personaliza nome, logo, cores e fonte. Clientes cadastrados por esse link recebem
 o mesmo vínculo e veem apenas os serviços e profissionais daquela empresa.
 
+A área master tem ainda:
+
+| Tela | Para que serve |
+|------|----------------|
+| **Estabelecimentos** | Criar empresas, ligar e desligar o acesso delas, adicionar administradores, redefinir a senha de quem perdeu o acesso ao painel |
+| **Segurança** | Acessos e falhas de login de todas as empresas em uma consulta só, e liberação dos bloqueios do controle de força bruta |
+| **Auditoria** | O que cada conta master fez: empresa criada, acesso alterado, senha redefinida, bloqueio liberado — com data, alvo e origem |
+| **Contas master** | Criar e desativar contas globais. Duas regras não podem ser quebradas: a última conta ativa nunca é desligada e ninguém desliga a si mesmo |
+| **Uso da plataforma** | Movimento de cada empresa em 7, 30 ou 90 dias: agendamentos criados, clientes novos e último acesso. Separa quem está ativo de quem só tem cadastro antigo |
+| **Planos e limites** | Tetos de profissionais, serviços e agendamentos por mês. Campo em branco = ilimitado, e empresa sem plano continua sem teto |
+| **Saúde do sistema** | Banco, tabelas de apoio, versão do PHP, HTTPS, instalador exposto e empresas sem administrador — tudo sem abrir o servidor |
+
+Redefinir a senha de um administrador local pede a senha master de novo: a ação
+dá acesso aos dados dos clientes daquela empresa e fica registrada na auditoria.
+
+Para atender um chamado sem tirar o acesso de quem pediu ajuda, **Estabelecimentos
+→ Entrar no painel** abre o painel do cliente em nome de um administrador dele.
+Enquanto durar, uma faixa fixa no topo diz de quem é a tela, a entrada e a saída
+vão para a auditoria e o "último acesso" da conta não é alterado. Também aqui a
+senha master é pedida de novo.
+
 ## Atendimento aos requisitos do projeto academico
 
 O sistema foi adaptado para atender a especificacao da disciplina sem descartar o
@@ -143,9 +164,45 @@ sempre da entrada mais recente para a mais antiga.
 php tests/requisitos.php      # regras de validacao e 2FA (nao usa banco)
 php tests/fluxo_projeto.php   # cadastro, login, 2FA, log e exclusao (banco temporario)
 php tests/multitenancy.php    # isolamento entre estabelecimentos (banco temporario)
+php tests/master.php          # auditoria, contas master e bloqueios (banco temporario)
 ```
 
-Os dois ultimos criam e descartam um banco proprio e nunca tocam o banco de uso normal.
+Os tres ultimos criam e descartam um banco proprio e nunca tocam o banco de uso normal.
+
+## Identidade visual
+
+O sistema tem marca propria, separada da identidade de cada empresa atendida.
+
+| Cor | Codigo | Uso |
+| --- | --- | --- |
+| Primaria | `#1F4E5F` | corpo do simbolo, titulos, botoes e menu lateral |
+| Destaque | `#5FAF8B` | faixa do simbolo, confirmacoes e estados de sucesso |
+| Fundo | `#F5F1EA` | fundo das telas e versao clara do simbolo |
+
+Sao as mesmas cores do tema de fabrica (`Tema::PADRAO`), mantidas sem alteracao.
+
+**O simbolo** e uma agenda confirmada: a faixa superior na cor de destaque e o
+"check" do horario marcado no corpo. Funciona de 16 px (aba do navegador) a
+qualquer tamanho, e tem versao para fundo claro, para fundo escuro e para o
+modo de alto contraste.
+
+**Onde aparece cada marca:**
+
+- A **marca do sistema** assina o que e do produto: icone da aba, instalador,
+  tela de saida, rodape publico e o rodape das telas de entrada.
+- A **marca da empresa** (logo e cores cadastradas em *Aparencia*) continua
+  mandando nas telas do estabelecimento, via `Tema::marca()`. A marca do
+  sistema nunca a substitui.
+
+**Arquivos:**
+
+- `includes/marca.php` - `simboloSistema()`, `marcaSistema()` e `faviconSistema()`,
+  que desenham a marca em SVG embutido e acompanham o modo de alto contraste.
+- `assets/img/` - os mesmos desenhos em arquivo, para uso fora do sistema
+  (documentacao, e-mail, material impresso):
+  `agendei-logo.svg` e `agendei-logo-claro.svg` (marca com o nome),
+  `agendei-simbolo.svg` e `agendei-simbolo-claro.svg` (so o simbolo),
+  `favicon.svg` (icone da aba).
 
 ## Estrutura do projeto
 
@@ -156,7 +213,7 @@ Os dois ultimos criam e descartam um banco proprio e nunca tocam o banco de uso 
   /assets          css, js e imagens
   /cliente         Painel do cliente (dashboard, agendamento, historico, perfil)
   /config          config.php (bootstrap) e database.php (conexao PDO)
-  /includes        auth.php, funcoes.php, layout (header/sidebar/footer) e icones
+  /includes        auth.php, funcoes.php, layout (header/sidebar/footer), icones e marca
   /models          Regras de acesso ao banco (uma classe por entidade)
   /profissional    Painel do profissional (agenda, horarios, bloqueios, perfil)
   banco.sql        Estrutura e dados iniciais do banco

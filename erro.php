@@ -92,6 +92,8 @@ $tituloPagina = $erro['titulo'] . ' | ' . $estabelecimento['nome'];
     </div>
 </div>
 
+<?php require RAIZ . '/includes/assinatura_sistema.php'; ?>
+
 <script src="<?= url('assets/js/main.js') ?>"></script>
 </body>
 </html>

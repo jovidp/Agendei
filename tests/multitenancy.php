@@ -234,4 +234,41 @@ try {
     $rejeitou = true;
 }
 verificar($rejeitou, 'Logo ativa aceita.');
+
+// ---------------------------------------------------------------------
+// Teto de agendamentos do plano
+//
+// O limite é conferido dentro de Agendamento::criar(), e não nas telas,
+// porque o agendamento nasce por três caminhos. Aqui ele é exercitado com
+// dados de verdade: as reservas criadas ao longo deste teste.
+// ---------------------------------------------------------------------
+$idEmpresaA = (int) $empresaA['id_estabelecimento'];
+$usoAtual = Plano::uso($idEmpresaA)['agendamentos_mes'];
+verificar($usoAtual > 0, 'Consumo do mês não acompanhou as reservas criadas.');
+
+// O teto nasce exatamente no que a empresa já usa: a próxima reserva estoura.
+$idPlanoTeto = Plano::criar(['nome' => 'Teto exato', 'limite_agendamentos_mes' => $usoAtual]);
+Plano::atribuir($idEmpresaA, $idPlanoTeto);
+
+empresa('empresa-a');
+$fa = $fixtures['empresa-a'];
+$dadosReserva = ['id_cliente' => $fa['cliente'], 'id_profissional' => $fa['profissional'], 'id_servico' => $fa['servico'], 'data' => $data, 'hora_inicio' => '15:00', 'observacao' => '', 'origem' => 'admin'];
+
+$recusada = Agendamento::criar($dadosReserva, ['ignorar_antecedencia' => true]);
+verificar($recusada['sucesso'] === false, 'Teto do plano não barrou o agendamento.');
+verificar(str_contains($recusada['erros'][0] ?? '', 'Teto exato'), 'A recusa não explicou qual plano impôs o limite.');
+
+// O teto é de quem contratou: a empresa vizinha não sente nada.
+empresa('empresa-b');
+$fb = $fixtures['empresa-b'];
+$vizinha = Agendamento::criar(['id_cliente' => $fb['cliente'], 'id_profissional' => $fb['profissional'], 'id_servico' => $fb['servico'], 'data' => $data, 'hora_inicio' => '15:00', 'observacao' => '', 'origem' => 'admin'], ['ignorar_antecedencia' => true]);
+verificar($vizinha['sucesso'] === true, 'Plano de uma empresa limitou outra: ' . json_encode($vizinha));
+
+// Sem plano, tudo volta a ser ilimitado — e nada do que existia foi apagado.
+Plano::atribuir($idEmpresaA, null);
+empresa('empresa-a');
+$liberada = Agendamento::criar($dadosReserva, ['ignorar_antecedencia' => true]);
+verificar($liberada['sucesso'] === true, 'Remover o plano não liberou o agendamento: ' . json_encode($liberada));
+verificar(Plano::doEstabelecimento($idEmpresaA) === null, 'Vínculo de plano continuou depois de removido.');
+
 echo "OK: $checagens verificações de isolamento, migração e identidade visual.\n";
