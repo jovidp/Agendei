@@ -633,3 +633,45 @@ INSERT INTO `servicos` (`id_estabelecimento`,`nome`,`descricao`,`preco`,`duracao
   (1, 'Hidratacao capilar',        'Tratamento profundo de reconstrucao e brilho.', 90.00, 60, 'ativo', 0),
   (1, 'Manicure',                  'Cuidado completo das unhas das maos com esmaltacao.', 40.00, 45, 'ativo', 0),
   (1, 'Pedicure',                  'Cuidado completo das unhas dos pes com esmaltacao.', 45.00, 45, 'ativo', 0);
+
+-- =====================================================================
+-- Filiais (unidades). Cada profissional pertence a uma; cada agendamento
+-- grava em qual foi marcado. A foto vai em base64 (MEDIUMTEXT, como o logo).
+-- Para atualizar uma base ja existente use: php scripts/migrar_filiais.php
+-- =====================================================================
+DROP TABLE IF EXISTS `filiais`;
+CREATE TABLE `filiais` (
+  `id_filial` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `id_estabelecimento` int(10) unsigned NOT NULL,
+  `nome` varchar(120) NOT NULL,
+  `telefone` varchar(20) DEFAULT NULL,
+  `cep` char(8) DEFAULT NULL,
+  `logradouro` varchar(150) DEFAULT NULL,
+  `numero` varchar(20) DEFAULT NULL,
+  `complemento` varchar(60) DEFAULT NULL,
+  `bairro` varchar(100) DEFAULT NULL,
+  `cidade` varchar(100) DEFAULT NULL,
+  `uf` char(2) DEFAULT NULL,
+  `foto` mediumtext DEFAULT NULL,
+  `status` enum('ativo','inativo') NOT NULL DEFAULT 'ativo',
+  `ordem` smallint(5) NOT NULL DEFAULT 0,
+  `data_cadastro` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_filial`),
+  UNIQUE KEY `uk_filiais_registro` (`id_estabelecimento`,`id_filial`),
+  KEY `idx_filiais_estabelecimento` (`id_estabelecimento`,`status`),
+  CONSTRAINT `fk_filiais_estabelecimento` FOREIGN KEY (`id_estabelecimento`) REFERENCES `estabelecimento` (`id_estabelecimento`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `profissionais`
+  ADD COLUMN `id_filial` int(10) unsigned DEFAULT NULL,
+  ADD KEY `idx_profissionais_filial` (`id_estabelecimento`,`id_filial`),
+  ADD CONSTRAINT `fk_profissionais_filial` FOREIGN KEY (`id_filial`) REFERENCES `filiais` (`id_filial`);
+
+ALTER TABLE `agendamentos`
+  ADD COLUMN `id_filial` int(10) unsigned DEFAULT NULL,
+  ADD KEY `idx_agendamentos_filial` (`id_estabelecimento`,`id_filial`),
+  ADD CONSTRAINT `fk_agendamentos_filial` FOREIGN KEY (`id_filial`) REFERENCES `filiais` (`id_filial`);
+
+-- Toda instalacao nasce com uma unidade: a Matriz do estabelecimento semeado.
+INSERT INTO `filiais` (`id_estabelecimento`, `nome`, `status`, `ordem`)
+SELECT `id_estabelecimento`, 'Matriz', 'ativo', 0 FROM `estabelecimento` WHERE `slug` = 'agendei-studio';

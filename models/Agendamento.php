@@ -351,16 +351,26 @@ class Agendamento
                 $status = 'agendado';
             }
 
+            // A filial fica gravada no agendamento: e a do profissional no momento da
+            // marcacao. Assim o faturamento por unidade nao muda se ele trocar de filial.
+            $filialConsulta = $conexao->prepare(
+                'SELECT id_filial FROM profissionais
+                 WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :id'
+            );
+            $filialConsulta->execute([':id' => $idProfissional]);
+            $idFilial = (int) $filialConsulta->fetchColumn() ?: null;
+
             $consulta = $conexao->prepare(
                 'INSERT INTO agendamentos
-                    (id_estabelecimento, id_cliente, id_profissional, id_servico, data_agendamento, hora_inicio, hora_fim,
+                    (id_estabelecimento, id_cliente, id_profissional, id_servico, id_filial, data_agendamento, hora_inicio, hora_fim,
                      valor, status, observacao, origem, grupo_recorrencia)
-                 VALUES (' . Contexto::id() . ', :cliente, :profissional, :servico, :data, :inicio, :fim,
+                 VALUES (' . Contexto::id() . ', :cliente, :profissional, :servico, :filial, :data, :inicio, :fim,
                      :valor, :status, :observacao, :origem, :grupo_recorrencia)'
             );
 
             $consulta->execute([
                 ':cliente'      => $idCliente,
+                ':filial'       => $idFilial,
                 ':profissional' => $idProfissional,
                 ':servico'      => $idServico,
                 ':data'         => $data,

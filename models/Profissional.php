@@ -4,7 +4,7 @@
  */
 class Profissional
 {
-    private const CAMPOS = 'p.id_profissional, p.id_usuario, p.especialidade, p.bio, p.foto,
+    private const CAMPOS = 'p.id_profissional, p.id_usuario, p.id_filial, p.especialidade, p.bio, p.foto,
                             p.pode_bloquear_agenda, p.data_cadastro,
                             u.nome, u.email, u.telefone, u.status';
 
@@ -25,12 +25,20 @@ class Profissional
                 'status'   => $dados['status'] ?? 'ativo',
             ]);
 
+            // Todo profissional pertence a uma filial; sem escolha explicita, vai para a padrao.
+            $idFilial = (int) ($dados['id_filial'] ?? 0);
+            if ($idFilial <= 0) {
+                $padrao   = Filial::padrao();
+                $idFilial = $padrao ? (int) $padrao['id_filial'] : null;
+            }
+
             $consulta = $conexao->prepare(
-                'INSERT INTO profissionais (id_estabelecimento, id_usuario, especialidade, bio, pode_bloquear_agenda)
-                 VALUES (' . Contexto::id() . ', :id_usuario, :especialidade, :bio, :pode_bloquear)'
+                'INSERT INTO profissionais (id_estabelecimento, id_usuario, id_filial, especialidade, bio, pode_bloquear_agenda)
+                 VALUES (' . Contexto::id() . ', :id_usuario, :id_filial, :especialidade, :bio, :pode_bloquear)'
             );
             $consulta->execute([
                 ':id_usuario'     => $idUsuario,
+                ':id_filial'      => $idFilial,
                 ':especialidade'  => $dados['especialidade'] ?: null,
                 ':bio'            => $dados['bio'] ?? null,
                 ':pode_bloquear'  => !empty($dados['pode_bloquear_agenda']) ? 1 : 0,
@@ -52,18 +60,27 @@ class Profissional
     /** Persiste os campos editáveis do cadastro identificado pelo ID. */
     public static function atualizar(int $idProfissional, array $dados): bool
     {
-        $consulta = bd()->prepare(
-            'UPDATE profissionais
-             SET especialidade = :especialidade, bio = :bio, pode_bloquear_agenda = :pode_bloquear
-             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :id'
-        );
-
-        return $consulta->execute([
+        $atribuicoes = 'especialidade = :especialidade, bio = :bio, pode_bloquear_agenda = :pode_bloquear';
+        $parametros  = [
             ':especialidade' => $dados['especialidade'] ?: null,
             ':bio'           => $dados['bio'] ?? null,
             ':pode_bloquear' => !empty($dados['pode_bloquear_agenda']) ? 1 : 0,
             ':id'            => $idProfissional,
-        ]);
+        ];
+
+        // A filial so muda quando o formulario a informa; nao ha troca silenciosa.
+        if ((int) ($dados['id_filial'] ?? 0) > 0) {
+            $atribuicoes             .= ', id_filial = :id_filial';
+            $parametros[':id_filial'] = (int) $dados['id_filial'];
+        }
+
+        $consulta = bd()->prepare(
+            'UPDATE profissionais
+             SET ' . $atribuicoes . '
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :id'
+        );
+
+        return $consulta->execute($parametros);
     }
 
     /** Busca o registro pelo identificador; retorna null quando ele não existe. */
@@ -146,6 +163,25 @@ class Profissional
     }
 
     /** Confere o vínculo que permite ao profissional realizar o serviço. */
+    /** Profissionais ativos de uma filial que executam o servico: a etapa apos a escolha da unidade. */
+    public static function porServicoEFilial(int $idServico, int $idFilial): array
+    {
+        $consulta = bd()->prepare(
+            'SELECT ' . self::CAMPOS . '
+             FROM profissionais p
+             INNER JOIN usuarios u ON u.id_usuario = p.id_usuario AND u.id_estabelecimento = ' . Contexto::id() . '
+             INNER JOIN profissional_servico ps ON ps.id_profissional = p.id_profissional
+             WHERE ps.id_estabelecimento = ' . Contexto::id() . '
+               AND ps.id_servico = :id_servico
+               AND p.id_filial = :id_filial
+               AND u.status = \'ativo\'
+             ORDER BY u.nome ASC'
+        );
+        $consulta->execute([':id_servico' => $idServico, ':id_filial' => $idFilial]);
+
+        return $consulta->fetchAll();
+    }
+
     public static function executaServico(int $idProfissional, int $idServico): bool
     {
         $consulta = bd()->prepare(

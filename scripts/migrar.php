@@ -122,3 +122,6 @@ if (!(int) $db->query('SELECT COUNT(*) FROM administradores_master')->fetchColum
 }
 echo "Atualização concluída. Os dados existentes pertencem ao estabelecimento $idOriginal.\n";
 if ($masterCriado) echo "Conta master criada: master@agendei.com.br / agendei-master-2026 (altere a senha no primeiro acesso).\n";
+
+// Filiais (unidades): tabela, id_filial em profissionais/agendamentos e a Matriz.
+require __DIR__ . '/migrar_filiais.php';
