@@ -21,6 +21,7 @@ class LogMaster
         'logout'                 => 'Saida da area master',
         'estabelecimento_criado' => 'Estabelecimento criado',
         'estabelecimento_status' => 'Acesso do estabelecimento alterado',
+        'estabelecimento_excluido' => 'Estabelecimento excluído',
         'admin_criado'           => 'Administrador local criado',
         'admin_status'           => 'Acesso do administrador alterado',
         'admin_senha'            => 'Senha de administrador redefinida',

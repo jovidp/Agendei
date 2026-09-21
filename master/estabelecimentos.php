@@ -40,6 +40,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 redirecionar('master/estabelecimentos.php?acao=ver&id=' . $id);
             }
         }
+        if ($acao === 'excluir') {
+            $id = (int) post('id_estabelecimento');
+            $empresa = Estabelecimento::porIdGlobal($id);
+            if (!$empresa) $erros[] = 'Estabelecimento não encontrado.';
+            if ($empresa && post('confirmar_slug') !== $empresa['slug']) $erros[] = 'Digite o endereço exclusivo do estabelecimento para confirmar a exclusão.';
+            if (!Master::senhaConfere($idSessao, post('senha_master'))) $erros[] = 'Confirme sua senha master para excluir o estabelecimento.';
+            if (!$erros) {
+                if (Estabelecimento::excluirGlobal($id)) {
+                    LogMaster::registrar('estabelecimento_excluido', [
+                        'estabelecimento' => $id,
+                        'estabelecimento_nome' => $empresa['nome'],
+                        'alvo' => $empresa['slug'],
+                        'detalhe' => 'Exclusão permanente do estabelecimento e de seus dados vinculados',
+                    ]);
+                    definirFlash('sucesso', 'Estabelecimento excluído com seus dados vinculados.');
+                    redirecionar('master/estabelecimentos.php');
+                }
+                $erros[] = 'Estabelecimento não encontrado.';
+            }
+        }
         if ($acao === 'novo_admin') {
             $id = (int) post('id_estabelecimento');
             $empresa = Estabelecimento::porIdGlobal($id);
@@ -122,8 +142,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     } catch (PDOException $erro) {
-        $erros[] = $erro->getCode() === '23000' ? 'O endereço ou e-mail já está em uso neste estabelecimento.' : 'Não foi possível concluir a operação.';
-        if ($erro->getCode() !== '23000') error_log($erro->getMessage());
+        $erros[] = $acao === 'excluir'
+            ? 'Não foi possível excluir o estabelecimento. Nenhum dado foi removido.'
+            : ($erro->getCode() === '23000' ? 'O endereço ou e-mail já está em uso neste estabelecimento.' : 'Não foi possível concluir a operação.');
+        if ($acao === 'excluir' || $erro->getCode() !== '23000') error_log($erro->getMessage());
     }
 }
 // Um POST recusado mantém o formulário do estabelecimento aberto na tela.
@@ -228,9 +250,44 @@ require RAIZ . '/includes/painel_header.php';
         </form>
     </div>
 </div>
+<div class="cartao" id="excluir-estabelecimento">
+    <div class="cartao-cabecalho"><h3>Excluir estabelecimento</h3></div>
+    <div class="cartao-corpo">
+        <p>Excluir <strong><?= e($selecionado['nome']) ?></strong> remove permanentemente suas contas, clientes, profissionais, serviços, agendamentos, pagamentos e demais dados vinculados. Esta ação não pode ser desfeita.</p>
+        <p>Para apenas suspender o acesso e manter os dados, use a opção Desativar na lista de estabelecimentos.</p>
+        <form method="post"><?= campoCsrf() ?>
+            <input type="hidden" name="acao" value="excluir">
+            <input type="hidden" name="id_estabelecimento" value="<?= (int) $selecionado['id_estabelecimento'] ?>">
+            <div class="linha-campos">
+                <div class="campo"><label for="confirmar_slug">Digite <?= e($selecionado['slug']) ?> para confirmar</label><input id="confirmar_slug" name="confirmar_slug" autocomplete="off" required></div>
+                <div class="campo"><label for="senha_excluir">Sua senha master</label><input type="password" id="senha_excluir" name="senha_master" autocomplete="current-password" required></div>
+            </div>
+            <button class="btn btn-perigo" type="submit">Excluir estabelecimento definitivamente</button>
+        </form>
+    </div>
+</div>
 <?php else: ?>
 <div class="cartao"><div class="tabela-area"><table class="tabela"><thead><tr><th>Estabelecimento</th><th>Administrador</th><th>Clientes</th><th>Profissionais</th><th>Serviços</th><th>Status</th><th>Ações</th></tr></thead><tbody>
-<?php foreach ($empresas as $empresa): ?><tr><td><strong><?= e($empresa['nome']) ?></strong><br><small><?= e($empresa['slug']) ?></small></td><td><?= (int) $empresa['admins_ativos'] ?> ativo(s)</td><td><?= (int) $empresa['total_clientes'] ?></td><td><?= (int) $empresa['total_profissionais'] ?></td><td><?= (int) $empresa['total_servicos'] ?></td><td><?= badgeStatus($empresa['status']) ?></td><td><div class="acoes-tabela"><a class="btn btn-contorno btn-pequeno" href="<?= url('master/estabelecimentos.php?acao=ver&id=' . $empresa['id_estabelecimento']) ?>">Detalhes</a><form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="status"><input type="hidden" name="id_estabelecimento" value="<?= (int) $empresa['id_estabelecimento'] ?>"><input type="hidden" name="status" value="<?= $empresa['status'] === 'ativo' ? 'inativo' : 'ativo' ?>"><button class="btn btn-pequeno <?= $empresa['status'] === 'ativo' ? 'btn-perigo' : 'btn-secundario' ?>" type="submit" data-confirmar="Alterar o acesso deste estabelecimento?"><?= $empresa['status'] === 'ativo' ? 'Desativar' : 'Ativar' ?></button></form></div></td></tr><?php endforeach; ?>
+<?php foreach ($empresas as $empresa): ?>
+<tr>
+    <td><strong><?= e($empresa['nome']) ?></strong><br><small><?= e($empresa['slug']) ?></small></td>
+    <td><?= (int) $empresa['admins_ativos'] ?> ativo(s)</td>
+    <td><?= (int) $empresa['total_clientes'] ?></td>
+    <td><?= (int) $empresa['total_profissionais'] ?></td>
+    <td><?= (int) $empresa['total_servicos'] ?></td>
+    <td><?= badgeStatus($empresa['status']) ?></td>
+    <td><div class="acoes-tabela">
+        <a class="btn btn-contorno btn-pequeno" href="<?= url('master/estabelecimentos.php?acao=ver&id=' . $empresa['id_estabelecimento']) ?>">Detalhes</a>
+        <form method="post"><?= campoCsrf() ?>
+            <input type="hidden" name="acao" value="status">
+            <input type="hidden" name="id_estabelecimento" value="<?= (int) $empresa['id_estabelecimento'] ?>">
+            <input type="hidden" name="status" value="<?= $empresa['status'] === 'ativo' ? 'inativo' : 'ativo' ?>">
+            <button class="btn btn-pequeno <?= $empresa['status'] === 'ativo' ? 'btn-perigo' : 'btn-secundario' ?>" type="submit" data-confirmar="Alterar o acesso deste estabelecimento?"><?= $empresa['status'] === 'ativo' ? 'Desativar' : 'Ativar' ?></button>
+        </form>
+        <a class="btn btn-perigo btn-pequeno" href="<?= url('master/estabelecimentos.php?acao=ver&id=' . $empresa['id_estabelecimento'] . '#excluir-estabelecimento') ?>">Excluir</a>
+    </div></td>
+</tr>
+<?php endforeach; ?>
 </tbody></table></div></div>
 <?php endif; ?>
 <?php require RAIZ . '/includes/painel_footer.php'; ?>

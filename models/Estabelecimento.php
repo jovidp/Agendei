@@ -148,6 +148,41 @@ class Estabelecimento
         return $q->execute([$status === 'ativo' ? 'ativo' : 'inativo', $id]);
     }
 
+    /** Exclui a empresa e seus dados em uma unica transacao, preservando a auditoria master. */
+    public static function excluirGlobal(int $id): bool
+    {
+        $db = bd();
+        $db->beginTransaction();
+        try {
+            // Serializa exclusoes da mesma empresa ate o commit.
+            $q = $db->prepare('UPDATE estabelecimento SET nome = nome WHERE id_estabelecimento = ?');
+            $q->execute([$id]);
+            if (!self::porIdGlobal($id)) {
+                $db->rollBack();
+                return false;
+            }
+
+            // Filhos antes dos pais: as FKs de empresa nao usam ON DELETE CASCADE.
+            foreach ([
+                'notificacoes', 'pagamentos', 'fidelidade_movimentos', 'avaliacoes',
+                'cliente_pacotes', 'pacotes', 'lista_espera', 'agendamentos',
+                'bloqueios_agenda', 'horarios_profissionais', 'profissional_servico',
+                'administradores', 'clientes', 'profissionais', 'servicos',
+                'logs_autenticacao', 'usuarios', 'configuracoes', 'estabelecimento_plano',
+            ] as $tabela) {
+                $q = $db->prepare('DELETE FROM ' . $tabela . ' WHERE id_estabelecimento = ?');
+                $q->execute([$id]);
+            }
+            $q = $db->prepare('DELETE FROM estabelecimento WHERE id_estabelecimento = ?');
+            $q->execute([$id]);
+            $db->commit();
+            return true;
+        } catch (Throwable $erro) {
+            if ($db->inTransaction()) $db->rollBack();
+            throw $erro;
+        }
+    }
+
     /** Retorna os administradores da empresa sem expor hashes de senha. */
     public static function administradores(int $id): array
     {
