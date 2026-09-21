@@ -149,7 +149,10 @@ require RAIZ . '/includes/painel_header.php';
 </div></div>
 <?php elseif ($selecionado): ?>
 <div class="cartao"><div class="cartao-cabecalho"><div><h3><?= e($selecionado['nome']) ?></h3><small><?= e($selecionado['slug']) ?></small></div><a target="_blank" rel="noopener" href="<?= e(BASE_URL . '/index.php?estabelecimento=' . rawurlencode($selecionado['slug'])) ?>">Abrir página pública</a></div>
-<div class="cartao-corpo"><p><strong>Status:</strong> <?= badgeStatus($selecionado['status']) ?></p><p>Clientes, profissionais, serviços e agendamentos ficam vinculados ao ID <?= (int) $selecionado['id_estabelecimento'] ?>.</p></div></div>
+<div class="cartao-corpo"><p><strong>Status:</strong> <?= badgeStatus($selecionado['status']) ?></p><p>Clientes, profissionais, serviços e agendamentos ficam vinculados ao ID <?= (int) $selecionado['id_estabelecimento'] ?>.</p>
+    <p><strong>Login do estabelecimento:</strong> <a href="<?= e(BASE_URL . '/login.php?estabelecimento=' . rawurlencode($selecionado['slug'])) ?>"><?= e(BASE_URL . '/login.php?estabelecimento=' . rawurlencode($selecionado['slug'])) ?></a></p>
+    <p class="ajuda-campo">Envie este link ao responsável. Ele deve entrar com o e-mail e a senha da conta administrativa cadastrada abaixo. Para testar no mesmo navegador, saia da conta master primeiro.</p>
+</div></div>
 <div class="grade-painel grade-painel-igual">
 <div class="cartao"><div class="cartao-cabecalho"><h3>Contas administrativas</h3></div><div class="tabela-area"><table class="tabela"><thead><tr><th>Nome</th><th>Último acesso</th><th>Status</th><th class="coluna-acoes">Acesso</th></tr></thead><tbody>
 <?php foreach ($administradores as $admin): ?>

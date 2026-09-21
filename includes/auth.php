@@ -75,7 +75,7 @@ function perfilRotulo(?string $tipo = null): string
 {
     return match ($tipo ?? perfil()) {
         'master'       => 'Administrador master',
-        'admin'        => 'Usuario master',
+        'admin'        => 'Administrador do estabelecimento',
         'profissional' => 'Profissional',
         'cliente'      => 'Usuario comum',
         default        => '',
@@ -382,6 +382,9 @@ function registrarSessao(array $usuario): void
     // Renova o identificador no login para não reutilizar a sessão anterior à autenticação.
     session_regenerate_id(true);
 
+    // Um login local nunca herda a identidade global ou uma simulacao anterior.
+    unset($_SESSION['master_id'], $_SESSION['simulacao'], $_SESSION['segundo_fator_master'], $_SESSION['segundo_fator']);
+
     $_SESSION['estabelecimento_id'] = (int) $usuario['id_estabelecimento'];
     $_SESSION['usuario_id']    = (int) $usuario['id_usuario'];
     $_SESSION['usuario_nome']  = $usuario['nome'];
@@ -407,7 +410,7 @@ function registrarSessaoMaster(array $master, bool $auditar = true): void
     // usuario_login precisa sair junto: na volta de uma simulacao ele ainda
     // guarda o login do administrador, e o topo do painel passaria a anunciar
     // a conta errada para quem ja voltou a ser master.
-    unset($_SESSION['usuario_id'], $_SESSION['estabelecimento_id'], $_SESSION['perfil_id'], $_SESSION['usuario_login']);
+    unset($_SESSION['usuario_id'], $_SESSION['estabelecimento_id'], $_SESSION['perfil_id'], $_SESSION['usuario_login'], $_SESSION['simulacao'], $_SESSION['segundo_fator'], $_SESSION['segundo_fator_master']);
     $_SESSION['master_id'] = (int) $master['id_master'];
     $_SESSION['usuario_nome'] = $master['nome'];
     $_SESSION['usuario_email'] = $master['email'];
@@ -575,15 +578,25 @@ function exigirLogin(array|string $tiposPermitidos = []): void
 
 /**
  * Para onde enviar o usuario logo apos o login.
- * Aceita apenas caminhos internos, evitando redirecionamento para sites externos.
+ * Aceita apenas paginas da area do perfil e do estabelecimento autenticados.
  */
 function destinoAposLogin(): string
 {
     $destino = $_SESSION['redirecionar_apos_login'] ?? null;
     unset($_SESSION['redirecionar_apos_login']);
 
-    if (is_string($destino) && preg_match('#^/[^/\\\\]#', $destino)) {
-        return $destino;
+    if (is_string($destino)) {
+        $partes = parse_url($destino);
+        $padrao = '#^' . preg_quote(BASE_URL, '#') . '/(admin|cliente|profissional|master)/[a-z_]+\\.php$#D';
+        if (is_array($partes)
+            && !isset($partes['host']) && !isset($partes['scheme'])
+            && preg_match($padrao, $partes['path'] ?? '', $area)
+            && $area[1] === perfil()) {
+            parse_str($partes['query'] ?? '', $parametros);
+            if (!isset($parametros['estabelecimento']) || $parametros['estabelecimento'] === Contexto::slug()) {
+                return $destino;
+            }
+        }
     }
 
     if (perfil() === 'cliente' && ($_GET['destino'] ?? '') === 'agendar') {
