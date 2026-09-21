@@ -95,6 +95,18 @@ CREATE TABLE `usuarios` (
   `email` varchar(150) NOT NULL,
   `senha_hash` varchar(255) NOT NULL,
   `telefone` varchar(20) DEFAULT NULL,
+  `telefone_fixo` varchar(20) DEFAULT NULL,
+  `login` varchar(6) DEFAULT NULL,
+  `sexo` enum('F','M','O') DEFAULT NULL,
+  `nome_materno` varchar(120) DEFAULT NULL,
+  `data_nascimento` date DEFAULT NULL,
+  `cep` char(8) DEFAULT NULL,
+  `logradouro` varchar(150) DEFAULT NULL,
+  `numero` varchar(20) DEFAULT NULL,
+  `complemento` varchar(60) DEFAULT NULL,
+  `bairro` varchar(100) DEFAULT NULL,
+  `cidade` varchar(100) DEFAULT NULL,
+  `uf` char(2) DEFAULT NULL,
   `tipo` enum('cliente','profissional','admin') NOT NULL DEFAULT 'cliente',
   `status` enum('ativo','inativo') NOT NULL DEFAULT 'ativo',
   `token_recuperacao` varchar(64) DEFAULT NULL,
@@ -106,6 +118,7 @@ CREATE TABLE `usuarios` (
   PRIMARY KEY (`id_usuario`),
   UNIQUE KEY `uk_estabelecimento_registro` (`id_estabelecimento`,`id_usuario`),
   UNIQUE KEY `uk_estabelecimento_email` (`id_estabelecimento`,`email`),
+  UNIQUE KEY `uk_estabelecimento_login` (`id_estabelecimento`,`login`),
   KEY `idx_usuarios_tipo_status` (`tipo`,`status`),
   KEY `idx_estabelecimento` (`id_estabelecimento`),
   CONSTRAINT `fk_usuarios_estabelecimento` FOREIGN KEY (`id_estabelecimento`) REFERENCES `estabelecimento` (`id_estabelecimento`)
@@ -455,6 +468,30 @@ CREATE TABLE avaliacoes (
         CONSTRAINT fk_avaliacao_profissional_tenant FOREIGN KEY (id_estabelecimento,id_profissional) REFERENCES profissionais(id_estabelecimento,id_profissional),
         CONSTRAINT ck_avaliacao_nota CHECK (nota BETWEEN 1 AND 5)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- LOG DE AUTENTICAÇÃO
+-- Nome e CPF ficam desnormalizados de propósito: o log precisa sobreviver
+-- à exclusão do usuário feita pelo master.
+-- ---------------------------------------------------------------------
+CREATE TABLE `logs_autenticacao` (
+  `id_log` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `id_estabelecimento` int(10) unsigned NOT NULL,
+  `id_usuario` int(10) unsigned DEFAULT NULL,
+  `login_informado` varchar(150) NOT NULL,
+  `nome` varchar(120) NOT NULL DEFAULT '',
+  `cpf` char(11) DEFAULT NULL,
+  `perfil` varchar(20) DEFAULT NULL,
+  `evento` enum('login_sucesso','login_falha','2fa_sucesso','2fa_falha','2fa_bloqueio','logout') NOT NULL,
+  `fator_2fa` enum('nome_materno','data_nascimento','cep') DEFAULT NULL,
+  `ip` varchar(45) DEFAULT NULL,
+  `data_hora` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_log`),
+  KEY `idx_logs_estabelecimento` (`id_estabelecimento`,`data_hora`),
+  KEY `idx_logs_nome` (`nome`),
+  KEY `idx_logs_cpf` (`cpf`),
+  CONSTRAINT `fk_logs_estabelecimento` FOREIGN KEY (`id_estabelecimento`) REFERENCES `estabelecimento` (`id_estabelecimento`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
 -- CONFIGURAÇÕES

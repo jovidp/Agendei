@@ -32,13 +32,13 @@ class Contexto
             $_SESSION['estabelecimento_id'] = $idSessao;
         }
         if ($idSessao > 0) {
-            $q = bd()->prepare('SELECT * FROM estabelecimento WHERE id_estabelecimento = ? AND status = "ativo"');
+            $q = bd()->prepare('SELECT * FROM estabelecimento WHERE id_estabelecimento = ? AND status = \'ativo\'');
             $q->execute([$idSessao]);
         } elseif ($slug !== '') {
-            $q = bd()->prepare('SELECT * FROM estabelecimento WHERE slug = ? AND status = "ativo"');
+            $q = bd()->prepare('SELECT * FROM estabelecimento WHERE slug = ? AND status = \'ativo\'');
             $q->execute([$slug]);
         } else {
-            $q = bd()->query('SELECT * FROM estabelecimento WHERE status = "ativo" ORDER BY id_estabelecimento LIMIT 1');
+            $q = bd()->query('SELECT * FROM estabelecimento WHERE status = \'ativo\' ORDER BY id_estabelecimento LIMIT 1');
         }
         $registro = $q->fetch();
         if (!$registro) self::falhar(404, 'Estabelecimento não encontrado.');

@@ -46,8 +46,8 @@ class Configuracao
     {
         $consulta = bd()->prepare(
             'INSERT INTO configuracoes (id_estabelecimento, chave, valor, descricao)
-             VALUES (' . Contexto::id() . ', :chave, :valor, :descricao)
-             ON DUPLICATE KEY UPDATE valor = VALUES(valor)'
+             VALUES (' . Contexto::id() . ', :chave, :valor, :descricao)'
+            . Sql::aoDuplicar(['id_estabelecimento', 'chave'], ['valor'])
         );
 
         $consulta->execute([

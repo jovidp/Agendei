@@ -71,11 +71,11 @@ class Relatorio
     public static function servicosMaisAgendados(string $dataInicial, string $dataFinal, int $limite = 5): array
     {
         $sql = 'SELECT s.id_servico, s.nome, COUNT(*) AS total,
-                       COALESCE(SUM(CASE WHEN a.status <> "cancelado" THEN a.valor ELSE 0 END), 0) AS valor_total
+                       COALESCE(SUM(CASE WHEN a.status <> \'cancelado\' THEN a.valor ELSE 0 END), 0) AS valor_total
                 FROM agendamentos a
                 INNER JOIN servicos s ON s.id_servico = a.id_servico
                 WHERE a.id_estabelecimento = ' . Contexto::id() . ' AND a.data_agendamento BETWEEN :inicio AND :fim
-                  AND a.status <> "cancelado"
+                  AND a.status <> \'cancelado\'
                 GROUP BY s.id_servico, s.nome
                 ORDER BY total DESC, s.nome ASC
                 LIMIT ' . (int) $limite;
@@ -90,9 +90,9 @@ class Relatorio
     {
         $sql = 'SELECT p.id_profissional, u.nome,
                        COUNT(*) AS total,
-                       SUM(CASE WHEN a.status = "concluido" THEN 1 ELSE 0 END) AS concluidos,
-                       SUM(CASE WHEN a.status = "cancelado" THEN 1 ELSE 0 END) AS cancelados,
-                       COALESCE(SUM(CASE WHEN a.status <> "cancelado" THEN a.valor ELSE 0 END), 0) AS valor_total
+                       SUM(CASE WHEN a.status = \'concluido\' THEN 1 ELSE 0 END) AS concluidos,
+                       SUM(CASE WHEN a.status = \'cancelado\' THEN 1 ELSE 0 END) AS cancelados,
+                       COALESCE(SUM(CASE WHEN a.status <> \'cancelado\' THEN a.valor ELSE 0 END), 0) AS valor_total
                 FROM agendamentos a
                 INNER JOIN profissionais p ON p.id_profissional = a.id_profissional
                 INNER JOIN usuarios u ON u.id_usuario = p.id_usuario
@@ -111,13 +111,13 @@ class Relatorio
     {
         $sql = 'SELECT c.id_cliente, u.nome, u.telefone,
                        COUNT(*) AS total,
-                       COALESCE(SUM(CASE WHEN a.status <> "cancelado" THEN a.valor ELSE 0 END), 0) AS valor_total,
+                       COALESCE(SUM(CASE WHEN a.status <> \'cancelado\' THEN a.valor ELSE 0 END), 0) AS valor_total,
                        MAX(a.data_agendamento) AS ultimo_atendimento
                 FROM agendamentos a
                 INNER JOIN clientes c ON c.id_cliente = a.id_cliente
                 INNER JOIN usuarios u ON u.id_usuario = c.id_usuario
                 WHERE a.id_estabelecimento = ' . Contexto::id() . ' AND a.data_agendamento BETWEEN :inicio AND :fim
-                  AND a.status <> "cancelado"
+                  AND a.status <> \'cancelado\'
                 GROUP BY c.id_cliente, u.nome, u.telefone
                 ORDER BY total DESC, u.nome ASC
                 LIMIT ' . (int) $limite;
@@ -158,8 +158,8 @@ class Relatorio
     {
         $sql = 'SELECT data_agendamento,
                        COUNT(*) AS total,
-                       SUM(CASE WHEN status = "cancelado" THEN 1 ELSE 0 END) AS cancelados,
-                       COALESCE(SUM(CASE WHEN status <> "cancelado" THEN valor ELSE 0 END), 0) AS valor_total
+                       SUM(CASE WHEN status = \'cancelado\' THEN 1 ELSE 0 END) AS cancelados,
+                       COALESCE(SUM(CASE WHEN status <> \'cancelado\' THEN valor ELSE 0 END), 0) AS valor_total
                 FROM agendamentos
                 WHERE id_estabelecimento = ' . Contexto::id() . ' AND data_agendamento BETWEEN :inicio AND :fim
                 GROUP BY data_agendamento
@@ -199,11 +199,11 @@ class Relatorio
         }
 
         $consulta = bd()->prepare(
-            'SELECT COALESCE(SUM(TIMESTAMPDIFF(MINUTE, hora_inicio, hora_fim)), 0) AS minutos
+            'SELECT COALESCE(SUM(' . Sql::diferencaMinutos('hora_inicio', 'hora_fim') . '), 0) AS minutos
              FROM agendamentos
              WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :profissional
                AND data_agendamento = :data
-               AND status IN ("agendado","confirmado","concluido")'
+               AND status IN (\'agendado\',\'confirmado\',\'concluido\')'
         );
         $consulta->execute([':profissional' => $idProfissional, ':data' => $data]);
         $minutosAgendados = (int) ($consulta->fetch()['minutos'] ?? 0);

@@ -3,6 +3,24 @@
  * Funcoes utilitarias compartilhadas por todo o sistema.
  */
 
+/**
+ * Indica se a requisicao chegou por HTTPS.
+ *
+ * Hospedagem compartilhada costuma encerrar o TLS num proxy, e ai $_SERVER['HTTPS']
+ * chega vazio. O cabecalho encaminhado e aceito porque o unico efeito aqui e ligar a
+ * flag Secure do cookie: forjar o cabecalho so deixa o proprio cookie mais restrito.
+ */
+function requisicaoSegura(): bool
+{
+    $https = strtolower((string) ($_SERVER['HTTPS'] ?? ''));
+    if ($https !== '' && $https !== 'off') {
+        return true;
+    }
+
+    $encaminhado = strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
+    return $encaminhado === 'https' || (int) ($_SERVER['SERVER_PORT'] ?? 0) === 443;
+}
+
 /** Monta uma URL absoluta da aplicacao. */
 function url(string $caminho = ''): string
 {
@@ -134,6 +152,16 @@ function formatarCpf(?string $cpf): string
         substr($numeros, 6, 3),
         substr($numeros, 9, 2)
     );
+}
+
+/** Aplica o hífen do CEP quando há oito dígitos disponíveis. */
+function formatarCep(?string $cep): string
+{
+    $numeros = apenasNumeros((string) $cep);
+    if (strlen($numeros) !== 8) {
+        return $cep === null || $cep === '' ? '-' : $cep;
+    }
+    return substr($numeros, 0, 5) . '-' . substr($numeros, 5);
 }
 
 /** Converte "1.234,56" (entrada do usuario) em 1234.56. */
@@ -302,6 +330,112 @@ function validarHora(string $hora): bool
 function validarSenha(string $senha): bool
 {
     return mb_strlen($senha) >= 6;
+}
+
+// ---------------------------------------------------------------------
+// Regras de cadastro do usuário comum
+// Os limites abaixo vêm da especificação do projeto e são conferidos no
+// servidor mesmo quando o JavaScript já validou o campo na tela.
+// ---------------------------------------------------------------------
+
+/** Nome completo: de 15 a 80 caracteres, apenas letras e espaços. */
+function validarNomeCompleto(string $nome): bool
+{
+    $nome = trim(preg_replace('/\s+/u', ' ', $nome) ?? '');
+    $tamanho = mb_strlen($nome);
+
+    return $tamanho >= 15 && $tamanho <= 80 && (bool) preg_match('/^[\p{L}\s]+$/u', $nome);
+}
+
+/** Login de acesso: exatamente 6 caracteres alfabéticos. */
+function validarLogin(string $login): bool
+{
+    return (bool) preg_match('/^[A-Za-z]{6}$/', $login);
+}
+
+/** Senha do usuário comum: exatamente 8 caracteres alfabéticos. */
+function validarSenhaProjeto(string $senha): bool
+{
+    return (bool) preg_match('/^[A-Za-z]{8}$/', $senha);
+}
+
+/** Nome materno: no mínimo 5 caracteres, apenas letras e espaços. */
+function validarNomeMaterno(string $nome): bool
+{
+    $nome = trim(preg_replace('/\s+/u', ' ', $nome) ?? '');
+
+    return mb_strlen($nome) >= 5 && mb_strlen($nome) <= 120 && (bool) preg_match('/^[\p{L}\s]+$/u', $nome);
+}
+
+/** Siglas das unidades da federação, usadas no seletor de endereço. */
+function unidadesFederacao(): array
+{
+    return [
+        'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG',
+        'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
+    ];
+}
+
+/** UF válida do endereço. */
+function validarUf(string $uf): bool
+{
+    return in_array(mb_strtoupper(trim($uf)), unidadesFederacao(), true);
+}
+
+/** CEP: oito dígitos, aceitando a máscara de digitação. */
+function validarCep(string $cep): bool
+{
+    return strlen(apenasNumeros($cep)) === 8;
+}
+
+/**
+ * Telefone no padrão (+55)XX-XXXXXXXX.
+ * O fixo tem 8 dígitos após o DDD e o celular tem 9, então os dois tamanhos são aceitos.
+ */
+function validarTelefoneBr(string $telefone, bool $celular = false): bool
+{
+    $numeros = apenasNumeros($telefone);
+    $esperado = $celular ? 11 : 10;
+
+    return strlen($numeros) === $esperado;
+}
+
+/** Apresenta o telefone como (+55)XX-XXXXXXXX, formato pedido na especificação. */
+function formatarTelefoneInternacional(?string $telefone): string
+{
+    $numeros = apenasNumeros((string) $telefone);
+
+    if (!in_array(strlen($numeros), [10, 11], true)) {
+        return $telefone === null || $telefone === '' ? '-' : (string) $telefone;
+    }
+
+    return '(+55)' . substr($numeros, 0, 2) . '-' . substr($numeros, 2);
+}
+
+/** Rótulo do sexo informado no cadastro. */
+function sexoTexto(?string $sexo): string
+{
+    return match ($sexo) {
+        'F'     => 'Feminino',
+        'M'     => 'Masculino',
+        'O'     => 'Outro',
+        default => '-',
+    };
+}
+
+/** Monta o endereço completo em uma linha a partir das colunas separadas. */
+function enderecoTexto(array $usuario): string
+{
+    $rua = trim(($usuario['logradouro'] ?? '') . ', ' . ($usuario['numero'] ?? ''), ' ,');
+    $partes = array_filter([
+        $rua,
+        $usuario['complemento'] ?? '',
+        $usuario['bairro'] ?? '',
+        trim(($usuario['cidade'] ?? '') . '/' . ($usuario['uf'] ?? ''), '/'),
+        $usuario['cep'] ? formatarCep($usuario['cep']) : '',
+    ], static fn ($parte) => trim((string) $parte) !== '');
+
+    return $partes === [] ? '-' : implode(' - ', $partes);
 }
 
 // ---------------------------------------------------------------------

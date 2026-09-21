@@ -40,7 +40,7 @@ class Bloqueio
         }
 
         if (!empty($filtros['futuros'])) {
-            $condicoes[] = 'b.data_bloqueio >= CURDATE()';
+            $condicoes[] = 'b.data_bloqueio >= CURRENT_DATE';
         }
 
         $where = $condicoes ? 'WHERE ' . implode(' AND ', $condicoes) : '';
@@ -131,7 +131,7 @@ class Bloqueio
                 INNER JOIN servicos s ON s.id_servico = a.id_servico
                 WHERE a.id_estabelecimento = ' . Contexto::id() . ' AND a.id_profissional = :profissional
                   AND a.data_agendamento = :data
-                  AND a.status IN ("agendado","confirmado")
+                  AND a.status IN (\'agendado\',\'confirmado\')
                   AND a.hora_inicio < :fim
                   AND a.hora_fim > :inicio
                 ORDER BY a.hora_inicio ASC';

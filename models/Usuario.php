@@ -22,6 +22,54 @@ class Usuario
         return $consulta->fetch() ?: null;
     }
 
+    /** Busca a conta pelo login de acesso (exatamente 6 letras). */
+    public static function porLogin(string $login): ?array
+    {
+        $sql = 'SELECT * FROM usuarios WHERE id_estabelecimento = ' . Contexto::id() . ' AND login = :login LIMIT 1';
+        $consulta = bd()->prepare($sql);
+        $consulta->execute([':login' => mb_strtolower(trim($login))]);
+        return $consulta->fetch() ?: null;
+    }
+
+    /**
+     * Ponto de entrada da autenticacao: aceita o login de 6 letras ou o e-mail.
+     * As contas criadas antes do campo login continuam entrando pelo e-mail.
+     */
+    public static function porLoginOuEmail(string $identificador): ?array
+    {
+        $identificador = trim($identificador);
+
+        if (validarLogin($identificador)) {
+            $usuario = self::porLogin($identificador);
+            if ($usuario !== null) {
+                return $usuario;
+            }
+        }
+
+        return self::porEmail($identificador);
+    }
+
+    /** Verifica login duplicado, ignorando a própria conta quando o ID é informado. */
+    public static function loginEmUso(string $login, ?int $ignorarIdUsuario = null): bool
+    {
+        $login = trim($login);
+        if ($login === '') {
+            return false;
+        }
+
+        $sql = 'SELECT id_usuario FROM usuarios WHERE id_estabelecimento = ' . Contexto::id() . ' AND login = :login';
+        $parametros = [':login' => mb_strtolower($login)];
+
+        if ($ignorarIdUsuario !== null) {
+            $sql .= ' AND id_usuario <> :id';
+            $parametros[':id'] = $ignorarIdUsuario;
+        }
+
+        $consulta = bd()->prepare($sql . ' LIMIT 1');
+        $consulta->execute($parametros);
+        return (bool) $consulta->fetch();
+    }
+
     /** Verifica e-mail duplicado, ignorando a própria conta quando o ID é informado. */
     public static function emailEmUso(string $email, ?int $ignorarIdUsuario = null): bool
     {
@@ -44,8 +92,12 @@ class Usuario
      */
     public static function criar(array $dados): int
     {
-        $sql = 'INSERT INTO usuarios (id_estabelecimento, nome, email, senha_hash, telefone, tipo, status)
-                VALUES (' . Contexto::id() . ', :nome, :email, :senha_hash, :telefone, :tipo, :status)';
+        $sql = 'INSERT INTO usuarios (id_estabelecimento, nome, email, senha_hash, telefone, tipo, status,
+                                      login, sexo, nome_materno, data_nascimento, telefone_fixo,
+                                      cep, logradouro, numero, complemento, bairro, cidade, uf)
+                VALUES (' . Contexto::id() . ', :nome, :email, :senha_hash, :telefone, :tipo, :status,
+                        :login, :sexo, :nome_materno, :data_nascimento, :telefone_fixo,
+                        :cep, :logradouro, :numero, :complemento, :bairro, :cidade, :uf)';
 
         $consulta = bd()->prepare($sql);
         $consulta->execute([
@@ -55,9 +107,48 @@ class Usuario
             ':telefone'   => apenasNumeros($dados['telefone'] ?? '') ?: null,
             ':tipo'       => $dados['tipo'] ?? 'cliente',
             ':status'     => $dados['status'] ?? 'ativo',
-        ]);
+        ] + self::parametrosPessoais($dados));
 
         return (int) bd()->lastInsertId();
+    }
+
+    /**
+     * Campos do cadastro completo exigido pela especificacao.
+     * Ficam em usuarios para que o master tambem responda as perguntas do 2FA.
+     */
+    private static function parametrosPessoais(array $dados): array
+    {
+        $login = trim((string) ($dados['login'] ?? ''));
+        $cep   = apenasNumeros($dados['cep'] ?? '');
+
+        return [
+            ':login'           => $login !== '' ? mb_strtolower($login) : null,
+            ':sexo'            => in_array($dados['sexo'] ?? '', ['F', 'M', 'O'], true) ? $dados['sexo'] : null,
+            ':nome_materno'    => trim((string) ($dados['nome_materno'] ?? '')) ?: null,
+            ':data_nascimento' => $dados['data_nascimento'] ?? null,
+            ':telefone_fixo'   => apenasNumeros($dados['telefone_fixo'] ?? '') ?: null,
+            ':cep'             => $cep !== '' ? $cep : null,
+            ':logradouro'      => trim((string) ($dados['logradouro'] ?? '')) ?: null,
+            ':numero'          => trim((string) ($dados['numero'] ?? '')) ?: null,
+            ':complemento'     => trim((string) ($dados['complemento'] ?? '')) ?: null,
+            ':bairro'          => trim((string) ($dados['bairro'] ?? '')) ?: null,
+            ':cidade'          => trim((string) ($dados['cidade'] ?? '')) ?: null,
+            ':uf'              => mb_strtoupper(trim((string) ($dados['uf'] ?? ''))) ?: null,
+        ];
+    }
+
+    /** Atualiza somente os dados pessoais do cadastro completo. */
+    public static function atualizarDadosPessoais(int $idUsuario, array $dados): bool
+    {
+        $sql = 'UPDATE usuarios SET
+                    login = :login, sexo = :sexo, nome_materno = :nome_materno,
+                    data_nascimento = :data_nascimento, telefone_fixo = :telefone_fixo,
+                    cep = :cep, logradouro = :logradouro, numero = :numero,
+                    complemento = :complemento, bairro = :bairro, cidade = :cidade, uf = :uf
+                WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id';
+
+        $consulta = bd()->prepare($sql);
+        return $consulta->execute(self::parametrosPessoais($dados) + [':id' => $idUsuario]);
     }
 
     /** Persiste os campos editáveis do cadastro identificado pelo ID. */
@@ -143,7 +234,7 @@ class Usuario
 
         $consulta = bd()->prepare(
             'UPDATE usuarios
-             SET token_recuperacao = :token, token_expiracao = DATE_ADD(NOW(), INTERVAL :horas HOUR)
+             SET token_recuperacao = :token, token_expiracao = ' . Sql::somarHoras('NOW()', ':horas') . '
              WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id'
         );
         $consulta->execute([':token' => $token, ':horas' => $validadeHoras, ':id' => $idUsuario]);
@@ -156,7 +247,7 @@ class Usuario
     {
         $consulta = bd()->prepare(
             'SELECT * FROM usuarios
-             WHERE id_estabelecimento = ' . Contexto::id() . ' AND token_recuperacao = :token AND token_expiracao > NOW() AND status = "ativo"
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND token_recuperacao = :token AND token_expiracao > NOW() AND status = \'ativo\'
              LIMIT 1'
         );
         $consulta->execute([':token' => $token]);

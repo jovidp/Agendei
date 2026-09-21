@@ -1,0 +1,61 @@
+<?php
+/**
+ * Modelo do override local de credenciais.
+ *
+ * Copie este arquivo para config/database.local.php e ajuste os valores.
+ * O database.local.php NAO e versionado (ver .gitignore) — e nele que ficam
+ * as credenciais reais do servidor.
+ *
+ * Devolva apenas as chaves que quiser sobrescrever; o restante usa os
+ * padroes de desenvolvimento definidos em config/database.php.
+ *
+ * Chaves aceitas:
+ *   driver           'mysql' (padrao) ou 'pgsql'
+ *   host, porta, banco, usuario, senha
+ *   charset          apenas no MySQL
+ *   emular_prepares  forca PDO::ATTR_EMULATE_PREPARES (ver nota do Supabase)
+ *
+ * As chaves podem vir soltas ou dentro de uma secao por dialeto. A secao tem
+ * prioridade, o que permite guardar as credenciais dos dois bancos ao mesmo
+ * tempo e alternar so pelo 'driver' — ou pela variavel AGENDEI_DB_DRIVER,
+ * usada pelos testes para rodar a mesma suite nos dois.
+ */
+
+return [
+    // Dialeto ativo. A especificacao do projeto exige MySQL.
+    'driver' => 'mysql',
+
+    // -----------------------------------------------------------------
+    // MySQL / MariaDB
+    // -----------------------------------------------------------------
+    'mysql' => [
+        'host'    => 'localhost',
+        'porta'   => '3306',
+        'banco'   => 'agendei',
+        'usuario' => 'root',
+        'senha'   => '',
+        'charset' => 'utf8mb4',
+    ],
+
+    // -----------------------------------------------------------------
+    // PostgreSQL / Supabase
+    // -----------------------------------------------------------------
+    //
+    // Importe banco_postgres.sql antes do primeiro acesso: os scripts de
+    // migracao em scripts/ atendem somente MySQL e recusam rodar aqui.
+    //
+    // A PORTA IMPORTA no Supabase:
+    //   5432  pooler em modo sessao — use esta. Suporta prepared statements,
+    //         que sao 149 no projeto.
+    //   6543  pooler em modo transacao. A consulta seguinte pode cair em outra
+    //         conexao fisica, que nunca viu o PREPARE. Nessa porta o sistema
+    //         liga a emulacao sozinho; 'emular_prepares' permite forcar.
+    //
+    'pgsql' => [
+        'host'    => 'aws-0-sa-east-1.pooler.supabase.com',
+        'porta'   => '5432',
+        'banco'   => 'postgres',
+        'usuario' => 'postgres.SEU_PROJETO',
+        'senha'   => 'a-senha-do-painel-do-supabase',
+    ],
+];

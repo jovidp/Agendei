@@ -5,7 +5,17 @@
  */
 
 // 'desenvolvimento' exibe erros na tela. Use 'producao' no servidor final.
-define('AMBIENTE', 'desenvolvimento');
+// A variavel de ambiente tem a ultima palavra; sem ela, a deteccao falha para o
+// lado seguro: host que nao seja reconhecidamente local entra como producao,
+// para nunca expor rastro de erro em servidor publico.
+$ambiente = strtolower((string) (getenv('AGENDEI_AMBIENTE') ?: ''));
+if ($ambiente !== 'producao' && $ambiente !== 'desenvolvimento') {
+    $hospedeiro = strtolower((string) ($_SERVER['HTTP_HOST'] ?? ''));
+    $ehLocal = PHP_SAPI === 'cli'
+        || (bool) preg_match('/^(localhost|127\.0\.0\.1|\[::1\]|[^:]+\.(local|test))(:\d+)?$/', $hospedeiro);
+    $ambiente = $ehLocal ? 'desenvolvimento' : 'producao';
+}
+define('AMBIENTE', $ambiente);
 
 if (AMBIENTE === 'desenvolvimento') {
     error_reporting(E_ALL);
@@ -65,3 +75,33 @@ iniciarSessao();
 
 // Resolve a empresa antes de consultar cadastros ou renderizar a identidade visual.
 Contexto::iniciar();
+
+/**
+ * Excecoes nao tratadas terminam na tela de erro do sistema.
+ * O rastro tecnico vai para o log e so aparece na tela em desenvolvimento.
+ */
+set_exception_handler(static function (Throwable $erro): void {
+    error_log('Erro nao tratado: ' . $erro->getMessage() . ' em ' . $erro->getFile() . ':' . $erro->getLine());
+
+    // Chamadas de API devem continuar respondendo JSON, e nao HTML de redirecionamento.
+    if (ehRequisicaoAjax()) {
+        jsonResposta(['sucesso' => false, 'mensagem' => 'Erro inesperado. Tente novamente.'], 500);
+    }
+
+    // Se a propria tela de erro falhar, encerra aqui para nao entrar em laco.
+    if (basename($_SERVER['SCRIPT_NAME'] ?? '') === 'erro.php') {
+        http_response_code(500);
+        exit('Erro inesperado.');
+    }
+
+    $_SESSION['erro_detalhe'] = $erro->getMessage() . "\n" . $erro->getFile() . ':' . $erro->getLine();
+
+    // Depois que o HTML comecou a ser enviado nao ha mais como redirecionar.
+    if (headers_sent()) {
+        http_response_code(500);
+        echo '<div class="alerta alerta-erro" role="alert">Erro inesperado ao processar a pagina.</div>';
+        exit;
+    }
+
+    redirecionar('erro.php?codigo=inesperado');
+});

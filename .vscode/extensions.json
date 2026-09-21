@@ -1,0 +1,28 @@
+{
+    "recommendations": [
+        // PHP
+        "bmewburn.vscode-intelephense-client",
+        "xdebug.php-debug",
+        "MehediDracula.php-namespace-resolver",
+        "brapifra.phpserver",
+
+        // Banco de dados
+        "cweijan.vscode-mysql-client2",
+
+        // Frontend
+        "esbenp.prettier-vscode",
+        "pranaygp.vscode-css-peek",
+        "formulahendry.auto-rename-tag",
+
+        // Geral
+        "eamodio.gitlens",
+        "usernamehw.errorlens",
+        "christian-kohler.path-intellisense",
+        "Gruntfuggly.todo-tree",
+        "EditorConfig.EditorConfig",
+        "streetsidesoftware.code-spell-checker",
+        "streetsidesoftware.code-spell-checker-portuguese-brazilian",
+        "MS-CEINTL.vscode-language-pack-pt-BR"
+    ],
+    "unwantedRecommendations": []
+}

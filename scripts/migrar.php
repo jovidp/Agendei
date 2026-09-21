@@ -5,6 +5,17 @@ if (PHP_SAPI !== 'cli') {
     exit;
 }
 require_once __DIR__ . '/../config/database.php';
+
+// As migracoes aditivas existem para atualizar bancos MySQL nascidos em versoes
+// anteriores. No PostgreSQL esse caso nao existe: a instalacao parte de
+// banco_postgres.sql, que ja vem com o esquema completo.
+if (Database::ehPostgres()) {
+    fwrite(STDERR, "Este script atualiza apenas bancos MySQL/MariaDB.
+"
+        . "No PostgreSQL, importe banco_postgres.sql: ele ja traz o esquema completo.
+");
+    exit(1);
+}
 $db = bd();
 $colunaExiste = static function (string $tabela, string $coluna) use ($db): bool {
     $ddl = $db->query("SHOW CREATE TABLE `$tabela`")->fetch(PDO::FETCH_NUM)[1];
@@ -99,6 +110,8 @@ $db->exec("CREATE TABLE IF NOT EXISTS administradores_master (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 require_once __DIR__ . '/migrar_diferenciais.php';
 migrarDiferenciais($db);
+require_once __DIR__ . '/migrar_requisitos.php';
+migrarRequisitos($db);
 
 $masterCriado = false;
 if (!(int) $db->query('SELECT COUNT(*) FROM administradores_master')->fetchColumn()) {

@@ -71,22 +71,14 @@
     formulario.addEventListener("submit", function (evento) {
       var valido = true;
 
+      // O campo aceita o login de 6 letras ou o e-mail: aqui so exigimos que venha preenchido.
       valido =
         verificar(
           formulario,
-          "email",
-          valor(formulario, "email") !== "",
-          "Informe seu e-mail.",
+          "identificador",
+          valor(formulario, "identificador") !== "",
+          "Informe seu login.",
         ) && valido;
-      if (valor(formulario, "email") !== "") {
-        valido =
-          verificar(
-            formulario,
-            "email",
-            Agendei.validarEmail(valor(formulario, "email")),
-            "Informe um e-mail valido.",
-          ) && valido;
-      }
       valido =
         verificar(
           formulario,
@@ -215,12 +207,16 @@
           valor(formulario, "senha_atual") !== "",
           "Informe sua senha atual.",
         ) && valido;
+      // O usuario comum segue a regra da especificacao, sinalizada pelo proprio formulario.
+      var regraProjeto = formulario.getAttribute("data-senha-regra") === "projeto";
       valido =
         verificar(
           formulario,
           "nova_senha",
-          nova.length >= 6,
-          "A nova senha deve ter no minimo 6 caracteres.",
+          regraProjeto ? /^[A-Za-z]{8}$/.test(nova) : nova.length >= 6,
+          regraProjeto
+            ? "A nova senha deve ter exatamente 8 letras."
+            : "A nova senha deve ter no minimo 6 caracteres.",
         ) && valido;
       valido =
         verificar(

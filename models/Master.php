@@ -46,7 +46,7 @@ class Master
     public static function aparencia(): array
     {
         $id = (int) ($_SESSION['master_id'] ?? 0);
-        $registro = $id > 0 ? self::porId($id) : bd()->query('SELECT * FROM administradores_master WHERE status = "ativo" ORDER BY id_master LIMIT 1')->fetch();
+        $registro = $id > 0 ? self::porId($id) : bd()->query('SELECT * FROM administradores_master WHERE status = \'ativo\' ORDER BY id_master LIMIT 1')->fetch();
         return $registro ?: ['nome' => 'Agendei Master'] + Tema::PADRAO;
     }
 

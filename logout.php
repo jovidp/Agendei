@@ -10,6 +10,16 @@ $slugRetorno = Contexto::slug();
 $urlEntrar = BASE_URL . '/login.php'
     . ($slugRetorno !== '' ? '?estabelecimento=' . rawurlencode($slugRetorno) : '');
 
+// Registra a saida no log de autenticacao antes de perder os dados da sessao.
+if (estaLogado() && usuarioId() !== null) {
+    $usuarioSaindo = Usuario::porId((int) usuarioId());
+    if ($usuarioSaindo !== null) {
+        LogAutenticacao::registrar('logout', (string) ($usuarioSaindo['login'] ?? $usuarioSaindo['email']), $usuarioSaindo, null, cpfDoUsuario($usuarioSaindo));
+    }
+}
+
+// Descarta tambem um desafio de 2FA que tenha ficado pendente.
+cancelarSegundoFator();
 encerrarSessao();
 ?>
 <!DOCTYPE html>

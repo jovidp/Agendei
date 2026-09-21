@@ -99,7 +99,7 @@ class Profissional
         $parametros = [];
 
         if (!empty($filtros['busca'])) {
-            $condicoes[] = '(u.nome LIKE :busca OR u.email LIKE :buscaEmail OR p.especialidade LIKE :buscaEspecialidade)';
+            $condicoes[] = '(u.nome ' . Sql::como() . ' :busca OR u.email ' . Sql::como() . ' :buscaEmail OR p.especialidade ' . Sql::como() . ' :buscaEspecialidade)';
             $parametros[':busca'] = '%' . $filtros['busca'] . '%';
             $parametros[':buscaEmail'] = $parametros[':busca'];
             $parametros[':buscaEspecialidade'] = $parametros[':busca'];
@@ -137,7 +137,7 @@ class Profissional
                 FROM profissionais p
                 INNER JOIN usuarios u ON u.id_usuario = p.id_usuario AND u.id_estabelecimento = ' . Contexto::id() . '
                 INNER JOIN profissional_servico ps ON ps.id_profissional = p.id_profissional
-                WHERE ps.id_estabelecimento = ' . Contexto::id() . ' AND ps.id_servico = :id_servico AND u.status = "ativo"
+                WHERE ps.id_estabelecimento = ' . Contexto::id() . ' AND ps.id_servico = :id_servico AND u.status = \'ativo\'
                 ORDER BY u.nome ASC';
 
         $consulta = bd()->prepare($sql);
@@ -231,7 +231,7 @@ class Profissional
         $consulta = bd()->prepare(
             'SELECT 1 FROM profissionais p
              INNER JOIN usuarios u ON u.id_usuario = p.id_usuario AND u.id_estabelecimento = ' . Contexto::id() . '
-             WHERE p.id_estabelecimento = ' . Contexto::id() . ' AND p.id_profissional = :id AND u.status = "ativo" LIMIT 1'
+             WHERE p.id_estabelecimento = ' . Contexto::id() . ' AND p.id_profissional = :id AND u.status = \'ativo\' LIMIT 1'
         );
         $consulta->execute([':id' => $idProfissional]);
         return (bool) $consulta->fetch();

@@ -21,8 +21,12 @@ class Diferencial
         }
         $q = bd()->prepare(
             'INSERT INTO lista_espera (id_estabelecimento,id_cliente,id_servico,id_profissional,data_desejada,periodo)
-             VALUES (:empresa,:cliente,:servico,:profissional,:data,:periodo)
-             ON DUPLICATE KEY UPDATE periodo=VALUES(periodo),status="aguardando",data_aviso=NULL'
+             VALUES (:empresa,:cliente,:servico,:profissional,:data,:periodo)'
+            . Sql::aoDuplicarComValores(
+                ['id_estabelecimento', 'id_cliente', 'id_servico', 'id_profissional', 'data_desejada'],
+                ['periodo'],
+                ['status' => "'aguardando'", 'data_aviso' => 'NULL']
+            )
         );
         $q->execute([
             ':empresa' => Contexto::id(), ':cliente' => $idCliente, ':servico' => $idServico,
@@ -47,7 +51,7 @@ class Diferencial
 
     public static function cancelarLista(int $idLista, int $idCliente): bool
     {
-        $q = bd()->prepare('UPDATE lista_espera SET status="cancelado" WHERE id_estabelecimento=? AND id_lista=? AND id_cliente=?');
+        $q = bd()->prepare('UPDATE lista_espera SET status=\'cancelado\' WHERE id_estabelecimento=? AND id_lista=? AND id_cliente=?');
         return $q->execute([Contexto::id(), $idLista, $idCliente]);
     }
 
@@ -62,7 +66,9 @@ class Diferencial
              LEFT JOIN profissionais p ON p.id_profissional=l.id_profissional
              LEFT JOIN usuarios up ON up.id_usuario=p.id_usuario
              WHERE l.id_estabelecimento=' . Contexto::id() . '
-             ORDER BY FIELD(l.status,"aguardando","avisado","convertido","cancelado"),l.data_desejada'
+             ORDER BY CASE l.status WHEN \'aguardando\' THEN 1 WHEN \'avisado\' THEN 2
+                                    WHEN \'convertido\' THEN 3 WHEN \'cancelado\' THEN 4 ELSE 0 END,
+                      l.data_desejada'
         )->fetchAll();
     }
 
@@ -77,9 +83,9 @@ class Diferencial
              JOIN clientes c ON c.id_cliente=l.id_cliente
              JOIN usuarios u ON u.id_usuario=c.id_usuario
              WHERE l.id_estabelecimento=:empresa AND l.id_servico=:servico
-               AND l.data_desejada=:data AND l.status="aguardando"
+               AND l.data_desejada=:data AND l.status=\'aguardando\'
                AND (l.id_profissional IS NULL OR l.id_profissional=:profissional)
-               AND l.periodo IN ("qualquer",:periodo)'
+               AND l.periodo IN (\'qualquer\',:periodo)'
         );
         $q->execute([
             ':empresa' => Contexto::id(), ':servico' => $agendamento['id_servico'],
@@ -87,11 +93,11 @@ class Diferencial
             ':periodo' => $periodoVaga,
         ]);
         $inserir = bd()->prepare(
-            'INSERT IGNORE INTO notificacoes
+            Sql::inserirIgnorando() . ' notificacoes
              (id_estabelecimento,id_usuario,id_agendamento,canal,tipo,destinatario,mensagem,data_programada)
-             VALUES (?,?,?,?,?,?,?,NOW())'
+             VALUES (?,?,?,?,?,?,?,NOW())' . Sql::ignorarConflito()
         );
-        $atualizar = bd()->prepare('UPDATE lista_espera SET status="avisado",data_aviso=NOW() WHERE id_estabelecimento=? AND id_lista=?');
+        $atualizar = bd()->prepare('UPDATE lista_espera SET status=\'avisado\',data_aviso=NOW() WHERE id_estabelecimento=? AND id_lista=?');
         $total = 0;
         foreach ($q->fetchAll() as $item) {
             $mensagem = 'Olá, ' . explode(' ', $item['nome'])[0] . '! Surgiu uma vaga em '
@@ -117,14 +123,15 @@ class Diferencial
              JOIN clientes c ON c.id_cliente=a.id_cliente
              JOIN usuarios u ON u.id_usuario=c.id_usuario
              JOIN servicos s ON s.id_servico=a.id_servico
-             WHERE a.id_estabelecimento=? AND a.status IN ("agendado","confirmado")
-               AND TIMESTAMP(a.data_agendamento,a.hora_inicio) BETWEEN NOW() AND DATE_ADD(NOW(),INTERVAL ? HOUR)'
+             WHERE a.id_estabelecimento=? AND a.status IN (\'agendado\',\'confirmado\')
+               AND ' . Sql::dataHora('a.data_agendamento', 'a.hora_inicio')
+                 . ' BETWEEN NOW() AND ' . Sql::somarHoras('NOW()', '?')
         );
         $q->execute([Contexto::id(), $horas]);
         $inserir = bd()->prepare(
-            'INSERT IGNORE INTO notificacoes
+            Sql::inserirIgnorando() . ' notificacoes
              (id_estabelecimento,id_usuario,id_agendamento,canal,tipo,destinatario,mensagem,data_programada)
-             VALUES (?,?,?,?,?,?,?,NOW())'
+             VALUES (?,?,?,?,?,?,?,NOW())' . Sql::ignorarConflito()
         );
         $total = 0;
         foreach ($q->fetchAll() as $item) {
@@ -143,13 +150,13 @@ class Diferencial
     {
         return bd()->query(
             'SELECT * FROM notificacoes WHERE id_estabelecimento=' . Contexto::id() . '
-             AND status="pendente" ORDER BY data_programada,data_criacao'
+             AND status=\'pendente\' ORDER BY data_programada,data_criacao'
         )->fetchAll();
     }
 
     public static function marcarNotificacao(int $id): void
     {
-        $q = bd()->prepare('UPDATE notificacoes SET status="enviada",data_envio=NOW() WHERE id_estabelecimento=? AND id_notificacao=?');
+        $q = bd()->prepare('UPDATE notificacoes SET status=\'enviada\',data_envio=NOW() WHERE id_estabelecimento=? AND id_notificacao=?');
         $q->execute([Contexto::id(), $id]);
     }
 
@@ -176,8 +183,8 @@ class Diferencial
                 'SELECT cp.id_cliente_pacote FROM cliente_pacotes cp
                  JOIN pacotes p ON p.id_pacote=cp.id_pacote
                  WHERE cp.id_estabelecimento=? AND cp.id_cliente=? AND p.id_servico=?
-                   AND cp.status_pagamento="pago" AND cp.creditos_restantes>0
-                   AND cp.data_expiracao>=CURDATE()
+                   AND cp.status_pagamento=\'pago\' AND cp.creditos_restantes>0
+                   AND cp.data_expiracao>=CURRENT_DATE
                  ORDER BY cp.data_expiracao,cp.id_cliente_pacote LIMIT 1 FOR UPDATE'
             );
             $q->execute([Contexto::id(), $agendamento['id_cliente'], $agendamento['id_servico']]);
@@ -203,7 +210,7 @@ class Diferencial
     /** Cancela o sinal pendente e devolve o crédito de pacote de uma reserva cancelada. */
     public static function cancelarFinanceiro(array $agendamento): void
     {
-        $q = bd()->prepare('UPDATE pagamentos SET status="cancelado" WHERE id_estabelecimento=? AND id_agendamento=? AND status="pendente"');
+        $q = bd()->prepare('UPDATE pagamentos SET status=\'cancelado\' WHERE id_estabelecimento=? AND id_agendamento=? AND status=\'pendente\'');
         $q->execute([Contexto::id(), $agendamento['id_agendamento']]);
         $idPacote = (int) ($agendamento['id_cliente_pacote'] ?? 0);
         if ($idPacote > 0) {
@@ -230,9 +237,9 @@ class Diferencial
             return;
         }
         $q = bd()->prepare(
-            'INSERT IGNORE INTO pagamentos
+            Sql::inserirIgnorando() . ' pagamentos
              (id_estabelecimento,id_agendamento,tipo,valor,metodo,status,referencia)
-             VALUES (?,?,"sinal",?,"pix","pendente",?)'
+             VALUES (?,?,\'sinal\',?,\'pix\',\'pendente\',?)' . Sql::ignorarConflito()
         );
         $q->execute([Contexto::id(), $idAgendamento, $valor, 'AG-' . $idAgendamento]);
     }
@@ -263,7 +270,7 @@ class Diferencial
             return;
         }
         $q = bd()->prepare(
-            'UPDATE pagamentos SET status=?,data_pagamento=IF(?="pago",NOW(),data_pagamento)
+            'UPDATE pagamentos SET status=?,data_pagamento=CASE WHEN ?=\'pago\' THEN NOW() ELSE data_pagamento END
              WHERE id_estabelecimento=? AND id_pagamento=?'
         );
         $q->execute([$status, $status, Contexto::id(), $id]);
@@ -283,9 +290,9 @@ class Diferencial
         }
         $db = bd();
         $q = $db->prepare(
-            'INSERT IGNORE INTO fidelidade_movimentos
+            Sql::inserirIgnorando() . ' fidelidade_movimentos
              (id_estabelecimento,id_cliente,id_agendamento,pontos,descricao)
-             VALUES (?,?,?,?,?)'
+             VALUES (?,?,?,?,?)' . Sql::ignorarConflito()
         );
         $q->execute([Contexto::id(), $agendamento['id_cliente'], $idAgendamento, $pontos, 'Atendimento concluído']);
         if ($q->rowCount()) {
@@ -321,14 +328,14 @@ class Diferencial
         $sql = 'SELECT p.*,s.nome nome_servico FROM pacotes p JOIN servicos s ON s.id_servico=p.id_servico
                 WHERE p.id_estabelecimento=' . Contexto::id();
         if ($somenteAtivos) {
-            $sql .= ' AND p.status="ativo"';
+            $sql .= ' AND p.status=\'ativo\'';
         }
         return bd()->query($sql . ' ORDER BY p.nome')->fetchAll();
     }
 
     public static function adquirirPacote(int $idCliente, int $idPacote): void
     {
-        $q = bd()->prepare('SELECT * FROM pacotes WHERE id_estabelecimento=? AND id_pacote=? AND status="ativo"');
+        $q = bd()->prepare('SELECT * FROM pacotes WHERE id_estabelecimento=? AND id_pacote=? AND status=\'ativo\'');
         $q->execute([Contexto::id(), $idPacote]);
         $pacote = $q->fetch();
         if (!$pacote || !Cliente::porId($idCliente)) {
@@ -337,7 +344,7 @@ class Diferencial
         $q = bd()->prepare(
             'INSERT INTO cliente_pacotes
              (id_estabelecimento,id_cliente,id_pacote,creditos_total,creditos_restantes,data_expiracao)
-             VALUES (?,?,?,?,?,DATE_ADD(CURDATE(),INTERVAL ? DAY))'
+             VALUES (?,?,?,?,?,' . Sql::somarDias('CURRENT_DATE', '?') . ')'
         );
         $q->execute([
             Contexto::id(), $idCliente, $idPacote, $pacote['quantidade'],
@@ -385,7 +392,7 @@ class Diferencial
         $nota = max(1, min(5, $nota));
         $q = bd()->prepare(
             'INSERT INTO avaliacoes (id_estabelecimento,id_agendamento,id_cliente,id_profissional,nota,comentario)
-             VALUES (?,?,?,?,?,?) ON DUPLICATE KEY UPDATE nota=VALUES(nota),comentario=VALUES(comentario)'
+             VALUES (?,?,?,?,?,?)' . Sql::aoDuplicar(['id_estabelecimento', 'id_agendamento'], ['nota', 'comentario'])
         );
         $q->execute([
             Contexto::id(), $idAgendamento, $idCliente, $agendamento['id_profissional'],
@@ -419,7 +426,7 @@ class Diferencial
             'SELECT ' . AgendamentoSelecao::campos() . AgendamentoSelecao::juncoes() . '
              LEFT JOIN avaliacoes av ON av.id_agendamento=a.id_agendamento
              WHERE a.id_estabelecimento=:empresa AND a.id_cliente=:cliente
-             AND a.status="concluido" AND av.id_avaliacao IS NULL ORDER BY a.data_agendamento DESC'
+             AND a.status=\'concluido\' AND av.id_avaliacao IS NULL ORDER BY a.data_agendamento DESC'
         );
         $q->execute([':empresa' => Contexto::id(), ':cliente' => $idCliente]);
         return $q->fetchAll();
@@ -441,7 +448,7 @@ class Diferencial
                     COUNT(a.id_agendamento) atendimentos,COALESCE(SUM(a.valor),0) faturamento,
                     COALESCE(SUM(a.valor*p.comissao_percentual/100),0) comissao
              FROM profissionais p JOIN usuarios u ON u.id_usuario=p.id_usuario
-             LEFT JOIN agendamentos a ON a.id_profissional=p.id_profissional AND a.status="concluido"
+             LEFT JOIN agendamentos a ON a.id_profissional=p.id_profissional AND a.status=\'concluido\'
                AND a.data_agendamento BETWEEN :inicio AND :fim
              WHERE p.id_estabelecimento=:empresa GROUP BY p.id_profissional,u.nome,p.comissao_percentual ORDER BY u.nome'
         );
@@ -519,15 +526,16 @@ class Diferencial
         try {
             // Remove cobranças ainda abertas antes de preservar o histórico anonimizado.
             $q = $db->prepare(
-                'UPDATE pagamentos pg
-                 JOIN agendamentos a ON a.id_agendamento=pg.id_agendamento
-                    AND a.id_estabelecimento=pg.id_estabelecimento
-                 SET pg.status="cancelado"
-                 WHERE pg.id_estabelecimento=? AND a.id_cliente=? AND pg.status="pendente"'
+                'UPDATE pagamentos SET status=\'cancelado\'
+                 WHERE id_estabelecimento=? AND status=\'pendente\'
+                   AND EXISTS (SELECT 1 FROM agendamentos a
+                               WHERE a.id_agendamento=pagamentos.id_agendamento
+                                 AND a.id_estabelecimento=pagamentos.id_estabelecimento
+                                 AND a.id_cliente=?)'
             );
             $q->execute([Contexto::id(), $idCliente]);
-            $q = $db->prepare('UPDATE agendamentos SET status="cancelado",motivo_cancelamento="Conta encerrada"
-                               WHERE id_estabelecimento=? AND id_cliente=? AND status IN ("agendado","confirmado")');
+            $q = $db->prepare('UPDATE agendamentos SET status=\'cancelado\',motivo_cancelamento=\'Conta encerrada\'
+                               WHERE id_estabelecimento=? AND id_cliente=? AND status IN (\'agendado\',\'confirmado\')');
             $q->execute([Contexto::id(), $idCliente]);
             $q = $db->prepare('UPDATE clientes SET cpf=NULL,data_nascimento=NULL,observacoes=NULL WHERE id_estabelecimento=? AND id_cliente=?');
             $q->execute([Contexto::id(), $idCliente]);
@@ -535,9 +543,9 @@ class Diferencial
             $q->execute([Contexto::id(), $idCliente]);
             $q = $db->prepare('DELETE FROM notificacoes WHERE id_estabelecimento=? AND id_usuario=?');
             $q->execute([Contexto::id(), $idUsuario]);
-            $q = $db->prepare('UPDATE avaliacoes SET comentario=NULL,status="oculta" WHERE id_estabelecimento=? AND id_cliente=?');
+            $q = $db->prepare('UPDATE avaliacoes SET comentario=NULL,status=\'oculta\' WHERE id_estabelecimento=? AND id_cliente=?');
             $q->execute([Contexto::id(), $idCliente]);
-            $q = $db->prepare('UPDATE usuarios SET nome="Cliente removido",email=?,telefone=NULL,senha_hash=?,status="inativo",
+            $q = $db->prepare('UPDATE usuarios SET nome=\'Cliente removido\',email=?,telefone=NULL,senha_hash=?,status=\'inativo\',
                                token_recuperacao=NULL,token_expiracao=NULL WHERE id_estabelecimento=? AND id_usuario=?');
             $q->execute([
                 'removido-' . $idUsuario . '-' . bin2hex(random_bytes(4)) . '@anonimo.invalid',

@@ -26,6 +26,10 @@ $menus = [
         ['rotulo' => 'Profissionais', 'arquivo' => 'admin/profissionais.php', 'icone' => 'profissionais'],
         ['rotulo' => 'Servicos',      'arquivo' => 'admin/servicos.php',      'icone' => 'servicos'],
         ['rotulo' => 'Horarios',      'arquivo' => 'admin/horarios.php',      'icone' => 'horarios'],
+        ['separador' => 'Sistema'],
+        ['rotulo' => 'Consulta de usuarios', 'arquivo' => 'admin/usuarios.php', 'icone' => 'clientes'],
+        ['rotulo' => 'Logs de autenticacao', 'arquivo' => 'admin/logs.php',     'icone' => 'historico'],
+        ['rotulo' => 'Modelo do BD',         'arquivo' => 'modelo_bd.php',      'icone' => 'relatorios'],
         ['separador' => 'Gestao'],
         ['rotulo' => 'Relatorios',    'arquivo' => 'admin/relatorios.php',    'icone' => 'relatorios'],
         ['rotulo' => 'Diferenciais',  'arquivo' => 'admin/diferenciais.php',  'icone' => 'novo'],
@@ -49,14 +53,8 @@ $menus = [
         ['separador' => 'Conta'],
         ['rotulo' => 'Meu perfil',        'arquivo' => 'cliente/perfil.php',       'icone' => 'perfil'],
         ['rotulo' => 'Privacidade',        'arquivo' => 'cliente/privacidade.php',   'icone' => 'configuracoes'],
+        ['rotulo' => 'Modelo do BD',      'arquivo' => 'modelo_bd.php',            'icone' => 'relatorios'],
     ],
-];
-
-$rotulosPerfil = [
-    'master'       => 'Administrador master',
-    'admin'        => 'Administrador',
-    'profissional' => 'Profissional',
-    'cliente'      => 'Cliente',
 ];
 
 // Seleciona os links do perfil autenticado; cada destino também valida o acesso no servidor.
@@ -72,7 +70,7 @@ $itens = $menus[perfil()] ?? [];
         <span class="avatar"><?= e(iniciais(usuarioNome())) ?></span>
         <div class="sidebar-perfil-dados">
             <strong><?= e(usuarioNome()) ?></strong>
-            <span><?= e($rotulosPerfil[perfil()] ?? '') ?></span>
+            <span><?= e(perfilRotulo()) ?></span>
         </div>
     </div>
 

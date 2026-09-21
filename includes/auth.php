@@ -15,7 +15,7 @@ function iniciarSessao(): void
         'path'     => BASE_URL === '' ? '/' : BASE_URL,
         'httponly' => true,
         'samesite' => 'Lax',
-        'secure'   => (($_SERVER['HTTPS'] ?? '') === 'on'),
+        'secure'   => requisicaoSegura(),
     ]);
 
     session_name('AGENDEI_SESSAO');
@@ -42,6 +42,27 @@ function usuarioId(): ?int
 function usuarioNome(): string
 {
     return $_SESSION['usuario_nome'] ?? '';
+}
+
+/**
+ * Identificacao exibida no canto superior direito das telas.
+ * Usa o login de 6 letras quando a conta tem um; senao, cai no e-mail.
+ */
+function usuarioLogin(): string
+{
+    return $_SESSION['usuario_login'] ?? ($_SESSION['usuario_email'] ?? '');
+}
+
+/** Rotulo do perfil autenticado, usado no cabecalho e no menu lateral. */
+function perfilRotulo(?string $tipo = null): string
+{
+    return match ($tipo ?? perfil()) {
+        'master'       => 'Administrador master',
+        'admin'        => 'Usuario master',
+        'profissional' => 'Profissional',
+        'cliente'      => 'Usuario comum',
+        default        => '',
+    };
 }
 
 
@@ -87,16 +108,19 @@ function ehMaster(): bool
 
 /**
  * Verifica as credenciais. Retorna o usuario ou null.
+ * O identificador aceita o login de 6 letras ou o e-mail da conta.
  */
-function autenticar(string $email, string $senha): ?array
+function autenticar(string $identificador, string $senha): ?array
 {
-    $usuario = Usuario::porEmail($email);
+    $usuario = Usuario::porLoginOuEmail($identificador);
 
     if (!$usuario || !password_verify($senha, $usuario['senha_hash'])) {
+        LogAutenticacao::registrar('login_falha', $identificador, $usuario, null, cpfDoUsuario($usuario));
         return null;
     }
 
     if ($usuario['status'] !== 'ativo') {
+        LogAutenticacao::registrar('login_falha', $identificador, $usuario, null, cpfDoUsuario($usuario));
         return null;
     }
 
@@ -105,7 +129,147 @@ function autenticar(string $email, string $senha): ?array
         Usuario::atualizarSenha((int) $usuario['id_usuario'], $senha);
     }
 
+    LogAutenticacao::registrar('login_sucesso', $identificador, $usuario, null, cpfDoUsuario($usuario));
+
     return $usuario;
+}
+
+/** CPF do perfil de cliente, usado apenas para alimentar o filtro da tela de log. */
+function cpfDoUsuario(?array $usuario): ?string
+{
+    if ($usuario === null || ($usuario['tipo'] ?? '') !== 'cliente') {
+        return null;
+    }
+
+    $cliente = Cliente::porUsuario((int) $usuario['id_usuario']);
+    return $cliente['cpf'] ?? null;
+}
+
+// ---------------------------------------------------------------------
+// Segundo fator de autenticacao (2FA)
+// A conta so entra na sessao depois que a pergunta sorteada e respondida.
+// ---------------------------------------------------------------------
+
+/** Perfis avaliados pela especificacao: master (admin) e comum (cliente). */
+function perfisComSegundoFator(): array
+{
+    return ['admin', 'cliente'];
+}
+
+/**
+ * Remove acentos e caixa para comparar a resposta digitada com a cadastrada.
+ *
+ * O mapa e explicito de proposito: iconv com //TRANSLIT depende da biblioteca
+ * do sistema e no Windows devolve "M'arcia" no lugar de "Marcia".
+ */
+function normalizarResposta(string $texto): string
+{
+    $texto = trim(preg_replace('/\s+/u', ' ', $texto) ?? '');
+    $texto = mb_strtolower($texto, 'UTF-8');
+
+    $acentos = [
+        'á' => 'a', 'à' => 'a', 'ã' => 'a', 'â' => 'a', 'ä' => 'a',
+        'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e',
+        'í' => 'i', 'ì' => 'i', 'î' => 'i', 'ï' => 'i',
+        'ó' => 'o', 'ò' => 'o', 'õ' => 'o', 'ô' => 'o', 'ö' => 'o',
+        'ú' => 'u', 'ù' => 'u', 'û' => 'u', 'ü' => 'u',
+        'ç' => 'c', 'ñ' => 'n',
+    ];
+
+    return strtr($texto, $acentos);
+}
+
+/**
+ * Perguntas que a conta consegue responder, com o valor esperado.
+ * Uma conta sem nenhum dos tres dados nao entra no fluxo de 2FA.
+ */
+function fatoresDisponiveis(array $usuario): array
+{
+    $disponiveis = [];
+
+    if (trim((string) ($usuario['nome_materno'] ?? '')) !== '') {
+        $disponiveis['nome_materno'] = (string) $usuario['nome_materno'];
+    }
+    if (!empty($usuario['data_nascimento'])) {
+        $disponiveis['data_nascimento'] = (string) $usuario['data_nascimento'];
+    }
+    if (apenasNumeros($usuario['cep'] ?? '') !== '') {
+        $disponiveis['cep'] = apenasNumeros($usuario['cep']);
+    }
+
+    return $disponiveis;
+}
+
+/** Indica se a conta deve passar pelo segundo fator antes de abrir a sessao. */
+function exigeSegundoFator(array $usuario): bool
+{
+    return in_array($usuario['tipo'] ?? '', perfisComSegundoFator(), true)
+        && fatoresDisponiveis($usuario) !== [];
+}
+
+/** Sorteia a pergunta e guarda o desafio pendente, sem autenticar a conta. */
+function iniciarSegundoFator(array $usuario, string $identificador): void
+{
+    $fatores = fatoresDisponiveis($usuario);
+
+    $_SESSION['segundo_fator'] = [
+        'usuario_id'    => (int) $usuario['id_usuario'],
+        'identificador' => $identificador,
+        'fator'         => array_rand($fatores),
+        'tentativas'    => 0,
+    ];
+}
+
+/** Desafio pendente da sessao, ou null quando nao ha 2FA em andamento. */
+function segundoFatorPendente(): ?array
+{
+    $pendente = $_SESSION['segundo_fator'] ?? null;
+
+    return is_array($pendente) && !empty($pendente['usuario_id']) ? $pendente : null;
+}
+
+/** Descarta o desafio pendente (acerto, bloqueio ou desistencia). */
+function cancelarSegundoFator(): void
+{
+    unset($_SESSION['segundo_fator']);
+}
+
+/** Quantas tentativas ainda restam antes do bloqueio. */
+function tentativasRestantesSegundoFator(): int
+{
+    $pendente = segundoFatorPendente();
+
+    return $pendente === null ? 0 : max(0, 3 - (int) $pendente['tentativas']);
+}
+
+/**
+ * Compara a resposta digitada com o dado cadastrado.
+ * A data aceita 10/03/1990 e 1990-03-10; o CEP ignora a mascara.
+ */
+function respostaSegundoFatorConfere(string $fator, string $resposta, array $usuario): bool
+{
+    $esperado = fatoresDisponiveis($usuario)[$fator] ?? null;
+
+    if ($esperado === null) {
+        return false;
+    }
+
+    if ($fator === 'cep') {
+        $digitado = apenasNumeros($resposta);
+        return $digitado !== '' && $digitado === $esperado;
+    }
+
+    if ($fator === 'data_nascimento') {
+        $digitada = trim($resposta);
+        // Aceita o formato brasileiro convertendo para o padrao do banco antes de comparar.
+        if (preg_match('~^(\d{2})/(\d{2})/(\d{4})$~', $digitada, $partes)) {
+            $digitada = $partes[3] . '-' . $partes[2] . '-' . $partes[1];
+        }
+        return $digitada !== '' && $digitada === $esperado;
+    }
+
+    $digitado = normalizarResposta($resposta);
+    return $digitado !== '' && $digitado === normalizarResposta($esperado);
 }
 
 /** Grava os dados do usuario na sessao. */
@@ -118,6 +282,7 @@ function registrarSessao(array $usuario): void
     $_SESSION['usuario_id']    = (int) $usuario['id_usuario'];
     $_SESSION['usuario_nome']  = $usuario['nome'];
     $_SESSION['usuario_email'] = $usuario['email'];
+    $_SESSION['usuario_login'] = ($usuario['login'] ?? '') ?: $usuario['email'];
     $_SESSION['usuario_tipo']  = $usuario['tipo'];
     $_SESSION['perfil_id']     = Usuario::idDoPerfil((int) $usuario['id_usuario'], $usuario['tipo']);
 
@@ -189,7 +354,7 @@ function exigirLogin(array|string $tiposPermitidos = []): void
             jsonResposta(['sucesso' => false, 'mensagem' => 'Voce nao tem permissao para esta acao.'], 403);
         }
         definirFlash('erro', 'Voce nao tem permissao para acessar esta area.');
-        redirecionar(painelDe(perfil()));
+        redirecionar('erro.php?codigo=permissao');
     }
 }
 
@@ -231,7 +396,14 @@ function alterarSenhaUsuario(int $idUsuario, string $senhaAtual, string $novaSen
     if (!Usuario::senhaConfere($idUsuario, $senhaAtual)) {
         $erros[] = 'A senha atual esta incorreta.';
     }
-    if (!validarSenha($novaSenha)) {
+
+    // O usuario comum segue a regra da especificacao; os demais perfis mantem o minimo antigo.
+    $usuario = Usuario::porId($idUsuario);
+    if (($usuario['tipo'] ?? '') === 'cliente') {
+        if (!validarSenhaProjeto($novaSenha)) {
+            $erros[] = 'A nova senha deve ter exatamente 8 caracteres alfabeticos.';
+        }
+    } elseif (!validarSenha($novaSenha)) {
         $erros[] = 'A nova senha deve ter no minimo 6 caracteres.';
     }
     if ($novaSenha !== $confirmacao) {

@@ -42,6 +42,13 @@ $paginaAtiva     = $paginaAtiva ?? '';
 
         <div class="acoes-cabecalho">
             <?php if (estaLogado()): ?>
+                <?php /* Login e saida ficam no canto superior direito de todas as telas. */ ?>
+                <span class="usuario-topo">
+                    <span class="usuario-topo-dados">
+                        <span class="usuario-topo-login"><?= e(usuarioLogin()) ?></span>
+                        <span class="usuario-topo-perfil"><?= e(perfilRotulo()) ?></span>
+                    </span>
+                </span>
                 <a href="<?= url(painelDe(perfil())) ?>" class="btn btn-contorno btn-pequeno">Meu painel</a>
                 <a href="<?= url('logout.php') ?>" class="btn btn-pequeno">Sair</a>
             <?php else: ?>

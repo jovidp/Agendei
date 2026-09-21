@@ -1,0 +1,57 @@
+# ---------- Credenciais / configuracao local ----------
+# Override local de banco (nao versionado). Requer o ajuste em config/database.php
+# para incluir este arquivo quando ele existir.
+config/database.local.php
+.env
+.env.*
+!.env.example
+
+# ---------- Dependencias ----------
+/vendor/
+/node_modules/
+composer.phar
+
+# ---------- Logs e cache ----------
+*.log
+error_log
+php_errors.log
+/cache/
+/tmp/
+*.cache
+
+# ---------- Dumps e backups do banco ----------
+*.sql.gz
+*.sql.zip
+*-backup.sql
+*_backup.sql
+dump*.sql
+
+# Gerado por scripts/preparar_hospedagem.php a partir do banco.sql.
+banco_hospedagem.sql
+
+# ---------- Sistema operacional ----------
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+._*
+
+# ---------- Editores / IDEs ----------
+# .vscode/ e versionado de proposito (extensions.json e settings.json compartilhados).
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/tasks.json
+.idea/
+*.sublime-workspace
+*.code-workspace
+
+# ---------- Arquivos temporarios ----------
+*~
+*.bak
+*.swp
+*.swo
+*.orig
+*.rej

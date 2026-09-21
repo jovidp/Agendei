@@ -20,14 +20,22 @@ try {
     // Detecta usuários existentes para evitar repetir a carga inicial de demonstração.
     $jaInstalado = (bool) bd()->query('SELECT 1 FROM usuarios LIMIT 1')->fetch();
 } catch (Throwable $falha) {
-    $erro = 'As tabelas nao foram encontradas. Importe o arquivo banco.sql antes de continuar. Detalhe: '
-        . $falha->getMessage();
+    $erro = 'As tabelas nao foram encontradas. Importe o arquivo banco.sql antes de continuar.'
+        . (AMBIENTE === 'desenvolvimento' ? ' Detalhe: ' . $falha->getMessage() : '');
+}
+
+// Depois da carga inicial o instalador deixa de existir para quem vem pela web:
+// em producao ele nao deve sequer confirmar que o sistema esta instalado.
+if (AMBIENTE === 'producao' && $jaInstalado) {
+    http_response_code(404);
+    exit;
 }
 
 // Só inicia a carga por POST quando as tabelas existem e ainda não há usuários.
 if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
     try {
-        $senhaPadrao = 'agendei123';
+        // Oito caracteres alfabeticos: a mesma regra que a especificacao exige no cadastro.
+        $senhaPadrao = 'agendeis';
 
         // A conta global fica fora dos usuários vinculados aos estabelecimentos.
         if (!(int) bd()->query('SELECT COUNT(*) FROM administradores_master')->fetchColumn()) {
@@ -39,15 +47,28 @@ if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
         // ---------------------------------------------------------
         // Administrador
         // ---------------------------------------------------------
+        // O usuario master nasce pelo instalador (equivalente ao script SQL previsto
+        // na especificacao) e ja recebe os dados que alimentam o segundo fator.
         $idUsuarioAdmin = Usuario::criar([
-            'nome'     => 'Administrador do Sistema',
-            'email'    => 'admin@agendei.com.br',
-            'senha'    => $senhaPadrao,
-            'telefone' => '11300000000',
-            'tipo'     => 'admin',
+            'nome'            => 'Administrador do Sistema',
+            'email'           => 'admin@agendei.com.br',
+            'senha'           => $senhaPadrao,
+            'login'           => 'admini',
+            'telefone'        => '11300000000',
+            'telefone_fixo'   => '1133000000',
+            'tipo'            => 'admin',
+            'sexo'            => 'O',
+            'nome_materno'    => 'Helena Duarte do Sistema',
+            'data_nascimento' => '1985-02-10',
+            'cep'             => '01000000',
+            'logradouro'      => 'Rua das Acacias',
+            'numero'          => '120',
+            'bairro'          => 'Centro',
+            'cidade'          => 'Sao Paulo',
+            'uf'              => 'SP',
         ]);
 
-        $consulta = bd()->prepare('INSERT INTO administradores (id_estabelecimento, id_usuario, nivel) VALUES (' . Contexto::id() . ', :id, "super")');
+        $consulta = bd()->prepare('INSERT INTO administradores (id_estabelecimento, id_usuario, nivel) VALUES (' . Contexto::id() . ', :id, \'super\')');
         $consulta->execute([':id' => $idUsuarioAdmin]);
         $mensagens[] = 'Administrador criado: admin@agendei.com.br';
 
@@ -139,13 +160,25 @@ if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
         // ---------------------------------------------------------
         // Cliente demonstrativo
         // ---------------------------------------------------------
+        // Usuario comum de demonstracao, com o cadastro completo da especificacao.
         $idCliente = Cliente::criar([
-            'nome'            => 'Ana Beatriz Lima',
+            'nome'            => 'Ana Beatriz Lima Souza',
             'email'           => 'cliente@agendei.com.br',
             'senha'           => $senhaPadrao,
+            'login'           => 'anabea',
             'telefone'        => '11991111111',
+            'telefone_fixo'   => '1133111111',
             'cpf'             => '52998224725',
             'data_nascimento' => '1995-04-18',
+            'sexo'            => 'F',
+            'nome_materno'    => 'Marcia Lima Souza',
+            'cep'             => '01310100',
+            'logradouro'      => 'Avenida Paulista',
+            'numero'          => '1000',
+            'complemento'     => 'Apto 52',
+            'bairro'          => 'Bela Vista',
+            'cidade'          => 'Sao Paulo',
+            'uf'              => 'SP',
         ]);
         $mensagens[] = 'Cliente criado: cliente@agendei.com.br';
 
@@ -186,6 +219,9 @@ if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
 
         $mensagens[] = $criados . ' agendamento(s) de exemplo criado(s).';
         $mensagens[] = 'Senha padrao de todos os usuarios: ' . $senhaPadrao;
+        $mensagens[] = 'Logins de 6 letras: admini (master) e anabea (comum).';
+        $mensagens[] = 'Respostas do 2FA do master: mae "Helena Duarte do Sistema", nascimento 10/02/1985, CEP 01000-000.';
+        $mensagens[] = 'Respostas do 2FA do comum: mae "Marcia Lima Souza", nascimento 18/04/1995, CEP 01310-100.';
 
         $executado   = true;
         $jaInstalado = true;

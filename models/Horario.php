@@ -30,7 +30,7 @@ class Horario
     {
         $consulta = bd()->prepare(
             'SELECT * FROM horarios_profissionais
-             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :id AND dia_semana = :dia AND status = "ativo"
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :id AND dia_semana = :dia AND status = \'ativo\'
              ORDER BY hora_inicio ASC'
         );
         $consulta->execute([':id' => $idProfissional, ':dia' => $diaSemana]);
@@ -136,7 +136,7 @@ class Horario
     {
         $consulta = bd()->prepare(
             'SELECT 1 FROM horarios_profissionais
-             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :id AND status = "ativo" LIMIT 1'
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :id AND status = \'ativo\' LIMIT 1'
         );
         $consulta->execute([':id' => $idProfissional]);
         return (bool) $consulta->fetch();

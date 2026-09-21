@@ -32,14 +32,26 @@ e as chaves do banco impedem associações entre estabelecimentos diferentes.
    um cliente de demonstracao e alguns agendamentos.
 5. **Apague o arquivo `instalar.php`** depois da instalacao.
 
+Para publicar o sistema numa hospedagem na internet, veja
+[IMPLANTACAO.md](IMPLANTACAO.md).
+
 ### Acessos criados pelo instalador
 
-| Perfil        | E-mail                    | Senha       |
-|---------------|---------------------------|-------------|
-| Administrador | admin@agendei.com.br      | agendei123  |
-| Profissional  | marcos@agendei.com.br     | agendei123  |
-| Cliente       | cliente@agendei.com.br    | agendei123  |
-| Master        | master@agendei.com.br     | agendei-master-2026 |
+| Perfil do projeto | Perfil interno | Login  | E-mail                 | Senha    |
+|-------------------|----------------|--------|------------------------|----------|
+| Usuario master    | admin          | admini | admin@agendei.com.br   | agendeis |
+| Usuario comum     | cliente        | anabea | cliente@agendei.com.br | agendeis |
+| (fora do escopo)  | profissional   | -      | marcos@agendei.com.br  | agendeis |
+| (fora do escopo)  | master global  | -      | master@agendei.com.br  | agendei-master-2026 |
+
+O campo **Login** da tela de entrada aceita tanto o login de 6 letras quanto o e-mail.
+
+Respostas do segundo fator (2FA) das contas de demonstracao:
+
+| Conta  | Nome da mae              | Nascimento | CEP       |
+|--------|--------------------------|------------|-----------|
+| admini | Helena Duarte do Sistema | 10/02/1985 | 01000-000 |
+| anabea | Marcia Lima Souza        | 18/04/1995 | 01310-100 |
 
 Altere as senhas apos o primeiro acesso.
 
@@ -48,6 +60,92 @@ junto com sua primeira conta administrativa. O administrador local cadastra sua
 equipe e seus serviços, compartilha o link exclusivo mostrado em **Aparência** e
 personaliza nome, logo, cores e fonte. Clientes cadastrados por esse link recebem
 o mesmo vínculo e veem apenas os serviços e profissionais daquela empresa.
+
+## Atendimento aos requisitos do projeto academico
+
+O sistema foi adaptado para atender a especificacao da disciplina sem descartar o
+que ja existia. Os dois perfis exigidos correspondem a perfis que o sistema ja
+tinha, e o controle continua sendo feito pela sessao (`usuarios.tipo`):
+
+| Perfil da especificacao | Perfil no sistema | Onde entra                 |
+|-------------------------|-------------------|----------------------------|
+| Usuario master          | `admin`           | Criado pelo `instalar.php` |
+| Usuario comum           | `cliente`         | Cria a propria conta       |
+
+Os perfis `profissional` e o master global da plataforma continuam existindo e
+funcionando, mas ficam fora do escopo avaliado.
+
+### Telas exigidas
+
+| Tela                | Arquivo                  | Acesso          |
+|---------------------|--------------------------|-----------------|
+| Principal           | `index.php`              | Master e comum  |
+| Cadastro de usuario | `cadastro.php`           | Visitante       |
+| Login               | `login.php`              | Visitante       |
+| Erro                | `erro.php`               | Master e comum  |
+| 2FA                 | `dois_fatores.php`       | Master e comum  |
+| Consulta de usuario | `admin/usuarios.php`     | Somente master  |
+| Alteracao de senha  | `cliente/perfil.php`     | Somente comum   |
+| Modelo do BD        | `modelo_bd.php`          | Master e comum  |
+| Log                 | `admin/logs.php`         | Somente master  |
+
+### Regras de validacao do cadastro
+
+Todas sao conferidas no navegador (`assets/js/cadastro.js`) e novamente no
+servidor (`includes/funcoes.php`), porque a validacao do cliente pode ser burlada.
+
+| Campo           | Regra                                              |
+|-----------------|----------------------------------------------------|
+| Nome completo   | 15 a 80 caracteres, apenas letras e espacos        |
+| CPF             | Conferencia dos dois digitos verificadores         |
+| CEP             | 8 digitos, preenche o endereco pela API ViaCEP     |
+| Telefone celular| DDD + 9 digitos, gravado como `(+55)XX-XXXXXXXXX`  |
+| Telefone fixo   | DDD + 8 digitos, gravado como `(+55)XX-XXXXXXXX`   |
+| Login           | Exatamente 6 caracteres alfabeticos, unico         |
+| Senha           | Exatamente 8 caracteres alfabeticos, com hash      |
+| Confirmar senha | Igual a senha                                      |
+
+Sem conexao com a API do CEP, os campos de endereco continuam editaveis para
+preenchimento manual.
+
+### Segundo fator de autenticacao
+
+Apos validar login e senha, o sistema sorteia uma entre tres perguntas (nome da
+mae, data de nascimento ou CEP) e so abre a sessao depois da resposta correta.
+A resposta ignora acentos, caixa e mascara. Na terceira tentativa sem exito o
+sistema mostra `3 tentativas sem sucesso! Favor realizar Login novamente.` e volta
+para a tela de login.
+
+Os dados que respondem as perguntas ficam em `usuarios`, e nao em `clientes`,
+para que o master tambem consiga passar pelo 2FA.
+
+### Log de autenticacao
+
+A tabela `logs_autenticacao` guarda data e hora, nome, CPF, login informado,
+evento e qual pergunta do 2FA foi usada. O nome e o CPF sao gravados por copia e
+a tabela nao tem chave estrangeira para `usuarios`: assim o historico sobrevive
+quando o master exclui um usuario. A tela filtra por nome, por CPF ou por todos,
+sempre da entrada mais recente para a mais antiga.
+
+### Desafios extras
+
+- **PDF da lista de usuarios**: botao *Baixar PDF* em `admin/usuarios.php`.
+  O arquivo e gerado por `models/PdfSimples.php`, escrito em PHP puro, sem
+  bibliotecas externas nem Composer.
+- **Barra de acessibilidade**: `assets/js/acessibilidade.js` e carregada por
+  `includes/tema.php`, portanto aparece em todas as telas. Oferece alto contraste
+  (fundo escuro / fonte clara) e tres tamanhos de fonte, com a preferencia
+  guardada no navegador.
+
+### Testes
+
+```bash
+php tests/requisitos.php      # regras de validacao e 2FA (nao usa banco)
+php tests/fluxo_projeto.php   # cadastro, login, 2FA, log e exclusao (banco temporario)
+php tests/multitenancy.php    # isolamento entre estabelecimentos (banco temporario)
+```
+
+Os dois ultimos criam e descartam um banco proprio e nunca tocam o banco de uso normal.
 
 ## Estrutura do projeto
 

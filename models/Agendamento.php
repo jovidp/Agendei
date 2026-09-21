@@ -125,15 +125,15 @@ class Agendamento
         }
 
         if (!empty($filtros['a_partir_de_hoje'])) {
-            $condicoes[] = '(a.data_agendamento > CURDATE() OR (a.data_agendamento = CURDATE() AND a.hora_fim >= CURTIME()))';
+            $condicoes[] = '(a.data_agendamento > CURRENT_DATE OR (a.data_agendamento = CURRENT_DATE AND a.hora_fim >= CURRENT_TIME))';
         }
 
         if (!empty($filtros['ate_hoje'])) {
-            $condicoes[] = '(a.data_agendamento < CURDATE() OR (a.data_agendamento = CURDATE() AND a.hora_fim < CURTIME()))';
+            $condicoes[] = '(a.data_agendamento < CURRENT_DATE OR (a.data_agendamento = CURRENT_DATE AND a.hora_fim < CURRENT_TIME))';
         }
 
         if (!empty($filtros['busca'])) {
-            $condicoes[] = '(uc.nome LIKE :busca OR up.nome LIKE :buscaProfissional OR s.nome LIKE :buscaServico)';
+            $condicoes[] = '(uc.nome ' . Sql::como() . ' :busca OR up.nome ' . Sql::como() . ' :buscaProfissional OR s.nome ' . Sql::como() . ' :buscaServico)';
             $parametros[':busca'] = '%' . $filtros['busca'] . '%';
             $parametros[':buscaProfissional'] = $parametros[':busca'];
             $parametros[':buscaServico'] = $parametros[':busca'];
@@ -184,7 +184,7 @@ class Agendamento
         $sql = 'SELECT hora_inicio, hora_fim FROM agendamentos
                 WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :profissional
                   AND data_agendamento = :data
-                  AND status IN ("agendado","confirmado","concluido")';
+                  AND status IN (\'agendado\',\'confirmado\',\'concluido\')';
 
         $parametros = [':profissional' => $idProfissional, ':data' => $data];
 
@@ -214,7 +214,7 @@ class Agendamento
         $sql = 'SELECT id_agendamento FROM agendamentos
                 WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :profissional
                   AND data_agendamento = :data
-                  AND status IN ("agendado","confirmado","concluido")
+                  AND status IN (\'agendado\',\'confirmado\',\'concluido\')
                   AND hora_inicio < :fim
                   AND hora_fim > :inicio';
 
@@ -250,7 +250,7 @@ class Agendamento
         $sql = 'SELECT id_agendamento FROM agendamentos
                 WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_cliente = :cliente
                   AND data_agendamento = :data
-                  AND status IN ("agendado","confirmado")
+                  AND status IN (\'agendado\',\'confirmado\')
                   AND hora_inicio < :fim
                   AND hora_fim > :inicio';
 
@@ -422,8 +422,8 @@ class Agendamento
         if (!$agendamento) return false;
         $consulta = bd()->prepare(
             'UPDATE agendamentos
-             SET status = "cancelado", motivo_cancelamento = :motivo, id_usuario_cancelou = :usuario
-             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_agendamento = :id AND status <> "cancelado"'
+             SET status = \'cancelado\', motivo_cancelamento = :motivo, id_usuario_cancelou = :usuario
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_agendamento = :id AND status <> \'cancelado\''
         );
 
         $cancelado = $consulta->execute([

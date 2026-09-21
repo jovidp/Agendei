@@ -5,6 +5,7 @@
  * de acesso e permite assinar a agenda no Google Calendar e outros aplicativos.
  */
 require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/models/Sql.php';
 
 $token = isset($_GET['token']) && is_string($_GET['token']) ? $_GET['token'] : '';
 if (!preg_match('/^[a-f0-9]{64}$/D', $token)) {
@@ -16,7 +17,7 @@ $q = bd()->prepare(
     'SELECT p.id_profissional,p.id_estabelecimento,u.nome,e.nome estabelecimento
      FROM profissionais p JOIN usuarios u ON u.id_usuario=p.id_usuario
      JOIN estabelecimento e ON e.id_estabelecimento=p.id_estabelecimento
-     WHERE p.token_calendario=? AND u.status="ativo" AND e.status="ativo" LIMIT 1'
+     WHERE p.token_calendario=? AND u.status=\'ativo\' AND e.status=\'ativo\' LIMIT 1'
 );
 $q->execute([$token]);
 $profissional = $q->fetch(PDO::FETCH_ASSOC);
@@ -30,8 +31,8 @@ $q = bd()->prepare(
      FROM agendamentos a JOIN servicos s ON s.id_servico=a.id_servico
      JOIN clientes c ON c.id_cliente=a.id_cliente JOIN usuarios uc ON uc.id_usuario=c.id_usuario
      WHERE a.id_estabelecimento=? AND a.id_profissional=?
-       AND a.status IN ("agendado","confirmado","concluido")
-       AND a.data_agendamento>=DATE_SUB(CURDATE(),INTERVAL 30 DAY)
+       AND a.status IN (\'agendado\',\'confirmado\',\'concluido\')
+       AND a.data_agendamento>=' . Sql::somarDias('CURRENT_DATE', '-30') . '
      ORDER BY a.data_agendamento,a.hora_inicio'
 );
 $q->execute([$profissional['id_estabelecimento'], $profissional['id_profissional']]);

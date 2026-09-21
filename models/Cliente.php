@@ -5,7 +5,9 @@
 class Cliente
 {
     private const CAMPOS = 'c.id_cliente, c.id_usuario, c.cpf, c.data_nascimento, c.observacoes,
-                            c.data_cadastro, c.pontos_fidelidade, u.nome, u.email, u.telefone, u.status';
+                            c.data_cadastro, c.pontos_fidelidade, u.nome, u.email, u.telefone, u.status,
+                            u.login, u.sexo, u.nome_materno, u.telefone_fixo, u.cep, u.logradouro,
+                            u.numero, u.complemento, u.bairro, u.cidade, u.uf, u.ultimo_acesso';
 
     /** Cria usuario + cliente em uma unica transacao. Retorna o id_cliente. */
     public static function criar(array $dados): int
@@ -15,13 +17,10 @@ class Cliente
         $conexao->beginTransaction();
 
         try {
-            $idUsuario = Usuario::criar([
-                'nome'     => $dados['nome'],
-                'email'    => $dados['email'],
-                'senha'    => $dados['senha'],
-                'telefone' => $dados['telefone'] ?? null,
-                'tipo'     => 'cliente',
-                'status'   => $dados['status'] ?? 'ativo',
+            // Os dados pessoais ficam em usuarios; clientes guarda o que é específico do perfil.
+            $idUsuario = Usuario::criar($dados + [
+                'tipo'   => 'cliente',
+                'status' => $dados['status'] ?? 'ativo',
             ]);
 
             $consulta = $conexao->prepare(
@@ -137,7 +136,7 @@ class Cliente
         $parametros = [];
 
         if (!empty($filtros['busca'])) {
-            $condicoes[] = '(u.nome LIKE :busca OR u.email LIKE :buscaEmail OR c.cpf LIKE :buscaNumeros)';
+            $condicoes[] = '(u.nome ' . Sql::como() . ' :busca OR u.email ' . Sql::como() . ' :buscaEmail OR c.cpf ' . Sql::como() . ' :buscaNumeros)';
             $parametros[':busca']        = '%' . $filtros['busca'] . '%';
             $parametros[':buscaEmail'] = $parametros[':busca'];
             $numerosBusca = apenasNumeros($filtros['busca']);
@@ -153,7 +152,10 @@ class Cliente
         return [$where, $parametros];
     }
 
-    /** Atualiza os dados especificos do cliente (os comuns ficam em Usuario::atualizar). */
+    /**
+     * Atualiza os dados especificos do cliente (os comuns ficam em Usuario::atualizar).
+     * A data de nascimento e replicada em usuarios porque o 2FA le a coluna de la.
+     */
     public static function atualizar(int $idCliente, array $dados): bool
     {
         $consulta = bd()->prepare(
@@ -161,12 +163,26 @@ class Cliente
              WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_cliente = :id'
         );
 
-        return $consulta->execute([
+        $gravou = $consulta->execute([
             ':cpf'             => apenasNumeros($dados['cpf'] ?? '') ?: null,
             ':data_nascimento' => $dados['data_nascimento'] ?: null,
             ':observacoes'     => $dados['observacoes'] ?? null,
             ':id'              => $idCliente,
         ]);
+
+        // Subconsulta no lugar de UPDATE com JOIN: a forma com JOIN so existe no MySQL.
+        $sincroniza = bd()->prepare(
+            'UPDATE usuarios
+             SET data_nascimento = :data_nascimento
+             WHERE id_usuario IN (SELECT c.id_usuario FROM clientes c
+                                  WHERE c.id_estabelecimento = ' . Contexto::id() . ' AND c.id_cliente = :id)'
+        );
+        $sincroniza->execute([
+            ':data_nascimento' => $dados['data_nascimento'] ?: null,
+            ':id'              => $idCliente,
+        ]);
+
+        return $gravou;
     }
 
     /** Conta os registros cadastrados, restringindo pelo status quando informado. */

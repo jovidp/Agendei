@@ -41,6 +41,17 @@ $cssExtra        = $cssExtra ?? [];
             <?php if (!empty($acoesTopo)): ?>
                 <div class="topo-acoes"><?= $acoesTopo ?></div>
             <?php endif; ?>
+
+            <?php /* Login e saida ficam no canto superior direito de todas as telas. */ ?>
+            <div class="usuario-topo">
+                <div class="usuario-topo-dados">
+                    <span class="usuario-topo-login"><?= e(usuarioLogin()) ?></span>
+                    <span class="usuario-topo-perfil"><?= e(perfilRotulo()) ?></span>
+                </div>
+                <span class="avatar"><?= e(iniciais(usuarioNome())) ?></span>
+                <a class="btn btn-contorno btn-pequeno"
+                   href="<?= url(ehMaster() ? 'master/logout.php' : 'logout.php') ?>">Sair</a>
+            </div>
         </div>
 
         <div class="area-conteudo">

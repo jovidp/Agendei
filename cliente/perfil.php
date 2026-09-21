@@ -156,7 +156,7 @@ require_once RAIZ . '/includes/painel_header.php';
         <div class="cartao">
             <div class="cartao-cabecalho"><h3>Alterar senha</h3></div>
             <div class="cartao-corpo">
-                <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" id="formSenha" novalidate>
+                <?php /* O atributo abaixo aplica a regra de senha da especificacao tambem no navegador. */ ?><form method="post" id="formSenha" data-senha-regra="projeto" novalidate>
                     <?= campoCsrf() ?>
                     <input type="hidden" name="acao" value="senha">
 
@@ -168,14 +168,16 @@ require_once RAIZ . '/includes/painel_header.php';
 
                     <div class="campo">
                         <label for="nova_senha">Nova senha</label>
-                        <input type="password" id="nova_senha" name="nova_senha" autocomplete="new-password" required>
+                        <input type="password" id="nova_senha" name="nova_senha" autocomplete="new-password"
+                               minlength="8" maxlength="8" required>
                         <span class="mensagem-campo"></span>
-                        <span class="ajuda-campo">Minimo de 6 caracteres.</span>
+                        <span class="ajuda-campo">Exatamente 8 caracteres alfabeticos.</span>
                     </div>
 
                     <div class="campo">
                         <label for="confirmar_senha">Confirmar nova senha</label>
-                        <input type="password" id="confirmar_senha" name="confirmar_senha" autocomplete="new-password" required>
+                        <input type="password" id="confirmar_senha" name="confirmar_senha" autocomplete="new-password"
+                               minlength="8" maxlength="8" required>
                         <span class="mensagem-campo"></span>
                     </div>
 

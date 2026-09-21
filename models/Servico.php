@@ -19,7 +19,7 @@ class Servico
         $parametros = [];
 
         if (!empty($filtros['busca'])) {
-            $condicoes[] = '(nome LIKE :busca OR descricao LIKE :buscaDescricao)';
+            $condicoes[] = '(nome ' . Sql::como() . ' :busca OR descricao ' . Sql::como() . ' :buscaDescricao)';
             $parametros[':busca'] = '%' . $filtros['busca'] . '%';
             $parametros[':buscaDescricao'] = $parametros[':busca'];
         }
@@ -47,7 +47,7 @@ class Servico
     {
         $consulta = bd()->prepare(
             'SELECT * FROM servicos
-             WHERE id_estabelecimento = ' . Contexto::id() . ' AND status = "ativo"
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND status = \'ativo\'
              ORDER BY destaque DESC, nome ASC
              LIMIT ' . (int) $limite
         );
@@ -63,7 +63,7 @@ class Servico
                 INNER JOIN profissional_servico ps ON ps.id_servico = s.id_servico
                 INNER JOIN profissionais p ON p.id_profissional = ps.id_profissional
                 INNER JOIN usuarios u ON u.id_usuario = p.id_usuario
-                WHERE s.id_estabelecimento = ' . Contexto::id() . ' AND s.status = "ativo" AND u.status = "ativo"
+                WHERE s.id_estabelecimento = ' . Contexto::id() . ' AND s.status = \'ativo\' AND u.status = \'ativo\'
                 ORDER BY s.nome ASC';
 
         return bd()->query($sql)->fetchAll();
@@ -158,7 +158,7 @@ class Servico
     /** Verifica se o cadastro existe e está habilitado para uso. */
     public static function estaAtivo(int $idServico): bool
     {
-        $consulta = bd()->prepare('SELECT 1 FROM servicos WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_servico = :id AND status = "ativo" LIMIT 1');
+        $consulta = bd()->prepare('SELECT 1 FROM servicos WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_servico = :id AND status = \'ativo\' LIMIT 1');
         $consulta->execute([':id' => $idServico]);
         return (bool) $consulta->fetch();
     }

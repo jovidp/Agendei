@@ -67,10 +67,10 @@ class Estabelecimento
             $q = $db->prepare('INSERT INTO estabelecimento (nome, slug) VALUES (?, ?)');
             $q->execute([$dados['estabelecimento'], $dados['slug']]);
             $id = (int) $db->lastInsertId();
-            $q = $db->prepare('INSERT INTO usuarios (id_estabelecimento, nome, email, senha_hash, tipo) VALUES (?, ?, ?, ?, "admin")');
+            $q = $db->prepare('INSERT INTO usuarios (id_estabelecimento, nome, email, senha_hash, tipo) VALUES (?, ?, ?, ?, \'admin\')');
             $q->execute([$id, $dados['nome'], $dados['email'], password_hash($dados['senha'], PASSWORD_DEFAULT)]);
             $usuario = (int) $db->lastInsertId();
-            $q = $db->prepare('INSERT INTO administradores (id_estabelecimento, id_usuario, nivel) VALUES (?, ?, "super")');
+            $q = $db->prepare('INSERT INTO administradores (id_estabelecimento, id_usuario, nivel) VALUES (?, ?, \'super\')');
             $q->execute([$id, $usuario]);
             $db->commit();
             return $id;
@@ -84,7 +84,7 @@ class Estabelecimento
     public static function listarTodos(): array
     {
         $sql = 'SELECT e.*,
-                       (SELECT COUNT(*) FROM usuarios u WHERE u.id_estabelecimento = e.id_estabelecimento AND u.tipo = "admin" AND u.status = "ativo") AS admins_ativos,
+                       (SELECT COUNT(*) FROM usuarios u WHERE u.id_estabelecimento = e.id_estabelecimento AND u.tipo = \'admin\' AND u.status = \'ativo\') AS admins_ativos,
                        (SELECT COUNT(*) FROM clientes c WHERE c.id_estabelecimento = e.id_estabelecimento) AS total_clientes,
                        (SELECT COUNT(*) FROM profissionais p WHERE p.id_estabelecimento = e.id_estabelecimento) AS total_profissionais,
                        (SELECT COUNT(*) FROM servicos s WHERE s.id_estabelecimento = e.id_estabelecimento) AS total_servicos
@@ -109,7 +109,7 @@ class Estabelecimento
     public static function administradores(int $id): array
     {
         $q = bd()->prepare('SELECT u.id_usuario, u.nome, u.email, u.status, u.ultimo_acesso
-                            FROM usuarios u WHERE u.id_estabelecimento = ? AND u.tipo = "admin" ORDER BY u.nome');
+                            FROM usuarios u WHERE u.id_estabelecimento = ? AND u.tipo = \'admin\' ORDER BY u.nome');
         $q->execute([$id]);
         return $q->fetchAll();
     }
@@ -121,10 +121,10 @@ class Estabelecimento
         $db = bd();
         $db->beginTransaction();
         try {
-            $q = $db->prepare('INSERT INTO usuarios (id_estabelecimento, nome, email, senha_hash, tipo) VALUES (?, ?, ?, ?, "admin")');
+            $q = $db->prepare('INSERT INTO usuarios (id_estabelecimento, nome, email, senha_hash, tipo) VALUES (?, ?, ?, ?, \'admin\')');
             $q->execute([$id, $dados['nome'], mb_strtolower($dados['email']), password_hash($dados['senha'], PASSWORD_DEFAULT)]);
             $usuario = (int) $db->lastInsertId();
-            $q = $db->prepare('INSERT INTO administradores (id_estabelecimento, id_usuario, nivel) VALUES (?, ?, "super")');
+            $q = $db->prepare('INSERT INTO administradores (id_estabelecimento, id_usuario, nivel) VALUES (?, ?, \'super\')');
             $q->execute([$id, $usuario]);
             $db->commit();
             return $usuario;

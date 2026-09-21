@@ -1,0 +1,321 @@
+/* =====================================================================
+   AGENDEI - Estilos das telas exigidas pela especificacao do projeto
+   Carregado por includes/tema.php, portanto vale para todas as paginas.
+   Fica depois de style.css para poder ajustar o que ja existe.
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   Barra de acessibilidade
+   O seletor usa html[data-...] para vencer o :root que a identidade
+   visual do estabelecimento injeta em linha no <head>.
+   --------------------------------------------------------------------- */
+
+.barra-acessibilidade {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 6px 16px;
+  background: var(--cor-primaria-escura);
+  color: #fff;
+  font-size: 12.5px;
+}
+
+.barra-acessibilidade .grupo-acessibilidade {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.barra-acessibilidade .rotulo-acessibilidade {
+  opacity: 0.85;
+}
+
+.barra-acessibilidade button {
+  min-width: 30px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  border-radius: var(--raio-pequeno);
+  background: transparent;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transicao);
+}
+
+.barra-acessibilidade button:hover,
+.barra-acessibilidade button:focus-visible {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.barra-acessibilidade button[aria-pressed="true"] {
+  background: #fff;
+  color: var(--cor-primaria-escura);
+}
+
+/* A escala aplica-se ao conteudo, nao a propria barra de controle. */
+body {
+  zoom: var(--escala-fonte, 1);
+}
+
+.barra-acessibilidade {
+  zoom: calc(1 / var(--escala-fonte, 1));
+}
+
+/* ---------------------------------------------------------------------
+   Alto contraste (fundo escuro / fonte clara)
+   Reescreve as variaveis do tema, entao todo o sistema acompanha.
+   --------------------------------------------------------------------- */
+
+html[data-contraste="alto"] {
+  --cor-primaria: #ffe14d;
+  --cor-primaria-escura: #000000;
+  --cor-primaria-clara: #1a1a1a;
+  --cor-secundaria: #ffe14d;
+  --cor-secundaria-escura: #d9bd00;
+  --cor-secundaria-clara: #1a1a1a;
+  --fundo: #000000;
+  --branco: #0d0d0d;
+  --texto-principal: #ffffff;
+  --texto-secundario: #e0e0e0;
+  --borda: #6a6a6a;
+  --borda-forte: #9a9a9a;
+  --sucesso: #57d98a;
+  --erro: #ff8a8a;
+  --erro-claro: #2a0f0f;
+  --aviso: #ffd166;
+  --aviso-claro: #2a2110;
+  --info-claro: #14202a;
+  --cabecalho-tabela: #1a1a1a;
+  --sombra: none;
+  --sombra-media: none;
+}
+
+html[data-contraste="alto"] body {
+  background: var(--fundo);
+  color: var(--texto-principal);
+}
+
+/* Imagens e logotipos ganham contorno para nao sumirem no fundo preto. */
+html[data-contraste="alto"] img,
+html[data-contraste="alto"] .marca-simbolo {
+  outline: 1px solid var(--borda);
+}
+
+html[data-contraste="alto"] .btn {
+  border: 1px solid var(--borda-forte);
+}
+
+html[data-contraste="alto"] .barra-acessibilidade {
+  background: #000;
+  border-bottom: 1px solid var(--borda-forte);
+}
+
+/* ---------------------------------------------------------------------
+   Identificacao do usuario no canto superior direito
+   --------------------------------------------------------------------- */
+
+.usuario-topo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.usuario-topo .usuario-topo-dados {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  text-align: right;
+}
+
+.usuario-topo .usuario-topo-login {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--texto-principal);
+}
+
+.usuario-topo .usuario-topo-perfil {
+  font-size: 12px;
+  color: var(--texto-secundario);
+}
+
+.usuario-topo .avatar {
+  width: 34px;
+  height: 34px;
+  font-size: 12.5px;
+}
+
+@media (max-width: 640px) {
+  .usuario-topo .usuario-topo-dados {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Formularios longos (cadastro)
+   --------------------------------------------------------------------- */
+
+.autenticacao-caixa.caixa-larga {
+  max-width: 1040px;
+}
+
+.grupo-campos {
+  margin: 0 0 18px;
+  padding: 14px 16px 4px;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  background: var(--branco);
+}
+
+.grupo-campos > legend {
+  padding: 0 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto-secundario);
+}
+
+.acoes-formulario {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.acoes-formulario .btn {
+  flex: 1;
+}
+
+@media (max-width: 520px) {
+  .acoes-formulario {
+    flex-direction: column;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Tela de erro
+   --------------------------------------------------------------------- */
+
+.erro-codigo {
+  margin: 24px 0 0;
+  font-size: 42px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--cor-primaria);
+}
+
+.erro-detalhe {
+  max-height: 180px;
+  overflow: auto;
+  padding: 10px 12px;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio-pequeno);
+  background: var(--info-claro);
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ---------------------------------------------------------------------
+   Diagrama do banco de dados
+   --------------------------------------------------------------------- */
+
+.diagrama-area {
+  overflow-x: auto;
+  padding: 16px;
+}
+
+.diagrama-svg {
+  display: block;
+  min-width: 900px;
+  width: 100%;
+  height: auto;
+}
+
+.diagrama-imagem {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+.diagrama-entidade rect {
+  fill: var(--branco);
+  stroke: var(--borda-forte);
+  stroke-width: 1;
+}
+
+.diagrama-entidade .diagrama-titulo-fundo {
+  stroke: none;
+}
+
+.diagrama-auth .diagrama-titulo-fundo {
+  fill: var(--cor-primaria);
+}
+
+.diagrama-perfil .diagrama-titulo-fundo {
+  fill: var(--cor-secundaria);
+}
+
+.diagrama-base .diagrama-titulo-fundo {
+  fill: var(--borda-forte);
+}
+
+.diagrama-titulo {
+  font-size: 13px;
+  font-weight: 700;
+  fill: #fff;
+}
+
+.diagrama-campo {
+  font-size: 11px;
+  fill: var(--texto-principal);
+}
+
+.diagrama-cardinalidade {
+  font-size: 10px;
+  font-weight: 600;
+  fill: var(--texto-secundario);
+  text-anchor: middle;
+}
+
+.diagrama-legenda {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 0 16px 16px;
+  font-size: 12.5px;
+  color: var(--texto-secundario);
+}
+
+.diagrama-legenda .marcador {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 4px;
+  border-radius: 3px;
+  vertical-align: -1px;
+}
+
+.diagrama-legenda .marcador-auth {
+  background: var(--cor-primaria);
+}
+
+.diagrama-legenda .marcador-perfil {
+  background: var(--cor-secundaria);
+}
+
+.diagrama-legenda .marcador-base {
+  background: var(--borda-forte);
+}
+
+/* Impressao: a barra de acessibilidade nao faz sentido no papel. */
+@media print {
+  .barra-acessibilidade {
+    display: none;
+  }
+}

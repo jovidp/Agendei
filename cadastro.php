@@ -1,6 +1,8 @@
 <?php
 /**
- * Cadastro de novos clientes.
+ * Cadastro de novos usuarios comuns.
+ * Os campos e as regras seguem a especificacao do projeto e sao conferidos
+ * novamente no servidor, mesmo quando o JavaScript ja validou a tela.
  */
 // Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 require_once __DIR__ . '/config/config.php';
@@ -12,10 +14,21 @@ bloquearSeLogado();
 $erros = [];
 $dados = [
     'nome'            => '',
-    'cpf'             => '',
     'data_nascimento' => '',
-    'telefone'        => '',
+    'sexo'            => '',
+    'nome_materno'    => '',
+    'cpf'             => '',
     'email'           => '',
+    'telefone'        => '',
+    'telefone_fixo'   => '',
+    'cep'             => '',
+    'logradouro'      => '',
+    'numero'          => '',
+    'complemento'     => '',
+    'bairro'          => '',
+    'cidade'          => '',
+    'uf'              => '',
+    'login'           => '',
 ];
 
 // Processa o formulário enviado antes de montar o HTML da página.
@@ -23,40 +36,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Confere o token da sessão antes de aceitar alterações enviadas pelo formulário.
     exigirCsrf();
 
-    $dados['nome']            = post('nome');
-    $dados['cpf']             = post('cpf');
-    $dados['data_nascimento'] = post('data_nascimento');
-    $dados['telefone']        = post('telefone');
-    $dados['email']           = mb_strtolower(post('email'));
+    foreach (array_keys($dados) as $campo) {
+        $dados[$campo] = post($campo);
+    }
+    $dados['email'] = mb_strtolower($dados['email']);
+    $dados['login'] = mb_strtolower($dados['login']);
+    $dados['uf']    = mb_strtoupper($dados['uf']);
 
     $senha       = post('senha');
     $confirmacao = post('confirmar_senha');
 
-    $cpf      = apenasNumeros($dados['cpf']);
-    $telefone = apenasNumeros($dados['telefone']);
+    $cpf     = apenasNumeros($dados['cpf']);
+    $celular = apenasNumeros($dados['telefone']);
+    $fixo    = apenasNumeros($dados['telefone_fixo']);
+    $cep     = apenasNumeros($dados['cep']);
 
-    if (mb_strlen($dados['nome']) < 5 || !str_contains($dados['nome'], ' ')) {
-        $erros[] = 'Informe seu nome completo.';
+    if (!validarNomeCompleto($dados['nome'])) {
+        $erros[] = 'O nome deve ter de 15 a 80 caracteres, apenas letras e espacos.';
+    }
+    if (!validarData($dados['data_nascimento']) || strtotime($dados['data_nascimento']) > time()) {
+        $erros[] = 'Informe uma data de nascimento valida.';
+    }
+    if (!in_array($dados['sexo'], ['F', 'M', 'O'], true)) {
+        $erros[] = 'Selecione o sexo.';
+    }
+    if (!validarNomeMaterno($dados['nome_materno'])) {
+        $erros[] = 'Informe o nome materno com no minimo 5 caracteres alfabeticos.';
     }
     if (!validarCpf($cpf)) {
         $erros[] = 'Informe um CPF valido.';
     }
-    if ($dados['data_nascimento'] !== '') {
-        if (!validarData($dados['data_nascimento']) || strtotime($dados['data_nascimento']) > time()) {
-            $erros[] = 'Informe uma data de nascimento valida.';
-        }
-    }
-    if (!in_array(strlen($telefone), [10, 11], true)) {
-        $erros[] = 'Informe um telefone valido com DDD.';
-    }
     if (!validarEmail($dados['email'])) {
         $erros[] = 'Informe um e-mail valido.';
     }
-    if (!validarSenha($senha)) {
-        $erros[] = 'A senha deve ter no minimo 6 caracteres.';
+    if (!validarTelefoneBr($celular, true)) {
+        $erros[] = 'Informe o telefone celular com DDD e 9 digitos.';
+    }
+    if (!validarTelefoneBr($fixo)) {
+        $erros[] = 'Informe o telefone fixo com DDD e 8 digitos.';
+    }
+    if (!validarCep($cep)) {
+        $erros[] = 'Informe um CEP valido com oito digitos.';
+    }
+    if ($dados['logradouro'] === '' || $dados['numero'] === '' || $dados['bairro'] === '' || $dados['cidade'] === '') {
+        $erros[] = 'Preencha o endereco completo.';
+    }
+    if (!validarUf($dados['uf'])) {
+        $erros[] = 'Informe a UF com duas letras.';
+    }
+    if (!validarLogin($dados['login'])) {
+        $erros[] = 'O login deve ter exatamente 6 caracteres alfabeticos.';
+    }
+    if (!validarSenhaProjeto($senha)) {
+        $erros[] = 'A senha deve ter exatamente 8 caracteres alfabeticos.';
     }
     if ($senha !== $confirmacao) {
         $erros[] = 'As senhas nao conferem.';
+    }
+    if ($erros === [] && Usuario::loginEmUso($dados['login'])) {
+        $erros[] = 'Este login ja esta em uso. Escolha outro.';
     }
     if ($erros === [] && Usuario::emailEmUso($dados['email'])) {
         $erros[] = 'Ja existe uma conta cadastrada com este e-mail.';
@@ -72,18 +110,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'nome'            => $dados['nome'],
                 'email'           => $dados['email'],
                 'senha'           => $senha,
-                'telefone'        => $telefone,
+                'login'           => $dados['login'],
+                'telefone'        => $celular,
+                'telefone_fixo'   => $fixo,
                 'cpf'             => $cpf,
-                'data_nascimento' => $dados['data_nascimento'] ?: null,
+                'data_nascimento' => $dados['data_nascimento'],
+                'sexo'            => $dados['sexo'],
+                'nome_materno'    => $dados['nome_materno'],
+                'cep'             => $cep,
+                'logradouro'      => $dados['logradouro'],
+                'numero'          => $dados['numero'],
+                'complemento'     => $dados['complemento'],
+                'bairro'          => $dados['bairro'],
+                'cidade'          => $dados['cidade'],
+                'uf'              => $dados['uf'],
             ]);
 
-            $usuario = autenticar($dados['email'], $senha);
-            if ($usuario !== null) {
-                registrarSessao($usuario);
-                definirFlash('sucesso', 'Cadastro realizado com sucesso. Bem-vindo(a)!');
-                redirecionar('cliente/agendar.php');
-            }
-
+            // A especificacao encerra o cadastro na tela de login.
             definirFlash('sucesso', 'Cadastro realizado com sucesso. Faca login para continuar.');
             redirecionar('login.php');
         } catch (Throwable $erro) {
@@ -110,7 +153,7 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
 <body class="pagina-autenticacao">
 
 <div class="autenticacao-area">
-    <div class="autenticacao-caixa">
+    <div class="autenticacao-caixa caixa-larga">
         <div class="autenticacao-apresentacao">
             <span class="marca">
                 <?= Tema::marca($estabelecimento) ?>
@@ -145,59 +188,179 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
                 </div>
             <?php endif; ?>
 
-            <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" id="formCadastro" novalidate>
+            <?php /* Formulário de cadastro: os dados serão validados novamente pelo servidor. */ ?><form method="post" id="formCadastro" novalidate>
                 <?= campoCsrf() ?>
 
-                <div class="campo">
-                    <label for="nome">Nome completo <span class="obrigatorio">*</span></label>
-                    <input type="text" id="nome" name="nome" value="<?= e($dados['nome']) ?>" autocomplete="name" required>
-                    <span class="mensagem-campo"></span>
-                </div>
-
-                <div class="linha-campos">
-                    <div class="campo">
-                        <label for="cpf">CPF <span class="obrigatorio">*</span></label>
-                        <input type="text" id="cpf" name="cpf" value="<?= e($dados['cpf']) ?>" data-mascara="cpf" inputmode="numeric" placeholder="000.000.000-00" required>
-                        <span class="mensagem-campo"></span>
-                    </div>
+                <fieldset class="grupo-campos">
+                    <legend>Dados pessoais</legend>
 
                     <div class="campo">
-                        <label for="data_nascimento">Data de nascimento</label>
-                        <input type="date" id="data_nascimento" name="data_nascimento" value="<?= e($dados['data_nascimento']) ?>" max="<?= date('Y-m-d') ?>">
+                        <label for="nome">Nome completo <span class="obrigatorio">*</span></label>
+                        <input type="text" id="nome" name="nome" value="<?= e($dados['nome']) ?>"
+                               autocomplete="name" minlength="15" maxlength="80" required>
                         <span class="mensagem-campo"></span>
+                        <span class="ajuda-campo">De 15 a 80 caracteres, apenas letras.</span>
                     </div>
-                </div>
 
-                <div class="linha-campos">
-                    <div class="campo">
-                        <label for="telefone">Telefone <span class="obrigatorio">*</span></label>
-                        <input type="tel" id="telefone" name="telefone" value="<?= e($dados['telefone']) ?>" data-mascara="telefone" inputmode="numeric" placeholder="(00) 00000-0000" required>
-                        <span class="mensagem-campo"></span>
+                    <div class="linha-campos">
+                        <div class="campo">
+                            <label for="data_nascimento">Data de nascimento <span class="obrigatorio">*</span></label>
+                            <input type="date" id="data_nascimento" name="data_nascimento"
+                                   value="<?= e($dados['data_nascimento']) ?>" max="<?= date('Y-m-d') ?>" required>
+                            <span class="mensagem-campo"></span>
+                        </div>
+
+                        <div class="campo">
+                            <label for="sexo">Sexo <span class="obrigatorio">*</span></label>
+                            <select id="sexo" name="sexo" required>
+                                <option value="">Selecione</option>
+                                <option value="F" <?= $dados['sexo'] === 'F' ? 'selected' : '' ?>>Feminino</option>
+                                <option value="M" <?= $dados['sexo'] === 'M' ? 'selected' : '' ?>>Masculino</option>
+                                <option value="O" <?= $dados['sexo'] === 'O' ? 'selected' : '' ?>>Outro</option>
+                            </select>
+                            <span class="mensagem-campo"></span>
+                        </div>
                     </div>
+
+                    <div class="linha-campos">
+                        <div class="campo">
+                            <label for="nome_materno">Nome materno <span class="obrigatorio">*</span></label>
+                            <input type="text" id="nome_materno" name="nome_materno"
+                                   value="<?= e($dados['nome_materno']) ?>" maxlength="120" required>
+                            <span class="mensagem-campo"></span>
+                        </div>
+
+                        <div class="campo">
+                            <label for="cpf">CPF <span class="obrigatorio">*</span></label>
+                            <input type="text" id="cpf" name="cpf" value="<?= e($dados['cpf']) ?>"
+                                   data-mascara="cpf" inputmode="numeric" placeholder="000.000.000-00" required>
+                            <span class="mensagem-campo"></span>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset class="grupo-campos">
+                    <legend>Contato</legend>
 
                     <div class="campo">
                         <label for="email">E-mail <span class="obrigatorio">*</span></label>
-                        <input type="email" id="email" name="email" value="<?= e($dados['email']) ?>" autocomplete="email" required>
+                        <input type="email" id="email" name="email" value="<?= e($dados['email']) ?>"
+                               autocomplete="email" required>
                         <span class="mensagem-campo"></span>
                     </div>
-                </div>
 
-                <div class="linha-campos">
+                    <div class="linha-campos">
+                        <div class="campo">
+                            <label for="telefone">Telefone celular <span class="obrigatorio">*</span></label>
+                            <input type="tel" id="telefone" name="telefone" value="<?= e($dados['telefone']) ?>"
+                                   data-mascara="telefone" inputmode="numeric" placeholder="(00) 00000-0000" required>
+                            <span class="mensagem-campo"></span>
+                            <span class="ajuda-campo">Gravado como (+55)XX-XXXXXXXXX.</span>
+                        </div>
+
+                        <div class="campo">
+                            <label for="telefone_fixo">Telefone fixo <span class="obrigatorio">*</span></label>
+                            <input type="tel" id="telefone_fixo" name="telefone_fixo" value="<?= e($dados['telefone_fixo']) ?>"
+                                   data-mascara="telefone" inputmode="numeric" placeholder="(00) 0000-0000" required>
+                            <span class="mensagem-campo"></span>
+                            <span class="ajuda-campo">Gravado como (+55)XX-XXXXXXXX.</span>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset class="grupo-campos">
+                    <legend>Endereco</legend>
+
+                    <div class="linha-campos">
+                        <div class="campo">
+                            <label for="cep">CEP <span class="obrigatorio">*</span></label>
+                            <input type="text" id="cep" name="cep" value="<?= e($dados['cep']) ?>"
+                                   data-mascara="cep" data-busca-cep inputmode="numeric" placeholder="00000-000" required>
+                            <span class="mensagem-campo"></span>
+                            <span class="ajuda-campo" data-cep-situacao>Preenche o endereco automaticamente.</span>
+                        </div>
+
+                        <div class="campo">
+                            <label for="numero">Numero <span class="obrigatorio">*</span></label>
+                            <input type="text" id="numero" name="numero" value="<?= e($dados['numero']) ?>" maxlength="20" required>
+                            <span class="mensagem-campo"></span>
+                        </div>
+                    </div>
+
                     <div class="campo">
-                        <label for="senha">Senha <span class="obrigatorio">*</span></label>
-                        <input type="password" id="senha" name="senha" autocomplete="new-password" required>
+                        <label for="logradouro">Logradouro <span class="obrigatorio">*</span></label>
+                        <input type="text" id="logradouro" name="logradouro" value="<?= e($dados['logradouro']) ?>"
+                               autocomplete="street-address" maxlength="150" required>
                         <span class="mensagem-campo"></span>
-                        <span class="ajuda-campo">Minimo de 6 caracteres.</span>
                     </div>
+
+                    <div class="linha-campos">
+                        <div class="campo">
+                            <label for="complemento">Complemento</label>
+                            <input type="text" id="complemento" name="complemento" value="<?= e($dados['complemento']) ?>" maxlength="60">
+                            <span class="mensagem-campo"></span>
+                        </div>
+
+                        <div class="campo">
+                            <label for="bairro">Bairro <span class="obrigatorio">*</span></label>
+                            <input type="text" id="bairro" name="bairro" value="<?= e($dados['bairro']) ?>" maxlength="100" required>
+                            <span class="mensagem-campo"></span>
+                        </div>
+                    </div>
+
+                    <div class="linha-campos">
+                        <div class="campo">
+                            <label for="cidade">Cidade <span class="obrigatorio">*</span></label>
+                            <input type="text" id="cidade" name="cidade" value="<?= e($dados['cidade']) ?>" maxlength="100" required>
+                            <span class="mensagem-campo"></span>
+                        </div>
+
+                        <div class="campo">
+                            <label for="uf">UF <span class="obrigatorio">*</span></label>
+                            <select id="uf" name="uf" required>
+                                <option value="">--</option>
+                                <?php foreach (unidadesFederacao() as $sigla): ?>
+                                    <option value="<?= e($sigla) ?>" <?= $dados['uf'] === $sigla ? 'selected' : '' ?>><?= e($sigla) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <span class="mensagem-campo"></span>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset class="grupo-campos">
+                    <legend>Acesso</legend>
 
                     <div class="campo">
-                        <label for="confirmar_senha">Confirmar senha <span class="obrigatorio">*</span></label>
-                        <input type="password" id="confirmar_senha" name="confirmar_senha" autocomplete="new-password" required>
+                        <label for="login">Login <span class="obrigatorio">*</span></label>
+                        <input type="text" id="login" name="login" value="<?= e($dados['login']) ?>"
+                               autocomplete="username" minlength="6" maxlength="6" required>
                         <span class="mensagem-campo"></span>
+                        <span class="ajuda-campo">Exatamente 6 letras, sem numeros ou simbolos.</span>
                     </div>
-                </div>
 
-                <button type="submit" class="btn btn-bloco btn-grande">Criar conta</button>
+                    <div class="linha-campos">
+                        <div class="campo">
+                            <label for="senha">Senha <span class="obrigatorio">*</span></label>
+                            <input type="password" id="senha" name="senha" autocomplete="new-password"
+                                   minlength="8" maxlength="8" required>
+                            <span class="mensagem-campo"></span>
+                            <span class="ajuda-campo">Exatamente 8 letras.</span>
+                        </div>
+
+                        <div class="campo">
+                            <label for="confirmar_senha">Confirmar senha <span class="obrigatorio">*</span></label>
+                            <input type="password" id="confirmar_senha" name="confirmar_senha" autocomplete="new-password"
+                                   minlength="8" maxlength="8" required>
+                            <span class="mensagem-campo"></span>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div class="acoes-formulario">
+                    <button type="submit" class="btn btn-bloco btn-grande">Enviar</button>
+                    <button type="reset" class="btn btn-contorno btn-bloco btn-grande">Limpar tela</button>
+                </div>
             </form>
 
             <p class="autenticacao-rodape">
@@ -209,6 +372,6 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
 
 <div id="notificacoes"></div>
 <script src="<?= url('assets/js/main.js') ?>"></script>
-<script src="<?= url('assets/js/login.js') ?>"></script>
+<script src="<?= url('assets/js/cadastro.js') ?>"></script>
 </body>
 </html>

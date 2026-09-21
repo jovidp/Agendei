@@ -8,29 +8,36 @@ require_once __DIR__ . '/config/config.php';
 bloquearSeLogado();
 
 $erros = [];
-$email = '';
+$identificador = '';
+
+// Um desafio de 2FA em andamento nao pode ficar preso a uma tentativa de login anterior.
+cancelarSegundoFator();
 
 // Processa o formulário enviado antes de montar o HTML da página.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Confere o token da sessão antes de aceitar alterações enviadas pelo formulário.
     exigirCsrf();
 
-    $email = mb_strtolower(post('email'));
+    $identificador = mb_strtolower(post('identificador'));
     $senha = post('senha');
 
-    if ($email === '' || !validarEmail($email)) {
-        $erros[] = 'Informe um e-mail valido.';
+    if ($identificador === '') {
+        $erros[] = 'Informe seu login.';
     }
     if ($senha === '') {
         $erros[] = 'Informe sua senha.';
     }
 
     if ($erros === []) {
-        // Delega a conferência do e-mail, da senha e do status da conta à autenticação compartilhada.
-        $usuario = autenticar($email, $senha);
+        // Delega a conferência do login, da senha e do status da conta à autenticação compartilhada.
+        $usuario = autenticar($identificador, $senha);
 
         if ($usuario === null) {
-            $erros[] = 'E-mail ou senha incorretos.';
+            $erros[] = 'Login ou senha incorretos.';
+        } elseif (exigeSegundoFator($usuario)) {
+            // A sessao so e aberta depois do segundo fator: aqui fica apenas o desafio pendente.
+            iniciarSegundoFator($usuario, $identificador);
+            redirecionar('dois_fatores.php');
         } else {
             // Guarda a identidade autenticada antes de encaminhar ao destino permitido.
             registrarSessao($usuario);
@@ -92,9 +99,11 @@ $tituloPagina = 'Entrar | ' . $estabelecimento['nome'];
                 <?= campoCsrf() ?>
 
                 <div class="campo">
-                    <label for="email">E-mail</label>
-                    <input type="email" id="email" name="email" value="<?= e($email) ?>" autocomplete="email" required>
+                    <label for="identificador">Login</label>
+                    <input type="text" id="identificador" name="identificador" value="<?= e($identificador) ?>"
+                           autocomplete="username" maxlength="150" required>
                     <span class="mensagem-campo"></span>
+                    <span class="ajuda-campo">Use o login de 6 letras ou o e-mail cadastrado.</span>
                 </div>
 
                 <div class="campo">
@@ -108,7 +117,10 @@ $tituloPagina = 'Entrar | ' . $estabelecimento['nome'];
                     <a href="<?= url('recuperar_senha.php') ?>">Esqueci minha senha</a>
                 </div>
 
-                <button type="submit" class="btn btn-bloco btn-grande">Entrar</button>
+                <div class="acoes-formulario">
+                    <button type="submit" class="btn btn-bloco btn-grande">Entrar</button>
+                    <button type="reset" class="btn btn-contorno btn-bloco btn-grande">Limpar</button>
+                </div>
             </form>
 
             <p class="autenticacao-rodape">
