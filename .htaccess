@@ -1,0 +1,102 @@
+# =====================================================================
+# Agendei - regras de seguranca do servidor web (Apache)
+#
+# Esta e a primeira barreira: vale para qualquer arquivo servido, inclusive
+# os que o PHP nunca chega a ver. As pastas config/, includes/, models/,
+# scripts/ e tests/ tem .htaccess proprio negando tudo; aqui ficam as regras
+# da raiz e os cabecalhos comuns a todas as respostas.
+#
+# Em Nginx nao ha .htaccess: as mesmas regras precisam ir para o server block.
+# O equivalente esta documentado em SEGURANCA.md.
+#
+# Se o servidor passar a responder 500 logo apos publicar, a causa provavel e
+# AllowOverride restrito na hospedagem: "Options" e "LimitRequestBody" exigem
+# AllowOverride All. Comente essas duas linhas — os bloqueios de arquivo e os
+# cabecalhos continuam valendo sem elas. O Dockerfile do projeto ja libera
+# AllowOverride All, entao o problema so aparece em hospedagem compartilhada.
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# Listagem de diretorio
+# Sem isto, abrir /assets/ devolve o indice de tudo que existe na pasta.
+# ---------------------------------------------------------------------
+Options -Indexes -MultiViews
+
+# ---------------------------------------------------------------------
+# Arquivos que nunca devem ser baixados
+#
+# Os dumps do banco descrevem o esquema inteiro e acompanham o projeto na
+# raiz; os .md trazem caminhos, variaveis de ambiente e passos de implantacao.
+# Nenhum dos dois precisa existir para a web.
+# ---------------------------------------------------------------------
+<FilesMatch "\.(sql|md|log|bak|old|orig|swp|dist|ini|sh|yml|yaml|lock|json|example)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Arquivos ocultos (.env, .git, .htpasswd, .dockerignore...).
+<FilesMatch "^\.">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+# Pasta .git por inteiro: um repositorio exposto entrega o codigo-fonte todo.
+<IfModule mod_alias.c>
+    RedirectMatch 404 /\.git(/|$)
+</IfModule>
+
+# ---------------------------------------------------------------------
+# Cabecalhos de defesa
+#
+# O PHP ja envia esses cabecalhos em includes/seguranca.php. Repetir aqui
+# cobre o que o PHP nao processa: CSS, JS, imagens e paginas de erro do Apache.
+# ---------------------------------------------------------------------
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Cross-Origin-Opener-Policy "same-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+
+    # A versao do PHP no cabecalho so serve para quem procura versao vulneravel.
+    Header always unset X-Powered-By
+    Header always unset Server
+
+    # HSTS so vale quando a resposta ja veio por HTTPS. O "env=HTTPS" evita o
+    # bloco <If>, que nem toda hospedagem compartilhada aceita em .htaccess.
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+</IfModule>
+
+# ---------------------------------------------------------------------
+# Metodos HTTP
+# O sistema usa apenas GET, POST e HEAD. TRACE e usado em ataque de
+# rastreamento entre sites; os metodos de WebDAV nao tem uso nenhum aqui.
+# ---------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_METHOD} !^(GET|POST|HEAD)$
+    RewriteRule .* - [R=405,L]
+</IfModule>
+
+# ---------------------------------------------------------------------
+# Limite de corpo da requisicao
+# A unica entrada de arquivo e a logo, limitada a 512 KB pela aplicacao.
+# Dez megabytes deixam margem confortavel e cortam envio abusivo antes do PHP.
+# ---------------------------------------------------------------------
+LimitRequestBody 10485760
+
+# ---------------------------------------------------------------------
+# Paginas de erro sem rastro tecnico
+# ---------------------------------------------------------------------
+ErrorDocument 403 "Acesso negado."
+ErrorDocument 405 "Metodo nao permitido."

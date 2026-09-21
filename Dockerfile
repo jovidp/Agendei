@@ -12,6 +12,12 @@ RUN apt-get update \
 # Fora de localhost o sistema ja entra em producao sozinho; a variavel deixa explicito.
 ENV AGENDEI_AMBIENTE=producao
 
+# Render, Koyeb e Fly entregam a requisicao por um proxy: sem esta variavel o
+# sistema so enxerga o IP interno da plataforma e o controle de forca bruta
+# trataria todos os visitantes como uma origem so. Em servidor sem proxy na
+# frente, deixe a variavel desligada para nao confiar num cabecalho forjavel.
+ENV AGENDEI_PROXY_CONFIAVEL=1
+
 # As pastas sensiveis se protegem por .htaccess (Require all denied). O Apache so
 # respeita esses arquivos com AllowOverride liberado. Um bloco proprio do docroot
 # evita mexer no <Directory /> raiz e vence por ser mais especifico.
