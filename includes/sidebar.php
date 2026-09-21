@@ -37,7 +37,6 @@ $menus = [
         ['separador' => 'Sistema'],
         ['rotulo' => 'Consulta de usuarios', 'arquivo' => 'admin/usuarios.php', 'icone' => 'clientes'],
         ['rotulo' => 'Logs de autenticacao', 'arquivo' => 'admin/logs.php',     'icone' => 'historico'],
-        ['rotulo' => 'Modelo do BD',         'arquivo' => 'modelo_bd.php',      'icone' => 'relatorios'],
         ['separador' => 'Gestao'],
         ['rotulo' => 'Relatorios',    'arquivo' => 'admin/relatorios.php',    'icone' => 'relatorios'],
         ['rotulo' => 'Diferenciais',  'arquivo' => 'admin/diferenciais.php',  'icone' => 'novo'],
