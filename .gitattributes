@@ -1,0 +1,6 @@
+# Arquivos que rodam no Linux (container) precisam ficar em LF, mesmo com
+# core.autocrlf=true no Windows. O resto do projeto segue a config do repo.
+Dockerfile           text eol=lf
+docker-entrypoint.sh text eol=lf
+.dockerignore        text eol=lf
+*.sh                 text eol=lf

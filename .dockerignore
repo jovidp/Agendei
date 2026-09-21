@@ -1,0 +1,17 @@
+.git
+.gitignore
+.vscode
+.editorconfig
+# NUNCA colocar credenciais na imagem: em producao elas vem por variavel de ambiente.
+config/database.local.php
+# Esquemas e dumps nao devem ficar acessiveis pela web.
+banco.sql
+banco_postgres.sql
+banco_hospedagem.sql
+*.sql.gz
+*.sql.zip
+# Testes e ferramentas de desenvolvimento nao entram no servidor.
+tests
+scripts
+*.log
+*.md
