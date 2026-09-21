@@ -46,9 +46,11 @@ body {
 .btn-texto:hover {
   color: var(--cor-primaria-escura);
 }
-.btn-perigo,
+.btn-perigo {
+  color: var(--erro);
+}
 .btn-perigo:hover {
-  color: #fff;
+  color: var(--branco);
 }
 .sidebar-marca,
 .sidebar-perfil strong,
