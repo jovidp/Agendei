@@ -499,3 +499,14 @@
     flex: 1 1 auto;
   }
 }
+/* Auditoria de acessibilidade: alvos de toque so em telas de toque
+   (desktop inalterado) e movimento reduzido. */
+@media (pointer: coarse) {
+  .calendario-navegacao button {
+    width: 40px;
+    height: 40px;
+  }
+  .calendario-dia {
+    min-height: 40px;
+  }
+}

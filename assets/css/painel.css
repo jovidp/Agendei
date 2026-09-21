@@ -891,3 +891,16 @@
     height: 170px;
   }
 }
+/* Auditoria de acessibilidade: alvos de toque so em telas de toque
+   (desktop inalterado) e movimento reduzido. */
+@media (pointer: coarse) {
+  .botao-sidebar {
+    width: 40px;
+    height: 40px;
+  }
+  .agenda-visoes a {
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+  }
+}

@@ -208,3 +208,11 @@
   letter-spacing: 0.35em;
   text-align: center;
 }
+
+/* Auditoria de acessibilidade: alvos de toque so em telas de toque
+   (desktop inalterado) e movimento reduzido. */
+@media (pointer: coarse) {
+  .voltar-site {
+    padding: 10px 6px;
+  }
+}

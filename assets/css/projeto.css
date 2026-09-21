@@ -336,3 +336,10 @@ html[data-contraste="alto"] .barra-acessibilidade {
     display: none;
   }
 }
+/* Auditoria de acessibilidade: alvos de toque so em telas de toque
+   (desktop inalterado) e movimento reduzido. */
+@media (pointer: coarse) {
+  .barra-acessibilidade button {
+    height: 40px;
+  }
+}

@@ -13,7 +13,7 @@
   --fundo: #f5f1ea;
   --branco: #ffffff;
   --texto-principal: #2e3438;
-  --texto-secundario: #7a8288;
+  --texto-secundario: #636d72;
   --borda: #dde2e5;
   --borda-forte: #c8d0d4;
   --sucesso: #5faf8b;
@@ -591,7 +591,7 @@ legend {
   border-color: #c9e4d7;
 }
 .badge-inativo {
-  color: #8a9298;
+  color: #656d73;
   background-color: #f1f3f4;
   border-color: #e1e5e7;
 }
@@ -1539,4 +1539,26 @@ legend {
   color: #56606a;
   background: #edeff1;
   border-color: #dce0e3;
+}
+/* Auditoria de acessibilidade: alvos de toque so em telas de toque
+   (desktop inalterado) e movimento reduzido. */
+@media (pointer: coarse) {
+  .alerta-fechar,
+  .modal-fechar {
+    min-width: 40px;
+    min-height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .btn-pequeno,
+  .paginacao-links a,
+  .paginacao-links span {
+    min-height: 40px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .notificacao {
+    animation: none;
+  }
 }
