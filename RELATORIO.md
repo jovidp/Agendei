@@ -113,10 +113,13 @@ A área master reúne quatro grupos de tela:
   controle de força bruta; *Planos e limites* define tetos de profissionais,
   serviços e agendamentos por mês.
 
-Os limites do plano são conferidos na criação, nunca sobre o que já existe:
-baixar o plano de uma empresa não apaga nada, apenas impede o crescimento até
-que ela volte para dentro do teto. Empresa sem plano continua sem limite, que é
-o comportamento original do sistema.
+Os limites do plano são conferidos quando algo passa a ocupar uma vaga — no
+cadastro e também na reativação, já que religar um profissional ou um serviço
+desativado aumenta o total ativo exatamente como criar um novo. Nunca são
+aplicados retroativamente sobre o que já existe: baixar o plano de uma empresa
+não apaga nada, apenas impede o crescimento até que ela volte para dentro do
+teto. Empresa sem plano continua sem limite, que é o comportamento original do
+sistema.
 
 ## 4. Funcionamento Geral
 

@@ -26,6 +26,9 @@ class Plano
     /** Estado das tabelas: null = ainda nao verificado, false = indisponivel. */
     private static ?bool $tabelasProntas = null;
 
+    /** Vinculo de cada empresa ja consultado nesta requisicao. */
+    private static array $vinculos = [];
+
     // -----------------------------------------------------------------
     // Cadastro dos planos
     // -----------------------------------------------------------------
@@ -123,9 +126,19 @@ class Plano
     // Vinculo com o estabelecimento
     // -----------------------------------------------------------------
 
-    /** Plano vigente da empresa, com os dados do plano ja embutidos. */
+    /**
+     * Plano vigente da empresa, com os dados do plano ja embutidos.
+     *
+     * O resultado fica guardado pela duracao da requisicao: a tela de planos
+     * percorre todos os estabelecimentos perguntando o teto de tres recursos
+     * cada, e sem isso a mesma linha seria buscada quatro vezes por empresa.
+     */
     public static function doEstabelecimento(int $idEstabelecimento): ?array
     {
+        if (array_key_exists($idEstabelecimento, self::$vinculos)) {
+            return self::$vinculos[$idEstabelecimento];
+        }
+
         if (!self::disponivel()) {
             return null;
         }
@@ -137,7 +150,8 @@ class Plano
              WHERE ep.id_estabelecimento = ? LIMIT 1'
         );
         $q->execute([$idEstabelecimento]);
-        return $q->fetch() ?: null;
+
+        return self::$vinculos[$idEstabelecimento] = ($q->fetch() ?: null);
     }
 
     /** Plano de cada empresa, indexado pelo id do estabelecimento. */
@@ -164,20 +178,41 @@ class Plano
     {
         self::exigirTabelas();
 
+        // O vinculo acabou de mudar: o que foi lido antes nesta requisicao nao
+        // vale mais, e uma conferencia de teto logo em seguida usaria o plano
+        // antigo.
+        unset(self::$vinculos[$idEstabelecimento]);
+
         if ($idPlano === null) {
             $q = bd()->prepare('DELETE FROM estabelecimento_plano WHERE id_estabelecimento = ?');
             return $q->execute([$idEstabelecimento]);
         }
 
         // Um estabelecimento tem um plano de cada vez: a troca substitui o
-        // vinculo em vez de empilhar linhas.
-        bd()->prepare('DELETE FROM estabelecimento_plano WHERE id_estabelecimento = ?')->execute([$idEstabelecimento]);
+        // vinculo em vez de empilhar linhas. As duas gravacoes andam juntas,
+        // senao uma falha no meio deixaria a empresa sem plano nenhum — ou
+        // seja, sem limite, que e o oposto do que a troca pretendia.
+        $db = bd();
+        $db->beginTransaction();
 
-        $q = bd()->prepare(
-            'INSERT INTO estabelecimento_plano (id_estabelecimento, id_plano, data_inicio, observacao)
-             VALUES (?, ?, ?, ?)'
-        );
-        return $q->execute([$idEstabelecimento, $idPlano, date('Y-m-d H:i:s'), self::texto($observacao)]);
+        try {
+            $db->prepare('DELETE FROM estabelecimento_plano WHERE id_estabelecimento = ?')
+               ->execute([$idEstabelecimento]);
+
+            $q = $db->prepare(
+                'INSERT INTO estabelecimento_plano (id_estabelecimento, id_plano, data_inicio, observacao)
+                 VALUES (?, ?, ?, ?)'
+            );
+            $resultado = $q->execute([$idEstabelecimento, $idPlano, date('Y-m-d H:i:s'), self::texto($observacao)]);
+
+            $db->commit();
+            return $resultado;
+        } catch (Throwable $erro) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $erro;
+        }
     }
 
     // -----------------------------------------------------------------

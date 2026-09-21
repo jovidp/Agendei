@@ -70,7 +70,7 @@ A área master tem ainda:
 | **Auditoria** | O que cada conta master fez: empresa criada, acesso alterado, senha redefinida, bloqueio liberado — com data, alvo e origem |
 | **Contas master** | Criar e desativar contas globais. Duas regras não podem ser quebradas: a última conta ativa nunca é desligada e ninguém desliga a si mesmo |
 | **Uso da plataforma** | Movimento de cada empresa em 7, 30 ou 90 dias: agendamentos criados, clientes novos e último acesso. Separa quem está ativo de quem só tem cadastro antigo |
-| **Planos e limites** | Tetos de profissionais, serviços e agendamentos por mês. Campo em branco = ilimitado, e empresa sem plano continua sem teto |
+| **Planos e limites** | Tetos de profissionais, serviços e agendamentos por mês, conferidos no cadastro e na reativação. Campo em branco = ilimitado, e empresa sem plano continua sem teto |
 | **Saúde do sistema** | Banco, tabelas de apoio, versão do PHP, HTTPS, instalador exposto e empresas sem administrador — tudo sem abrir o servidor |
 
 Redefinir a senha de um administrador local pede a senha master de novo: a ação

@@ -64,8 +64,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Trata a mudança de status solicitada pelo formulário.
     if ($acao === 'status' && $idServico > 0) {
         $novoStatus = post('status') === 'ativo' ? 'ativo' : 'inativo';
-        Servico::alterarStatus($idServico, $novoStatus);
-        definirFlash('sucesso', $novoStatus === 'ativo' ? 'Servico ativado.' : 'Servico desativado.');
+
+        // Reativar aumenta o numero de servicos ativos tanto quanto cadastrar
+        // um novo: sem esta conferencia, desativar e reativar seria o caminho
+        // para passar por cima do teto do plano.
+        $limitePlano = $novoStatus === 'ativo' ? Plano::bloqueio('servicos', Contexto::id()) : null;
+
+        if ($limitePlano !== null) {
+            definirFlash('erro', $limitePlano);
+        } else {
+            Servico::alterarStatus($idServico, $novoStatus);
+            definirFlash('sucesso', $novoStatus === 'ativo' ? 'Servico ativado.' : 'Servico desativado.');
+        }
+
         redirecionar('admin/servicos.php');
     }
 

@@ -404,7 +404,10 @@ function registrarSessao(array $usuario): void
 function registrarSessaoMaster(array $master, bool $auditar = true): void
 {
     session_regenerate_id(true);
-    unset($_SESSION['usuario_id'], $_SESSION['estabelecimento_id'], $_SESSION['perfil_id']);
+    // usuario_login precisa sair junto: na volta de uma simulacao ele ainda
+    // guarda o login do administrador, e o topo do painel passaria a anunciar
+    // a conta errada para quem ja voltou a ser master.
+    unset($_SESSION['usuario_id'], $_SESSION['estabelecimento_id'], $_SESSION['perfil_id'], $_SESSION['usuario_login']);
     $_SESSION['master_id'] = (int) $master['id_master'];
     $_SESSION['usuario_nome'] = $master['nome'];
     $_SESSION['usuario_email'] = $master['email'];

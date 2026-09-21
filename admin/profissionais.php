@@ -115,8 +115,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $profissional = Profissional::porId($idProfissional);
         if ($profissional) {
             $novoStatus = post('status') === 'ativo' ? 'ativo' : 'inativo';
-            Usuario::alterarStatus((int) $profissional['id_usuario'], $novoStatus);
-            definirFlash('sucesso', $novoStatus === 'ativo' ? 'Profissional ativado.' : 'Profissional desativado.');
+
+            // Reativar ocupa uma vaga igual a de um cadastro novo: sem esta
+            // conferencia, desativar e reativar driblaria o teto do plano.
+            $limitePlano = $novoStatus === 'ativo' ? Plano::bloqueio('profissionais', Contexto::id()) : null;
+
+            if ($limitePlano !== null) {
+                definirFlash('erro', $limitePlano);
+            } else {
+                Usuario::alterarStatus((int) $profissional['id_usuario'], $novoStatus);
+                definirFlash('sucesso', $novoStatus === 'ativo' ? 'Profissional ativado.' : 'Profissional desativado.');
+            }
         }
         redirecionar('admin/profissionais.php');
     }

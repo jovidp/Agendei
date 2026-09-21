@@ -18,6 +18,27 @@ if (estaLogado() && usuarioId() !== null) {
     }
 }
 
+// Sair pelo menu durante uma simulacao encerra tudo de uma vez, e a auditoria
+// precisa receber o fim aqui tambem: senao o master entra no painel de um
+// cliente, sai por este caminho e a trilha fica aberta.
+//
+// A simulacao e desfeita antes de registrar, para que o evento saia no nome da
+// conta master que a abriu, e nao no do administrador que estava na tela.
+if (ehSimulacao()) {
+    $empresaSimulada = Contexto::dados()['nome'];
+    $contaSimulada = (string) ($_SESSION['usuario_email'] ?? '');
+    $idEmpresaSimulada = (int) ($_SESSION['estabelecimento_id'] ?? 0);
+
+    if (encerrarSimulacao() !== null) {
+        LogMaster::registrar('simulacao_fim', [
+            'estabelecimento'      => $idEmpresaSimulada,
+            'estabelecimento_nome' => (string) $empresaSimulada,
+            'alvo'                 => $contaSimulada,
+            'detalhe'              => 'encerrada pelo logout do painel',
+        ]);
+    }
+}
+
 // Descarta tambem um desafio de 2FA que tenha ficado pendente.
 cancelarSegundoFator();
 encerrarSessao();

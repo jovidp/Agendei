@@ -174,8 +174,11 @@ require RAIZ . '/includes/painel_header.php';
 <div class="cartao">
     <div class="cartao-cabecalho"><h3>Entrar no painel do estabelecimento</h3><small>Para atender um chamado vendo a mesma tela do cliente</small></div>
     <div class="cartao-corpo">
+        <?php $contasAtivas = array_filter($administradores, static fn (array $a): bool => $a['status'] === 'ativo'); ?>
         <?php if ($selecionado['status'] !== 'ativo'): ?>
             <p class="ajuda-campo">O estabelecimento está inativo. Ative o acesso dele antes de abrir o painel.</p>
+        <?php elseif ($contasAtivas === []): ?>
+            <p class="ajuda-campo">Nenhuma conta administrativa ativa neste estabelecimento. Ative uma conta ou crie outra para poder entrar.</p>
         <?php else: ?>
             <form method="post" action="<?= url('master/simular.php') ?>"><?= campoCsrf() ?>
                 <input type="hidden" name="acao" value="entrar">
@@ -184,10 +187,8 @@ require RAIZ . '/includes/painel_header.php';
                     <div class="campo">
                         <label for="id_usuario_simular">Entrar como</label>
                         <select id="id_usuario_simular" name="id_usuario" required>
-                            <?php foreach ($administradores as $admin): ?>
-                                <?php if ($admin['status'] === 'ativo'): ?>
-                                    <option value="<?= (int) $admin['id_usuario'] ?>"><?= e($admin['nome']) ?> — <?= e($admin['email']) ?></option>
-                                <?php endif; ?>
+                            <?php foreach ($contasAtivas as $admin): ?>
+                                <option value="<?= (int) $admin['id_usuario'] ?>"><?= e($admin['nome']) ?> — <?= e($admin['email']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>

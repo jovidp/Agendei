@@ -271,6 +271,11 @@ verificar('a sessao volta a ser master', perfil(), 'master');
 verificar('a marca de simulacao sai da sessao', ehSimulacao(), false);
 verificar('a sessao perde o vinculo com a empresa', isset($_SESSION['usuario_id']), false);
 
+// O topo do painel mostra usuario_login. Se ele sobrevivesse a volta, o master
+// continuaria anunciando a conta do administrador que acabou de deixar.
+verificar('a sessao nao herda o login do administrador', isset($_SESSION['usuario_login']), false);
+verificar('o topo volta a identificar o master', usuarioLogin(), 'master@agendei.com.br');
+
 // -------------------------------------------------------------------------
 // Uso por estabelecimento
 // -------------------------------------------------------------------------
