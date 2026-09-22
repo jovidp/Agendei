@@ -58,14 +58,18 @@ class Estabelecimento
         Contexto::recarregar();
     }
 
-    /** Cria uma empresa e sua primeira conta administrativa de forma atômica. */
+    /**
+     * Cria uma empresa e sua primeira conta administrativa de forma atômica.
+     * 'status' e opcional: o cadastro publico cria a empresa inativa ate o
+     * master aprovar (ver Solicitacao).
+     */
     public static function contratar(array $dados): int
     {
         $db = bd();
         $db->beginTransaction();
         try {
-            $q = $db->prepare('INSERT INTO estabelecimento (nome, slug) VALUES (?, ?)');
-            $q->execute([$dados['estabelecimento'], $dados['slug']]);
+            $q = $db->prepare('INSERT INTO estabelecimento (nome, slug, status) VALUES (?, ?, ?)');
+            $q->execute([$dados['estabelecimento'], $dados['slug'], ($dados['status'] ?? 'ativo') === 'inativo' ? 'inativo' : 'ativo']);
             $id = (int) $db->lastInsertId();
             $q = $db->prepare('INSERT INTO usuarios (id_estabelecimento, nome, email, senha_hash, tipo) VALUES (?, ?, ?, ?, \'admin\')');
             $q->execute([$id, $dados['nome'], $dados['email'], password_hash($dados['senha'], PASSWORD_DEFAULT)]);

@@ -83,7 +83,7 @@ $recursos = [
             <h1><?= e(MARCA_SLOGAN) ?></h1>
             <p>Agendamento online para quem atende e para quem marca. O cliente escolhe o horario, o sistema confirma e lembra, e a agenda da empresa fica sempre em dia.</p>
             <div class="heroi-acoes">
-                <a href="<?= url('entrar.php') ?>" class="btn btn-grande btn-claro">Entrar na minha conta</a>
+                <a href="<?= url('cadastro_empresa.php') ?>" class="btn btn-grande btn-claro">Cadastrar minha empresa</a>
                 <a href="#como-funciona" class="btn btn-grande btn-vazado">Ver como funciona</a>
             </div>
         </div>
@@ -210,9 +210,12 @@ $recursos = [
         <div class="chamada-final margem-topo">
             <div>
                 <h2><?= e(MARCA_SLOGAN) ?></h2>
-                <p>Ja tem conta em uma empresa que usa o Agendei? Entre com o seu e-mail.</p>
+                <p>Cadastre sua empresa em dois minutos. A gente confere e libera o acesso.</p>
             </div>
-            <a href="<?= url('entrar.php') ?>" class="btn btn-grande">Entrar</a>
+            <div class="chamada-acoes">
+                <a href="<?= url('cadastro_empresa.php') ?>" class="btn btn-grande">Cadastrar minha empresa</a>
+                <a href="<?= url('entrar.php') ?>" class="btn btn-grande btn-vazado">Ja tenho conta</a>
+            </div>
         </div>
     </div>
 </section>
@@ -231,6 +234,7 @@ $recursos = [
             <div>
                 <h4>Acesso</h4>
                 <ul class="rodape-lista">
+                    <li><a href="<?= url('cadastro_empresa.php') ?>">Cadastrar empresa</a></li>
                     <li><a href="<?= url('entrar.php') ?>">Entrar</a></li>
                     <li><a href="<?= url('master/login.php') ?>">Area master</a></li>
                 </ul>

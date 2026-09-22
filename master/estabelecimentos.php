@@ -40,6 +40,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 redirecionar('master/estabelecimentos.php?acao=ver&id=' . $id);
             }
         }
+        if ($acao === 'aprovar_cadastro' || $acao === 'recusar_cadastro') {
+            $idSolicitacao = (int) post('id_solicitacao');
+            $solicitacao = Solicitacao::porId($idSolicitacao);
+            if (!$solicitacao || $solicitacao['status'] !== 'pendente') {
+                $erros[] = 'Solicitação de cadastro não encontrada ou já decidida.';
+            } elseif ($acao === 'aprovar_cadastro') {
+                Solicitacao::aprovar($idSolicitacao);
+                LogMaster::registrar('cadastro_aprovado', [
+                    'estabelecimento'      => (int) $solicitacao['id_estabelecimento'],
+                    'estabelecimento_nome' => $solicitacao['estabelecimento_nome'],
+                    'alvo'                 => $solicitacao['email'],
+                    'detalhe'              => 'endereço ' . $solicitacao['slug'],
+                ]);
+                definirFlash('sucesso', 'Cadastro aprovado. Avise o responsável que o acesso está liberado.');
+                redirecionar('master/estabelecimentos.php?acao=ver&id=' . (int) $solicitacao['id_estabelecimento']);
+            } else {
+                // Recusar apaga a empresa e a conta do responsável: só a solicitação fica, como histórico.
+                Solicitacao::recusar($idSolicitacao);
+                LogMaster::registrar('cadastro_recusado', [
+                    'estabelecimento_nome' => $solicitacao['estabelecimento_nome'],
+                    'alvo'                 => $solicitacao['email'],
+                    'detalhe'              => 'endereço ' . $solicitacao['slug'],
+                ]);
+                definirFlash('sucesso', 'Cadastro recusado e dados removidos.');
+                redirecionar('master/estabelecimentos.php');
+            }
+        }
         if ($acao === 'excluir') {
             $id = (int) post('id_estabelecimento');
             $empresa = Estabelecimento::porIdGlobal($id);
@@ -153,6 +180,8 @@ $idSelecionado = $acaoTela === 'ver' ? (int) get('id') : (int) post('id_estabele
 $selecionado = $idSelecionado > 0 ? Estabelecimento::porIdGlobal($idSelecionado) : null;
 $administradores = $selecionado ? Estabelecimento::administradores((int) $selecionado['id_estabelecimento']) : [];
 $empresas = Estabelecimento::listarTodos();
+$solicitacoes = Solicitacao::pendentes();
+$empresasPendentes = Solicitacao::empresasPendentes();
 $tituloPagina = 'Estabelecimentos';
 $subtituloTopo = 'Cada empresa possui seus próprios administradores, clientes, equipe e serviços';
 $acoesTopo = $acaoTela === 'novo' ? '<a class="btn btn-contorno btn-pequeno" href="' . url('master/estabelecimentos.php') . '">Voltar</a>' : '<a class="btn btn-pequeno" href="' . url('master/estabelecimentos.php?acao=novo') . '">Novo estabelecimento</a>';
@@ -267,6 +296,34 @@ require RAIZ . '/includes/painel_header.php';
     </div>
 </div>
 <?php else: ?>
+<?php if ($solicitacoes !== []): ?>
+<div class="cartao" id="cadastros-pendentes">
+    <div class="cartao-cabecalho"><h3>Cadastros aguardando aprovação</h3><small>Empresas que se cadastraram pela página inicial. Aprovar libera o login; recusar apaga a empresa e a conta.</small></div>
+    <div class="tabela-area"><table class="tabela"><thead><tr><th>Empresa</th><th>Responsável</th><th>Contato</th><th>Mensagem</th><th>Quando</th><th class="coluna-acoes">Decisão</th></tr></thead><tbody>
+    <?php foreach ($solicitacoes as $solicitacao): ?>
+    <tr>
+        <td class="celula-principal"><?= e($solicitacao['estabelecimento_nome']) ?><span class="celula-secundaria"><?= e($solicitacao['slug']) ?></span></td>
+        <td><?= e($solicitacao['responsavel']) ?></td>
+        <td class="celula-principal"><?= e($solicitacao['email']) ?><span class="celula-secundaria"><?= e((string) ($solicitacao['telefone'] ?? '') ?: '-') ?></span></td>
+        <td><?= e((string) ($solicitacao['mensagem'] ?? '') ?: '-') ?></td>
+        <td><?= e(formatarData(substr((string) $solicitacao['data_solicitacao'], 0, 10))) ?></td>
+        <td class="coluna-acoes"><div class="acoes-tabela">
+            <form method="post"><?= campoCsrf() ?>
+                <input type="hidden" name="acao" value="aprovar_cadastro">
+                <input type="hidden" name="id_solicitacao" value="<?= (int) $solicitacao['id_solicitacao'] ?>">
+                <button class="btn btn-secundario btn-pequeno" type="submit" data-confirmar="Aprovar o cadastro e liberar o login desta empresa?">Aprovar</button>
+            </form>
+            <form method="post"><?= campoCsrf() ?>
+                <input type="hidden" name="acao" value="recusar_cadastro">
+                <input type="hidden" name="id_solicitacao" value="<?= (int) $solicitacao['id_solicitacao'] ?>">
+                <button class="btn btn-perigo btn-pequeno" type="submit" data-confirmar="Recusar o cadastro? A empresa e a conta do responsável serão apagadas.">Recusar</button>
+            </form>
+        </div></td>
+    </tr>
+    <?php endforeach; ?>
+    </tbody></table></div>
+</div>
+<?php endif; ?>
 <div class="cartao"><div class="tabela-area"><table class="tabela"><thead><tr><th>Estabelecimento</th><th>Administrador</th><th>Clientes</th><th>Profissionais</th><th>Serviços</th><th>Status</th><th>Ações</th></tr></thead><tbody>
 <?php foreach ($empresas as $empresa): ?>
 <tr>
@@ -275,7 +332,7 @@ require RAIZ . '/includes/painel_header.php';
     <td><?= (int) $empresa['total_clientes'] ?></td>
     <td><?= (int) $empresa['total_profissionais'] ?></td>
     <td><?= (int) $empresa['total_servicos'] ?></td>
-    <td><?= badgeStatus($empresa['status']) ?></td>
+    <td><?= in_array((int) $empresa['id_estabelecimento'], $empresasPendentes, true) ? '<span class="badge badge-agendado">Aguardando aprovação</span>' : badgeStatus($empresa['status']) ?></td>
     <td><div class="acoes-tabela">
         <a class="btn btn-contorno btn-pequeno" href="<?= url('master/estabelecimentos.php?acao=ver&id=' . $empresa['id_estabelecimento']) ?>">Detalhes</a>
         <form method="post"><?= campoCsrf() ?>

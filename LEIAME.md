@@ -102,6 +102,7 @@ funcionando, mas ficam fora do escopo avaliado.
 |---------------------|--------------------------|-----------------|
 | Principal           | `index.php`              | Master e comum  |
 | Cadastro de usuario | `cadastro.php`           | Visitante       |
+| Cadastro de empresa | `cadastro_empresa.php`   | Visitante       |
 | Login               | `login.php`              | Visitante       |
 | Erro                | `erro.php`               | Master e comum  |
 | 2FA                 | `dois_fatores.php`       | Master e comum  |
@@ -222,7 +223,9 @@ modo de alto contraste.
   /models          Regras de acesso ao banco (uma classe por entidade)
   /profissional    Painel do profissional (agenda, horarios, bloqueios, perfil)
   banco.sql        Estrutura e dados iniciais do banco
-  index.php        Pagina publica do estabelecimento
+  index.php        Pagina inicial do produto (sem link de empresa) ou entrada da empresa
+  entrar.php       Entrada geral: e-mail e senha, sem saber o link da empresa
+  cadastro_empresa.php  Cadastro de empresa pela pagina inicial, aprovado pelo master
   login.php / cadastro.php / logout.php / recuperar_senha.php / redefinir_senha.php
 ```
 
@@ -263,6 +266,24 @@ O script cria a tabela `filiais`, uma filial **Matriz** para cada
 estabelecimento e vincula a ela os profissionais e agendamentos que ja
 existiam. Bancos novos ja nascem com a Matriz (`banco.sql` e
 `banco_postgres.sql`).
+
+## Cadastro de empresas pela pagina inicial
+
+A pagina inicial oferece **Cadastrar minha empresa** (`cadastro_empresa.php`):
+nome da empresa, endereco exclusivo, responsavel, e-mail, telefone e senha. O
+envio cria a empresa **inativa** e a conta administrativa do responsavel, e
+registra uma solicitacao (`models/Solicitacao.php`, tabela
+`solicitacoes_cadastro`, criada na primeira chamada). Ate a decisao:
+
+- o login da empresa explica que o cadastro aguarda aprovacao;
+- a entrada geral nao aceita a conta, porque a empresa esta inativa;
+- o master ve o pedido em **Estabelecimentos > Cadastros aguardando aprovacao**
+  e um aviso na visao geral.
+
+**Aprovar** ativa a empresa e libera o login. **Recusar** apaga a empresa e a
+conta; a solicitacao fica como historico. As tres acoes (pedido, aprovacao e
+recusa) entram na auditoria master. O envio e limitado por origem
+(`cadastro_empresa_ip`) para nao encher a fila com pedidos automatizados.
 
 ## Regras de negocio garantidas pelo servidor
 

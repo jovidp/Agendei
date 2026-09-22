@@ -43,6 +43,9 @@ function politicaLimites(): array
         'recuperar_ip'   => ['limite' => 10, 'janela' => 3600, 'espera' => 1800],
         // Cadastro publico: freia a criacao automatizada de contas.
         'cadastro_ip'    => ['limite' => 10, 'janela' => 3600, 'espera' => 1800],
+        // Cadastro de empresa pela pagina inicial: cada envio cria uma empresa
+        // inativa que o master precisa avaliar, por isso a tolerancia e menor.
+        'cadastro_empresa_ip' => ['limite' => 5, 'janela' => 3600, 'espera' => 3600],
         // Chave do instalador: balde proprio, para que tentativas aqui nao
         // tranquem o login master (nem o contrario).
         'instalador_ip'  => ['limite' => 5,  'janela' => 3600, 'espera' => 3600],

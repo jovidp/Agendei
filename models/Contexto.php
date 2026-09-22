@@ -43,6 +43,9 @@ class Contexto
             $q = bd()->query('SELECT * FROM estabelecimento WHERE status = \'ativo\' ORDER BY id_estabelecimento LIMIT 1');
         }
         $registro = $q->fetch();
+        if (!$registro && $slug !== '' && Solicitacao::pendentePorSlug($slug)) {
+            self::falhar(403, 'Este estabelecimento ainda aguarda a aprovação do cadastro. O responsável será avisado quando o acesso for liberado.');
+        }
         if (!$registro) self::falhar(404, 'Estabelecimento não encontrado.');
         if ($idSessao > 0 && $slug !== '' && $slug !== $registro['slug']) {
             self::falhar(403, 'Sua sessão pertence a outro estabelecimento. Saia da conta antes de acessar outro link.');

@@ -155,6 +155,27 @@
   background-color: #5faf8b;
 }
 
+/* Confirmacao do cadastro de empresa: o link futuro em destaque. */
+.cadastro-recebido {
+  margin-bottom: 22px;
+  font-size: 14.5px;
+}
+.cadastro-recebido p {
+  margin-bottom: 10px;
+}
+.cadastro-link {
+  padding: 12px 14px;
+  border-radius: var(--raio);
+  background-color: var(--cor-primaria-clara);
+  color: var(--cor-primaria);
+  font-weight: 600;
+  word-break: break-all;
+}
+.opcional {
+  font-weight: 400;
+  color: var(--texto-secundario);
+}
+
 /* Define o espaço interno dedicado aos campos e às ações de autenticação. */
 .autenticacao-formulario {
   padding: 34px 32px;
