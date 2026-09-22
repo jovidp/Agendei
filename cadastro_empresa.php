@@ -98,10 +98,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
             limparFalhas('cadastro_empresa_ip', ipCliente());
 
+            // Avisos por e-mail: o do responsavel confirma o recebimento; o dos
+            // masters chama para decidir. Sem e-mail configurado, nada quebra:
+            // a tela de confirmacao ja diz tudo e a fila fica no painel master.
+            $solicitacao = Solicitacao::porId($idSolicitacao) ?? [];
+            $emailEnviado = false;
+            if ($solicitacao !== [] && Email::configurado()) {
+                [$assunto, $texto, $html] = emailCadastroRecebido($solicitacao);
+                $emailEnviado = Email::enviar($solicitacao['email'], $assunto, $texto, $html, $solicitacao['responsavel']);
+                [$assunto, $texto, $html] = emailCadastroParaMaster($solicitacao);
+                foreach (Master::listar() as $master) {
+                    if (($master['status'] ?? 'ativo') === 'ativo' && validarEmail((string) ($master['email'] ?? ''))) {
+                        Email::enviar($master['email'], $assunto, $texto, $html, (string) $master['nome']);
+                    }
+                }
+            }
+
             $_SESSION['cadastro_empresa_recebido'] = [
                 'estabelecimento' => $dados['estabelecimento'],
                 'slug'            => $dados['slug'],
                 'email'           => $dados['email'],
+                'email_enviado'   => $emailEnviado,
             ];
             redirecionar('cadastro_empresa.php');
         } catch (PDOException $erro) {
@@ -146,7 +163,11 @@ $tituloPagina = 'Cadastrar empresa | ' . NOME_SISTEMA;
                 <p class="subtitulo">Obrigado, <?= e($recebido['estabelecimento']) ?>. Agora e com a gente.</p>
 
                 <div class="cadastro-recebido">
-                    <p>Vamos analisar o cadastro e avisar pelo e-mail <strong><?= e($recebido['email']) ?></strong> assim que o acesso for liberado. Costuma ser rapido.</p>
+                    <?php if (!empty($recebido['email_enviado'])): ?>
+                        <p>Enviamos uma confirmacao para <strong><?= e($recebido['email']) ?></strong>. Vamos analisar o cadastro e avisar pelo mesmo e-mail assim que o acesso for liberado. Costuma ser rapido.</p>
+                    <?php else: ?>
+                        <p>Vamos analisar o cadastro e avisar pelo e-mail <strong><?= e($recebido['email']) ?></strong> ou pelo telefone informado assim que o acesso for liberado. Costuma ser rapido.</p>
+                    <?php endif; ?>
                     <p>Depois da aprovacao, o endereco da sua empresa sera:</p>
                     <p class="cadastro-link"><?= e(BASE_URL . '/login.php?estabelecimento=' . rawurlencode($recebido['slug'])) ?></p>
                     <p>A senha e a que voce acabou de escolher. Guarde as duas informacoes.</p>

@@ -4,6 +4,7 @@
 .editorconfig
 # NUNCA colocar credenciais na imagem: em producao elas vem por variavel de ambiente.
 config/database.local.php
+config/email.local.php
 # Esquemas e dumps nao devem ficar acessiveis pela web.
 banco.sql
 banco_postgres.sql

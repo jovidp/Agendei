@@ -285,6 +285,20 @@ conta; a solicitacao fica como historico. As tres acoes (pedido, aprovacao e
 recusa) entram na auditoria master. O envio e limitado por origem
 (`cadastro_empresa_ip`) para nao encher a fila com pedidos automatizados.
 
+## E-mail
+
+O sistema envia e-mail por SMTP, sem dependencias (`models/Email.php`), para:
+confirmar o cadastro de empresa ao responsavel e avisar os masters; comunicar a
+aprovacao ou a recusa; e entregar o link de recuperacao de senha. As mensagens
+ficam em `includes/emails.php`.
+
+A configuracao vem de variaveis de ambiente (`AGENDEI_EMAIL_HOST`, `_PORTA`,
+`_SEGURANCA`, `_USUARIO`, `_SENHA`, `_REMETENTE`, `_NOME`) ou de
+`config/email.local.php` (nao versionado). Sem configuracao nada quebra: os
+envios devolvem falso, o motivo vai para o log e as telas mostram o caminho
+manual. Em **Master > Saude do sistema** ha um botao para enviar um e-mail de
+teste. Passo a passo com Gmail ou Brevo em [DEPLOY.md](DEPLOY.md).
+
 ## Regras de negocio garantidas pelo servidor
 
 - Sem dois agendamentos no mesmo horario para o mesmo profissional.

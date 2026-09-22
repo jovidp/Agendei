@@ -1,5 +1,9 @@
 <?php
-/** Gera o token e o link de recuperação de senha; o envio por mensagem ainda depende de integração. */
+/**
+ * Gera o token e o link de recuperação de senha e o envia por e-mail
+ * (models/Email.php). Sem e-mail configurado, o link aparece na tela só em
+ * desenvolvimento; em produção a tela avisa que o envio não está disponível.
+ */
 
 // Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
 // Pagina de entrada local: nunca roda sob a identidade master (ver config.php).
@@ -12,6 +16,7 @@ bloquearSeLogado();
 $enviado = false;
 $linkGerado = null;
 $erro = '';
+$emailDisponivel = Email::configurado();
 
 // Processa o formulário enviado antes de montar o HTML da página.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -37,11 +42,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($usuario && $usuario['status'] === 'ativo') {
             $token = Usuario::gerarTokenRecuperacao((int) $usuario['id_usuario']);
-            $link  = url('redefinir_senha.php?token=' . $token);
+            $link  = urlAbsoluta('redefinir_senha.php?token=' . $token);
 
+            $entregue = false;
+            if ($emailDisponivel) {
+                [$assunto, $texto, $html] = emailRecuperacaoSenha((string) $usuario['nome'], $link, (string) Estabelecimento::dados()['nome']);
+                $entregue = Email::enviar($email, $assunto, $texto, $html, (string) $usuario['nome']);
+            }
 
-            // Exibe o link apenas em desenvolvimento; o envio por e-mail ou WhatsApp ainda não está implementado.
-            if (AMBIENTE === 'desenvolvimento') {
+            // Em desenvolvimento o link aparece na tela quando não foi por e-mail.
+            if (!$entregue && AMBIENTE === 'desenvolvimento') {
                 $linkGerado = $link;
             }
         }
@@ -80,16 +90,24 @@ $estabelecimento = Estabelecimento::dados();
             <?php endif; ?>
 
             <?php if ($enviado): ?>
-                <div class="alerta alerta-info">
-                    <span class="alerta-texto">
-                        Se este e-mail estiver cadastrado, o link de redefinicao sera enviado em instantes.
-                    </span>
-                </div>
+                <?php if ($emailDisponivel || $linkGerado !== null): ?>
+                    <div class="alerta alerta-info">
+                        <span class="alerta-texto">
+                            Se este e-mail estiver cadastrado, o link de redefinicao sera enviado em instantes. Confira tambem a caixa de spam.
+                        </span>
+                    </div>
+                <?php else: ?>
+                    <div class="alerta alerta-aviso">
+                        <span class="alerta-texto">
+                            O envio de e-mail nao esta disponivel neste momento. Fale com o estabelecimento para redefinir a sua senha.
+                        </span>
+                    </div>
+                <?php endif; ?>
 
                 <?php if ($linkGerado !== null): ?>
                     <div class="credenciais-demo">
                         <strong>Ambiente de desenvolvimento</strong><br>
-                        O envio por e-mail ainda nao esta configurado. Use o link abaixo:<br>
+                        O link nao foi por e-mail. Use-o aqui:<br>
                         <a href="<?= e($linkGerado) ?>"><?= e($linkGerado) ?></a>
                     </div>
                 <?php endif; ?>

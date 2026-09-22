@@ -53,7 +53,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'alvo'                 => $solicitacao['email'],
                     'detalhe'              => 'endereço ' . $solicitacao['slug'],
                 ]);
-                definirFlash('sucesso', 'Cadastro aprovado. Avise o responsável que o acesso está liberado.');
+                [$assunto, $texto, $html] = emailCadastroAprovado($solicitacao);
+                $avisado = Email::configurado() && Email::enviar($solicitacao['email'], $assunto, $texto, $html, $solicitacao['responsavel']);
+                definirFlash('sucesso', $avisado
+                    ? 'Cadastro aprovado. O responsável recebeu o aviso por e-mail.'
+                    : 'Cadastro aprovado. Avise o responsável que o acesso está liberado (o e-mail automático não foi enviado).');
                 redirecionar('master/estabelecimentos.php?acao=ver&id=' . (int) $solicitacao['id_estabelecimento']);
             } else {
                 // Recusar apaga a empresa e a conta do responsável: só a solicitação fica, como histórico.
@@ -63,7 +67,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'alvo'                 => $solicitacao['email'],
                     'detalhe'              => 'endereço ' . $solicitacao['slug'],
                 ]);
-                definirFlash('sucesso', 'Cadastro recusado e dados removidos.');
+                [$assunto, $texto, $html] = emailCadastroRecusado($solicitacao);
+                $avisado = Email::configurado() && Email::enviar($solicitacao['email'], $assunto, $texto, $html, $solicitacao['responsavel']);
+                definirFlash('sucesso', $avisado
+                    ? 'Cadastro recusado e dados removidos. O responsável foi avisado por e-mail.'
+                    : 'Cadastro recusado e dados removidos.');
                 redirecionar('master/estabelecimentos.php');
             }
         }

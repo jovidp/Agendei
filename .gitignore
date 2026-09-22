@@ -2,6 +2,7 @@
 # Override local de banco (nao versionado). Requer o ajuste em config/database.php
 # para incluir este arquivo quando ele existir.
 config/database.local.php
+config/email.local.php
 .env
 .env.*
 !.env.example

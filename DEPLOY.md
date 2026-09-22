@@ -61,6 +61,11 @@ Ainda na criacao do servico, abra **Environment / Advanced** e adicione:
 
 `AGENDEI_AMBIENTE=producao` ja vem embutido na imagem; nao precisa repetir.
 
+Para o sistema mandar e-mail (aviso de cadastro de empresa, aprovacao e
+recuperacao de senha), adicione tambem as variaveis da secao
+[E-mail](#e-mail-avisos-e-recuperacao-de-senha), mais abaixo. Sem elas o
+sistema funciona, so nao avisa por e-mail.
+
 ### 5. Deploy
 
 Clique em **Create Web Service**. O Render monta a imagem e sobe. Ao terminar,
@@ -74,6 +79,55 @@ rodar o `instalar.php` de novo. Faca login e **troque as senhas padrao**.
 > para o Supabase (veja [SUPABASE.md](SUPABASE.md), passo 3). O script cria a
 > tabela `filiais` e a unidade **Matriz**. Banco novo, importado do
 > `banco_postgres.sql`, ja vem com ela.
+
+---
+
+## E-mail: avisos e recuperacao de senha
+
+O Render nao tem servidor de e-mail e `mail()` nao funciona la. O Agendei
+fala SMTP direto com um provedor, sem instalar nada. Qualquer conta SMTP
+serve; duas opcoes gratuitas:
+
+- **Gmail** (ate ~500 mensagens/dia): ative a verificacao em duas etapas na
+  conta Google e crie uma *senha de app* em myaccount.google.com -> Seguranca
+  -> Senhas de app. Servidor `smtp.gmail.com`, porta `587`, usuario e o
+  e-mail completo, senha e a senha de app (16 letras).
+- **Brevo** (ate 300/dia, sem cartao): em brevo.com crie a conta, va em
+  *SMTP & API -> SMTP* e gere uma chave. Servidor `smtp-relay.brevo.com`,
+  porta `587`, usuario e o login mostrado la, senha e a chave SMTP. O
+  remetente precisa ser um e-mail validado na Brevo.
+
+No Render, em **Environment**, adicione:
+
+| Chave | Valor |
+|---|---|
+| `AGENDEI_EMAIL_HOST` | `smtp.gmail.com` ou `smtp-relay.brevo.com` |
+| `AGENDEI_EMAIL_PORTA` | `587` |
+| `AGENDEI_EMAIL_SEGURANCA` | `tls` (587) ou `ssl` (465); pode omitir |
+| `AGENDEI_EMAIL_USUARIO` | o usuario do SMTP |
+| `AGENDEI_EMAIL_SENHA` | a senha de app ou a chave SMTP |
+| `AGENDEI_EMAIL_REMETENTE` | o e-mail que aparece como remetente |
+| `AGENDEI_EMAIL_NOME` | `Agendei` (opcional) |
+
+Salve: o Render reinicia o servico sozinho. Depois entre na area master, abra
+**Saude do sistema** e clique em **Enviar e-mail de teste**. A mensagem vai
+para o e-mail da sua conta master; se nao chegar, a tela mostra o motivo que
+o servidor SMTP devolveu.
+
+Na sua maquina, em vez de variaveis, crie `config/email.local.php` (o
+`.gitignore` ja o mantem fora do GitHub):
+
+```php
+<?php
+return [
+    'host'      => 'smtp.gmail.com',
+    'porta'     => 587,
+    'usuario'   => 'voce@gmail.com',
+    'senha'     => 'senha-de-app',
+    'remetente' => 'voce@gmail.com',
+    'nome'      => 'Agendei',
+];
+```
 
 ---
 

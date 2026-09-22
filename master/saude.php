@@ -13,7 +13,22 @@ define('AREA_MASTER', true);
 require_once __DIR__ . '/../config/config.php';
 exigirLogin('master');
 
+// A unica acao da tela: mandar um e-mail de teste para o proprio master. Nao
+// altera nada no sistema, so confirma que a configuracao entrega.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && post('acao') === 'testar_email') {
+    exigirCsrf();
+    $destino = (string) ($_SESSION['usuario_email'] ?? '');
+    [$assunto, $texto, $html] = emailTeste((string) ($_SESSION['usuario_nome'] ?? ''));
+    if (Email::enviar($destino, $assunto, $texto, $html)) {
+        definirFlash('sucesso', 'E-mail de teste enviado para ' . $destino . '. Confira a caixa de entrada e o spam.');
+    } else {
+        definirFlash('erro', 'Nao foi possivel enviar: ' . Email::ultimoErro());
+    }
+    redirecionar('master/saude.php');
+}
+
 $verificacoes = Saude::verificacoes();
+$emailConfig = Email::configuracao();
 $resumo = Saude::resumo($verificacoes);
 
 $tituloPagina  = 'Saude do sistema';
@@ -60,6 +75,24 @@ require RAIZ . '/includes/painel_header.php';
             <?php endforeach; ?>
             </tbody>
         </table>
+    </div>
+</div>
+<div class="cartao">
+    <div class="cartao-cabecalho"><h3>Envio de e-mail</h3><small>Configurado por variaveis de ambiente ou config/email.local.php</small></div>
+    <div class="cartao-corpo">
+        <?php if (Email::configurado()): ?>
+            <p><strong>Servidor:</strong> <?= e($emailConfig['host']) ?>:<?= (int) $emailConfig['porta'] ?> (<?= e($emailConfig['seguranca']) ?>)
+               &middot; <strong>Usuario:</strong> <?= e($emailConfig['usuario'] ?: 'sem autenticacao') ?>
+               &middot; <strong>Remetente:</strong> <?= e($emailConfig['nome']) ?> &lt;<?= e($emailConfig['remetente']) ?>&gt;</p>
+            <form method="post"><?= campoCsrf() ?>
+                <input type="hidden" name="acao" value="testar_email">
+                <p class="ajuda-campo">Envia uma mensagem para <?= e((string) ($_SESSION['usuario_email'] ?? '')) ?>, o e-mail da sua conta master.</p>
+                <button class="btn btn-secundario" type="submit">Enviar e-mail de teste</button>
+            </form>
+        <?php else: ?>
+            <p>Nenhum servidor configurado. Enquanto isso, o sistema funciona normalmente, mas os avisos de cadastro e a recuperacao de senha nao saem por e-mail.</p>
+            <p class="ajuda-campo">Na hospedagem, defina as variaveis <code>AGENDEI_EMAIL_HOST</code>, <code>AGENDEI_EMAIL_PORTA</code>, <code>AGENDEI_EMAIL_USUARIO</code>, <code>AGENDEI_EMAIL_SENHA</code> e <code>AGENDEI_EMAIL_REMETENTE</code>. Localmente, crie <code>config/email.local.php</code>. O passo a passo esta em DEPLOY.md.</p>
+        <?php endif; ?>
     </div>
 </div>
 <?php require RAIZ . '/includes/painel_footer.php'; ?>

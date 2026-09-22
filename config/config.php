@@ -63,6 +63,7 @@ require_once RAIZ . '/includes/funcoes.php';
 require_once RAIZ . '/includes/auth.php';
 require_once RAIZ . '/includes/seguranca.php';
 require_once RAIZ . '/includes/marca.php';
+require_once RAIZ . '/includes/emails.php';
 
 /** Carregamento automatico dos models. */
 spl_autoload_register(function (string $classe): void {
