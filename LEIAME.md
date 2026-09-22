@@ -165,6 +165,7 @@ php tests/requisitos.php      # regras de validacao e 2FA (nao usa banco)
 php tests/fluxo_projeto.php   # cadastro, login, 2FA, log e exclusao (banco temporario)
 php tests/multitenancy.php    # isolamento entre estabelecimentos (banco temporario)
 php tests/master.php          # auditoria, contas master e bloqueios (banco temporario)
+php tests/entrada_global.php  # login geral sem link da empresa (nao usa banco)
 ```
 
 Os tres ultimos criam e descartam um banco proprio e nunca tocam o banco de uso normal.

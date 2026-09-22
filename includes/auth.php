@@ -151,6 +151,40 @@ function autenticar(string $identificador, string $senha): ?array
     return $usuario;
 }
 
+/**
+ * Autenticacao pela entrada geral, sem estabelecimento na URL.
+ *
+ * O e-mail e unico apenas dentro de cada empresa, entao o mesmo endereco pode
+ * ter varias contas. A senha e conferida em todas, e so as que batem (e estao
+ * ativas, em empresa ativa) voltam: a pessoa escolhe entre elas sem que a tela
+ * revele em quais empresas um e-mail existe. O login de 6 letras nao serve
+ * aqui porque tambem e unico so por empresa.
+ *
+ * Nao grava log nem abre sessao: isso exige a empresa definida, e fica a cargo
+ * de quem chama, depois de Contexto::assumir(). O hash nunca sai daqui.
+ */
+function autenticarGlobal(string $email, string $senha): array
+{
+    $email = mb_strtolower(trim($email));
+    if ($senha === '' || !validarEmail($email)) {
+        return [];
+    }
+
+    $contas = [];
+    foreach (Usuario::porEmailGlobal($email) as $conta) {
+        if (!password_verify($senha, $conta['senha_hash'])) {
+            continue;
+        }
+        if ($conta['status'] !== 'ativo' || $conta['estabelecimento_status'] !== 'ativo') {
+            continue;
+        }
+        unset($conta['senha_hash'], $conta['totp_segredo'], $conta['token_recuperacao']);
+        $contas[] = $conta;
+    }
+
+    return $contas;
+}
+
 /** CPF do perfil de cliente, usado apenas para alimentar o filtro da tela de log. */
 function cpfDoUsuario(?array $usuario): ?string
 {

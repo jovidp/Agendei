@@ -60,6 +60,14 @@ foreach (['empresa-a', 'empresa-b'] as $slug) {
     verificar($usuario['tipo'] === 'admin', 'Cadastro nao criou administrador local.');
     verificar(autenticar('admin@teste.local', 'senha-errada') === null, 'Senha invalida aceita.');
 
+    // Fora da entrada geral (tests/entrada_global.php), a requisicao nunca troca de empresa.
+    try {
+        Contexto::assumir($id);
+        verificar(false, 'Contexto::assumir aceito fora da entrada geral.');
+    } catch (LogicException) {
+        verificar(Contexto::id() === $id, 'Contexto mudou apos a recusa do assumir.');
+    }
+
     // A conta master e global e nunca assume um estabelecimento pela URL (o
     // multitenancy cobre isso com o esquema completo). As paginas de entrada
     // local descartam a identidade master primeiro (ENTRADA_LOCAL) - e ai o slug
