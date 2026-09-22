@@ -60,12 +60,17 @@ foreach (['empresa-a', 'empresa-b'] as $slug) {
     verificar($usuario['tipo'] === 'admin', 'Cadastro nao criou administrador local.');
     verificar(autenticar('admin@teste.local', 'senha-errada') === null, 'Senha invalida aceita.');
 
-    // Com a sessao master aberta, o slug da URL ainda resolve o estabelecimento:
-    // e assim que o master entra no que acabou de criar, pelo login local.
+    // A conta master e global e nunca assume um estabelecimento pela URL (o
+    // multitenancy cobre isso com o esquema completo). As paginas de entrada
+    // local descartam a identidade master primeiro (ENTRADA_LOCAL) - e ai o slug
+    // resolve e o login local funciona: e assim que o master entra no que
+    // acabou de criar.
     $_SESSION = ['master_id' => 99, 'usuario_tipo' => 'master'];
+    descartarIdentidadeMaster();
+    verificar(!sessaoAbertaEm('master') && perfil() === null, 'Identidade master nao foi descartada.');
     Contexto::iniciar();
-    verificar(Contexto::id() === $id, 'Sessao master ignorou o estabelecimento da URL.');
-    verificar(autenticar('admin@teste.local', 'Teste12345!') !== null, 'Login local falhou com a sessao master aberta.');
+    verificar(Contexto::id() === $id, 'Sem a identidade master, o slug nao resolveu o estabelecimento.');
+    verificar(autenticar('admin@teste.local', 'Teste12345!') !== null, 'Login local falhou apos descartar a identidade master.');
     $_SESSION = [];
     Contexto::iniciar();
 

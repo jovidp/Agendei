@@ -8,12 +8,11 @@ class Contexto
     {
         $slug = get('estabelecimento');
 
-        // A sessao master impoe o contexto global na propria area master e quando a
-        // URL nao aponta para um estabelecimento. Com o slug presente, a pagina
-        // publica daquele estabelecimento (login, cadastro) resolve o proprio
-        // contexto: e por ela que o master entra no estabelecimento que acabou de
-        // criar, e o login local descarta a identidade master em seguida.
-        if (defined('AREA_MASTER') || (($_SESSION['usuario_tipo'] ?? null) === 'master' && $slug === '')) {
+        // A conta master e global e nunca assume um estabelecimento pela URL. As
+        // paginas de entrada local (login, cadastro, 2FA) descartam a identidade
+        // master antes de chegar aqui (ENTRADA_LOCAL, em config.php), e por isso
+        // resolvem o estabelecimento normalmente.
+        if (($_SESSION['usuario_tipo'] ?? null) === 'master' || defined('AREA_MASTER')) {
             $master = Master::aparencia();
             self::$atual = [
                 'id_estabelecimento' => 0,

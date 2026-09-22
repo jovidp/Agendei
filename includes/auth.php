@@ -607,6 +607,31 @@ function destinoAposLogin(): string
 }
 
 /**
+ * Descarta a identidade master da sessao, preservando o restante (token CSRF).
+ *
+ * Chamado pelo bootstrap nas paginas de entrada local (ENTRADA_LOCAL): quem abre
+ * o login de um estabelecimento quer uma sessao local, e as duas identidades sao
+ * excludentes. E o que permite ao master entrar no estabelecimento que acabou de
+ * criar sem que a conta global assuma um estabelecimento pela URL nas demais
+ * paginas. Sem sessao master, nao faz nada.
+ */
+function descartarIdentidadeMaster(): void
+{
+    if (empty($_SESSION['master_id']) && ($_SESSION['usuario_tipo'] ?? null) !== 'master') {
+        return;
+    }
+
+    unset(
+        $_SESSION['master_id'],
+        $_SESSION['simulacao'],
+        $_SESSION['segundo_fator_master'],
+        $_SESSION['usuario_tipo'],
+        $_SESSION['usuario_nome'],
+        $_SESSION['usuario_email']
+    );
+}
+
+/**
  * Ha uma sessao aberta na area indicada ('local' = estabelecimento, 'master')?
  *
  * As duas identidades sao excludentes: registrarSessao descarta a master e

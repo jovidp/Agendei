@@ -35,6 +35,8 @@ ob_start();
 require 'scripts/migrar.php';
 require 'scripts/migrar.php';
 require 'config/config.php';
+// O tratador do bootstrap sairia com codigo 0 e esconderia a falha.
+restore_exception_handler();
 ob_end_clean();
 $checagens = 0;
 function verificar(bool $condicao, string $mensagem): void

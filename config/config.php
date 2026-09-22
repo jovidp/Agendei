@@ -80,6 +80,14 @@ aplicarCabecalhosSeguranca();
 iniciarSessao();
 
 // Resolve a empresa antes de consultar cadastros ou renderizar a identidade visual.
+// Paginas de entrada local (login, cadastro, 2FA, senha) nunca rodam sob a
+// identidade master: quem chega nelas quer uma sessao local. Descarta-la aqui e
+// o que permite ao master entrar no estabelecimento que acabou de criar, sem que
+// a conta global assuma um estabelecimento pela URL nas demais paginas.
+if (defined('ENTRADA_LOCAL')) {
+    descartarIdentidadeMaster();
+}
+
 Contexto::iniciar();
 
 // Derruba sessao vencida por inatividade, por tempo total ou usada em outro

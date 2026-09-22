@@ -68,6 +68,8 @@ if (!$ehPostgres) {
     require 'scripts/migrar.php';
 }
 require 'config/config.php';
+// O tratador do bootstrap sairia com codigo 0 e esconderia a falha.
+restore_exception_handler();
 ob_end_clean();
 
 $_SERVER['REMOTE_ADDR'] = '127.0.0.1';

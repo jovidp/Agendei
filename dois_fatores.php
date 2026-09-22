@@ -4,6 +4,8 @@
  * A sessao do usuario so e aberta aqui, depois que a pergunta sorteada e respondida.
  */
 // Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
+// Pagina de entrada local: nunca roda sob a identidade master (ver config.php).
+define('ENTRADA_LOCAL', true);
 require_once __DIR__ . '/config/config.php';
 
 // Encaminha quem já está autenticado ao painel, evitando repetir o fluxo de acesso.
