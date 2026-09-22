@@ -24,7 +24,7 @@ Copie a senha nova. Ela vai para um so lugar: o arquivo do passo 3.
 ## Passo 2 — Importar o esquema
 
 O arquivo `banco_postgres.sql` (gerado a partir de `banco.sql`, ja convertido
-para PostgreSQL) cria as 20 tabelas, os indices e as restricoes.
+para PostgreSQL) cria as 25 tabelas, os indices e as restricoes.
 
 No painel do Supabase:
 
@@ -32,11 +32,17 @@ No painel do Supabase:
 2. Cole todo o conteudo de `banco_postgres.sql`.
 3. Clique em **Run**.
 
-Confira em **Table Editor** que apareceram as 20 tabelas.
+Confira em **Table Editor** que apareceram as 25 tabelas.
 
 > Os scripts em `scripts/` (migrar.php etc.) atendem apenas MySQL e recusam
 > rodar no PostgreSQL — nao sao necessarios aqui, pois `banco_postgres.sql`
 > ja traz o esquema completo.
+>
+> A excecao e `scripts/migrar_filiais.php`, que roda nos dois bancos. Um
+> Supabase criado antes das filiais (unidades) precisa rodar uma vez, com o
+> `driver` em `pgsql` (passo 3), `php scripts/migrar_filiais.php`: ele cria a
+> tabela `filiais` e a unidade **Matriz** e vincula a ela o que ja existia.
+> Instalacoes novas ja vem com a Matriz pelo `banco_postgres.sql`.
 
 ---
 

@@ -20,6 +20,7 @@
   // Guarda as escolhas atuais; alterações nas etapas anteriores exigem atualizar as opções seguintes.
   var estado = {
     servico: null,
+    filial: null,
     profissional: null,
     data: null,
     hora: null,
@@ -31,6 +32,14 @@
   var diasDisponiveis = [];
   var carregandoDias = false;
 
+  // Quando o servico e oferecido em uma unica unidade, a etapa 2 e pulada; o
+  // Voltar da etapa de profissional usa isto para retornar direto ao servico.
+  var filialUnica = false;
+  // Numero da ultima consulta de unidades: respostas atrasadas de um servico
+  // trocado no meio do caminho sao descartadas.
+  var consultaFiliais = 0;
+
+  var listaFiliais = document.getElementById("listaFiliais");
   var listaProfissionais = document.getElementById("listaProfissionais");
   var areaCalendario = document.getElementById("calendario");
   var listaHorarios = document.getElementById("listaHorarios");
@@ -102,6 +111,40 @@
       .replace(/'/g, "&#39;");
   }
 
+  /** Formata o telefone guardado so com digitos como (XX) XXXXX-XXXX. */
+  function formatarTelefone(telefone) {
+    var digitos = String(telefone || "").replace(/\D/g, "");
+    if (digitos.length === 11) {
+      return (
+        "(" + digitos.slice(0, 2) + ") " + digitos.slice(2, 7) + "-" + digitos.slice(7)
+      );
+    }
+    if (digitos.length === 10) {
+      return (
+        "(" + digitos.slice(0, 2) + ") " + digitos.slice(2, 6) + "-" + digitos.slice(6)
+      );
+    }
+    return digitos;
+  }
+
+  /** Iniciais do nome da unidade, usadas no avatar quando ela nao tem foto. */
+  function iniciaisDe(nome) {
+    var partes = String(nome || "").trim().split(/\s+/).filter(Boolean);
+    if (partes.length === 0) {
+      return "?";
+    }
+    var primeira = partes[0].charAt(0);
+    var ultima = partes.length > 1 ? partes[partes.length - 1].charAt(0) : "";
+    return (primeira + ultima).toUpperCase();
+  }
+
+  /** So injeta a foto no HTML se ela for um data URI de imagem valido (mesmo formato do logo). */
+  function fotoValida(foto) {
+    return /^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(
+      String(foto || ""),
+    );
+  }
+
   /** Consulta a API com o cabeçalho de AJAX e converte a resposta em um objeto. */
   function buscarJson(caminho) {
     var empresa = document.querySelector(
@@ -156,15 +199,19 @@
       Agendei.notificar("Escolha um servico para continuar.", "aviso");
       return false;
     }
-    if (de === 2 && !estado.profissional) {
+    if (de === 2 && !estado.filial) {
+      Agendei.notificar("Escolha uma unidade para continuar.", "aviso");
+      return false;
+    }
+    if (de === 3 && !estado.profissional) {
       Agendei.notificar("Escolha um profissional para continuar.", "aviso");
       return false;
     }
-    if (de === 3 && !estado.data) {
+    if (de === 4 && !estado.data) {
       Agendei.notificar("Escolha uma data para continuar.", "aviso");
       return false;
     }
-    if (de === 4 && !estado.hora) {
+    if (de === 5 && !estado.hora) {
       Agendei.notificar("Escolha um horario para continuar.", "aviso");
       return false;
     }
@@ -185,6 +232,8 @@
           preco: opcao.getAttribute("data-preco"),
           duracao: opcao.getAttribute("data-duracao"),
         };
+        estado.filial = null;
+        filialUnica = false;
         estado.profissional = null;
         estado.data = null;
         estado.hora = null;
@@ -193,23 +242,155 @@
     });
 
   // -----------------------------------------------------------------
-  // Etapa 2 - profissional
+  // Etapa 2 - unidade
   // -----------------------------------------------------------------
 
-  /** Busca na API os profissionais vinculados ao serviço selecionado. */
+  /** Monta o cartao de uma unidade no mesmo formato dos cartoes de profissional. */
+  function cartaoFilial(filial) {
+    var idFilial = parseInt(filial.id_filial, 10);
+    var id = "filial" + idFilial;
+    var telefone = formatarTelefone(filial.telefone);
+    var avatar = fotoValida(filial.foto)
+      ? '<span class="avatar"><img src="' +
+        escapar(filial.foto) +
+        '" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover"></span>'
+      : '<span class="avatar">' + escapar(iniciaisDe(filial.nome)) + "</span>";
+
+    return (
+      '<div class="opcao">' +
+      '<input type="radio" name="filial_opcao" id="' +
+      id +
+      '" value="' +
+      idFilial +
+      '"' +
+      ' data-nome="' +
+      escapar(filial.nome) +
+      '"' +
+      (estado.filial && estado.filial.id === String(idFilial) ? " checked" : "") +
+      ">" +
+      '<label for="' +
+      id +
+      '">' +
+      avatar +
+      '<span class="opcao-conteudo">' +
+      "<strong>" +
+      escapar(filial.nome) +
+      "</strong>" +
+      "<p>" +
+      escapar(filial.endereco || "Endereco nao informado") +
+      "</p>" +
+      (telefone
+        ? '<span class="opcao-meta"><span class="duracao">' +
+          escapar(telefone) +
+          "</span></span>"
+        : "") +
+      "</span>" +
+      "</label>" +
+      "</div>"
+    );
+  }
+
+  /**
+   * Busca na API as unidades que oferecem o servico. Com uma unica unidade ela
+   * e escolhida sozinha e o fluxo segue para o profissional; sem nenhuma, o
+   * cliente e avisado e permanece nesta etapa.
+   */
+  function carregarFiliais() {
+    var consulta = ++consultaFiliais;
+
+    listaFiliais.innerHTML =
+      '<p class="carregando-horarios">Carregando unidades...</p>';
+
+    buscarJson(
+      "api/filiais.php?id_servico=" + encodeURIComponent(estado.servico.id),
+    )
+      .then(function (dados) {
+        // Uma consulta mais nova ja substituiu esta (o cliente trocou o servico).
+        if (consulta !== consultaFiliais) {
+          return;
+        }
+
+        var filiais = dados.sucesso && dados.filiais ? dados.filiais : [];
+
+        if (filiais.length === 0) {
+          listaFiliais.innerHTML =
+            '<div class="estado-vazio"><strong>Nenhuma unidade oferece este servico no momento</strong>' +
+            "<p>Escolha outro servico ou tente novamente mais tarde.</p></div>";
+          return;
+        }
+
+        if (filiais.length === 1) {
+          estado.filial = {
+            id: String(parseInt(filiais[0].id_filial, 10)),
+            nome: filiais[0].nome,
+          };
+          filialUnica = true;
+          listaFiliais.innerHTML = "";
+          atualizarResumo();
+
+          // So avanca sozinho se o cliente ainda esta esperando nesta etapa.
+          if (etapaAtual === 2) {
+            carregarProfissionais();
+            irParaEtapa(3);
+          }
+          return;
+        }
+
+        var html = '<div class="lista-opcoes">';
+        filiais.forEach(function (filial) {
+          html += cartaoFilial(filial);
+        });
+        html += "</div>";
+
+        listaFiliais.innerHTML = html;
+
+        listaFiliais
+          .querySelectorAll('input[name="filial_opcao"]')
+          .forEach(function (opcao) {
+            opcao.addEventListener("change", function () {
+              estado.filial = {
+                id: opcao.value,
+                nome: opcao.getAttribute("data-nome"),
+              };
+              filialUnica = false;
+              estado.profissional = null;
+              estado.data = null;
+              estado.hora = null;
+              atualizarResumo();
+            });
+          });
+      })
+      .catch(function () {
+        if (consulta !== consultaFiliais) {
+          return;
+        }
+        listaFiliais.innerHTML =
+          '<div class="estado-vazio"><strong>Nao foi possivel carregar as unidades</strong>' +
+          "<p>Verifique sua conexao e tente novamente.</p></div>";
+      });
+  }
+
+  // -----------------------------------------------------------------
+  // Etapa 3 - profissional
+  // -----------------------------------------------------------------
+
+  /** Busca na API os profissionais da unidade escolhida que executam o servico. */
   function carregarProfissionais() {
     listaProfissionais.innerHTML =
       '<p class="carregando-horarios">Carregando profissionais...</p>';
 
     buscarJson(
       "api/profissionais.php?id_servico=" +
-        encodeURIComponent(estado.servico.id),
+        encodeURIComponent(estado.servico.id) +
+        (estado.filial
+          ? "&id_filial=" + encodeURIComponent(estado.filial.id)
+          : ""),
     )
       .then(function (dados) {
         if (!dados.sucesso || dados.profissionais.length === 0) {
           listaProfissionais.innerHTML =
             '<div class="estado-vazio"><strong>Nenhum profissional disponivel</strong>' +
-            "<p>Ainda nao ha profissional habilitado para este servico. Escolha outro servico.</p></div>";
+            "<p>Ainda nao ha profissional habilitado para este servico nesta unidade. Escolha outra unidade ou outro servico.</p></div>";
           return;
         }
 
@@ -271,7 +452,7 @@
   }
 
   // -----------------------------------------------------------------
-  // Etapa 3 - calendario
+  // Etapa 4 - calendario
   // -----------------------------------------------------------------
 
   /** Consulta os dias com vagas no mês para habilitar as datas do calendário. */
@@ -408,7 +589,7 @@
         atualizarResumo();
         renderizarCalendario();
         carregarHorarios();
-        irParaEtapa(4);
+        irParaEtapa(5);
       });
     });
   }
@@ -421,7 +602,7 @@
   }
 
   // -----------------------------------------------------------------
-  // Etapa 4 - horarios
+  // Etapa 5 - horarios
   // -----------------------------------------------------------------
 
   /** Atualiza as opções de horário para o serviço, profissional e data selecionados. */
@@ -530,6 +711,11 @@
       !!estado.servico,
     );
     definirResumo(
+      "unidade",
+      estado.filial ? estado.filial.nome : "Nao selecionada",
+      !!estado.filial,
+    );
+    definirResumo(
       "profissional",
       estado.profissional ? estado.profissional.nome : "Nao selecionado",
       !!estado.profissional,
@@ -559,6 +745,9 @@
 
     document.getElementById("campoServico").value = estado.servico
       ? estado.servico.id
+      : "";
+    document.getElementById("campoFilial").value = estado.filial
+      ? estado.filial.id
       : "";
     document.getElementById("campoProfissional").value = estado.profissional
       ? estado.profissional.id
@@ -592,13 +781,16 @@
       var proxima = etapaAtual + 1;
 
       if (proxima === 2) {
-        carregarProfissionais();
+        carregarFiliais();
       }
       if (proxima === 3) {
+        carregarProfissionais();
+      }
+      if (proxima === 4) {
         mesReferencia = primeiroDiaDoMes(new Date());
         abrirCalendario();
       }
-      if (proxima === 4) {
+      if (proxima === 5) {
         carregarHorarios();
       }
 
@@ -609,7 +801,9 @@
     var voltar = evento.target.closest("[data-voltar]");
     if (voltar) {
       evento.preventDefault();
-      irParaEtapa(Math.max(1, etapaAtual - 1));
+      // A etapa de unidade foi pulada (servico em uma so unidade): volta ao servico.
+      var anterior = etapaAtual === 3 && filialUnica ? 1 : etapaAtual - 1;
+      irParaEtapa(Math.max(1, anterior));
     }
   });
 

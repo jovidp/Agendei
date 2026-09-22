@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Fluxo de agendamento do cliente (servico -> profissional -> data -> horario -> confirmacao).
+ * Fluxo de agendamento do cliente (servico -> unidade -> profissional -> data -> horario -> confirmacao).
  * Toda a disponibilidade e validada novamente aqui, no servidor.
  */
 // Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
@@ -61,7 +61,7 @@ $servicos       = Servico::ativosComProfissional();
 $maximoDias     = Configuracao::obterInteiro('antecedencia_maxima_dias', 60);
 // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina   = 'Novo agendamento';
-$subtituloTopo  = 'Escolha o servico, o profissional e o melhor horario';
+$subtituloTopo  = 'Escolha o servico, a unidade, o profissional e o melhor horario';
 $cssExtra       = ['agendamento.css'];
 $jsExtra        = ['agendamento.js'];
 
@@ -144,15 +144,17 @@ require_once RAIZ . '/includes/painel_header.php';
         <div>
             <div class="etapas">
                 <div class="etapa ativa" data-etapa="1"><span class="etapa-numero">1</span><span class="etapa-texto">Servico</span></div>
-                <div class="etapa" data-etapa="2"><span class="etapa-numero">2</span><span class="etapa-texto">Profissional</span></div>
-                <div class="etapa" data-etapa="3"><span class="etapa-numero">3</span><span class="etapa-texto">Data</span></div>
-                <div class="etapa" data-etapa="4"><span class="etapa-numero">4</span><span class="etapa-texto">Horario</span></div>
-                <div class="etapa" data-etapa="5"><span class="etapa-numero">5</span><span class="etapa-texto">Confirmacao</span></div>
+                <div class="etapa" data-etapa="2"><span class="etapa-numero">2</span><span class="etapa-texto">Unidade</span></div>
+                <div class="etapa" data-etapa="3"><span class="etapa-numero">3</span><span class="etapa-texto">Profissional</span></div>
+                <div class="etapa" data-etapa="4"><span class="etapa-numero">4</span><span class="etapa-texto">Data</span></div>
+                <div class="etapa" data-etapa="5"><span class="etapa-numero">5</span><span class="etapa-texto">Horario</span></div>
+                <div class="etapa" data-etapa="6"><span class="etapa-numero">6</span><span class="etapa-texto">Confirmacao</span></div>
             </div>
 
             <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" id="formAgendamento">
                 <?= campoCsrf() ?>
                 <input type="hidden" name="id_servico" id="campoServico">
+                <input type="hidden" name="id_filial" id="campoFilial">
                 <input type="hidden" name="id_profissional" id="campoProfissional">
                 <input type="hidden" name="data" id="campoData">
                 <input type="hidden" name="hora_inicio" id="campoHora">
@@ -197,6 +199,22 @@ require_once RAIZ . '/includes/painel_header.php';
                 <!-- Etapa 2 -->
                 <section class="cartao oculto" data-painel="2">
                     <div class="cartao-cabecalho">
+                        <h2>Escolha a unidade</h2>
+                        <span class="texto-pequeno texto-secundario">Onde voce quer ser atendido?</span>
+                    </div>
+                    <div class="cartao-corpo">
+                        <div id="listaFiliais"></div>
+
+                        <div class="navegacao-etapa">
+                            <button type="button" class="btn btn-contorno" data-voltar>Voltar</button>
+                            <button type="button" class="btn" data-proxima>Continuar</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Etapa 3 -->
+                <section class="cartao oculto" data-painel="3">
+                    <div class="cartao-cabecalho">
                         <h2>Escolha o profissional</h2>
                     </div>
                     <div class="cartao-corpo">
@@ -209,8 +227,8 @@ require_once RAIZ . '/includes/painel_header.php';
                     </div>
                 </section>
 
-                <!-- Etapa 3 -->
-                <section class="cartao oculto" data-painel="3">
+                <!-- Etapa 4 -->
+                <section class="cartao oculto" data-painel="4">
                     <div class="cartao-cabecalho">
                         <h2>Escolha a data</h2>
                         <span class="texto-pequeno texto-secundario">Somente dias com horarios livres ficam habilitados</span>
@@ -225,8 +243,8 @@ require_once RAIZ . '/includes/painel_header.php';
                     </div>
                 </section>
 
-                <!-- Etapa 4 -->
-                <section class="cartao oculto" data-painel="4">
+                <!-- Etapa 5 -->
+                <section class="cartao oculto" data-painel="5">
                     <div class="cartao-cabecalho">
                         <h2>Escolha o horario</h2>
                     </div>
@@ -240,8 +258,8 @@ require_once RAIZ . '/includes/painel_header.php';
                     </div>
                 </section>
 
-                <!-- Etapa 5 -->
-                <section class="cartao oculto" data-painel="5">
+                <!-- Etapa 6 -->
+                <section class="cartao oculto" data-painel="6">
                     <div class="cartao-cabecalho">
                         <h2>Confirme os dados</h2>
                     </div>
@@ -250,6 +268,10 @@ require_once RAIZ . '/includes/painel_header.php';
                             <div>
                                 <dt>Servico</dt>
                                 <dd data-resumo="servico">-</dd>
+                            </div>
+                            <div>
+                                <dt>Unidade</dt>
+                                <dd data-resumo="unidade">-</dd>
                             </div>
                             <div>
                                 <dt>Profissional</dt>
@@ -304,6 +326,7 @@ require_once RAIZ . '/includes/painel_header.php';
             <div class="resumo-topo"><strong>Resumo</strong></div>
             <div class="resumo-corpo">
                 <div class="resumo-linha vazia"><span>Servico</span><strong data-resumo="servico">Nao selecionado</strong></div>
+                <div class="resumo-linha vazia"><span>Unidade</span><strong data-resumo="unidade">Nao selecionada</strong></div>
                 <div class="resumo-linha vazia"><span>Profissional</span><strong data-resumo="profissional">Nao selecionado</strong></div>
                 <div class="resumo-linha vazia"><span>Data</span><strong data-resumo="data">Nao selecionada</strong></div>
                 <div class="resumo-linha vazia"><span>Horario</span><strong data-resumo="hora">Nao selecionado</strong></div>

@@ -31,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $status        = post('status') === 'inativo' ? 'inativo' : 'ativo';
         $servicos      = array_map('intval', (array) ($_POST['servicos'] ?? []));
         $podeBloquear  = post('pode_bloquear_agenda') === '1';
+        $idFilial      = (int) post('id_filial');
 
         if (mb_strlen($nome) < 5 || !str_contains($nome, ' ')) {
             $erros[] = 'Informe o nome completo do profissional.';
@@ -51,6 +52,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         if ($servicos === []) {
             $erros[] = 'Selecione ao menos um servico executado pelo profissional.';
+        }
+        // Todo profissional pertence a uma filial do estabelecimento.
+        if ($idFilial <= 0 || Filial::porId($idFilial) === null) {
+            $erros[] = 'Escolha a filial do profissional.';
         }
 
         // O teto do plano vale para equipe nova e para reativacao: os dois
@@ -79,6 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
 
                     Profissional::atualizar($idProfissional, [
+                        'id_filial'            => $idFilial,
                         'especialidade'        => $especialidade,
                         'bio'                  => post('bio'),
                         'pode_bloquear_agenda' => $podeBloquear,
@@ -92,6 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'email'                => $email,
                         'senha'                => $senha,
                         'telefone'             => $telefone,
+                        'id_filial'            => $idFilial,
                         'especialidade'        => $especialidade,
                         'bio'                  => post('bio'),
                         'status'               => $status,
@@ -172,6 +179,21 @@ $status = get('status');
 $lista  = Profissional::listar(array_filter(['busca' => $busca, 'status' => $status]));
 $servicosDisponiveis = Servico::listar();
 
+// Filiais para o select e um mapa id => nome para a listagem (uma consulta so).
+$filiais      = Filial::listar();
+$nomesFiliais = array_column($filiais, 'nome', 'id_filial');
+$semFiliais   = Filial::total() === 0;
+
+// Na edicao marca a filial atual; no cadastro, se ha uma so, ja vem escolhida.
+$filialSelecionada = (int) ($edicao['id_filial'] ?? post('id_filial'));
+if ($filialSelecionada <= 0 && count($filiais) === 1) {
+    $filialSelecionada = (int) $filiais[0]['id_filial'];
+}
+
+// Sem filial nao ha onde lotar o profissional: o formulario de criacao fica travado.
+$formularioBloqueado = $semFiliais && !$edicao;
+$bloqueio            = $formularioBloqueado ? ' disabled' : '';
+
 // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Profissionais';
 $subtituloTopo = 'Equipe, servicos executados e acesso ao sistema';
@@ -192,6 +214,15 @@ require_once RAIZ . '/includes/painel_header.php';
     </div>
 <?php endif; ?>
 
+<?php if ($semFiliais): ?>
+    <div class="alerta alerta-aviso" role="status">
+        <span class="alerta-texto">
+            Cadastre uma filial antes de cadastrar profissionais: cada profissional pertence a uma unidade.
+            <a href="<?= url('admin/filiais.php') ?>">Cadastrar filial</a>
+        </span>
+    </div>
+<?php endif; ?>
+
 <?php if ($formularioAberto): ?>
 
     <div class="cartao">
@@ -208,14 +239,29 @@ require_once RAIZ . '/includes/painel_header.php';
                     <div class="campo">
                         <label for="nome">Nome completo <span class="obrigatorio">*</span></label>
                         <input type="text" id="nome" name="nome" maxlength="120"
-                            value="<?= e($edicao['nome'] ?? post('nome')) ?>" required>
+                            value="<?= e($edicao['nome'] ?? post('nome')) ?>" required<?= $bloqueio ?>>
                     </div>
 
                     <div class="campo">
                         <label for="especialidade">Especialidade</label>
                         <input type="text" id="especialidade" name="especialidade" maxlength="120"
                             value="<?= e($edicao['especialidade'] ?? post('especialidade')) ?>"
-                            placeholder="Ex.: Barbeiro, Cabeleireira">
+                            placeholder="Ex.: Barbeiro, Cabeleireira"<?= $bloqueio ?>>
+                    </div>
+                </div>
+
+                <div class="linha-campos">
+                    <div class="campo">
+                        <label for="id_filial">Filial <span class="obrigatorio">*</span></label>
+                        <select id="id_filial" name="id_filial" required<?= $bloqueio ?>>
+                            <option value="">Selecione a filial</option>
+                            <?php foreach ($filiais as $filial): ?>
+                                <option value="<?= (int) $filial['id_filial'] ?>" <?= $filialSelecionada === (int) $filial['id_filial'] ? 'selected' : '' ?>>
+                                    <?= e($filial['nome']) ?><?= $filial['status'] === 'inativo' ? ' (inativa)' : '' ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <span class="ajuda-campo">Unidade em que o profissional atende.</span>
                     </div>
                 </div>
 
@@ -223,13 +269,13 @@ require_once RAIZ . '/includes/painel_header.php';
                     <div class="campo">
                         <label for="email">E-mail de acesso <span class="obrigatorio">*</span></label>
                         <input type="email" id="email" name="email" maxlength="150"
-                            value="<?= e($edicao['email'] ?? post('email')) ?>" required>
+                            value="<?= e($edicao['email'] ?? post('email')) ?>" required<?= $bloqueio ?>>
                     </div>
 
                     <div class="campo">
                         <label for="telefone">Telefone</label>
                         <input type="tel" id="telefone" name="telefone" data-mascara="telefone" inputmode="numeric"
-                            value="<?= e($edicao ? formatarTelefone($edicao['telefone']) : post('telefone')) ?>">
+                            value="<?= e($edicao ? formatarTelefone($edicao['telefone']) : post('telefone')) ?>"<?= $bloqueio ?>>
                     </div>
                 </div>
 
@@ -238,13 +284,13 @@ require_once RAIZ . '/includes/painel_header.php';
                         <label for="senha"><?= $edicao ? 'Nova senha (opcional)' : 'Senha de acesso' ?>
                             <?= $edicao ? '' : '<span class="obrigatorio">*</span>' ?>
                         </label>
-                        <input type="password" id="senha" name="senha" autocomplete="new-password" <?= $edicao ? '' : 'required' ?>>
+                        <input type="password" id="senha" name="senha" autocomplete="new-password" <?= $edicao ? '' : 'required' ?><?= $bloqueio ?>>
                         <span class="ajuda-campo"><?= $edicao ? 'Deixe em branco para manter a senha atual.' : 'Minimo de 6 caracteres.' ?></span>
                     </div>
 
                     <div class="campo">
                         <label for="status">Status</label>
-                        <select id="status" name="status">
+                        <select id="status" name="status"<?= $bloqueio ?>>
                             <option value="ativo" <?= ($edicao['status'] ?? 'ativo') === 'ativo' ? 'selected' : '' ?>>Ativo</option>
                             <option value="inativo" <?= ($edicao['status'] ?? '') === 'inativo' ? 'selected' : '' ?>>Inativo</option>
                         </select>
@@ -254,7 +300,7 @@ require_once RAIZ . '/includes/painel_header.php';
 
                 <div class="campo">
                     <label for="bio">Apresentacao</label>
-                    <textarea id="bio" name="bio" maxlength="400"><?= e($edicao['bio'] ?? post('bio')) ?></textarea>
+                    <textarea id="bio" name="bio" maxlength="400"<?= $bloqueio ?>><?= e($edicao['bio'] ?? post('bio')) ?></textarea>
                 </div>
 
                 <fieldset>
@@ -271,7 +317,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                 <div class="campo-checkbox">
                                     <input type="checkbox" id="servico<?= (int) $servico['id_servico'] ?>"
                                         name="servicos[]" value="<?= (int) $servico['id_servico'] ?>"
-                                        <?= in_array((int) $servico['id_servico'], $servicosVinculados, true) ? 'checked' : '' ?>>
+                                        <?= in_array((int) $servico['id_servico'], $servicosVinculados, true) ? 'checked' : '' ?><?= $bloqueio ?>>
                                     <label for="servico<?= (int) $servico['id_servico'] ?>">
                                         <?= e($servico['nome']) ?>
                                         <?= $servico['status'] === 'inativo' ? ' (inativo)' : '' ?>
@@ -284,12 +330,12 @@ require_once RAIZ . '/includes/painel_header.php';
 
                 <div class="campo-checkbox">
                     <input type="checkbox" id="pode_bloquear_agenda" name="pode_bloquear_agenda" value="1"
-                        <?= (!$edicao || !empty($edicao['pode_bloquear_agenda'])) ? 'checked' : '' ?>>
+                        <?= (!$edicao || !empty($edicao['pode_bloquear_agenda'])) ? 'checked' : '' ?><?= $bloqueio ?>>
                     <label for="pode_bloquear_agenda">Permitir que o profissional bloqueie a propria agenda</label>
                 </div>
 
                 <div class="grupo-botoes">
-                    <button type="submit" class="btn"><?= $edicao ? 'Salvar alteracoes' : 'Cadastrar profissional' ?></button>
+                    <button type="submit" class="btn"<?= $bloqueio ?>><?= $edicao ? 'Salvar alteracoes' : 'Cadastrar profissional' ?></button>
                     <a href="<?= url('admin/profissionais.php') ?>" class="btn btn-contorno">Cancelar</a>
                 </div>
             </form>
@@ -335,6 +381,7 @@ require_once RAIZ . '/includes/painel_header.php';
                         <th>Profissional</th>
                         <th>Contato</th>
                         <th>Especialidade</th>
+                        <th>Filial</th>
                         <th>Servicos</th>
                         <th>Status</th>
                         <th class="coluna-acoes">Acoes</th>
@@ -353,6 +400,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                 <span class="celula-secundaria"><?= e(formatarTelefone($profissional['telefone'])) ?></span>
                             </td>
                             <td><?= e($profissional['especialidade'] ?: '-') ?></td>
+                            <td><?= e($nomesFiliais[(int) $profissional['id_filial']] ?? '-') ?></td>
                             <td><?= (int) $profissional['total_servicos'] ?></td>
                             <td><?= badgeStatus($profissional['status']) ?></td>
                             <td class="coluna-acoes">

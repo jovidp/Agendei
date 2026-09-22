@@ -209,7 +209,7 @@ modo de alto contraste.
 ```
 /agendei
   /admin           Painel administrativo (dashboard, agenda, CRUDs, relatorios)
-  /api             Endpoints JSON (profissionais, horarios livres, dias com vaga)
+  /api             Endpoints JSON (filiais, profissionais, horarios livres, dias com vaga)
   /assets          css, js e imagens
   /cliente         Painel do cliente (dashboard, agendamento, historico, perfil)
   /config          config.php (bootstrap) e database.php (conexao PDO)
@@ -232,6 +232,32 @@ modo de alto contraste.
 - **`models/Agendamento.php::criar()`** abre uma transacao, revalida tudo com
   `SELECT ... FOR UPDATE` e so entao grava - dois clientes nunca conseguem
   reservar o mesmo horario.
+
+### Filiais (unidades)
+
+Um estabelecimento pode ter mais de uma unidade (matriz e filiais), cada uma
+com nome, endereco, telefone e foto. Cada profissional pertence a uma filial,
+e os servicos que uma unidade oferece sao os dos profissionais ativos que
+trabalham nela - nao existe cadastro separado de servico por filial. No
+agendamento, o cliente escolhe o servico e em seguida a unidade; so entao ve
+os profissionais daquela filial. Todo agendamento grava a filial em que foi
+marcado. Uma filial inativa deixa de aparecer para o cliente, mas o historico
+dela permanece.
+
+O administrador cadastra as unidades em **Admin > Filiais** e acompanha o
+faturamento por unidade em **Relatorios**.
+
+Para atualizar uma base criada antes das filiais, execute uma vez:
+
+```
+php scripts/migrar.php            # MySQL (ja encadeia a migracao das filiais)
+php scripts/migrar_filiais.php    # PostgreSQL
+```
+
+O script cria a tabela `filiais`, uma filial **Matriz** para cada
+estabelecimento e vincula a ela os profissionais e agendamentos que ja
+existiam. Bancos novos ja nascem com a Matriz (`banco.sql` e
+`banco_postgres.sql`).
 
 ## Regras de negocio garantidas pelo servidor
 
@@ -272,8 +298,8 @@ esconder as mensagens de erro detalhadas.
 ## Preparado para evoluir
 
 A arquitetura ja isola os pontos de extensao para WhatsApp, lembretes,
-lista de espera, avaliacoes, cupons, pagamentos, comissoes, multiplas unidades
-e integracao com Google Calendar:
+lista de espera, avaliacoes, cupons, pagamentos, comissoes e integracao com
+Google Calendar:
 
 - `agendamentos.origem` identifica o canal de criacao.
 - `configuracoes` permite novas regras sem alterar codigo.

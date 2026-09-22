@@ -69,6 +69,12 @@ ele mostra a URL publica, algo como `https://agendei.onrender.com`.
 Como o banco (Supabase) ja esta instalado, o sistema abre pronto — nao precisa
 rodar o `instalar.php` de novo. Faca login e **troque as senhas padrao**.
 
+> Se esse banco foi criado antes das filiais (unidades), rode uma vez, da sua
+> maquina, `php scripts/migrar_filiais.php` com o `driver` em `pgsql` apontando
+> para o Supabase (veja [SUPABASE.md](SUPABASE.md), passo 3). O script cria a
+> tabela `filiais` e a unidade **Matriz**. Banco novo, importado do
+> `banco_postgres.sql`, ja vem com ela.
+
 ---
 
 ## Detalhes que importam
