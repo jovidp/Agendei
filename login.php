@@ -150,9 +150,6 @@ $tituloPagina = 'Entrar | ' . $estabelecimento['nome'];
             <p class="autenticacao-rodape">
                 Ainda nao tem conta? <a href="<?= url('cadastro.php') ?>">Criar conta</a>
             </p>
-            <p class="autenticacao-rodape">
-                Sua conta e de outro estabelecimento? <a href="<?= BASE_URL ?>/entrar.php">Entrar pela pagina geral</a>
-            </p>
         </div>
     </div>
 </div>

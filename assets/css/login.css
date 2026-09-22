@@ -103,6 +103,58 @@
   background-color: var(--cor-secundaria);
 }
 
+/* Painel da entrada geral: marca e slogan do produto. As cores sao as da marca
+   (includes/marca.php), fixas de proposito, e nao as do tema da empresa. */
+.autenticacao-apresentacao.apresentacao-marca {
+  position: relative;
+  overflow: hidden;
+  background-color: #1f4e5f;
+  color: #f5f1ea;
+}
+
+/* Simbolo em marca d'agua, cortado pela borda para dar profundidade ao painel. */
+.apresentacao-marca::after {
+  content: "";
+  position: absolute;
+  right: -70px;
+  top: 50%;
+  width: 260px;
+  height: 260px;
+  transform: translateY(-50%) rotate(-8deg);
+  background: url("../img/agendei-simbolo-claro.svg") no-repeat center / contain;
+  opacity: 0.07;
+  pointer-events: none;
+}
+
+.apresentacao-marca .marca-sistema {
+  position: relative;
+  z-index: 1;
+  font-size: 22px;
+}
+
+.autenticacao-apresentacao.apresentacao-marca .marca-slogan {
+  position: relative;
+  z-index: 1;
+  margin: auto 0 0;
+  padding-top: 18px;
+  max-width: 9em;
+  font-size: 30px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+/* Traco na cor de destaque, o mesmo verde da faixa do simbolo. */
+.apresentacao-marca .marca-slogan::before {
+  content: "";
+  display: block;
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  margin-bottom: 16px;
+  background-color: #5faf8b;
+}
+
 /* Define o espaço interno dedicado aos campos e às ações de autenticação. */
 .autenticacao-formulario {
   padding: 34px 32px;

@@ -17,12 +17,15 @@ define('BASE_URL', $argv[1] ?? '');
 define('AMBIENTE', 'desenvolvimento');
 define('ENTRADA_LOCAL', true);
 define('ENTRADA_GLOBAL', true);
+// A entrada geral veste a marca do produto: o nome e o slogan vem de config.php e includes/marca.php.
+define('NOME_SISTEMA', 'Agendei');
 set_error_handler(static function (int $nivel, string $mensagem, string $arquivo, int $linha): never {
     throw new ErrorException($mensagem, 0, $nivel, $arquivo, $linha);
 });
 require RAIZ . '/includes/funcoes.php';
 require RAIZ . '/includes/auth.php';
 require RAIZ . '/includes/seguranca.php';
+require RAIZ . '/includes/marca.php';
 spl_autoload_register(static function (string $classe): void {
     require RAIZ . '/models/' . $classe . '.php';
 });

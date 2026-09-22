@@ -25,11 +25,12 @@ class Contexto
             if ($idSessao < 1) { encerrarSessao(); self::falhar(401, 'Faça login novamente.'); }
             $_SESSION['estabelecimento_id'] = $idSessao;
         }
-        // A entrada geral (entrar.php) nao pertence a empresa nenhuma: sem sessao
-        // local ela abre com a aparencia da plataforma e ignora o slug da URL. A
-        // empresa so e definida por assumir(), depois que a senha foi conferida.
-        if (defined('ENTRADA_GLOBAL') && $idSessao < 1) {
-            self::$atual = self::neutro('Agendei', 'Entrada única da plataforma');
+        // A entrada geral (entrar.php) e a pagina inicial sem link de empresa
+        // (index.php) nao pertencem a empresa nenhuma: sem sessao local abrem com
+        // a marca do produto e ignoram o slug da URL. Na entrada geral a empresa
+        // so e definida por assumir(), depois que a senha foi conferida.
+        if ((defined('ENTRADA_GLOBAL') || defined('PAGINA_PRODUTO')) && $idSessao < 1) {
+            self::$atual = self::produto();
             return;
         }
         if ($idSessao > 0) {
@@ -69,7 +70,23 @@ class Contexto
         self::$atual = $registro;
     }
 
-    /** Contexto sem empresa (master e entrada geral), com a aparencia da plataforma. */
+    /**
+     * Contexto das paginas do produto (entrada geral e pagina inicial). Elas nao
+     * sao do administrador master: vestem a marca e o tema de fabrica,
+     * independentemente da aparencia que o master escolheu para a sua area.
+     */
+    private static function produto(): array
+    {
+        return [
+            'id_estabelecimento' => 0,
+            'slug' => '',
+            'nome' => NOME_SISTEMA,
+            'logo' => null,
+            'slogan' => MARCA_SLOGAN,
+        ] + Tema::PADRAO;
+    }
+
+    /** Contexto sem empresa (area master), com a aparencia escolhida pelo master. */
     private static function neutro(?string $nome, string $slogan): array
     {
         $master = Master::aparencia();

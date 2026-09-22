@@ -172,19 +172,10 @@ $tituloPagina = 'Entrar | ' . $plataforma['nome'];
 
 <div class="autenticacao-area">
     <div class="autenticacao-caixa">
-        <div class="autenticacao-apresentacao">
-            <span class="marca">
-                <?= Tema::marca($plataforma) ?>
-                <?= e($plataforma['nome']) ?>
-            </span>
-            <h2>Uma entrada para todas as contas</h2>
-            <p>Administrador, profissional ou cliente: informe seu e-mail e senha e o sistema encontra o seu estabelecimento.</p>
-
-            <ul class="lista-beneficios">
-                <li>Nao precisa saber o link da empresa</li>
-                <li>Mais de um estabelecimento? Voce escolhe</li>
-                <li>Mesma seguranca do login da empresa</li>
-            </ul>
+        <?php /* Painel do produto: marca e slogan, nas cores fixas da marca (includes/marca.php). */ ?>
+        <div class="autenticacao-apresentacao apresentacao-marca">
+            <?= marcaSistema(36, true) ?>
+            <h2 class="marca-slogan"><?= e(MARCA_SLOGAN) ?></h2>
         </div>
 
         <div class="autenticacao-formulario">
@@ -232,7 +223,6 @@ $tituloPagina = 'Entrar | ' . $plataforma['nome'];
                         <input type="email" id="email" name="email" value="<?= e($email) ?>"
                                autocomplete="username" maxlength="150" required autofocus>
                         <span class="mensagem-campo"></span>
-                        <span class="ajuda-campo">Aqui vale somente o e-mail. O login de 6 letras funciona na pagina do seu estabelecimento.</span>
                     </div>
 
                     <div class="campo">
@@ -247,9 +237,6 @@ $tituloPagina = 'Entrar | ' . $plataforma['nome'];
                     </div>
                 </form>
 
-                <p class="autenticacao-rodape">
-                    Esqueceu a senha ou quer criar conta? Use a pagina do seu estabelecimento.
-                </p>
             <?php endif; ?>
         </div>
     </div>

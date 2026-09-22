@@ -17,6 +17,14 @@ const MARCA_COR_DESTAQUE = '#5FAF8B';
 const MARCA_COR_CLARA    = '#F5F1EA';
 
 /**
+ * Slogan oficial. Duas palavras que descrevem o simbolo (a agenda com o
+ * "check") e a promessa do produto: o horario marcado e um horario garantido.
+ * Vale para a entrada geral, material de divulgacao e assinaturas; a frase de
+ * apoio mais longa fica em MARCA.md.
+ */
+const MARCA_SLOGAN = 'Marcou, confirmou.';
+
+/**
  * Simbolo da marca em SVG embutido.
  * $invertida monta a versao de fundo escuro (rodape e menu lateral).
  */

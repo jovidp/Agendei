@@ -173,6 +173,9 @@ Os tres ultimos criam e descartam um banco proprio e nunca tocam o banco de uso 
 ## Identidade visual
 
 O sistema tem marca propria, separada da identidade de cada empresa atendida.
+O slogan e **Marcou, confirmou.** (`MARCA_SLOGAN`, em `includes/marca.php`);
+o guia completo de marca, com tom de voz, regras do logotipo e mensagens de
+venda, esta em [MARCA.md](MARCA.md).
 
 | Cor | Codigo | Uso |
 | --- | --- | --- |
@@ -189,7 +192,8 @@ modo de alto contraste.
 
 **Onde aparece cada marca:**
 
-- A **marca do sistema** assina o que e do produto: icone da aba, instalador,
+- A **marca do sistema** assina o que e do produto: pagina inicial sem link de
+  empresa (`index.php`), entrada geral (`entrar.php`), icone da aba, instalador,
   tela de saida, rodape publico e o rodape das telas de entrada.
 - A **marca da empresa** (logo e cores cadastradas em *Aparencia*) continua
   mandando nas telas do estabelecimento, via `Tema::marca()`. A marca do
