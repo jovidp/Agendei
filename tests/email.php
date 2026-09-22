@@ -28,7 +28,7 @@ require_once 'includes/emails.php';
 require_once 'models/Email.php';
 
 // Nada de configuracao herdada do ambiente ou do arquivo local: o teste define a sua.
-foreach (['HOST', 'PORTA', 'SEGURANCA', 'USUARIO', 'SENHA', 'REMETENTE', 'NOME'] as $chave) {
+foreach (['HOST', 'PORTA', 'SEGURANCA', 'USUARIO', 'SENHA', 'REMETENTE', 'NOME', 'API_CHAVE', 'API_URL'] as $chave) {
     putenv('AGENDEI_EMAIL_' . $chave . '=');
 }
 
@@ -80,6 +80,7 @@ function encerrarServidorFalso(array $servidor): string
 // Sem configuracao: nada quebra, nada sai
 // -------------------------------------------------------------------------
 verificar('sem host nao esta configurado', Email::configurado(), false);
+verificar('sem configuracao nao ha meio de envio', Email::meio(), '');
 verificar('sem configuracao o envio devolve false', Email::enviar('alguem@teste.local', 'Oi', 'corpo'), false);
 verificar('o motivo fica registrado', Email::ultimoErro(), 'Envio de e-mail nao configurado.');
 
@@ -94,6 +95,10 @@ verificar('465 sobe com SSL direto', Email::configuracao()['seguranca'], 'ssl');
 putenv('AGENDEI_EMAIL_SEGURANCA=nenhuma');
 verificar('a seguranca informada prevalece', Email::configuracao()['seguranca'], 'nenhuma');
 verificar('o nome do remetente cai no nome do sistema', Email::configuracao()['nome'], 'Agendei');
+verificar('com host e remetente o meio e SMTP', Email::meio(), 'smtp');
+putenv('AGENDEI_EMAIL_API_CHAVE=xkeysib-teste');
+verificar('com a chave da API o meio passa a ser a API', Email::meio(), 'api');
+putenv('AGENDEI_EMAIL_API_CHAVE=');
 
 // -------------------------------------------------------------------------
 // Montagem da mensagem
@@ -164,6 +169,64 @@ putenv('AGENDEI_EMAIL_PORTA=' . ($porta + 1));
 verificar('servidor fora do ar devolve false', Email::enviar('ana@teste.local', 'Teste', 'corpo'), false);
 verificar('o motivo explica a conexao', str_contains(Email::ultimoErro(), 'conectar'), true);
 verificar('destinatario invalido e recusado antes de conectar', Email::enviar('nao-e-email', 'Teste', 'corpo'), false);
+
+// -------------------------------------------------------------------------
+// API da Brevo: o caminho do Render, com um servidor HTTP falso
+// -------------------------------------------------------------------------
+$portaApi = random_int(20000, 40000);
+$capturaApi = sys_get_temp_dir() . '/agendei_api_falsa.json';
+@unlink($capturaApi);
+$servidorApi = proc_open(
+    [PHP_BINARY, '-S', '127.0.0.1:' . $portaApi, __DIR__ . '/api_falsa.php'],
+    [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
+    $pipesApi
+);
+for ($tentativa = 0; $tentativa < 50; $tentativa++) {
+    $sonda = @stream_socket_client('tcp://127.0.0.1:' . $portaApi, $codigo, $erro, 0.2);
+    if ($sonda !== false) {
+        fclose($sonda);
+        break;
+    }
+    usleep(100000);
+}
+
+putenv('AGENDEI_EMAIL_HOST=');
+putenv('AGENDEI_EMAIL_API_CHAVE=xkeysib-chave-de-teste');
+putenv('AGENDEI_EMAIL_API_URL=http://127.0.0.1:' . $portaApi . '/v3/smtp/email');
+putenv('AGENDEI_EMAIL_REMETENTE=avisos@agendei.test');
+putenv('AGENDEI_EMAIL_NOME=Agendei Avisos');
+
+verificar('so a chave da API ja configura o envio', Email::configurado(), true);
+$enviou = Email::enviar('ana@teste.local', 'Assunto pela API', 'texto puro', '<p>html</p>', 'Ana');
+$captura = json_decode((string) @file_get_contents($capturaApi), true) ?: [];
+
+verificar('a API aceita o envio', $enviou, true);
+verificar('a chamada e um POST', $captura['metodo'] ?? null, 'POST');
+verificar('a chamada vai para o endereco da Brevo', $captura['caminho'] ?? null, '/v3/smtp/email');
+verificar('a chave vai no cabecalho api-key', $captura['chave'] ?? null, 'xkeysib-chave-de-teste');
+verificar('o corpo e JSON', str_starts_with((string) ($captura['tipo'] ?? ''), 'application/json'), true);
+verificar('o remetente e o configurado', $captura['corpo']['sender']['email'] ?? null, 'avisos@agendei.test');
+verificar('o nome do remetente acompanha', $captura['corpo']['sender']['name'] ?? null, 'Agendei Avisos');
+verificar('o destinatario leva nome e e-mail', $captura['corpo']['to'][0] ?? null, ['email' => 'ana@teste.local', 'name' => 'Ana']);
+verificar('o assunto vai como esta', $captura['corpo']['subject'] ?? null, 'Assunto pela API');
+verificar('as duas versoes vao no corpo', ($captura['corpo']['textContent'] ?? '') === 'texto puro' && ($captura['corpo']['htmlContent'] ?? '') === '<p>html</p>', true);
+
+@unlink($capturaApi);
+putenv('AGENDEI_EMAIL_API_CHAVE=chave-errada');
+$enviou = Email::enviar('ana@teste.local', 'Assunto', 'texto');
+verificar('chave recusada devolve false', $enviou, false);
+verificar('o motivo traz o codigo HTTP', str_contains(Email::ultimoErro(), 'HTTP 401'), true);
+verificar('o motivo traz a mensagem da API', str_contains(Email::ultimoErro(), 'Key not found'), true);
+
+proc_terminate($servidorApi);
+foreach ($pipesApi as $pipe) {
+    fclose($pipe);
+}
+proc_close($servidorApi);
+
+putenv('AGENDEI_EMAIL_API_URL=http://127.0.0.1:' . ($portaApi + 1) . '/v3/smtp/email');
+verificar('API fora do ar devolve false', Email::enviar('ana@teste.local', 'Assunto', 'texto'), false);
+verificar('o motivo explica a conexao com a API', str_contains(Email::ultimoErro(), 'API de e-mail'), true);
 
 echo "\n";
 if ($falhas > 0) {

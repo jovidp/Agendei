@@ -194,15 +194,19 @@ class Saude
     private static function email(): array
     {
         $config = Email::configuracao();
-        $configurado = Email::configurado();
+        $meio = Email::meio();
 
         return [self::item(
             'Envio de e-mail',
-            $configurado ? self::OK : self::AVISO,
-            $configurado ? $config['host'] . ':' . $config['porta'] . ' (' . $config['seguranca'] . ')' : 'nao configurado',
-            $configurado
+            $meio !== '' ? self::OK : self::AVISO,
+            match ($meio) {
+                'api'   => 'API Brevo (HTTPS)',
+                'smtp'  => $config['host'] . ':' . $config['porta'] . ' (' . $config['seguranca'] . ')',
+                default => 'nao configurado',
+            },
+            $meio !== ''
                 ? 'Cadastro de empresa, aprovacao e recuperacao de senha avisam por e-mail a partir de ' . $config['remetente'] . '. Use o teste abaixo para confirmar a entrega.'
-                : 'Defina AGENDEI_EMAIL_HOST, AGENDEI_EMAIL_USUARIO, AGENDEI_EMAIL_SENHA e AGENDEI_EMAIL_REMETENTE (ou config/email.local.php). Sem isso, os avisos ficam por sua conta e a recuperacao de senha so funciona em desenvolvimento.'
+                : 'Defina AGENDEI_EMAIL_API_CHAVE e AGENDEI_EMAIL_REMETENTE (Brevo, funciona no Render) ou AGENDEI_EMAIL_HOST, _USUARIO e _SENHA (SMTP). Sem isso, os avisos ficam por sua conta e a recuperacao de senha so funciona em desenvolvimento.'
         )];
     }
 

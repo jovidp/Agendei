@@ -84,48 +84,61 @@ rodar o `instalar.php` de novo. Faca login e **troque as senhas padrao**.
 
 ## E-mail: avisos e recuperacao de senha
 
-O Render nao tem servidor de e-mail e `mail()` nao funciona la. O Agendei
-fala SMTP direto com um provedor, sem instalar nada. Qualquer conta SMTP
-serve; duas opcoes gratuitas:
+O Render nao tem servidor de e-mail, `mail()` nao funciona la e o plano
+gratuito **bloqueia as portas de SMTP para fora** (25, 465 e 587): tentar
+o Gmail por SMTP termina em "Connection timed out". O caminho que funciona
+e mandar por HTTPS, pela API da Brevo (gratuita, ate 300 e-mails/dia, sem
+cartao). Leva uns cinco minutos:
 
-- **Gmail** (ate ~500 mensagens/dia): ative a verificacao em duas etapas na
-  conta Google e crie uma *senha de app* em myaccount.google.com -> Seguranca
-  -> Senhas de app. Servidor `smtp.gmail.com`, porta `587`, usuario e o
-  e-mail completo, senha e a senha de app (16 letras).
-- **Brevo** (ate 300/dia, sem cartao): em brevo.com crie a conta, va em
-  *SMTP & API -> SMTP* e gere uma chave. Servidor `smtp-relay.brevo.com`,
-  porta `587`, usuario e o login mostrado la, senha e a chave SMTP. O
-  remetente precisa ser um e-mail validado na Brevo.
-
-No Render, em **Environment**, adicione:
+1. Crie a conta em brevo.com com o e-mail que vai aparecer como remetente e
+   confirme o e-mail que ela manda.
+2. No menu do canto superior direito, abra **SMTP & API**, aba **API keys**,
+   e clique em **Generate a new API key**. De um nome (Agendei) e copie a
+   chave: ela comeca com `xkeysib-` e so aparece uma vez.
+3. No Render, em **Environment**, adicione:
 
 | Chave | Valor |
 |---|---|
-| `AGENDEI_EMAIL_HOST` | `smtp.gmail.com` ou `smtp-relay.brevo.com` |
-| `AGENDEI_EMAIL_PORTA` | `587` |
-| `AGENDEI_EMAIL_SEGURANCA` | `tls` (587) ou `ssl` (465); pode omitir |
-| `AGENDEI_EMAIL_USUARIO` | o usuario do SMTP |
-| `AGENDEI_EMAIL_SENHA` | a senha de app ou a chave SMTP |
-| `AGENDEI_EMAIL_REMETENTE` | o e-mail que aparece como remetente |
+| `AGENDEI_EMAIL_API_CHAVE` | a chave `xkeysib-...` |
+| `AGENDEI_EMAIL_REMETENTE` | o e-mail da conta Brevo (ou outro remetente validado la em *Senders*) |
 | `AGENDEI_EMAIL_NOME` | `Agendei` (opcional) |
 
 Salve: o Render reinicia o servico sozinho. Depois entre na area master, abra
 **Saude do sistema** e clique em **Enviar e-mail de teste**. A mensagem vai
 para o e-mail da sua conta master; se nao chegar, a tela mostra o motivo que
-o servidor SMTP devolveu.
+a Brevo devolveu (o mais comum e remetente nao validado).
+
+### SMTP, para servidor com a porta liberada
+
+Fora do Render gratuito (maquina local, VPS, hospedagem propria), o sistema
+tambem fala SMTP direto. Com Gmail: ative a verificacao em duas etapas e crie
+uma *senha de app* em myaccount.google.com/apppasswords. As variaveis sao:
+
+| Chave | Valor |
+|---|---|
+| `AGENDEI_EMAIL_HOST` | `smtp.gmail.com` (ou `smtp-relay.brevo.com`) |
+| `AGENDEI_EMAIL_PORTA` | `587` |
+| `AGENDEI_EMAIL_SEGURANCA` | `tls` (587) ou `ssl` (465); pode omitir |
+| `AGENDEI_EMAIL_USUARIO` | o e-mail completo (ou o login SMTP da Brevo) |
+| `AGENDEI_EMAIL_SENHA` | a senha de app de 16 letras (ou a chave SMTP) |
+| `AGENDEI_EMAIL_REMETENTE` | o e-mail que aparece como remetente |
+
+Se `AGENDEI_EMAIL_API_CHAVE` tambem estiver definida, a API vence.
 
 Na sua maquina, em vez de variaveis, crie `config/email.local.php` (o
-`.gitignore` ja o mantem fora do GitHub):
+`.gitignore` ja o mantem fora do GitHub), com as mesmas chaves em minusculas
+e sem o prefixo:
 
 ```php
 <?php
 return [
-    'host'      => 'smtp.gmail.com',
-    'porta'     => 587,
-    'usuario'   => 'voce@gmail.com',
-    'senha'     => 'senha-de-app',
+    // Pela API da Brevo:
+    'api_chave' => 'xkeysib-...',
     'remetente' => 'voce@gmail.com',
     'nome'      => 'Agendei',
+    // ...ou por SMTP:
+    // 'host' => 'smtp.gmail.com', 'porta' => 587,
+    // 'usuario' => 'voce@gmail.com', 'senha' => 'senha-de-app',
 ];
 ```
 

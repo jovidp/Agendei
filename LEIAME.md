@@ -287,13 +287,15 @@ recusa) entram na auditoria master. O envio e limitado por origem
 
 ## E-mail
 
-O sistema envia e-mail por SMTP, sem dependencias (`models/Email.php`), para:
+O sistema envia e-mail sem dependencias (`models/Email.php`), pela API da
+Brevo por HTTPS (o caminho para o Render, que bloqueia SMTP) ou por SMTP, para:
 confirmar o cadastro de empresa ao responsavel e avisar os masters; comunicar a
 aprovacao ou a recusa; e entregar o link de recuperacao de senha. As mensagens
 ficam em `includes/emails.php`.
 
-A configuracao vem de variaveis de ambiente (`AGENDEI_EMAIL_HOST`, `_PORTA`,
-`_SEGURANCA`, `_USUARIO`, `_SENHA`, `_REMETENTE`, `_NOME`) ou de
+A configuracao vem de variaveis de ambiente (`AGENDEI_EMAIL_API_CHAVE` e
+`_REMETENTE` para a API; `AGENDEI_EMAIL_HOST`, `_PORTA`, `_SEGURANCA`,
+`_USUARIO`, `_SENHA`, `_REMETENTE`, `_NOME` para SMTP) ou de
 `config/email.local.php` (nao versionado). Sem configuracao nada quebra: os
 envios devolvem falso, o motivo vai para o log e as telas mostram o caminho
 manual. Em **Master > Saude do sistema** ha um botao para enviar um e-mail de

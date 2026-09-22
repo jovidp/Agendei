@@ -1,12 +1,16 @@
 <?php
 
 /**
- * Envio de e-mail por SMTP, sem dependencias.
+ * Envio de e-mail, sem dependencias, por dois caminhos:
  *
- * Hospedagens como Render e Koyeb nao tem servidor de e-mail, e mail() nao
- * funciona nelas. O sistema fala SMTP direto com um provedor (Gmail com senha
- * de aplicativo, Brevo, Mailgun, SendGrid, o SMTP da propria hospedagem...),
- * que e o que existe em qualquer lugar.
+ * - API HTTPS da Brevo (AGENDEI_EMAIL_API_CHAVE): o caminho para o Render e
+ *   outras hospedagens gratuitas, que bloqueiam as portas de SMTP para fora.
+ *   HTTPS na porta 443 passa em qualquer lugar.
+ * - SMTP (AGENDEI_EMAIL_HOST...): Gmail com senha de aplicativo, Brevo,
+ *   Mailgun, o SMTP da propria hospedagem. Serve onde a porta 587 ou 465
+ *   esta aberta, como na maquina local ou num servidor proprio.
+ *
+ * Com os dois configurados, a API vence.
  *
  * A configuracao segue a do banco: variaveis de ambiente primeiro, porque e
  * assim que a hospedagem injeta segredo; depois config/email.local.php, que
@@ -28,7 +32,12 @@ class Email
         'senha'     => 'AGENDEI_EMAIL_SENHA',
         'remetente' => 'AGENDEI_EMAIL_REMETENTE',
         'nome'      => 'AGENDEI_EMAIL_NOME',
+        'api_chave' => 'AGENDEI_EMAIL_API_CHAVE',
+        'api_url'   => 'AGENDEI_EMAIL_API_URL',
     ];
+
+    /** Endereco da API transacional da Brevo. A variavel so existe para o teste apontar para um servidor local. */
+    private const API_BREVO = 'https://api.brevo.com/v3/smtp/email';
 
     /** Segundos de espera por conexao e por cada resposta do servidor. */
     private const TEMPO_LIMITE = 12;
@@ -59,14 +68,28 @@ class Email
             'senha'     => self::valor('senha', ''),
             'remetente' => mb_strtolower(self::valor('remetente', self::valor('usuario', ''))),
             'nome'      => self::valor('nome', NOME_SISTEMA),
+            'api_chave' => self::valor('api_chave', ''),
+            'api_url'   => self::valor('api_url', self::API_BREVO),
         ];
     }
 
-    /** Ha servidor e remetente configurados. */
+    /** Ha um caminho de envio e um remetente valido. */
     public static function configurado(): bool
     {
+        return self::meio() !== '';
+    }
+
+    /** Caminho em uso: 'api' (Brevo por HTTPS), 'smtp' ou '' quando nao ha configuracao. */
+    public static function meio(): string
+    {
         $config = self::configuracao();
-        return $config['host'] !== '' && validarEmail($config['remetente']);
+        if (!validarEmail($config['remetente'])) {
+            return '';
+        }
+        if ($config['api_chave'] !== '') {
+            return 'api';
+        }
+        return $config['host'] !== '' ? 'smtp' : '';
     }
 
     public static function ultimoErro(): string
@@ -114,10 +137,14 @@ class Email
         }
 
         $config = self::configuracao();
-        $mensagem = self::montar($config['remetente'], $config['nome'], $para, $nomeDestinatario, $assunto, $texto, $html);
 
         try {
-            self::transmitir($config, $para, $mensagem);
+            if (self::meio() === 'api') {
+                self::transmitirApi($config, $para, $nomeDestinatario, $assunto, $texto, $html);
+            } else {
+                $mensagem = self::montar($config['remetente'], $config['nome'], $para, $nomeDestinatario, $assunto, $texto, $html);
+                self::transmitir($config, $para, $mensagem);
+            }
             return true;
         } catch (Throwable $erro) {
             self::$ultimoErro = $erro->getMessage();
@@ -185,6 +212,78 @@ class Email
     private static function corpo(string $conteudo): string
     {
         return rtrim(chunk_split(base64_encode(str_replace(["\r\n", "\r"], "\n", $conteudo)), 76, "\r\n"));
+    }
+
+    // -----------------------------------------------------------------
+    // API da Brevo (HTTPS)
+    // -----------------------------------------------------------------
+
+    private static function transmitirApi(array $config, string $para, string $nomeDestinatario, string $assunto, string $texto, ?string $html): void
+    {
+        $corpo = [
+            'sender'      => ['email' => $config['remetente'], 'name' => $config['nome']],
+            'to'          => [['email' => $para] + ($nomeDestinatario !== '' ? ['name' => $nomeDestinatario] : [])],
+            'subject'     => $assunto,
+            'textContent' => $texto,
+        ];
+        if ($html !== null) {
+            $corpo['htmlContent'] = $html;
+        }
+
+        [$status, $resposta] = self::postarJson($config['api_url'], $config['api_chave'], $corpo);
+
+        if ($status < 200 || $status >= 300) {
+            $dados = json_decode($resposta, true);
+            $motivo = is_array($dados) ? (string) ($dados['message'] ?? $dados['code'] ?? '') : '';
+            throw new RuntimeException('A API de e-mail recusou (HTTP ' . $status . ')' . ($motivo !== '' ? ': ' . $motivo : '') . '.');
+        }
+    }
+
+    /** POST de JSON com a chave no cabecalho. Devolve [codigo HTTP, corpo da resposta]. */
+    private static function postarJson(string $url, string $chave, array $dados): array
+    {
+        $json = json_encode($dados, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $cabecalhos = ['Content-Type: application/json', 'Accept: application/json', 'api-key: ' . $chave];
+
+        if (function_exists('curl_init')) {
+            $curl = curl_init($url);
+            curl_setopt_array($curl, [
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => $json,
+                CURLOPT_HTTPHEADER     => $cabecalhos,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CONNECTTIMEOUT => self::TEMPO_LIMITE,
+                CURLOPT_TIMEOUT        => self::TEMPO_LIMITE * 2,
+            ]);
+            $resposta = curl_exec($curl);
+            if ($resposta === false) {
+                $erro = curl_error($curl);
+                curl_close($curl);
+                throw new RuntimeException('Nao foi possivel falar com a API de e-mail (' . $erro . ').');
+            }
+            $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+            curl_close($curl);
+            return [$status, (string) $resposta];
+        }
+
+        $contexto = stream_context_create(['http' => [
+            'method'        => 'POST',
+            'header'        => implode("\r\n", $cabecalhos),
+            'content'       => $json,
+            'timeout'       => self::TEMPO_LIMITE * 2,
+            'ignore_errors' => true,
+        ]]);
+        $resposta = @file_get_contents($url, false, $contexto);
+        if ($resposta === false) {
+            throw new RuntimeException('Nao foi possivel falar com a API de e-mail.');
+        }
+        $status = 0;
+        foreach ($http_response_header ?? [] as $linha) {
+            if (preg_match('~^HTTP/\S+\s+(\d{3})~', $linha, $m)) {
+                $status = (int) $m[1];
+            }
+        }
+        return [$status, $resposta];
     }
 
     // -----------------------------------------------------------------
