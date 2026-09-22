@@ -152,6 +152,38 @@ verificar('administrador e lido pela empresa certa', is_array(Estabelecimento::a
 verificar('administrador nao e lido por outra empresa', Estabelecimento::administrador(1, $idAdmin), null);
 
 // -------------------------------------------------------------------------
+// Consulta global de contas: "este e-mail e de qual estabelecimento?"
+// -------------------------------------------------------------------------
+$vinculos = Usuario::vinculosPorEmail('ana@studio.test');
+verificar('o e-mail do responsavel aponta para a empresa contratada', count($vinculos), 1);
+verificar('o vinculo traz o id da empresa', (int) ($vinculos[0]['id_estabelecimento'] ?? 0), $idEmpresa);
+verificar('o vinculo traz o slug da empresa', $vinculos[0]['estabelecimento_slug'] ?? '', 'studio-teste');
+verificar('o vinculo traz o tipo da conta', $vinculos[0]['tipo'] ?? '', 'admin');
+verificar('e-mail desconhecido nao tem vinculo', Usuario::vinculosPorEmail('ninguem@studio.test'), []);
+
+// A mesma pessoa em duas empresas gera dois vinculos, um por estabelecimento.
+$idEmpresaB = Estabelecimento::contratar([
+    'estabelecimento' => 'Studio Dois',
+    'slug'            => 'studio-dois',
+    'nome'            => 'Ana Responsavel',
+    'email'           => 'ana@studio.test',
+    'senha'           => 'senha123',
+]);
+$vinculos = Usuario::vinculosPorEmail('ANA@studio.test ');
+verificar('o mesmo e-mail em duas empresas rende dois vinculos', count($vinculos), 2);
+verificar('cada vinculo aponta para uma empresa diferente', array_map('intval', array_column($vinculos, 'id_estabelecimento')) === [$idEmpresaB, $idEmpresa] || array_map('intval', array_column($vinculos, 'id_estabelecimento')) === [$idEmpresa, $idEmpresaB], true);
+
+verificar('busca global por parte do e-mail', Usuario::contarGlobal(['busca' => 'studio.test']), 2);
+verificar('busca global por parte do nome', Usuario::contarGlobal(['busca' => 'responsavel']), 2);
+verificar('busca global restrita a uma empresa', Usuario::contarGlobal(['busca' => 'ana', 'estabelecimento' => $idEmpresaB]), 1);
+verificar('busca global filtra por tipo', Usuario::contarGlobal(['tipo' => 'cliente']), 0);
+verificar('tipo fora do catalogo e ignorado', Usuario::contarGlobal(['tipo' => 'master']), Usuario::contarGlobal());
+$linhas = Usuario::buscarGlobal(['estabelecimento' => $idEmpresaB]);
+verificar('a listagem global traz o nome da empresa', $linhas[0]['estabelecimento_nome'] ?? '', 'Studio Dois');
+verificar('a listagem global nao expoe o hash de senha', array_key_exists('senha_hash', $linhas[0] ?? []), false);
+verificar('a listagem global respeita o limite', count(Usuario::buscarGlobal(['limite' => 1])), 1);
+
+// -------------------------------------------------------------------------
 // A empresa nunca fica sem administrador ativo
 // -------------------------------------------------------------------------
 verificar('contagem de administradores ativos', Estabelecimento::administradoresAtivos($idEmpresa), 1);

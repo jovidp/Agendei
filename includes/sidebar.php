@@ -13,6 +13,7 @@ $menus = [
     'master' => [
         ['rotulo' => 'Visão geral', 'arquivo' => 'master/dashboard.php', 'icone' => 'dashboard'],
         ['rotulo' => 'Estabelecimentos', 'arquivo' => 'master/estabelecimentos.php', 'icone' => 'clientes'],
+        ['rotulo' => 'Contas por estabelecimento', 'arquivo' => 'master/usuarios.php', 'icone' => 'perfil'],
         ['rotulo' => 'Uso da plataforma', 'arquivo' => 'master/uso.php', 'icone' => 'relatorios'],
         ['rotulo' => 'Planos e limites', 'arquivo' => 'master/planos.php', 'icone' => 'servicos'],
         ['separador' => 'Plataforma'],

@@ -350,4 +350,116 @@ class Usuario
 
         return true;
     }
+
+    // ---------------------------------------------------------------------
+    // Consulta global (painel master)
+    //
+    // O vinculo conta -> empresa e a coluna usuarios.id_estabelecimento. As
+    // buscas acima passam pelo Contexto e so enxergam a empresa da sessao; o
+    // master nao tem empresa, e precisa responder "este e-mail e de quem?".
+    // O e-mail e unico apenas dentro de cada empresa, por isso o retorno e uma
+    // linha por vinculo: a mesma pessoa pode aparecer em varios estabelecimentos.
+    // ---------------------------------------------------------------------
+
+    /** Tipos de conta local, na ordem em que aparecem nos filtros. */
+    public const TIPOS = ['admin' => 'Administrador', 'profissional' => 'Profissional', 'cliente' => 'Cliente'];
+
+    /** Monta o WHERE e os parametros da consulta global a partir dos filtros. */
+    private static function filtrosGlobais(array $filtros): array
+    {
+        $condicoes = [];
+        $parametros = [];
+
+        $busca = trim((string) ($filtros['busca'] ?? ''));
+        if ($busca !== '') {
+            $como = Sql::como();
+            $condicoes[] = '(u.email ' . $como . ' :busca_email OR u.nome ' . $como . ' :busca_nome OR u.login = :busca_login)';
+            $parametros[':busca_email'] = '%' . $busca . '%';
+            $parametros[':busca_nome'] = '%' . $busca . '%';
+            $parametros[':busca_login'] = mb_strtolower($busca);
+        }
+
+        $tipo = (string) ($filtros['tipo'] ?? '');
+        if (isset(self::TIPOS[$tipo])) {
+            $condicoes[] = 'u.tipo = :tipo';
+            $parametros[':tipo'] = $tipo;
+        }
+
+        $empresa = (int) ($filtros['estabelecimento'] ?? 0);
+        if ($empresa > 0) {
+            $condicoes[] = 'u.id_estabelecimento = :estabelecimento';
+            $parametros[':estabelecimento'] = $empresa;
+        }
+
+        return [$condicoes ? ' WHERE ' . implode(' AND ', $condicoes) : '', $parametros];
+    }
+
+    /** Conta as contas locais de todas as empresas que atendem aos filtros. */
+    public static function contarGlobal(array $filtros = []): int
+    {
+        [$where, $parametros] = self::filtrosGlobais($filtros);
+        $consulta = bd()->prepare('SELECT COUNT(*) FROM usuarios u' . $where);
+        $consulta->execute($parametros);
+        return (int) $consulta->fetchColumn();
+    }
+
+    /**
+     * Lista contas locais de qualquer empresa com o estabelecimento ao lado.
+     * Nunca devolve hash de senha nem segredos de 2FA.
+     */
+    public static function buscarGlobal(array $filtros = []): array
+    {
+        [$where, $parametros] = self::filtrosGlobais($filtros);
+        $sql = 'SELECT u.id_usuario, u.nome, u.email, u.login, u.tipo, u.status, u.telefone,
+                       u.ultimo_acesso, u.data_criacao, u.id_estabelecimento,
+                       e.nome AS estabelecimento_nome, e.slug AS estabelecimento_slug, e.status AS estabelecimento_status
+                FROM usuarios u
+                JOIN estabelecimento e ON e.id_estabelecimento = u.id_estabelecimento'
+            . $where
+            . ' ORDER BY u.email, e.nome, u.id_usuario';
+
+        $limite = (int) ($filtros['limite'] ?? 0);
+        if ($limite > 0) {
+            $sql .= ' LIMIT ' . $limite . ' OFFSET ' . max(0, (int) ($filtros['deslocamento'] ?? 0));
+        }
+
+        $consulta = bd()->prepare($sql);
+        $consulta->execute($parametros);
+        return $consulta->fetchAll();
+    }
+
+    /**
+     * Contas de um e-mail em qualquer empresa, com o hash de senha.
+     * Uso exclusivo da autenticacao pela entrada geral (autenticarGlobal):
+     * as telas devem usar vinculosPorEmail(), que nao devolve segredos.
+     */
+    public static function porEmailGlobal(string $email): array
+    {
+        $email = mb_strtolower(trim($email));
+        if ($email === '') {
+            return [];
+        }
+        $consulta = bd()->prepare('SELECT u.*, e.nome AS estabelecimento_nome, e.slug AS estabelecimento_slug, e.status AS estabelecimento_status
+                                   FROM usuarios u
+                                   JOIN estabelecimento e ON e.id_estabelecimento = u.id_estabelecimento
+                                   WHERE u.email = :email ORDER BY e.nome, u.id_usuario');
+        $consulta->execute([':email' => $email]);
+        return $consulta->fetchAll();
+    }
+
+    /** Todos os vinculos de um e-mail, em qualquer empresa. Resposta direta para "esta conta e de qual estabelecimento?". */
+    public static function vinculosPorEmail(string $email): array
+    {
+        $email = mb_strtolower(trim($email));
+        if ($email === '') {
+            return [];
+        }
+        $consulta = bd()->prepare('SELECT u.id_usuario, u.nome, u.tipo, u.status, u.id_estabelecimento,
+                                          e.nome AS estabelecimento_nome, e.slug AS estabelecimento_slug
+                                   FROM usuarios u
+                                   JOIN estabelecimento e ON e.id_estabelecimento = u.id_estabelecimento
+                                   WHERE u.email = :email ORDER BY e.nome, u.id_usuario');
+        $consulta->execute([':email' => $email]);
+        return $consulta->fetchAll();
+    }
 }
