@@ -606,10 +606,30 @@ function destinoAposLogin(): string
     return url(painelDe(perfil()));
 }
 
-/** Impede que um usuario ja logado veja login/cadastro. */
-function bloquearSeLogado(): void
+/**
+ * Ha uma sessao aberta na area indicada ('local' = estabelecimento, 'master')?
+ *
+ * As duas identidades sao excludentes: registrarSessao descarta a master e
+ * registrarSessaoMaster descarta a local. Por isso uma sessao master, sozinha,
+ * nao conta como "logado" para as telas do estabelecimento, e vice-versa.
+ */
+function sessaoAbertaEm(string $area): bool
 {
-    if (estaLogado()) {
+    return $area === 'master'
+        ? !empty($_SESSION['master_id'])
+        : !empty($_SESSION['usuario_id']);
+}
+
+/**
+ * Impede que um usuario ja logado veja login/cadastro.
+ *
+ * So bloqueia quando ja existe sessao do MESMO tipo da tela. Sem isso, o master
+ * que acabava de criar um estabelecimento nao conseguia entrar nele no mesmo
+ * navegador: login.php o mandava de volta ao painel master.
+ */
+function bloquearSeLogado(string $area = 'local'): void
+{
+    if (sessaoAbertaEm($area)) {
         redirecionar(painelDe(perfil()));
     }
 }

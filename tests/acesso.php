@@ -65,8 +65,11 @@ foreach (['empresa-a', 'empresa-b'] as $slug) {
     $_SESSION['simulacao'] = ['master_id' => 99];
     $_SESSION['segundo_fator_master'] = ['master_id' => 99];
     $_SESSION['redirecionar_apos_login'] = BASE_URL . '/master/dashboard.php';
+    // A tela de login local precisa continuar acessivel com a sessao master aberta.
+    verificar(!sessaoAbertaEm('local') && sessaoAbertaEm('master'), 'Sessao master bloqueou a tela de login local.');
     registrarSessao($usuario);
     verificar(ehAdmin() && !ehMaster() && !ehSimulacao() && !isset($_SESSION['master_id']), 'Login manteve identidade master.');
+    verificar(sessaoAbertaEm('local') && !sessaoAbertaEm('master'), 'Login local nao encerrou a sessao master.');
     verificar(segundoFatorMasterPendente() === null, 'Login manteve desafio master.');
     verificar(perfilId() !== null, 'Login perdeu o perfil administrativo.');
     verificar(perfilRotulo() === 'Administrador do estabelecimento', 'Rotulo confunde admin com master.');
