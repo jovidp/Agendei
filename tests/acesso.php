@@ -60,6 +60,15 @@ foreach (['empresa-a', 'empresa-b'] as $slug) {
     verificar($usuario['tipo'] === 'admin', 'Cadastro nao criou administrador local.');
     verificar(autenticar('admin@teste.local', 'senha-errada') === null, 'Senha invalida aceita.');
 
+    // Com a sessao master aberta, o slug da URL ainda resolve o estabelecimento:
+    // e assim que o master entra no que acabou de criar, pelo login local.
+    $_SESSION = ['master_id' => 99, 'usuario_tipo' => 'master'];
+    Contexto::iniciar();
+    verificar(Contexto::id() === $id, 'Sessao master ignorou o estabelecimento da URL.');
+    verificar(autenticar('admin@teste.local', 'Teste12345!') !== null, 'Login local falhou com a sessao master aberta.');
+    $_SESSION = [];
+    Contexto::iniciar();
+
     // Residuos de outra identidade nao podem sobreviver ao login local.
     $_SESSION['master_id'] = 99;
     $_SESSION['simulacao'] = ['master_id' => 99];
