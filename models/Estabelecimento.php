@@ -168,6 +168,8 @@ class Estabelecimento
                 'cliente_pacotes', 'pacotes', 'lista_espera', 'agendamentos',
                 'bloqueios_agenda', 'horarios_profissionais', 'profissional_servico',
                 'administradores', 'clientes', 'profissionais', 'servicos',
+                // filiais so depois de profissionais e agendamentos, que a referenciam.
+                'filiais',
                 'logs_autenticacao', 'usuarios', 'configuracoes', 'estabelecimento_plano',
             ] as $tabela) {
                 $q = $db->prepare('DELETE FROM ' . $tabela . ' WHERE id_estabelecimento = ?');

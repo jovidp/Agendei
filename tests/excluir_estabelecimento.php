@@ -33,7 +33,13 @@ foreach ($criacao as $tabela) {
     bd()->exec($sql);
     if (str_contains($sql, 'REFERENCES estabelecimento ')) $tabelasLocais[] = $tabela[1];
 }
-verificar(count($tabelasLocais) === 19, 'Cobertura das tabelas locais mudou; atualize o teste.');
+// As colunas id_filial entram no esquema por ALTER TABLE, que o laco acima nao
+// executa. O SQLite aceita FK em coluna nova com padrao NULL, entao a ordem de
+// exclusao (filiais depois de profissionais e agendamentos) fica coberta.
+foreach (['profissionais', 'agendamentos'] as $alterada) {
+    bd()->exec('ALTER TABLE ' . $alterada . ' ADD COLUMN id_filial INTEGER DEFAULT NULL REFERENCES filiais (id_filial)');
+}
+verificar(count($tabelasLocais) === 20, 'Cobertura das tabelas locais mudou; atualize o teste.');
 
 function inserir(string $tabela, array $dados): int
 {
@@ -51,13 +57,14 @@ foreach (['empresa-a', 'empresa-b'] as $slug) {
     $vinculo = ['id_estabelecimento' => $id];
     $idClienteUsuario = inserir('usuarios', $vinculo + ['nome' => 'Cliente', 'email' => 'cliente@teste.local', 'senha_hash' => 'fixture', 'tipo' => 'cliente']);
     $idProfUsuario = inserir('usuarios', $vinculo + ['nome' => 'Profissional', 'email' => 'prof@teste.local', 'senha_hash' => 'fixture', 'tipo' => 'profissional']);
+    $filial = inserir('filiais', $vinculo + ['nome' => 'Matriz']);
     $cliente = inserir('clientes', $vinculo + ['id_usuario' => $idClienteUsuario]);
-    $profissional = inserir('profissionais', $vinculo + ['id_usuario' => $idProfUsuario]);
+    $profissional = inserir('profissionais', $vinculo + ['id_usuario' => $idProfUsuario, 'id_filial' => $filial]);
     $servico = inserir('servicos', $vinculo + ['nome' => 'Servico']);
     inserir('profissional_servico', $vinculo + ['id_profissional' => $profissional, 'id_servico' => $servico]);
     inserir('horarios_profissionais', $vinculo + ['id_profissional' => $profissional, 'dia_semana' => 1, 'hora_inicio' => '08:00', 'hora_fim' => '18:00']);
     inserir('bloqueios_agenda', $vinculo + ['id_profissional' => $profissional, 'data_bloqueio' => '2026-10-01', 'id_usuario_criou' => $idProfUsuario]);
-    $agendamento = inserir('agendamentos', $vinculo + ['id_cliente' => $cliente, 'id_profissional' => $profissional, 'id_servico' => $servico, 'data_agendamento' => '2026-10-02', 'hora_inicio' => '10:00', 'hora_fim' => '11:00', 'valor' => 100]);
+    $agendamento = inserir('agendamentos', $vinculo + ['id_cliente' => $cliente, 'id_profissional' => $profissional, 'id_servico' => $servico, 'id_filial' => $filial, 'data_agendamento' => '2026-10-02', 'hora_inicio' => '10:00', 'hora_fim' => '11:00', 'valor' => 100]);
     inserir('notificacoes', $vinculo + ['id_usuario' => $idClienteUsuario, 'id_agendamento' => $agendamento, 'tipo' => 'lembrete', 'mensagem' => 'Teste']);
     inserir('pagamentos', $vinculo + ['id_agendamento' => $agendamento, 'valor' => 20]);
     inserir('fidelidade_movimentos', $vinculo + ['id_cliente' => $cliente, 'id_agendamento' => $agendamento, 'pontos' => 10, 'descricao' => 'Teste']);
