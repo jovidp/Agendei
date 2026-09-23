@@ -236,7 +236,6 @@ $recursos = [
                 <ul class="rodape-lista">
                     <li><a href="<?= url('cadastro_empresa.php') ?>">Cadastrar empresa</a></li>
                     <li><a href="<?= url('entrar.php') ?>">Entrar</a></li>
-                    <li><a href="<?= url('master/login.php') ?>">Área master</a></li>
                 </ul>
             </div>
             <div>
