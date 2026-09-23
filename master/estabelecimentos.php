@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $dados = ['estabelecimento' => post('estabelecimento'), 'slug' => strtolower(post('slug')), 'nome' => post('nome'), 'email' => mb_strtolower(post('email')), 'senha' => post('senha')];
             if (mb_strlen($dados['estabelecimento']) < 2 || mb_strlen($dados['estabelecimento']) > 120) $erros[] = 'Informe o nome do estabelecimento.';
             if (!preg_match('/^[a-z0-9](?:[a-z0-9-]{1,78}[a-z0-9])$/D', $dados['slug'])) $erros[] = 'Use um endereço de 3 a 80 letras minúsculas, números ou hífens.';
-            if (mb_strlen($dados['nome']) < 3) $erros[] = 'Informe o nome do administrador local.';
+            if (!validarNomeSobrenome($dados['nome'])) $erros[] = 'Informe o nome e o sobrenome do responsável.';
             if (!validarEmail($dados['email'])) $erros[] = 'Informe um e-mail válido.';
             if (!validarSenha($dados['senha'])) $erros[] = 'A senha deve ter pelo menos 6 caracteres.';
             if (!$erros) {
@@ -100,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $empresa = Estabelecimento::porIdGlobal($id);
             $dados = ['nome' => post('nome'), 'email' => mb_strtolower(post('email')), 'senha' => post('senha')];
             if (!$empresa) $erros[] = 'Estabelecimento não encontrado.';
-            if (mb_strlen($dados['nome']) < 3 || !validarEmail($dados['email']) || !validarSenha($dados['senha'])) $erros[] = 'Preencha nome, e-mail válido e senha de pelo menos 6 caracteres.';
+            if (!validarNomeSobrenome($dados['nome']) || !validarEmail($dados['email']) || !validarSenha($dados['senha'])) $erros[] = 'Preencha nome e sobrenome, e-mail válido e senha de pelo menos 6 caracteres.';
             if (!$erros) {
                 Estabelecimento::criarAdministrador($id, $dados);
                 LogMaster::registrar('admin_criado', [
@@ -201,7 +201,7 @@ require RAIZ . '/includes/painel_header.php';
     <form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="criar">
         <div class="linha-campos"><div class="campo"><label for="estabelecimento">Nome do estabelecimento</label><input id="estabelecimento" name="estabelecimento" maxlength="120" required></div><div class="campo"><label for="slug">Endereço exclusivo</label><input id="slug" name="slug" placeholder="studio-da-ana" maxlength="80" pattern="[a-z0-9][a-z0-9-]{1,78}[a-z0-9]" required><span class="ajuda-campo">Sem espaços nem acentos.</span></div></div>
         <h4>Primeira conta administrativa</h4>
-        <div class="linha-campos"><div class="campo"><label for="nome">Nome do responsável</label><input id="nome" name="nome" maxlength="120" required></div><div class="campo"><label for="email">E-mail</label><input type="email" id="email" name="email" maxlength="150" required></div></div>
+        <div class="linha-campos"><div class="campo"><label for="nome">Nome e sobrenome do responsável</label><input id="nome" name="nome" maxlength="120" required></div><div class="campo"><label for="email">E-mail</label><input type="email" id="email" name="email" maxlength="150" required></div></div>
         <div class="campo"><label for="senha">Senha temporária</label><input type="password" id="senha" name="senha" minlength="6" autocomplete="new-password" required></div>
         <button class="btn" type="submit">Criar estabelecimento</button>
     </form>
@@ -231,7 +231,7 @@ require RAIZ . '/includes/painel_header.php';
 </tr>
 <?php endforeach; ?>
 </tbody></table></div></div>
-<div class="cartao"><div class="cartao-cabecalho"><h3>Adicionar administrador</h3></div><div class="cartao-corpo"><form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="novo_admin"><input type="hidden" name="id_estabelecimento" value="<?= (int) $selecionado['id_estabelecimento'] ?>"><div class="campo"><label for="nome_admin">Nome</label><input id="nome_admin" name="nome" required></div><div class="campo"><label for="email_admin">E-mail</label><input type="email" id="email_admin" name="email" required></div><div class="campo"><label for="senha_admin">Senha temporária</label><input type="password" id="senha_admin" name="senha" minlength="6" autocomplete="new-password" required></div><button class="btn" type="submit">Adicionar administrador</button></form></div></div>
+<div class="cartao"><div class="cartao-cabecalho"><h3>Adicionar administrador</h3></div><div class="cartao-corpo"><form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="novo_admin"><input type="hidden" name="id_estabelecimento" value="<?= (int) $selecionado['id_estabelecimento'] ?>"><div class="campo"><label for="nome_admin">Nome e sobrenome</label><input id="nome_admin" name="nome" required></div><div class="campo"><label for="email_admin">E-mail</label><input type="email" id="email_admin" name="email" required></div><div class="campo"><label for="senha_admin">Senha temporária</label><input type="password" id="senha_admin" name="senha" minlength="6" autocomplete="new-password" required></div><button class="btn" type="submit">Adicionar administrador</button></form></div></div>
 </div>
 <div class="cartao">
     <div class="cartao-cabecalho"><h3>Entrar no painel do estabelecimento</h3><small>Para atender um chamado vendo a mesma tela do cliente</small></div>

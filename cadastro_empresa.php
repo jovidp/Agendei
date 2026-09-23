@@ -55,28 +55,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $erros[] = 'Informe o nome da empresa.';
     }
     if (!preg_match('/^[a-z0-9](?:[a-z0-9-]{1,78}[a-z0-9])$/D', $dados['slug'])) {
-        $erros[] = 'O endereco deve ter de 3 a 80 letras minusculas, numeros ou hifens.';
+        $erros[] = 'O endereço deve ter de 3 a 80 letras minúsculas, números ou hifens.';
     }
-    if (mb_strlen($dados['nome']) < 3 || mb_strlen($dados['nome']) > 120) {
-        $erros[] = 'Informe o nome do responsavel.';
+    if (!validarNomeSobrenome($dados['nome'])) {
+        $erros[] = 'Informe o nome e o sobrenome do responsável.';
     }
     if (!validarEmail($dados['email'])) {
-        $erros[] = 'Informe um e-mail valido.';
+        $erros[] = 'Informe um e-mail válido.';
     }
     if ($telefone === '' || !(validarTelefoneBr($telefone) || validarTelefoneBr($telefone, true))) {
         $erros[] = 'Informe um telefone ou WhatsApp com DDD.';
     }
     if (mb_strlen($dados['mensagem']) > 255) {
-        $erros[] = 'A mensagem deve ter no maximo 255 caracteres.';
+        $erros[] = 'A mensagem deve ter no máximo 255 caracteres.';
     }
     if (!validarSenha($senha)) {
         $erros[] = 'A senha deve ter pelo menos 6 caracteres.';
     }
     if ($senha !== $confirmacao) {
-        $erros[] = 'As senhas nao conferem.';
+        $erros[] = 'As senhas não conferem.';
     }
     if ($erros === [] && Solicitacao::slugEmUso($dados['slug'])) {
-        $erros[] = 'Este endereco ja esta em uso. Escolha outro.';
+        $erros[] = 'Este endereço já está em uso. Escolha outro.';
     }
 
     if ($erros === []) {
@@ -124,11 +124,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } catch (PDOException $erro) {
             error_log('Falha no cadastro de empresa: ' . $erro->getMessage());
             $erros[] = $erro->getCode() === '23000'
-                ? 'Este endereco ja esta em uso. Escolha outro.'
-                : 'Nao foi possivel enviar o cadastro. Tente novamente.';
+                ? 'Este endereço já está em uso. Escolha outro.'
+                : 'Não foi possível enviar o cadastro. Tente novamente.';
         } catch (Throwable $erro) {
             error_log('Falha no cadastro de empresa: ' . $erro->getMessage());
-            $erros[] = 'Nao foi possivel enviar o cadastro. Tente novamente.';
+            $erros[] = 'Não foi possível enviar o cadastro. Tente novamente.';
         }
     }
 }
@@ -157,25 +157,25 @@ $tituloPagina = 'Cadastrar empresa | ' . NOME_SISTEMA;
 
         <div class="autenticacao-formulario">
             <?php if ($recebido !== null): ?>
-                <a href="<?= url('index.php') ?>" class="voltar-site">&larr; Voltar ao inicio</a>
+                <a href="<?= url('index.php') ?>" class="voltar-site">&larr; Voltar ao início</a>
 
                 <h1>Cadastro recebido</h1>
-                <p class="subtitulo">Obrigado, <?= e($recebido['estabelecimento']) ?>. Agora e com a gente.</p>
+                <p class="subtitulo">Obrigado, <?= e($recebido['estabelecimento']) ?>. Agora é com a gente.</p>
 
                 <div class="cadastro-recebido">
                     <?php if (!empty($recebido['email_enviado'])): ?>
-                        <p>Enviamos uma confirmacao para <strong><?= e($recebido['email']) ?></strong>. Vamos analisar o cadastro e avisar pelo mesmo e-mail assim que o acesso for liberado. Costuma ser rapido.</p>
+                        <p>Enviamos uma confirmação para <strong><?= e($recebido['email']) ?></strong>. Vamos analisar o cadastro e avisar pelo mesmo e-mail assim que o acesso for liberado. Costuma ser rápido.</p>
                     <?php else: ?>
-                        <p>Vamos analisar o cadastro e avisar pelo e-mail <strong><?= e($recebido['email']) ?></strong> ou pelo telefone informado assim que o acesso for liberado. Costuma ser rapido.</p>
+                        <p>Vamos analisar o cadastro e avisar pelo e-mail <strong><?= e($recebido['email']) ?></strong> ou pelo telefone informado assim que o acesso for liberado. Costuma ser rápido.</p>
                     <?php endif; ?>
-                    <p>Depois da aprovacao, o endereco da sua empresa sera:</p>
+                    <p>Depois da aprovação, o endereço da sua empresa será:</p>
                     <p class="cadastro-link"><?= e(BASE_URL . '/login.php?estabelecimento=' . rawurlencode($recebido['slug'])) ?></p>
-                    <p>A senha e a que voce acabou de escolher. Guarde as duas informacoes.</p>
+                    <p>A senha é a que você acabou de escolher. Guarde as duas informações.</p>
                 </div>
 
-                <a href="<?= url('index.php') ?>" class="btn btn-bloco btn-grande">Voltar ao inicio</a>
+                <a href="<?= url('index.php') ?>" class="btn btn-bloco btn-grande">Voltar ao início</a>
             <?php else: ?>
-                <a href="<?= url('index.php') ?>" class="voltar-site">&larr; Voltar ao inicio</a>
+                <a href="<?= url('index.php') ?>" class="voltar-site">&larr; Voltar ao início</a>
 
                 <h1>Cadastrar minha empresa</h1>
                 <p class="subtitulo">Preencha os dados abaixo. A gente confere e libera o acesso.</p>
@@ -197,19 +197,20 @@ $tituloPagina = 'Cadastrar empresa | ' . NOME_SISTEMA;
                             <span class="mensagem-campo"></span>
                         </div>
                         <div class="campo">
-                            <label for="slug">Endereco da empresa</label>
+                            <label for="slug">Endereço da empresa</label>
                             <input type="text" id="slug" name="slug" value="<?= e($dados['slug']) ?>"
                                    maxlength="80" pattern="[a-z0-9][a-z0-9-]{1,78}[a-z0-9]" autocomplete="off" required>
                             <span class="mensagem-campo"></span>
-                            <span class="ajuda-campo">Vira o link do seu login. Letras minusculas, numeros e hifens.</span>
+                            <span class="ajuda-campo">Vira o link do seu login. Letras minúsculas, números e hifens.</span>
                         </div>
                     </div>
 
                     <div class="linha-campos">
                         <div class="campo">
-                            <label for="nome">Seu nome</label>
+                            <label for="nome">Nome e sobrenome</label>
                             <input type="text" id="nome" name="nome" value="<?= e($dados['nome']) ?>" maxlength="120" autocomplete="name" required>
                             <span class="mensagem-campo"></span>
+                            <span class="ajuda-campo">De quem responde pela empresa. Ex.: Ana Souza.</span>
                         </div>
                         <div class="campo">
                             <label for="telefone">Telefone ou WhatsApp</label>
@@ -222,7 +223,7 @@ $tituloPagina = 'Cadastrar empresa | ' . NOME_SISTEMA;
                         <label for="email">E-mail</label>
                         <input type="email" id="email" name="email" value="<?= e($dados['email']) ?>" maxlength="150" autocomplete="email" required>
                         <span class="mensagem-campo"></span>
-                        <span class="ajuda-campo">Sera o seu login e o canal do aviso de aprovacao.</span>
+                        <span class="ajuda-campo">Será o seu login e o canal do aviso de aprovação.</span>
                     </div>
 
                     <div class="linha-campos">
@@ -250,7 +251,7 @@ $tituloPagina = 'Cadastrar empresa | ' . NOME_SISTEMA;
                 </form>
 
                 <p class="autenticacao-rodape">
-                    Ja tem conta? <a href="<?= url('entrar.php') ?>">Entrar</a>
+                    Já tem conta? <a href="<?= url('entrar.php') ?>">Entrar</a>
                 </p>
             <?php endif; ?>
         </div>

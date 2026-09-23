@@ -347,6 +347,33 @@ function validarNomeCompleto(string $nome): bool
     return $tamanho >= 15 && $tamanho <= 80 && (bool) preg_match('/^[\p{L}\s]+$/u', $nome);
 }
 
+/**
+ * Nome com sobrenome: pelo menos duas palavras formadas so por letras (hifen
+ * e apostrofo aceitos no meio), ate 120 caracteres. E a regra de quem responde
+ * pela empresa, tanto no cadastro publico quanto nas contas que o master cria.
+ */
+function validarNomeSobrenome(string $nome): bool
+{
+    $nome = trim(preg_replace('/\s+/u', ' ', $nome) ?? '');
+
+    if ($nome === '' || mb_strlen($nome) > 120) {
+        return false;
+    }
+
+    $palavras = explode(' ', $nome);
+    if (count($palavras) < 2) {
+        return false;
+    }
+
+    foreach ($palavras as $palavra) {
+        if (!preg_match("/^\p{L}+(?:['\-]\p{L}+)*$/u", $palavra)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 /** Login de acesso: exatamente 6 caracteres alfabéticos. */
 function validarLogin(string $login): bool
 {

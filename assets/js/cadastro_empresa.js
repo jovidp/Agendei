@@ -57,6 +57,17 @@
     return false;
   }
 
+  /** Pelo menos duas palavras so de letras: a mesma regra de validarNomeSobrenome() no PHP. */
+  function nomeComSobrenome(texto) {
+    var palavras = String(texto).trim().split(/\s+/).filter(Boolean);
+    if (palavras.length < 2) {
+      return false;
+    }
+    return palavras.every(function (palavra) {
+      return /^\p{L}+(?:['-]\p{L}+)*$/u.test(palavra);
+    });
+  }
+
   function valor(nome) {
     var elemento = formulario.elements[nome];
     return elemento ? String(elemento.value).trim() : "";
@@ -67,12 +78,12 @@
     var valido = true;
 
     valido = verificar("estabelecimento", valor("estabelecimento").length >= 2, "Informe o nome da empresa.") && valido;
-    valido = verificar("slug", /^[a-z0-9][a-z0-9-]{1,78}[a-z0-9]$/.test(valor("slug")), "Use de 3 a 80 letras minusculas, numeros ou hifens.") && valido;
-    valido = verificar("nome", valor("nome").length >= 3, "Informe o seu nome.") && valido;
+    valido = verificar("slug", /^[a-z0-9][a-z0-9-]{1,78}[a-z0-9]$/.test(valor("slug")), "Use de 3 a 80 letras minúsculas, números ou hifens.") && valido;
+    valido = verificar("nome", nomeComSobrenome(valor("nome")), "Informe seu nome e sobrenome.") && valido;
     valido = verificar("telefone", telefone.length === 10 || telefone.length === 11, "Informe o telefone com DDD.") && valido;
-    valido = verificar("email", /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor("email")), "Informe um e-mail valido.") && valido;
+    valido = verificar("email", /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor("email")), "Informe um e-mail válido.") && valido;
     valido = verificar("senha", formulario.elements.senha.value.length >= 6, "A senha deve ter pelo menos 6 caracteres.") && valido;
-    valido = verificar("confirmar_senha", formulario.elements.confirmar_senha.value === formulario.elements.senha.value, "As senhas nao conferem.") && valido;
+    valido = verificar("confirmar_senha", formulario.elements.confirmar_senha.value === formulario.elements.senha.value, "As senhas não conferem.") && valido;
 
     if (!valido) {
       evento.preventDefault();

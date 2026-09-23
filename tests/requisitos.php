@@ -58,6 +58,15 @@ verificar('nome com 80 caracteres e aceito', validarNomeCompleto(str_repeat('a',
 verificar('nome com 81 caracteres e recusado', validarNomeCompleto(str_repeat('a', 81)), false);
 verificar('espacos repetidos nao contam duas vezes', validarNomeCompleto('Ana    Beatriz    Lim'), true);
 
+// Nome com sobrenome: quem responde pela empresa precisa de pelo menos duas palavras
+verificar('nome sem sobrenome e recusado', validarNomeSobrenome('Ana'), false);
+verificar('nome com sobrenome e aceito', validarNomeSobrenome('Ana Souza'), true);
+verificar('nome com sobrenome acentuado e aceito', validarNomeSobrenome('José Responsável'), true);
+verificar('sobrenome composto com hifen e aceito', validarNomeSobrenome('Ana Souza-Lima'), true);
+verificar('nome com numero e recusado', validarNomeSobrenome('Ana Souza 2'), false);
+verificar('espacos extras nao criam sobrenome', validarNomeSobrenome('  Ana   '), false);
+verificar('nome com sobrenome acima de 120 caracteres e recusado', validarNomeSobrenome(str_repeat('a', 60) . ' ' . str_repeat('b', 60)), false);
+
 // ---------------------------------------------------------------------
 // Login: exatamente 6 caracteres alfabeticos
 // ---------------------------------------------------------------------
