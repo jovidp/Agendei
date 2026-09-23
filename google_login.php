@@ -1,15 +1,20 @@
 <?php
 /**
- * Entrar com o Google.
+ * Entrar (ou comecar o cadastro) com o Google.
  *
- * Recebe o pedido dos formularios de login (POST, com CSRF) e leva a pessoa ao
- * Google; depois recebe a volta (GET com code e state), confirma o e-mail com
- * o Google (models/Google.php) e abre a conta daquele e-mail:
- *   - vindo do login de uma empresa, so a conta naquela empresa serve;
- *   - vindo da entrada geral, todas as contas do e-mail; com mais de uma, a
- *     escolha e a mesma tela da entrada geral (entrar.php).
- * Sem conta, a pessoa e orientada a se cadastrar: o Google prova o e-mail,
- * nao cria conta. O segundo fator, quando a conta exige, continua valendo.
+ * Recebe o pedido dos formularios (POST, com CSRF) e leva a pessoa ao Google;
+ * depois recebe a volta (GET com code e state), confirma o e-mail com o Google
+ * (models/Google.php) e decide pelo campo "origem" do pedido:
+ *   - login (padrao): abre a conta daquele e-mail. Vindo do login de uma
+ *     empresa, so a conta naquela empresa serve; vindo da entrada geral,
+ *     todas as contas do e-mail, com a escolha da propria entrada geral.
+ *     Sem conta, a pessoa e orientada a se cadastrar.
+ *   - cadastro: o cadastro do cliente. Com conta no estabelecimento, entra
+ *     direto; sem conta, volta ao formulario com nome e e-mail preenchidos e
+ *     o e-mail confirmado. O Google nao cria a conta sozinho porque o cadastro
+ *     exige dados que ele nao fornece (CPF, login, nome materno...).
+ *   - cadastro_empresa: o cadastro de empresa da pagina inicial, mesma ideia.
+ * O segundo fator, quando a conta exige, continua valendo.
  *
  * ENTRADA_LOCAL descarta a identidade master, como no login comum.
  * ENTRADA_GLOBAL abre o Contexto sem empresa e libera Contexto::assumir().
@@ -28,23 +33,40 @@ if (!Google::configurado()) {
 /** Tempo entre sair para o Google e voltar; depois disso o pedido e refeito. */
 const GOOGLE_ESTADO_SEGUNDOS = 600;
 
-/** De volta a tela de onde a pessoa veio: o login da empresa ou a entrada geral. */
-function voltarParaLogin(string $slug): never
+/** De volta a tela de onde a pessoa veio. */
+function voltar(string $slug, string $origem = 'login'): never
 {
-    redirecionar($slug !== '' ? 'login.php?estabelecimento=' . rawurlencode($slug) : 'entrar.php');
+    if ($origem === 'cadastro_empresa') {
+        redirecionar('cadastro_empresa.php');
+    }
+    $pagina = $origem === 'cadastro' ? 'cadastro.php' : 'login.php';
+    if ($slug !== '') {
+        redirecionar($pagina . '?estabelecimento=' . rawurlencode($slug));
+    }
+    redirecionar($origem === 'cadastro' ? $pagina : 'entrar.php');
+}
+
+/** Guarda nome e e-mail confirmados para o formulario de cadastro preencher. */
+function prepararCadastro(array $dados): void
+{
+    pedirLembrarDispositivo(false);
+    $_SESSION['google_cadastro'] = [
+        'nome'  => trim((string) ($dados['name'] ?? '')),
+        'email' => (string) $dados['email'],
+    ];
 }
 
 /**
  * Abre a conta confirmada pelo Google: assume a empresa, registra o log nela e
  * segue para o segundo fator ou para o painel. Nunca retorna.
  */
-function concluirEntradaGoogle(array $conta, string $email): never
+function concluirEntradaGoogle(array $conta, string $email, string $origem): never
 {
     Contexto::assumir((int) $conta['id_estabelecimento']);
     $usuario = Usuario::porId((int) $conta['id_usuario']);
     if ($usuario === null || $usuario['status'] !== 'ativo') {
         definirFlash('erro', 'Esta conta não está mais disponível.');
-        voltarParaLogin((string) $conta['estabelecimento_slug']);
+        voltar((string) $conta['estabelecimento_slug'], $origem);
     }
 
     limparFalhas('login_conta', $email);
@@ -59,19 +81,26 @@ function concluirEntradaGoogle(array $conta, string $email): never
 
     registrarSessao($usuario);
     lembrarSeSolicitado($usuario);
+    if ($origem === 'cadastro') {
+        definirFlash('info', 'Este e-mail já tinha conta aqui: entramos com ela.');
+    }
     definirFlash('sucesso', 'Bem-vindo(a), ' . explode(' ', $usuario['nome'])[0] . '.');
     header('Location: ' . destinoAposLogin());
     exit;
 }
 
 // -------------------------------------------------------------------------
-// Passo 1: o formulario de login pediu para entrar com o Google
+// Passo 1: um formulario pediu para seguir com o Google
 // -------------------------------------------------------------------------
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exigirCsrf();
 
-    // O login da empresa manda o proprio link; a entrada geral nao manda nada.
-    $slug = post('estabelecimento');
+    // De onde veio: login (padrao), cadastro do cliente ou cadastro de empresa.
+    $origem = in_array(post('origem'), ['cadastro', 'cadastro_empresa'], true) ? post('origem') : 'login';
+
+    // O login e o cadastro da empresa mandam o proprio link; a entrada geral e
+    // o cadastro de empresa (cujo campo "estabelecimento" e o nome dela) nao.
+    $slug = $origem === 'cadastro_empresa' ? '' : post('estabelecimento');
     if (!preg_match('/^[a-z0-9][a-z0-9-]{1,78}[a-z0-9]$/D', $slug)) {
         $slug = '';
     }
@@ -79,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // O state volta com o Google e prova que a resposta e deste pedido.
     $estado = bin2hex(random_bytes(16));
-    $_SESSION['google_login'] = ['estado' => $estado, 'slug' => $slug, 'expira' => time() + GOOGLE_ESTADO_SEGUNDOS];
+    $_SESSION['google_login'] = ['estado' => $estado, 'slug' => $slug, 'origem' => $origem, 'expira' => time() + GOOGLE_ESTADO_SEGUNDOS];
 
     header('Location: ' . Google::urlAutorizacao($estado, Google::urlRedirecionamento()));
     exit;
@@ -90,26 +119,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // -------------------------------------------------------------------------
 $pendente = $_SESSION['google_login'] ?? null;
 unset($_SESSION['google_login']);
-$slug = is_array($pendente) ? (string) ($pendente['slug'] ?? '') : '';
+$slug   = is_array($pendente) ? (string) ($pendente['slug'] ?? '') : '';
+$origem = is_array($pendente) ? (string) ($pendente['origem'] ?? 'login') : 'login';
 
 if (!is_array($pendente) || (int) ($pendente['expira'] ?? 0) < time()) {
     pedirLembrarDispositivo(false);
     definirFlash('erro', 'A entrada com o Google expirou. Tente novamente.');
-    voltarParaLogin($slug);
+    voltar($slug, $origem);
 }
 
 if (get('error') !== '') {
     // A pessoa desistiu na tela do Google (ou negou o acesso).
     pedirLembrarDispositivo(false);
     definirFlash('aviso', 'Entrada com o Google cancelada.');
-    voltarParaLogin($slug);
+    voltar($slug, $origem);
 }
 
 if (get('code') === '' || !hash_equals((string) ($pendente['estado'] ?? ''), get('state'))) {
     pedirLembrarDispositivo(false);
     registrarEventoSeguranca('google_state_invalido', ['slug' => $slug]);
     definirFlash('erro', 'Não foi possível confirmar a entrada com o Google. Tente novamente.');
-    voltarParaLogin($slug);
+    voltar($slug, $origem);
 }
 
 try {
@@ -117,21 +147,34 @@ try {
 } catch (RuntimeException $erro) {
     pedirLembrarDispositivo(false);
     definirFlash('erro', $erro->getMessage());
-    voltarParaLogin($slug);
+    voltar($slug, $origem);
 }
 
-$email  = (string) $dados['email'];
+$email = (string) $dados['email'];
+
+// Cadastro de empresa: nao ha conta a abrir, so o formulario a preencher.
+if ($origem === 'cadastro_empresa') {
+    prepararCadastro($dados);
+    definirFlash('info', 'E-mail confirmado pelo Google. Nome e e-mail já vieram preenchidos; complete os dados da empresa.');
+    voltar('', $origem);
+}
+
 $contas = Google::contas($email, $slug);
 
 if ($contas === []) {
+    if ($origem === 'cadastro') {
+        prepararCadastro($dados);
+        definirFlash('info', 'E-mail confirmado pelo Google. Nome e e-mail já vieram preenchidos; complete o restante para criar sua conta.');
+        voltar($slug, $origem);
+    }
     pedirLembrarDispositivo(false);
     registrarEventoSeguranca('google_sem_conta', ['slug' => $slug]);
     definirFlash('erro', 'Não encontramos uma conta com o e-mail ' . $email . '. Crie sua conta primeiro ou entre com login e senha.');
-    voltarParaLogin($slug);
+    voltar($slug, $origem);
 }
 
 if (count($contas) === 1) {
-    concluirEntradaGoogle($contas[0], $email);
+    concluirEntradaGoogle($contas[0], $email, $origem);
 }
 
 // Mais de uma empresa com este e-mail: a escolha e a mesma da entrada geral,

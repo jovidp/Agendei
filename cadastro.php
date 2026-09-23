@@ -33,6 +33,19 @@ $dados = [
     'login'           => '',
 ];
 
+// Cadastro iniciado pelo Google (google_login.php): nome e e-mail ja vem
+// confirmados e preenchidos; a pessoa completa o restante. Ela pode desistir
+// do Google e preencher tudo a mao.
+if (get('google') === 'cancelar') {
+    unset($_SESSION['google_cadastro']);
+    redirecionar('cadastro.php');
+}
+$googleCadastro = $_SESSION['google_cadastro'] ?? null;
+if (is_array($googleCadastro) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    $dados['nome']  = (string) ($googleCadastro['nome'] ?? '');
+    $dados['email'] = (string) ($googleCadastro['email'] ?? '');
+}
+
 // Processa o formulário enviado antes de montar o HTML da página.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Confere o token da sessão antes de aceitar alterações enviadas pelo formulário.
@@ -136,8 +149,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'uf'              => $dados['uf'],
             ]);
 
+            unset($_SESSION['google_cadastro']);
             // A especificacao encerra o cadastro na tela de login.
-            definirFlash('sucesso', 'Cadastro realizado com sucesso. Faca login para continuar.');
+            definirFlash('sucesso', 'Cadastro realizado com sucesso. Faça login para continuar.');
             redirecionar('login.php');
         } catch (Throwable $erro) {
             error_log('Falha no cadastro de cliente: ' . $erro->getMessage());
@@ -183,7 +197,9 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
             <a href="<?= url('index.php') ?>" class="voltar-site">&larr; Voltar ao site</a>
 
             <h1>Criar conta</h1>
-            <p class="subtitulo">Preencha seus dados para comecar.</p>
+            <p class="subtitulo">Preencha seus dados para começar.</p>
+
+            <?php exibirFlash(); ?>
 
             <?php if ($erros !== []): ?>
                 <div class="alerta alerta-erro">
@@ -200,6 +216,24 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
 
             <?php /* Formulário de cadastro: os dados serão validados novamente pelo servidor. */ ?><form method="post" id="formCadastro" novalidate>
                 <?= campoCsrf() ?>
+
+                <?php if (is_array($googleCadastro)): ?>
+                    <div class="alerta alerta-info">
+                        <span class="alerta-texto">E-mail <strong><?= e((string) $googleCadastro['email']) ?></strong> confirmado pelo Google. Complete os dados abaixo.
+                            <a href="<?= url('cadastro.php?google=cancelar') ?>">Cadastrar sem o Google</a></span>
+                    </div>
+                <?php elseif (Google::configurado()): ?>
+                    <?php /* Posta este formulario em google_login.php; o Google confirma o e-mail e devolve nome e e-mail preenchidos. */ ?>
+                    <input type="hidden" name="estabelecimento" value="<?= e(Contexto::slug()) ?>">
+                    <input type="hidden" name="origem" value="cadastro">
+                    <button type="submit" class="btn btn-contorno btn-bloco btn-grande btn-google"
+                            formaction="<?= url('google_login.php') ?>" formnovalidate name="acao" value="google">
+                        <?= iconeGoogle() ?>
+                        Cadastrar com o Google
+                    </button>
+                    <span class="ajuda-campo">Confirma seu e-mail e já preenche nome e e-mail. O restante você completa abaixo.</span>
+                    <div class="separador-ou"><span>ou preencha tudo</span></div>
+                <?php endif; ?>
 
                 <fieldset class="grupo-campos">
                     <legend>Dados pessoais</legend>

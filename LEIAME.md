@@ -323,7 +323,10 @@ Connect, `models/Google.php` e `google_login.php`) e o sistema abre a conta
 daquele e-mail: pelo link de uma empresa, a conta dela; pela entrada geral,
 todas, com a mesma escolha de empresa. O Google nao cria conta, porque o
 cadastro exige dados que ele nao fornece; e-mail sem conta e orientado a se
-cadastrar. O segundo fator continua valendo. Passo a passo das credenciais em
+cadastrar. Nas telas de cadastro (cliente e empresa) o botao "Cadastrar com
+o Google" confirma o e-mail e volta com nome e e-mail preenchidos; a pessoa
+completa o restante, e um e-mail que ja tem conta entra direto. O segundo
+fator continua valendo. Passo a passo das credenciais em
 [DEPLOY.md](DEPLOY.md).
 
 Bancos criados antes desta versao precisam de `php scripts/migrar_lembrar.php`

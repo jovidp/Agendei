@@ -31,6 +31,18 @@ $dados = [
 $recebido = $_SESSION['cadastro_empresa_recebido'] ?? null;
 unset($_SESSION['cadastro_empresa_recebido']);
 
+// Cadastro iniciado pelo Google (google_login.php): nome e e-mail do
+// responsavel ja vem confirmados e preenchidos.
+if (get('google') === 'cancelar') {
+    unset($_SESSION['google_cadastro']);
+    redirecionar('cadastro_empresa.php');
+}
+$googleCadastro = $_SESSION['google_cadastro'] ?? null;
+if (is_array($googleCadastro) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    $dados['nome']  = (string) ($googleCadastro['nome'] ?? '');
+    $dados['email'] = (string) ($googleCadastro['email'] ?? '');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exigirCsrf();
 
@@ -97,6 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'detalhe'              => 'endereco ' . $dados['slug'] . ' (solicitacao ' . $idSolicitacao . ')',
             ]);
             limparFalhas('cadastro_empresa_ip', ipCliente());
+            unset($_SESSION['google_cadastro']);
 
             // Avisos por e-mail: o do responsavel confirma o recebimento; o dos
             // masters chama para decidir. Sem e-mail configurado, nada quebra:
@@ -188,6 +201,23 @@ $tituloPagina = 'Cadastrar empresa | ' . NOME_SISTEMA;
 
                 <form method="post" id="formCadastroEmpresa" novalidate>
                     <?= campoCsrf() ?>
+
+                    <?php if (is_array($googleCadastro)): ?>
+                        <div class="alerta alerta-info">
+                            <span class="alerta-texto">E-mail <strong><?= e((string) $googleCadastro['email']) ?></strong> confirmado pelo Google. Complete os dados da empresa.
+                                <a href="<?= url('cadastro_empresa.php?google=cancelar') ?>">Cadastrar sem o Google</a></span>
+                        </div>
+                    <?php elseif (Google::configurado()): ?>
+                        <?php /* Posta este formulario em google_login.php; o Google confirma o e-mail e devolve nome e e-mail preenchidos. */ ?>
+                        <input type="hidden" name="origem" value="cadastro_empresa">
+                        <button type="submit" class="btn btn-contorno btn-bloco btn-grande btn-google"
+                                formaction="<?= url('google_login.php') ?>" formnovalidate name="acao" value="google">
+                            <?= iconeGoogle() ?>
+                            Cadastrar com o Google
+                        </button>
+                        <span class="ajuda-campo">Confirma seu e-mail e já preenche seu nome e e-mail. O restante você completa abaixo.</span>
+                        <div class="separador-ou"><span>ou preencha tudo</span></div>
+                    <?php endif; ?>
 
                     <div class="linha-campos">
                         <div class="campo">
