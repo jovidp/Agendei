@@ -248,8 +248,9 @@ function aplicarCabecalhosSeguranca(): void
         // A logo da empresa e guardada como data: URI pela tela de aparencia.
         "img-src 'self' data:",
         "font-src 'self'",
-        // A tela de cadastro consulta o ViaCEP para preencher o endereco
-        // (assets/js/cadastro.js). E o unico destino externo do sistema: qualquer
+        // Os campos de CEP (cadastro, filiais, configuracoes) consultam o ViaCEP
+        // para preencher o endereco (assets/js/main.js, data-busca-cep). E o
+        // unico destino externo do sistema: qualquer
         // outro endereco que apareca numa requisicao e sinal de codigo injetado.
         "connect-src 'self' https://viacep.com.br",
         // Nada de Flash, applet ou plugin: o sistema nao usa nenhum.

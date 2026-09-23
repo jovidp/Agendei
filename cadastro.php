@@ -287,7 +287,7 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
                             <input type="text" id="cep" name="cep" value="<?= e($dados['cep']) ?>"
                                    data-mascara="cep" data-busca-cep inputmode="numeric" placeholder="00000-000" required>
                             <span class="mensagem-campo"></span>
-                            <span class="ajuda-campo" data-cep-situacao>Preenche o endereco automaticamente.</span>
+                            <span class="ajuda-campo" data-cep-situacao>Preenche o endereço automaticamente.</span>
                         </div>
 
                         <div class="campo">

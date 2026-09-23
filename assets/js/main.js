@@ -348,6 +348,107 @@
   }
 
   // -----------------------------------------------------------------
+  // Endereco pelo CEP
+  // -----------------------------------------------------------------
+
+  /**
+   * Todo campo com data-busca-cep consulta o ViaCEP ao completar os oito
+   * digitos (ou ao sair do campo) e preenche, no mesmo formulario, os campos
+   * logradouro (ou endereco), bairro, cidade e uf. A situacao da consulta vai
+   * para [data-cep-situacao] do formulario, quando existir. Sem conexao ou
+   * com CEP inexistente, tudo continua editavel para preenchimento manual.
+   */
+  function iniciarBuscaCep() {
+    document.querySelectorAll("[data-busca-cep]").forEach(function (campoCep) {
+      var formulario = campoCep.form;
+      if (!formulario) {
+        return;
+      }
+
+      var situacao = formulario.querySelector("[data-cep-situacao]");
+      var textoInicial = situacao ? situacao.textContent : "";
+      var ultimoConsultado = "";
+
+      function informar(mensagem) {
+        if (situacao) {
+          situacao.textContent = mensagem;
+        }
+      }
+
+      /** Escreve no primeiro campo existente entre os nomes, quando a API devolveu algo. */
+      function preencher(nomes, conteudo) {
+        if (!conteudo) {
+          return;
+        }
+        for (var indice = 0; indice < nomes.length; indice++) {
+          var elemento = formulario.elements[nomes[indice]];
+          if (elemento) {
+            elemento.value = conteudo;
+            Agendei.limparErro(elemento);
+            return;
+          }
+        }
+      }
+
+      function buscar() {
+        var cep = String(campoCep.value).replace(/\D/g, "");
+        if (cep.length !== 8) {
+          informar(cep === "" ? textoInicial : "Informe os oito dígitos do CEP.");
+          return;
+        }
+        // O input ja consultou este CEP; o blur logo em seguida nao repete a chamada.
+        if (cep === ultimoConsultado) {
+          return;
+        }
+        ultimoConsultado = cep;
+        informar("Buscando endereço...");
+
+        window
+          .fetch("https://viacep.com.br/ws/" + cep + "/json/")
+          .then(function (resposta) {
+            if (!resposta.ok) {
+              throw new Error("resposta invalida");
+            }
+            return resposta.json();
+          })
+          .then(function (dados) {
+            if (dados.erro) {
+              informar("CEP não encontrado. Preencha o endereço manualmente.");
+              return;
+            }
+
+            preencher(["logradouro", "endereco"], dados.logradouro);
+            preencher(["bairro"], dados.bairro);
+            preencher(["cidade"], dados.localidade);
+            preencher(["uf"], dados.uf);
+            informar("Endereço preenchido. Confira o número e o complemento.");
+
+            var numero = formulario.elements.numero;
+            if (numero && numero.value === "") {
+              numero.focus();
+            }
+          })
+          .catch(function () {
+            // Falha de rede nao trava o formulario: a pessoa digita o endereco.
+            ultimoConsultado = "";
+            informar("Não foi possível consultar o CEP. Preencha o endereço manualmente.");
+          });
+      }
+
+      campoCep.addEventListener("blur", buscar);
+      campoCep.addEventListener("input", function () {
+        if (String(campoCep.value).replace(/\D/g, "").length === 8) {
+          buscar();
+        }
+      });
+      formulario.addEventListener("reset", function () {
+        ultimoConsultado = "";
+        informar(textoInicial);
+      });
+    });
+  }
+
+  // -----------------------------------------------------------------
   // Validacao de formularios
   // -----------------------------------------------------------------
 
@@ -486,6 +587,7 @@
     iniciarModais();
     iniciarConfirmacoes();
     iniciarMascaras();
+    iniciarBuscaCep();
     iniciarBuscaTabela();
     iniciarFiltrosAutomaticos();
     iniciarProtecaoEnvio();
