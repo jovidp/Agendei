@@ -430,6 +430,17 @@ class Agendamento
                 error_log('Status alterado, mas os pontos não foram creditados: ' . $erroRecurso->getMessage());
             }
         }
+        // Lembrete de atendimento cancelado ou ja concluido nao deve mais sair.
+        if ($alterado && in_array($status, ['cancelado', 'concluido'], true)) {
+            try {
+                Lembrete::cancelarDoAgendamento(
+                    $idAgendamento,
+                    $status === 'cancelado' ? 'Agendamento cancelado antes do envio.' : 'Atendimento ja concluido.'
+                );
+            } catch (Throwable $erroRecurso) {
+                error_log('Status alterado, mas a fila de lembretes nao foi atualizada: ' . $erroRecurso->getMessage());
+            }
+        }
         return $alterado;
     }
 
@@ -452,6 +463,7 @@ class Agendamento
         ]);
         if ($cancelado && $consulta->rowCount()) {
             try {
+                Lembrete::cancelarDoAgendamento($idAgendamento, 'Agendamento cancelado antes do envio.');
                 Diferencial::cancelarFinanceiro($agendamento);
                 Diferencial::avisarListaEspera($agendamento);
             } catch (Throwable $erroRecurso) {

@@ -125,3 +125,6 @@ if ($masterCriado) echo "Conta master criada: master@agendei.com.br / agendei-ma
 
 // Filiais (unidades): tabela, id_filial em profissionais/agendamentos e a Matriz.
 require __DIR__ . '/migrar_filiais.php';
+
+// Lembretes automaticos: tentativas e erro na fila de notificacoes.
+require __DIR__ . '/migrar_lembretes.php';

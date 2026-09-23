@@ -241,6 +241,7 @@ class Tentativa
             'recuperar_ip'  => 'Recuperacao de senha',
             'cadastro_ip'   => 'Cadastro publico',
             'instalador_ip' => 'Chave do instalador',
+            'tarefas_ip'    => 'Chave das tarefas agendadas',
             default         => $escopo,
         };
     }

@@ -423,6 +423,8 @@ CREATE TABLE notificacoes (
   status             VARCHAR(9) NOT NULL DEFAULT 'pendente',
   data_programada    TIMESTAMP NULL,
   data_envio         TIMESTAMP NULL,
+  tentativas         INTEGER NOT NULL DEFAULT 0,
+  erro               VARCHAR(255) NULL,
   data_criacao       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT pk_notificacoes PRIMARY KEY (id_notificacao),
   CONSTRAINT uk_notificacao_agendamento_tipo UNIQUE (id_estabelecimento, id_agendamento, tipo),

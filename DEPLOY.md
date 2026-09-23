@@ -144,6 +144,64 @@ return [
 
 ---
 
+## WhatsApp: lembretes automaticos
+
+O lembrete sai de uma tarefa periodica. O Render (plano free) nao tem cron,
+entao a tarefa e chamada por URL, por um agendador gratuito. Tres passos:
+
+### 1. Ligar o gatilho
+
+No Render, em **Environment**, adicione `AGENDEI_TOKEN_TAREFAS` com uma chave
+longa e aleatoria (gere uma com `php -r "echo bin2hex(random_bytes(24));"`).
+Sem essa variavel a pagina `tarefas.php` responde 404 para todo mundo.
+
+### 2. Agendar a chamada
+
+Em cron-job.org (gratuito, sem cartao) crie um job apontando para
+`https://SEU-APP.onrender.com/tarefas.php?chave=SUA_CHAVE`, a cada 10 ou 15
+minutos. A resposta e um JSON com o resumo por empresa; qualquer coisa que nao
+seja HTTP 200 o cron-job.org avisa por e-mail. Chave errada responde 404 e,
+depois de cinco erros da mesma origem, a origem fica bloqueada por uma hora.
+
+> No plano free o Render adormece o servico depois de 15 minutos sem acesso.
+> A chamada do agendador o acorda, entao ela tambem serve para manter o
+> sistema no ar; a primeira resposta depois do sono demora uns 30 segundos.
+
+### 3. Escolher quem envia
+
+Duas formas, que podem coexistir:
+
+- **Cada empresa com o proprio numero.** Nada a fazer no Render. O
+  administrador da empresa configura o provedor em **Admin > Diferenciais >
+  Lembretes por WhatsApp** e clica em **Enviar teste**.
+- **A plataforma envia por um numero unico.** Adicione no Render as
+  variaveis abaixo; toda empresa que deixar "Padrao da plataforma" usa esse numero.
+
+| Chave | Evolution API | Meta Cloud API |
+|---|---|---|
+| `AGENDEI_WHATSAPP_PROVEDOR` | `evolution` | `meta` |
+| `AGENDEI_WHATSAPP_URL` | `https://sua-evolution.com` | - |
+| `AGENDEI_WHATSAPP_INSTANCIA` | nome da instancia | - |
+| `AGENDEI_WHATSAPP_TOKEN` | apikey | token de acesso permanente |
+| `AGENDEI_WHATSAPP_TELEFONE_ID` | - | phone number id |
+| `AGENDEI_WHATSAPP_MODELO` | - | nome do modelo aprovado |
+
+**Evolution API** e a opcao rapida: e um servidor de codigo aberto que voce
+sobe (Docker, ha imagem pronta) e conecta a um WhatsApp comum pelo QR code,
+sem aprovacao da Meta. **Meta Cloud API** e a oficial: exige conta comercial
+verificada e um modelo de mensagem aprovado, em pt_BR, com quatro variaveis
+na ordem nome, servico, data e hora. Exemplo de corpo do modelo:
+
+```text
+Ola, {{1}}! Lembrete: {{2}} em {{3}} as {{4}}. Se precisar remarcar, avise com antecedencia.
+```
+
+Banco criado antes desta versao: rode uma vez, da sua maquina,
+`php scripts/migrar_lembretes.php` com o driver em `pgsql` apontando para o
+Supabase (mesmo procedimento do `migrar_filiais.php`, acima).
+
+---
+
 ## Detalhes que importam
 
 **O plano free hiberna.** Depois de ~15 min sem acesso, o Render "dorme" o

@@ -49,6 +49,8 @@ function politicaLimites(): array
         // Chave do instalador: balde proprio, para que tentativas aqui nao
         // tranquem o login master (nem o contrario).
         'instalador_ip'  => ['limite' => 5,  'janela' => 3600, 'espera' => 3600],
+        // Chave do gatilho das tarefas (tarefas.php): mesma logica do instalador.
+        'tarefas_ip'     => ['limite' => 5,  'janela' => 3600, 'espera' => 3600],
     ];
 }
 

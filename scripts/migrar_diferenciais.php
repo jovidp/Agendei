@@ -55,6 +55,8 @@ function migrarDiferenciais(PDO $db): void
         status ENUM('pendente','enviada','lida','cancelada') NOT NULL DEFAULT 'pendente',
         data_programada DATETIME NULL,
         data_envio DATETIME NULL,
+        tentativas INT UNSIGNED NOT NULL DEFAULT 0,
+        erro VARCHAR(255) NULL,
         data_criacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id_notificacao),
         UNIQUE KEY uk_notificacao_agendamento_tipo (id_estabelecimento,id_agendamento,tipo),

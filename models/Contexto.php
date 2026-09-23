@@ -8,6 +8,13 @@ class Contexto
     {
         $slug = get('estabelecimento');
 
+        // A tarefa periodica (scripts/enviar_lembretes.php e tarefas.php) nao
+        // pertence a empresa nenhuma: ela percorre todas por assumirTarefa().
+        if (defined('TAREFA_AGENDADA')) {
+            self::$atual = self::produto();
+            return;
+        }
+
         // A conta master e global e nunca assume um estabelecimento pela URL. As
         // paginas de entrada local (login, cadastro, 2FA) descartam a identidade
         // master antes de chegar aqui (ENTRADA_LOCAL, em config.php), e por isso
@@ -63,6 +70,27 @@ class Contexto
     {
         if (!defined('ENTRADA_GLOBAL')) {
             throw new LogicException('Somente a entrada geral pode assumir um estabelecimento.');
+        }
+        $q = bd()->prepare('SELECT * FROM estabelecimento WHERE id_estabelecimento = ? AND status = \'ativo\'');
+        $q->execute([$idEstabelecimento]);
+        $registro = $q->fetch();
+        if (!$registro) {
+            throw new InvalidArgumentException('Estabelecimento inativo ou inexistente.');
+        }
+        self::$atual = $registro;
+    }
+
+    /**
+     * Passa a tarefa periodica para a proxima empresa da lista.
+     *
+     * So existe sob TAREFA_AGENDADA, definida antes do bootstrap pelos dois
+     * gatilhos da tarefa. Nenhuma pagina servida a um usuario define essa
+     * constante, e por isso nenhuma delas consegue trocar de empresa por aqui.
+     */
+    public static function assumirTarefa(int $idEstabelecimento): void
+    {
+        if (!defined('TAREFA_AGENDADA')) {
+            throw new LogicException('Somente a tarefa agendada percorre os estabelecimentos.');
         }
         $q = bd()->prepare('SELECT * FROM estabelecimento WHERE id_estabelecimento = ? AND status = \'ativo\'');
         $q->execute([$idEstabelecimento]);

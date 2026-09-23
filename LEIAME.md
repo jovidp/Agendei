@@ -167,6 +167,7 @@ php tests/fluxo_projeto.php   # cadastro, login, 2FA, log e exclusao (banco temp
 php tests/multitenancy.php    # isolamento entre estabelecimentos (banco temporario)
 php tests/master.php          # auditoria, contas master e bloqueios (banco temporario)
 php tests/entrada_global.php  # login geral sem link da empresa (nao usa banco)
+php tests/lembretes.php       # lembretes por WhatsApp, com provedor simulado (banco temporario)
 ```
 
 Os tres ultimos criam e descartam um banco proprio e nunca tocam o banco de uso normal.
@@ -301,6 +302,50 @@ envios devolvem falso, o motivo vai para o log e as telas mostram o caminho
 manual. Em **Master > Saude do sistema** ha um botao para enviar um e-mail de
 teste. Passo a passo com Gmail ou Brevo em [DEPLOY.md](DEPLOY.md).
 
+## Lembretes por WhatsApp
+
+O sistema lembra o cliente do atendimento pelo WhatsApp, sem ninguem clicar.
+A fila e uma so (tabela `notificacoes`): `Diferencial::gerarLembretes()` poe
+nela uma mensagem para cada agendamento das proximas N horas (**Admin >
+Diferenciais**, "Gerar lembrete ate (horas)"), e `models/Lembrete.php` envia
+o que esta pronto pelo provedor configurado. Sem provedor, a fila continua
+manual como antes: o painel mostra a mensagem com o link "Abrir WhatsApp".
+
+Provedores (`models/WhatsApp.php`):
+
+| Provedor | Quando usar | O que informar |
+|---|---|---|
+| **Evolution API** | Numero comum de WhatsApp, sem aprovacao da Meta. Voce hospeda a Evolution (codigo aberto) e conecta o numero pelo QR code | URL, instancia e apikey |
+| **WhatsApp Cloud API (Meta)** | Numero oficial verificado. Mensagem iniciada pela empresa precisa de um modelo aprovado | ID do numero, token e nome do modelo, criado em pt_BR com 4 variaveis nesta ordem: nome, servico, data, hora |
+
+Cada empresa escolhe o provedor em **Admin > Diferenciais > Lembretes por
+WhatsApp**, envia uma mensagem de teste e acompanha a fila: pendentes,
+tentativas, razao da falha e as ultimas mensagens enviadas ou canceladas.
+"Padrao da plataforma" usa o numero de quem hospeda o sistema, definido nas
+variaveis `AGENDEI_WHATSAPP_PROVEDOR` (`evolution` ou `meta`), `_URL`,
+`_INSTANCIA`, `_TOKEN`, `_TELEFONE_ID` e `_MODELO`.
+
+O envio acontece numa tarefa periodica, que roda de 10 em 10 ou 15 em 15 minutos:
+
+```bash
+php scripts/enviar_lembretes.php                 # cron do servidor
+https://seu-dominio/tarefas.php?chave=SUA_CHAVE  # hospedagem sem cron (Render)
+```
+
+O gatilho por URL so existe com `AGENDEI_TOKEN_TAREFAS` definida (16+
+caracteres); chave errada responde 404 e entra no controle de forca bruta.
+Um agendador gratuito como cron-job.org chama a URL no intervalo escolhido.
+
+Regras que a tarefa aplica antes de cada envio: agendamento cancelado ou
+concluido cancela o lembrete (tambem na hora do cancelamento, por
+`Agendamento::cancelar`); horario que ja passou e telefone sem DDD nao saem;
+falha do provedor conta uma tentativa, e depois de tres a mensagem fica so na
+fila manual, com a razao visivel. Na API da Meta apenas o lembrete e enviado
+sozinho, porque so ele tem modelo; o aviso de vaga da lista de espera segue manual.
+
+Bancos criados antes desta versao precisam de `php scripts/migrar_lembretes.php`
+(MySQL e PostgreSQL); o `migrar.php` ja o encadeia.
+
 ## Regras de negocio garantidas pelo servidor
 
 - Sem dois agendamentos no mesmo horario para o mesmo profissional.
@@ -352,7 +397,7 @@ Google Calendar:
 O menu **Admin > Diferenciais** reúne os recursos opcionais de cada estabelecimento:
 
 - lista de espera com aviso quando um cancelamento libera uma vaga compatível;
-- fila de lembretes com mensagem pronta para WhatsApp;
+- lembretes por WhatsApp enviados sozinhos (Evolution API ou Meta), com fila manual de reserva;
 - cobrança de sinal por chave Pix e confirmação manual do pagamento;
 - agendamentos semanais recorrentes;
 - pontos de fidelidade creditados quando o atendimento é concluído;
