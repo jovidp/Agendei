@@ -207,16 +207,18 @@ Supabase (mesmo procedimento do `migrar_filiais.php`, acima).
 O botao "Entrar com o Google" so aparece com as credenciais definidas. Ele
 nao cria conta: abre a conta que ja existe com o e-mail confirmado pelo Google.
 
-1. Em console.cloud.google.com crie um projeto (ou use um existente), abra
-   **APIs e servicos > Tela de permissao OAuth**, escolha **Externo** e
-   preencha nome do app e e-mail de contato. Publique o app; enquanto ele
-   estiver "em teste", so os e-mails cadastrados como testadores entram.
-2. Em **APIs e servicos > Credenciais > Criar credenciais > ID do cliente
-   OAuth**, tipo **Aplicativo da Web**. Em **URIs de redirecionamento
-   autorizados** coloque exatamente
+1. Em console.cloud.google.com crie um projeto (ou use um existente) e abra
+   **Google Auth Platform**. Em **Visao geral** clique em **Vamos comecar**:
+   nome do app, e-mail de suporte, publico-alvo **Externo**, e-mail de
+   contato e **Criar**.
+2. Em **Clientes > Criar cliente**, tipo **Aplicativo da Web**. Em **URIs de
+   redirecionamento autorizados** coloque exatamente
    `https://SEU-APP.onrender.com/google_login.php` (e, para a sua maquina,
-   `http://localhost/agendei/google_login.php`).
-3. Copie o ID do cliente e a chave secreta para o Render, em **Environment**:
+   `http://localhost/agendei/google_login.php`). Ao criar, o Google mostra o
+   ID do cliente e a chave secreta; a chave so aparece nessa hora.
+3. Em **Publico-alvo** clique em **Publicar app**; enquanto ele estiver "em
+   teste", so os e-mails cadastrados como testadores entram.
+4. Copie o ID do cliente e a chave secreta para o Render, em **Environment**:
 
 | Chave | Valor |
 |---|---|
