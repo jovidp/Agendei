@@ -257,8 +257,11 @@ function aplicarCabecalhosSeguranca(): void
         "object-src 'none'",
         // Impede que uma injecao mude a base das URLs relativas da pagina.
         "base-uri 'self'",
-        // Formularios so podem postar para o proprio sistema.
-        "form-action 'self'",
+        // Formularios so podem postar para o proprio sistema. O Google entra porque
+        // o navegador aplica esta regra tambem ao redirecionamento que segue o envio:
+        // o botao "Entrar com o Google" posta em google_login.php, que manda para
+        // accounts.google.com (models/Google.php).
+        "form-action 'self' https://accounts.google.com",
         // Substitui o X-Frame-Options nos navegadores atuais.
         "frame-ancestors 'none'",
         "frame-src 'none'",
