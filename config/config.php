@@ -89,6 +89,10 @@ if (defined('ENTRADA_LOCAL')) {
     descartarIdentidadeMaster();
 }
 
+// "Manter conectado": sem sessao aberta, o cookie de dispositivo lembrado
+// reabre a conta antes de o Contexto resolver a empresa (includes/auth.php).
+restaurarSessaoLembrada();
+
 Contexto::iniciar();
 
 // Derruba sessao vencida por inatividade, por tempo total ou usada em outro

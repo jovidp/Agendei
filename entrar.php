@@ -68,6 +68,7 @@ function concluirEntrada(array $conta, string $email): never
     }
 
     registrarSessao($usuario);
+    lembrarSeSolicitado($usuario);
     definirFlash('sucesso', 'Bem-vindo(a), ' . explode(' ', $usuario['nome'])[0] . '.');
     header('Location: ' . destinoAposLogin());
     exit;
@@ -100,6 +101,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Primeiro passo: e-mail e senha, com o mesmo freio de forca bruta do login comum.
         $email = mb_strtolower(post('email'));
         $senha = post('senha');
+        // "Manter conectado" so vira cookie quando a sessao abrir, depois do 2FA se houver.
+        pedirLembrarDispositivo(post('lembrar') === '1');
 
         $bloqueio = conferirBloqueio([
             'login_ip'    => ipCliente(),
@@ -231,10 +234,27 @@ $tituloPagina = 'Entrar | ' . $plataforma['nome'];
                         <span class="mensagem-campo"></span>
                     </div>
 
+                    <div class="linha-opcoes">
+                        <div class="campo-checkbox">
+                            <input type="checkbox" id="lembrar" name="lembrar" value="1">
+                            <label for="lembrar">Manter conectado</label>
+                        </div>
+                        <span></span>
+                    </div>
+
                     <div class="acoes-formulario">
                         <button type="submit" class="btn btn-bloco btn-grande">Entrar</button>
                         <button type="reset" class="btn btn-contorno btn-bloco btn-grande">Limpar</button>
                     </div>
+
+                    <?php if (Google::configurado()): ?>
+                        <div class="separador-ou"><span>ou</span></div>
+                        <button type="submit" class="btn btn-contorno btn-bloco btn-grande btn-google"
+                                formaction="<?= url('google_login.php') ?>" formnovalidate name="acao" value="google">
+                            <?= iconeGoogle() ?>
+                            Entrar com o Google
+                        </button>
+                    <?php endif; ?>
                 </form>
 
             <?php endif; ?>

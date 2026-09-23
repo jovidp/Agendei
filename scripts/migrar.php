@@ -128,3 +128,6 @@ require __DIR__ . '/migrar_filiais.php';
 
 // Lembretes automaticos: tentativas e erro na fila de notificacoes.
 require __DIR__ . '/migrar_lembretes.php';
+
+// "Manter conectado": tabela dos dispositivos lembrados.
+require __DIR__ . '/migrar_lembrar.php';

@@ -677,3 +677,24 @@ ALTER TABLE `agendamentos`
 -- Toda instalacao nasce com uma unidade: a Matriz do estabelecimento semeado.
 INSERT INTO `filiais` (`id_estabelecimento`, `nome`, `status`, `ordem`)
 SELECT `id_estabelecimento`, 'Matriz', 'ativo', 0 FROM `estabelecimento` WHERE `slug` = 'agendei-studio';
+
+-- ---------------------------------------------------------------------
+-- SESSOES LEMBRADAS ("manter conectado")
+-- Guarda so o hash do segredo do cookie; o segredo em si vive no navegador.
+-- Para atualizar uma base ja existente use: php scripts/migrar_lembrar.php
+-- ---------------------------------------------------------------------
+CREATE TABLE `sessoes_lembradas` (
+  `id_sessao` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `id_estabelecimento` int(10) unsigned NOT NULL,
+  `id_usuario` int(10) unsigned NOT NULL,
+  `seletor` char(24) NOT NULL,
+  `validador_hash` char(64) NOT NULL,
+  `expira_em` datetime NOT NULL,
+  `criado_em` datetime NOT NULL DEFAULT current_timestamp(),
+  `ultimo_uso` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_sessao`),
+  UNIQUE KEY `uk_sessoes_lembradas_seletor` (`seletor`),
+  KEY `idx_sessoes_lembradas_usuario` (`id_estabelecimento`,`id_usuario`),
+  KEY `idx_sessoes_lembradas_expira` (`expira_em`),
+  CONSTRAINT `fk_sessoes_lembradas_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

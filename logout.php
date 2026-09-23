@@ -41,6 +41,8 @@ if (ehSimulacao()) {
 
 // Descarta tambem um desafio de 2FA que tenha ficado pendente.
 cancelarSegundoFator();
+// Sair e sair: o cookie de "manter conectado" deste navegador deixa de valer.
+esquecerDispositivo();
 encerrarSessao();
 ?>
 <!DOCTYPE html>

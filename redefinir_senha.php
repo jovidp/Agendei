@@ -30,6 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $usuario !== null) {
 
     if ($erros === []) {
         Usuario::atualizarSenha((int) $usuario['id_usuario'], $senha);
+        // Quem redefine a senha perdeu ou desconfia do acesso: nenhum dispositivo continua lembrado.
+        SessaoLembrada::apagarDoUsuario((int) $usuario['id_usuario']);
         // Consome o token após a troca de senha para que o link não possa ser usado novamente.
         Usuario::limparTokenRecuperacao((int) $usuario['id_usuario']);
 

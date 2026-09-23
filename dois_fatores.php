@@ -62,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Identidade confirmada nos dois fatores: agora a sessao pode ser aberta.
         registrarSessao($usuario);
+        lembrarSeSolicitado($usuario);
         definirFlash('sucesso', 'Bem-vindo(a), ' . explode(' ', $usuario['nome'])[0] . '.');
         header('Location: ' . destinoAposLogin());
         exit;

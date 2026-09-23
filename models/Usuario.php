@@ -197,12 +197,24 @@ class Usuario
     /** Atualiza a data do último acesso após o login. */
     public static function registrarAcesso(int $idUsuario): void
     {
-        $consulta = bd()->prepare('UPDATE usuarios SET ultimo_acesso = NOW() WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id');
-        $consulta->execute([':id' => $idUsuario]);
+        self::registrarAcessoEm(Contexto::id(), $idUsuario);
+    }
+
+    /** Variante com a empresa explicita: a sessao lembrada abre antes de o Contexto existir. */
+    public static function registrarAcessoEm(int $idEstabelecimento, int $idUsuario): void
+    {
+        $consulta = bd()->prepare('UPDATE usuarios SET ultimo_acesso = NOW() WHERE id_estabelecimento = :empresa AND id_usuario = :id');
+        $consulta->execute([':empresa' => $idEstabelecimento, ':id' => $idUsuario]);
     }
 
     /** Retorna o id da tabela especifica do perfil (clientes/profissionais/administradores). */
     public static function idDoPerfil(int $idUsuario, string $tipo): ?int
+    {
+        return self::idDoPerfilEm(Contexto::id(), $idUsuario, $tipo);
+    }
+
+    /** Variante com a empresa explicita: a sessao lembrada abre antes de o Contexto existir. */
+    public static function idDoPerfilEm(int $idEstabelecimento, int $idUsuario, string $tipo): ?int
     {
         $mapa = [
             'cliente'      => ['clientes', 'id_cliente'],
@@ -216,8 +228,8 @@ class Usuario
 
         [$tabela, $coluna] = $mapa[$tipo];
 
-        $consulta = bd()->prepare("SELECT {$coluna} FROM {$tabela} WHERE id_estabelecimento = " . Contexto::id() . " AND id_usuario = :id LIMIT 1");
-        $consulta->execute([':id' => $idUsuario]);
+        $consulta = bd()->prepare("SELECT {$coluna} FROM {$tabela} WHERE id_estabelecimento = :empresa AND id_usuario = :id LIMIT 1");
+        $consulta->execute([':empresa' => $idEstabelecimento, ':id' => $idUsuario]);
         $registro = $consulta->fetch();
 
         return $registro ? (int) $registro[$coluna] : null;

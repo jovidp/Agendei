@@ -69,6 +69,11 @@
     limparAoDigitar(formulario);
 
     formulario.addEventListener("submit", function (evento) {
+      // "Entrar com o Google" nao usa login nem senha: o formulario segue como esta.
+      if (evento.submitter && evento.submitter.value === "google") {
+        return;
+      }
+
       var valido = true;
 
       // O campo aceita o login de 6 letras ou o e-mail: aqui so exigimos que venha preenchido.

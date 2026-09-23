@@ -289,3 +289,34 @@
     padding: 10px 6px;
   }
 }
+
+/* Entrar com o Google */
+.separador-ou {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0 14px;
+  color: var(--texto-secundario);
+  font-size: 13px;
+}
+
+.separador-ou::before,
+.separador-ou::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--borda);
+}
+
+.btn-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.btn-google svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}

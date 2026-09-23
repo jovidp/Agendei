@@ -202,6 +202,41 @@ Supabase (mesmo procedimento do `migrar_filiais.php`, acima).
 
 ---
 
+## Entrar com o Google
+
+O botao "Entrar com o Google" so aparece com as credenciais definidas. Ele
+nao cria conta: abre a conta que ja existe com o e-mail confirmado pelo Google.
+
+1. Em console.cloud.google.com crie um projeto (ou use um existente), abra
+   **APIs e servicos > Tela de permissao OAuth**, escolha **Externo** e
+   preencha nome do app e e-mail de contato. Publique o app; enquanto ele
+   estiver "em teste", so os e-mails cadastrados como testadores entram.
+2. Em **APIs e servicos > Credenciais > Criar credenciais > ID do cliente
+   OAuth**, tipo **Aplicativo da Web**. Em **URIs de redirecionamento
+   autorizados** coloque exatamente
+   `https://SEU-APP.onrender.com/google_login.php` (e, para a sua maquina,
+   `http://localhost/agendei/google_login.php`).
+3. Copie o ID do cliente e a chave secreta para o Render, em **Environment**:
+
+| Chave | Valor |
+|---|---|
+| `AGENDEI_GOOGLE_CLIENT_ID` | o ID, termina em `.apps.googleusercontent.com` |
+| `AGENDEI_GOOGLE_CLIENT_SECRET` | a chave secreta do cliente |
+
+Na sua maquina, em vez de variaveis, crie `config/google.local.php` (o
+`.gitignore` ja o mantem fora do GitHub):
+
+```php
+<?php
+return ['client_id' => '....apps.googleusercontent.com', 'client_secret' => '...'];
+```
+
+"Manter conectado" nao precisa de configuracao, so da tabela
+`sessoes_lembradas`: banco criado antes desta versao roda uma vez, da sua
+maquina, `php scripts/migrar_lembrar.php` apontando para o Supabase.
+
+---
+
 ## Detalhes que importam
 
 **O plano free hiberna.** Depois de ~15 min sem acesso, o Render "dorme" o

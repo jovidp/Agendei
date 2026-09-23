@@ -168,6 +168,7 @@ php tests/multitenancy.php    # isolamento entre estabelecimentos (banco tempora
 php tests/master.php          # auditoria, contas master e bloqueios (banco temporario)
 php tests/entrada_global.php  # login geral sem link da empresa (nao usa banco)
 php tests/lembretes.php       # lembretes por WhatsApp, com provedor simulado (banco temporario)
+php tests/lembrar_google.php  # manter conectado e entrada com o Google (nao usa banco)
 ```
 
 Os tres ultimos criam e descartam um banco proprio e nunca tocam o banco de uso normal.
@@ -301,6 +302,32 @@ A configuracao vem de variaveis de ambiente (`AGENDEI_EMAIL_API_CHAVE` e
 envios devolvem falso, o motivo vai para o log e as telas mostram o caminho
 manual. Em **Master > Saude do sistema** ha um botao para enviar um e-mail de
 teste. Passo a passo com Gmail ou Brevo em [DEPLOY.md](DEPLOY.md).
+
+## Manter conectado e entrar com o Google
+
+**Manter conectado.** A opcao no login (e na entrada geral) guarda um segundo
+cookie, valido por 30 dias, separado do cookie de sessao. Ele carrega um
+seletor e um segredo; o banco (`sessoes_lembradas`) guarda so o hash do
+segredo, que e trocado a cada uso. Quando a sessao cai (navegador fechado,
+inatividade), o bootstrap a reabre a partir dele (`restaurarSessaoLembrada()`
+em `includes/auth.php`) e registra a entrada no log de autenticacao. Sair da
+conta apaga o registro; trocar ou redefinir a senha apaga todos os
+dispositivos lembrados da conta. O cookie nao age num link de outra empresa
+nem na area master, e conta ou empresa inativa o invalida. Quem exige segundo
+fator so e lembrado depois de responde-lo.
+
+**Entrar com o Google.** Com `AGENDEI_GOOGLE_CLIENT_ID` e
+`AGENDEI_GOOGLE_CLIENT_SECRET` definidas (ou `config/google.local.php`), o
+login e a entrada geral mostram o botao. O Google confirma o e-mail (OpenID
+Connect, `models/Google.php` e `google_login.php`) e o sistema abre a conta
+daquele e-mail: pelo link de uma empresa, a conta dela; pela entrada geral,
+todas, com a mesma escolha de empresa. O Google nao cria conta, porque o
+cadastro exige dados que ele nao fornece; e-mail sem conta e orientado a se
+cadastrar. O segundo fator continua valendo. Passo a passo das credenciais em
+[DEPLOY.md](DEPLOY.md).
+
+Bancos criados antes desta versao precisam de `php scripts/migrar_lembrar.php`
+(MySQL e PostgreSQL); o `migrar.php` ja o encadeia.
 
 ## Lembretes por WhatsApp
 

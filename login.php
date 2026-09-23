@@ -22,6 +22,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $identificador = mb_strtolower(post('identificador'));
     $senha = post('senha');
+    // "Manter conectado" so vira cookie quando a sessao abrir, depois do 2FA se houver.
+    pedirLembrarDispositivo(post('lembrar') === '1');
 
     // A senha do usuario comum tem oito letras por exigencia da especificacao,
     // o que da um espaco de busca pequeno. O freio por conta e por origem e o
@@ -65,6 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Guarda a identidade autenticada antes de encaminhar ao destino permitido.
             registrarSessao($usuario);
+            lembrarSeSolicitado($usuario);
             definirFlash('sucesso', 'Bem-vindo(a), ' . explode(' ', $usuario['nome'])[0] . '.');
             header('Location: ' . destinoAposLogin());
             exit;
@@ -121,6 +124,8 @@ $tituloPagina = 'Entrar | ' . $estabelecimento['nome'];
 
             <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" id="formLogin" novalidate>
                 <?= campoCsrf() ?>
+                <?php /* O botao do Google posta este formulario em google_login.php; o link da empresa vai junto. */ ?>
+                <input type="hidden" name="estabelecimento" value="<?= e(Contexto::slug()) ?>">
 
                 <div class="campo">
                     <label for="identificador">Login</label>
@@ -137,7 +142,10 @@ $tituloPagina = 'Entrar | ' . $estabelecimento['nome'];
                 </div>
 
                 <div class="linha-opcoes">
-                    <span></span>
+                    <div class="campo-checkbox">
+                        <input type="checkbox" id="lembrar" name="lembrar" value="1">
+                        <label for="lembrar">Manter conectado</label>
+                    </div>
                     <a href="<?= url('recuperar_senha.php') ?>">Esqueci minha senha</a>
                 </div>
 
@@ -145,6 +153,15 @@ $tituloPagina = 'Entrar | ' . $estabelecimento['nome'];
                     <button type="submit" class="btn btn-bloco btn-grande">Entrar</button>
                     <button type="reset" class="btn btn-contorno btn-bloco btn-grande">Limpar</button>
                 </div>
+
+                <?php if (Google::configurado()): ?>
+                    <div class="separador-ou"><span>ou</span></div>
+                    <button type="submit" class="btn btn-contorno btn-bloco btn-grande btn-google"
+                            formaction="<?= url('google_login.php') ?>" formnovalidate name="acao" value="google">
+                        <?= iconeGoogle() ?>
+                        Entrar com o Google
+                    </button>
+                <?php endif; ?>
             </form>
 
             <p class="autenticacao-rodape">

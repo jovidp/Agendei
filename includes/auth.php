@@ -425,12 +425,14 @@ function registrarSessao(array $usuario): void
     $_SESSION['usuario_email'] = $usuario['email'];
     $_SESSION['usuario_login'] = ($usuario['login'] ?? '') ?: $usuario['email'];
     $_SESSION['usuario_tipo']  = $usuario['tipo'];
-    $_SESSION['perfil_id']     = Usuario::idDoPerfil((int) $usuario['id_usuario'], $usuario['tipo']);
+    // A empresa vem da propria conta, e nao do Contexto: a sessao lembrada
+    // (restaurarSessaoLembrada) abre antes de o Contexto resolver a empresa.
+    $_SESSION['perfil_id']     = Usuario::idDoPerfilEm((int) $usuario['id_estabelecimento'], (int) $usuario['id_usuario'], $usuario['tipo']);
 
     // Marca os instantes que controlam inatividade, duracao maxima e dispositivo.
     marcarInicioSessao();
 
-    Usuario::registrarAcesso((int) $usuario['id_usuario']);
+    Usuario::registrarAcessoEm((int) $usuario['id_estabelecimento'], (int) $usuario['id_usuario']);
 }
 
 /**
@@ -719,9 +721,150 @@ function alterarSenhaUsuario(int $idUsuario, string $senhaAtual, string $novaSen
 
     if ($erros === []) {
         Usuario::atualizarSenha($idUsuario, $novaSenha);
+        // Senha nova derruba os dispositivos lembrados: e o que se espera de quem
+        // troca a senha porque desconfia de um aparelho.
+        SessaoLembrada::apagarDoUsuario($idUsuario);
     }
 
     return $erros;
+}
+
+// ---------------------------------------------------------------------
+// Manter conectado (dispositivo lembrado)
+//
+// O cookie de sessao morre com o navegador e a sessao cai por inatividade.
+// Quem marca "manter conectado" recebe um segundo cookie, de 30 dias, que
+// reabre a sessao sozinho (restaurarSessaoLembrada, chamada pelo bootstrap).
+// O segredo vive so no cookie; o banco guarda o hash (models/SessaoLembrada.php).
+// ---------------------------------------------------------------------
+
+const LEMBRAR_COOKIE = 'AGENDEI_LEMBRAR';
+
+/** Mesmas regras do cookie de sessao (caminho, HttpOnly, SameSite, Secure), com validade propria. */
+function parametrosCookieLembrar(int $expira): array
+{
+    return [
+        'expires'  => $expira,
+        'path'     => BASE_URL === '' ? '/' : BASE_URL,
+        'httponly' => true,
+        'samesite' => 'Lax',
+        'secure'   => requisicaoSegura(),
+    ];
+}
+
+/** Guarda o pedido do formulario; e atendido quando a sessao abre, depois do 2FA se houver. */
+function pedirLembrarDispositivo(bool $pedido): void
+{
+    if ($pedido) {
+        $_SESSION['lembrar_dispositivo'] = true;
+    } else {
+        unset($_SESSION['lembrar_dispositivo']);
+    }
+}
+
+/** Cria o registro e o cookie quando o login pediu "manter conectado". Chamar logo apos registrarSessao(). */
+function lembrarSeSolicitado(array $usuario): void
+{
+    if (empty($_SESSION['lembrar_dispositivo'])) {
+        return;
+    }
+    unset($_SESSION['lembrar_dispositivo']);
+
+    try {
+        gravarCookieLembrar(SessaoLembrada::criar((int) $usuario['id_estabelecimento'], (int) $usuario['id_usuario']));
+    } catch (Throwable $erro) {
+        // Sem a tabela (banco anterior a migracao) o login segue normal, so nao lembra.
+        error_log('Nao foi possivel lembrar o dispositivo: ' . $erro->getMessage());
+    }
+}
+
+function gravarCookieLembrar(string $valor): void
+{
+    $_COOKIE[LEMBRAR_COOKIE] = $valor;
+    if (!headers_sent()) {
+        setcookie(LEMBRAR_COOKIE, $valor, parametrosCookieLembrar(time() + SessaoLembrada::DIAS * 86400));
+    }
+}
+
+function apagarCookieLembrar(): void
+{
+    unset($_COOKIE[LEMBRAR_COOKIE]);
+    if (!headers_sent()) {
+        setcookie(LEMBRAR_COOKIE, '', parametrosCookieLembrar(time() - 86400));
+    }
+}
+
+/** Sair da conta: apaga o registro deste cookie e o proprio cookie. */
+function esquecerDispositivo(): void
+{
+    $valor = (string) ($_COOKIE[LEMBRAR_COOKIE] ?? '');
+    if ($valor !== '') {
+        try {
+            $registro = SessaoLembrada::porCookie($valor);
+            if ($registro !== null) {
+                SessaoLembrada::apagar((int) $registro['id_sessao']);
+            }
+        } catch (Throwable $erro) {
+            error_log('Nao foi possivel esquecer o dispositivo: ' . $erro->getMessage());
+        }
+    }
+    apagarCookieLembrar();
+}
+
+/**
+ * Reabre a sessao a partir do cookie de "manter conectado".
+ *
+ * Roda no bootstrap, antes de o Contexto resolver a empresa: e a sessao
+ * restaurada que diz qual empresa e. So age sem sessao aberta e fora da area
+ * master e das tarefas. Num link de outra empresa nao faz nada, para que o
+ * cookie nao "sequestre" a pagina; conta ou empresa inativa apaga tudo. A cada
+ * uso o segredo do cookie e trocado, e a entrada vai para o log de autenticacao.
+ */
+function restaurarSessaoLembrada(): void
+{
+    if (estaLogado() || defined('AREA_MASTER') || defined('TAREFA_AGENDADA')) {
+        return;
+    }
+    $valor = (string) ($_COOKIE[LEMBRAR_COOKIE] ?? '');
+    if ($valor === '') {
+        return;
+    }
+
+    try {
+        $registro = SessaoLembrada::porCookie($valor);
+        if ($registro === null) {
+            apagarCookieLembrar();
+            return;
+        }
+
+        $q = bd()->prepare(
+            'SELECT u.*, e.slug AS estabelecimento_slug, e.status AS estabelecimento_status
+             FROM usuarios u
+             JOIN estabelecimento e ON e.id_estabelecimento = u.id_estabelecimento
+             WHERE u.id_usuario = ? AND u.id_estabelecimento = ? LIMIT 1'
+        );
+        $q->execute([(int) $registro['id_usuario'], (int) $registro['id_estabelecimento']]);
+        $usuario = $q->fetch();
+
+        if (!$usuario || $usuario['status'] !== 'ativo' || $usuario['estabelecimento_status'] !== 'ativo') {
+            SessaoLembrada::apagar((int) $registro['id_sessao']);
+            apagarCookieLembrar();
+            return;
+        }
+
+        $slugUrl = get('estabelecimento');
+        if ($slugUrl !== '' && $slugUrl !== $usuario['estabelecimento_slug']) {
+            return;
+        }
+
+        gravarCookieLembrar(SessaoLembrada::renovar($registro));
+        registrarSessao($usuario);
+        registrarEventoSeguranca('sessao_lembrada', ['usuario' => (int) $usuario['id_usuario'], 'estabelecimento' => (int) $usuario['id_estabelecimento']]);
+        LogAutenticacao::registrarEm((int) $usuario['id_estabelecimento'], 'login_sucesso', (string) (($usuario['login'] ?? '') ?: $usuario['email']), $usuario);
+    } catch (Throwable $erro) {
+        // Banco sem a tabela ou fora do ar: a pagina segue sem sessao, como sem o cookie.
+        error_log('Nao foi possivel restaurar a sessao lembrada: ' . $erro->getMessage());
+    }
 }
 
 // ---------------------------------------------------------------------
