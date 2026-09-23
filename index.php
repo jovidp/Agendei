@@ -29,13 +29,13 @@ $tituloPagina = NOME_SISTEMA . ' | ' . MARCA_SLOGAN;
 
 /** Recursos opcionais, ligados por empresa em Admin > Diferenciais. */
 $recursos = [
-    ['Lembretes prontos para WhatsApp', 'A fila monta a mensagem; a empresa so envia.'],
-    ['Lista de espera', 'Um cancelamento avisa quem esta esperando uma vaga compativel.'],
+    ['Lembretes prontos para WhatsApp', 'A fila monta a mensagem; a empresa só envia.'],
+    ['Lista de espera', 'Um cancelamento avisa quem está esperando uma vaga compatível.'],
     ['Sinal por Pix', 'Cobra o sinal na reserva e confirma o pagamento pelo painel.'],
-    ['Horarios recorrentes', 'O cliente fixo tem a semana marcada de uma vez.'],
-    ['Fidelidade e pacotes', 'Pontos por atendimento concluido e creditos com validade.'],
-    ['Avaliacoes', 'So quem foi atendido avalia.'],
-    ['Comissao por profissional', 'Resumo mensal de quem atendeu o que.'],
+    ['Horários recorrentes', 'O cliente fixo tem a semana marcada de uma vez.'],
+    ['Fidelidade e pacotes', 'Pontos por atendimento concluído e créditos com validade.'],
+    ['Avaliações', 'Só quem foi atendido avalia.'],
+    ['Comissão por profissional', 'Resumo mensal de quem atendeu o que.'],
     ['Agenda no celular', 'Feed privado para Google Agenda, Outlook e Apple Calendar.'],
 ];
 ?>
@@ -81,7 +81,7 @@ $recursos = [
         <div class="heroi-texto">
             <span class="heroi-etiqueta">Agendamento online</span>
             <h1><?= e(MARCA_SLOGAN) ?></h1>
-            <p>Agendamento online para quem atende e para quem marca. O cliente escolhe o horario, o sistema confirma e lembra, e a agenda da empresa fica sempre em dia.</p>
+            <p>Agendamento online para quem atende e para quem marca. O cliente escolhe o horário, o sistema confirma e lembra, e a agenda da empresa fica sempre em dia.</p>
             <div class="heroi-acoes">
                 <a href="<?= url('cadastro_empresa.php') ?>" class="btn btn-grande btn-claro">Cadastrar minha empresa</a>
                 <a href="#como-funciona" class="btn btn-grande btn-vazado">Ver como funciona</a>
@@ -97,7 +97,7 @@ $recursos = [
             <dl class="confirmacao-dados">
                 <div><dt>Quando</dt><dd>Ter, 29 de set, 15:30</dd></div>
                 <div><dt>Com</dt><dd>Rafael</dd></div>
-                <div><dt>Duracao</dt><dd>45 min</dd></div>
+                <div><dt>Duração</dt><dd>45 min</dd></div>
                 <div><dt>Valor</dt><dd>R$ 70,00</dd></div>
             </dl>
             <div class="confirmacao-rodape">Lembrete enviado 24 h antes.</div>
@@ -110,23 +110,23 @@ $recursos = [
     <div class="container">
         <div class="secao-titulo">
             <h2>Para quem atende</h2>
-            <p>Menos tempo confirmando horario, mais tempo atendendo.</p>
+            <p>Menos tempo confirmando horário, mais tempo atendendo.</p>
         </div>
         <div class="grade-argumentos">
             <article class="argumento">
                 <span class="argumento-marca" aria-hidden="true"></span>
-                <h3>Zero confirmacao manual</h3>
-                <p>O cliente marca, o sistema confirma e lembra. Ninguem precisa responder mensagem para fechar um horario.</p>
+                <h3>Zero confirmação manual</h3>
+                <p>O cliente marca, o sistema confirma e lembra. Ninguém precisa responder mensagem para fechar um horário.</p>
             </article>
             <article class="argumento">
                 <span class="argumento-marca" aria-hidden="true"></span>
                 <h3>Cada empresa com a sua cara</h3>
-                <p>Logo, cores e link proprio. Para o seu cliente, a agenda e da sua empresa, nao de um sistema de terceiros.</p>
+                <p>Logo, cores e link próprio. Para o seu cliente, a agenda é da sua empresa, não de um sistema de terceiros.</p>
             </article>
             <article class="argumento">
                 <span class="argumento-marca" aria-hidden="true"></span>
-                <h3>Cresce com o negocio</h3>
-                <p>Uma unidade ou varias, um profissional ou uma equipe. Os recursos extras entram so quando fizerem sentido.</p>
+                <h3>Cresce com o negócio</h3>
+                <p>Uma unidade ou várias, um profissional ou uma equipe. Os recursos extras entram só quando fizerem sentido.</p>
             </article>
         </div>
     </div>
@@ -137,23 +137,23 @@ $recursos = [
     <div class="container">
         <div class="secao-titulo">
             <h2>Como funciona</h2>
-            <p>Da configuracao ao primeiro horario confirmado no mesmo dia.</p>
+            <p>Da configuração ao primeiro horário confirmado no mesmo dia.</p>
         </div>
         <div class="grade-passos">
             <div class="passo">
                 <span class="passo-numero">1</span>
                 <h3>A empresa monta a agenda</h3>
-                <p>Servicos com preco e duracao, equipe e horario de cada profissional.</p>
+                <p>Serviços com preço e duração, equipe e horário de cada profissional.</p>
             </div>
             <div class="passo">
                 <span class="passo-numero">2</span>
                 <h3>O cliente escolhe</h3>
-                <p>Servico, profissional e horario. So aparecem horarios realmente livres.</p>
+                <p>Serviço, profissional e horário. Só aparecem horários realmente livres.</p>
             </div>
             <div class="passo">
                 <span class="passo-numero">3</span>
                 <h3>Marcou, confirmou</h3>
-                <p>A confirmacao sai na hora e o lembrete vai antes do atendimento.</p>
+                <p>A confirmação sai na hora e o lembrete vai antes do atendimento.</p>
             </div>
             <div class="passo">
                 <span class="passo-numero">4</span>
@@ -175,12 +175,12 @@ $recursos = [
             <article class="argumento">
                 <span class="argumento-marca" aria-hidden="true"></span>
                 <h3>Marca em um minuto</h3>
-                <p>Escolhe o servico, ve os horarios livres e pronto. Funciona no celular.</p>
+                <p>Escolhe o serviço, vê os horários livres e pronto. Funciona no celular.</p>
             </article>
             <article class="argumento">
                 <span class="argumento-marca" aria-hidden="true"></span>
-                <h3>Confirmacao na hora</h3>
-                <p>O horario confirmado aparece no painel e o lembrete chega antes.</p>
+                <h3>Confirmação na hora</h3>
+                <p>O horário confirmado aparece no painel e o lembrete chega antes.</p>
             </article>
             <article class="argumento">
                 <span class="argumento-marca" aria-hidden="true"></span>
@@ -196,7 +196,7 @@ $recursos = [
     <div class="container">
         <div class="secao-titulo">
             <h2>Recursos que entram quando fizer sentido</h2>
-            <p>Cada empresa liga o que precisa. O que nao esta ligado nao aparece para o cliente.</p>
+            <p>Cada empresa liga o que precisa. O que não está ligado não aparece para o cliente.</p>
         </div>
         <ul class="grade-recursos">
             <?php foreach ($recursos as [$nome, $descricao]): ?>
@@ -214,7 +214,7 @@ $recursos = [
             </div>
             <div class="chamada-acoes">
                 <a href="<?= url('cadastro_empresa.php') ?>" class="btn btn-grande">Cadastrar minha empresa</a>
-                <a href="<?= url('entrar.php') ?>" class="btn btn-grande btn-vazado">Ja tenho conta</a>
+                <a href="<?= url('entrar.php') ?>" class="btn btn-grande btn-vazado">Já tenho conta</a>
             </div>
         </div>
     </div>
@@ -236,11 +236,11 @@ $recursos = [
                 <ul class="rodape-lista">
                     <li><a href="<?= url('cadastro_empresa.php') ?>">Cadastrar empresa</a></li>
                     <li><a href="<?= url('entrar.php') ?>">Entrar</a></li>
-                    <li><a href="<?= url('master/login.php') ?>">Area master</a></li>
+                    <li><a href="<?= url('master/login.php') ?>">Área master</a></li>
                 </ul>
             </div>
             <div>
-                <h4>Conheca</h4>
+                <h4>Conheça</h4>
                 <ul class="rodape-lista">
                     <li><a href="#para-quem-atende">Para quem atende</a></li>
                     <li><a href="#como-funciona">Como funciona</a></li>

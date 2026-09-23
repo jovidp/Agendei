@@ -32,9 +32,6 @@
   var diasDisponiveis = [];
   var carregandoDias = false;
 
-  // Quando o servico e oferecido em uma unica unidade, a etapa 2 e pulada; o
-  // Voltar da etapa de profissional usa isto para retornar direto ao servico.
-  var filialUnica = false;
   // Numero da ultima consulta de unidades: respostas atrasadas de um servico
   // trocado no meio do caminho sao descartadas.
   var consultaFiliais = 0;
@@ -48,7 +45,7 @@
   var nomesMeses = [
     "Janeiro",
     "Fevereiro",
-    "Marco",
+    "Março",
     "Abril",
     "Maio",
     "Junho",
@@ -59,7 +56,7 @@
     "Novembro",
     "Dezembro",
   ];
-  var nomesDias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
+  var nomesDias = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
   // -----------------------------------------------------------------
   // Utilitarios
@@ -158,7 +155,7 @@
       headers: { "X-Requested-With": "XMLHttpRequest" },
     }).then(function (resposta) {
       if (!resposta.ok) {
-        throw new Error("Falha na comunicacao com o servidor.");
+        throw new Error("Falha na comunicação com o servidor.");
       }
       return resposta.json();
     });
@@ -196,7 +193,7 @@
   /** Confere se a escolha obrigatória da etapa atual já foi preenchida. */
   function podeAvancar(de) {
     if (de === 1 && !estado.servico) {
-      Agendei.notificar("Escolha um servico para continuar.", "aviso");
+      Agendei.notificar("Escolha um serviço para continuar.", "aviso");
       return false;
     }
     if (de === 2 && !estado.filial) {
@@ -212,7 +209,7 @@
       return false;
     }
     if (de === 5 && !estado.hora) {
-      Agendei.notificar("Escolha um horario para continuar.", "aviso");
+      Agendei.notificar("Escolha um horário para continuar.", "aviso");
       return false;
     }
     return true;
@@ -233,7 +230,6 @@
           duracao: opcao.getAttribute("data-duracao"),
         };
         estado.filial = null;
-        filialUnica = false;
         estado.profissional = null;
         estado.data = null;
         estado.hora = null;
@@ -277,7 +273,7 @@
       escapar(filial.nome) +
       "</strong>" +
       "<p>" +
-      escapar(filial.endereco || "Endereco nao informado") +
+      escapar(filial.endereco || "Endereço não informado") +
       "</p>" +
       (telefone
         ? '<span class="opcao-meta"><span class="duracao">' +
@@ -292,8 +288,8 @@
 
   /**
    * Busca na API as unidades que oferecem o servico. Com uma unica unidade ela
-   * e escolhida sozinha e o fluxo segue para o profissional; sem nenhuma, o
-   * cliente e avisado e permanece nesta etapa.
+   * ja entra marcada, mas continua na tela: o cliente precisa ver onde sera
+   * atendido antes de seguir. Sem nenhuma, ele e avisado e permanece aqui.
    */
   function carregarFiliais() {
     var consulta = ++consultaFiliais;
@@ -314,29 +310,24 @@
 
         if (filiais.length === 0) {
           listaFiliais.innerHTML =
-            '<div class="estado-vazio"><strong>Nenhuma unidade oferece este servico no momento</strong>' +
-            "<p>Escolha outro servico ou tente novamente mais tarde.</p></div>";
+            '<div class="estado-vazio"><strong>Nenhuma unidade oferece este serviço no momento</strong>' +
+            "<p>Escolha outro serviço ou tente novamente mais tarde.</p></div>";
           return;
         }
+
+        var html = "";
 
         if (filiais.length === 1) {
           estado.filial = {
             id: String(parseInt(filiais[0].id_filial, 10)),
             nome: filiais[0].nome,
           };
-          filialUnica = true;
-          listaFiliais.innerHTML = "";
           atualizarResumo();
-
-          // So avanca sozinho se o cliente ainda esta esperando nesta etapa.
-          if (etapaAtual === 2) {
-            carregarProfissionais();
-            irParaEtapa(3);
-          }
-          return;
+          html +=
+            '<p class="texto-pequeno texto-secundario">Este serviço é oferecido apenas nesta unidade.</p>';
         }
 
-        var html = '<div class="lista-opcoes">';
+        html += '<div class="lista-opcoes">';
         filiais.forEach(function (filial) {
           html += cartaoFilial(filial);
         });
@@ -352,7 +343,6 @@
                 id: opcao.value,
                 nome: opcao.getAttribute("data-nome"),
               };
-              filialUnica = false;
               estado.profissional = null;
               estado.data = null;
               estado.hora = null;
@@ -365,8 +355,8 @@
           return;
         }
         listaFiliais.innerHTML =
-          '<div class="estado-vazio"><strong>Nao foi possivel carregar as unidades</strong>' +
-          "<p>Verifique sua conexao e tente novamente.</p></div>";
+          '<div class="estado-vazio"><strong>Não foi possível carregar as unidades</strong>' +
+          "<p>Verifique sua conexão e tente novamente.</p></div>";
       });
   }
 
@@ -389,8 +379,8 @@
       .then(function (dados) {
         if (!dados.sucesso || dados.profissionais.length === 0) {
           listaProfissionais.innerHTML =
-            '<div class="estado-vazio"><strong>Nenhum profissional disponivel</strong>' +
-            "<p>Ainda nao ha profissional habilitado para este servico nesta unidade. Escolha outra unidade ou outro servico.</p></div>";
+            '<div class="estado-vazio"><strong>Nenhum profissional disponível</strong>' +
+            "<p>Ainda não há profissional habilitado para este serviço nesta unidade. Escolha outra unidade ou outro serviço.</p></div>";
           return;
         }
 
@@ -446,8 +436,8 @@
       })
       .catch(function () {
         listaProfissionais.innerHTML =
-          '<div class="estado-vazio"><strong>Nao foi possivel carregar os profissionais</strong>' +
-          "<p>Verifique sua conexao e tente novamente.</p></div>";
+          '<div class="estado-vazio"><strong>Não foi possível carregar os profissionais</strong>' +
+          "<p>Verifique sua conexão e tente novamente.</p></div>";
       });
   }
 
@@ -518,10 +508,10 @@
       '<span class="calendario-navegacao">' +
       '<button type="button" data-mes="-1"' +
       (podeVoltar ? "" : " disabled") +
-      ' aria-label="Mes anterior">&lsaquo;</button>' +
+      ' aria-label="Mês anterior">&lsaquo;</button>' +
       '<button type="button" data-mes="1"' +
       (podeAvancarMes ? "" : " disabled") +
-      ' aria-label="Proximo mes">&rsaquo;</button>' +
+      ' aria-label="Próximo mês">&rsaquo;</button>' +
       '</span></div><div class="calendario-grade">';
 
     nomesDias.forEach(function (dia) {
@@ -555,7 +545,7 @@
         '" data-data="' +
         texto +
         '"' +
-        (disponivel ? "" : ' disabled title="Sem horarios disponiveis"') +
+        (disponivel ? "" : ' disabled title="Sem horários disponíveis"') +
         ">" +
         dia +
         "</button>";
@@ -565,7 +555,7 @@
 
     if (!carregandoDias && diasDisponiveis.length === 0) {
       html +=
-        '<p class="carregando-horarios">Nenhum dia disponivel neste mes.</p>';
+        '<p class="carregando-horarios">Nenhum dia disponível neste mês.</p>';
     }
 
     areaCalendario.innerHTML = html;
@@ -608,7 +598,7 @@
   /** Atualiza as opções de horário para o serviço, profissional e data selecionados. */
   function carregarHorarios() {
     listaHorarios.innerHTML =
-      '<p class="carregando-horarios">Buscando horarios disponiveis...</p>';
+      '<p class="carregando-horarios">Buscando horários disponíveis...</p>';
 
     buscarJson(
       "api/horarios.php?id_profissional=" +
@@ -621,7 +611,7 @@
       .then(function (dados) {
         if (!dados.sucesso || dados.horarios.length === 0) {
           listaHorarios.innerHTML =
-            '<div class="estado-vazio"><strong>Nenhum horario disponivel</strong>' +
+            '<div class="estado-vazio"><strong>Nenhum horário disponível</strong>' +
             "<p>Escolha outra data para este profissional.</p></div>";
           return;
         }
@@ -639,7 +629,7 @@
           }
         });
 
-        var titulos = { manha: "Manha", tarde: "Tarde", noite: "Noite" };
+        var titulos = { manha: "Manhã", tarde: "Tarde", noite: "Noite" };
         var html = "";
 
         Object.keys(periodos).forEach(function (chave) {
@@ -681,8 +671,8 @@
       })
       .catch(function () {
         listaHorarios.innerHTML =
-          '<div class="estado-vazio"><strong>Nao foi possivel carregar os horarios</strong>' +
-          "<p>Verifique sua conexao e tente novamente.</p></div>";
+          '<div class="estado-vazio"><strong>Não foi possível carregar os horários</strong>' +
+          "<p>Verifique sua conexão e tente novamente.</p></div>";
       });
   }
 
@@ -707,29 +697,29 @@
   function atualizarResumo() {
     definirResumo(
       "servico",
-      estado.servico ? estado.servico.nome : "Nao selecionado",
+      estado.servico ? estado.servico.nome : "Não selecionado",
       !!estado.servico,
     );
     definirResumo(
       "unidade",
-      estado.filial ? estado.filial.nome : "Nao selecionada",
+      estado.filial ? estado.filial.nome : "Não selecionada",
       !!estado.filial,
     );
     definirResumo(
       "profissional",
-      estado.profissional ? estado.profissional.nome : "Nao selecionado",
+      estado.profissional ? estado.profissional.nome : "Não selecionado",
       !!estado.profissional,
     );
     definirResumo(
       "data",
-      estado.data ? formatarDataBr(estado.data) : "Nao selecionada",
+      estado.data ? formatarDataBr(estado.data) : "Não selecionada",
       !!estado.data,
     );
     definirResumo(
       "hora",
       estado.hora
-        ? estado.hora + (estado.horaFim ? " as " + estado.horaFim : "")
-        : "Nao selecionado",
+        ? estado.hora + (estado.horaFim ? " às " + estado.horaFim : "")
+        : "Não selecionado",
       !!estado.hora,
     );
     definirResumo(
@@ -801,9 +791,7 @@
     var voltar = evento.target.closest("[data-voltar]");
     if (voltar) {
       evento.preventDefault();
-      // A etapa de unidade foi pulada (servico em uma so unidade): volta ao servico.
-      var anterior = etapaAtual === 3 && filialUnica ? 1 : etapaAtual - 1;
-      irParaEtapa(Math.max(1, anterior));
+      irParaEtapa(Math.max(1, etapaAtual - 1));
     }
   });
 
