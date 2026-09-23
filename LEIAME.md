@@ -108,7 +108,7 @@ funcionando, mas ficam fora do escopo avaliado.
 | 2FA                 | `dois_fatores.php`       | Master e comum  |
 | Consulta de usuario | `admin/usuarios.php`     | Somente master  |
 | Alteracao de senha  | `cliente/perfil.php`     | Somente comum   |
-| Modelo do BD        | `modelo_bd.php`          | Master e comum  |
+| Modelo do BD        | `modelo_bd.php`          | Logado, so pelo endereco (fora do menu) |
 | Log                 | `admin/logs.php`         | Somente master  |
 
 ### Regras de validacao do cadastro

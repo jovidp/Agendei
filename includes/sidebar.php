@@ -65,7 +65,6 @@ $menus = [
         ['rotulo' => 'Meu perfil',        'arquivo' => 'cliente/perfil.php',       'icone' => 'perfil'],
         ['rotulo' => 'Privacidade',        'arquivo' => 'cliente/privacidade.php',   'icone' => 'configuracoes'],
         ['rotulo' => 'Verificacao em 2 etapas', 'arquivo' => 'autenticador.php', 'icone' => 'bloqueio'],
-        ['rotulo' => 'Modelo do BD',      'arquivo' => 'modelo_bd.php',            'icone' => 'relatorios'],
     ],
 ];
 
