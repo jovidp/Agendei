@@ -156,6 +156,7 @@ $tituloPagina = 'Entrar | ' . $estabelecimento['nome'];
 
                 <?php if (Google::configurado()): ?>
                     <div class="separador-ou"><span>ou</span></div>
+                    <?php /* Depois de "Entrar" de proposito: o primeiro botao de envio do formulario e o que o Enter aciona. */ ?>
                     <button type="submit" class="btn btn-contorno btn-bloco btn-grande btn-google"
                             formaction="<?= url('google_login.php') ?>" formnovalidate name="acao" value="google">
                         <?= iconeGoogle() ?>

@@ -47,14 +47,14 @@ function voltar(string $slug, string $origem = 'login'): never
     redirecionar($origem === 'cadastro' ? $pagina : 'entrar.php');
 }
 
-/** Guarda nome e e-mail confirmados para o formulario de cadastro preencher. */
-function prepararCadastro(array $dados): void
+/**
+ * Guarda nome e e-mail confirmados para a tela de cadastro de origem preencher.
+ * A confirmacao vale so para essa tela e por pouco tempo (models/Google.php).
+ */
+function prepararCadastro(array $dados, string $origem): void
 {
     pedirLembrarDispositivo(false);
-    $_SESSION['google_cadastro'] = [
-        'nome'  => trim((string) ($dados['name'] ?? '')),
-        'email' => (string) $dados['email'],
-    ];
+    Google::guardarCadastro($dados, $origem);
 }
 
 /**
@@ -155,7 +155,7 @@ $email = (string) $dados['email'];
 
 // Cadastro de empresa: nao ha conta a abrir, so o formulario a preencher.
 if ($origem === 'cadastro_empresa') {
-    prepararCadastro($dados);
+    prepararCadastro($dados, $origem);
     definirFlash('info', 'E-mail confirmado pelo Google. Nome e e-mail já vieram preenchidos; complete os dados da empresa.');
     voltar('', $origem);
 }
@@ -169,7 +169,7 @@ if ($contas === []) {
     $temContaEmOutroLugar = Usuario::vinculosPorEmail($email) !== [];
 
     if ($origem === 'cadastro' && !$temContaEmOutroLugar) {
-        prepararCadastro($dados);
+        prepararCadastro($dados, $origem);
         definirFlash('info', 'E-mail confirmado pelo Google. Nome e e-mail já vieram preenchidos; complete o restante para criar sua conta.');
         voltar($slug, $origem);
     }

@@ -58,11 +58,6 @@
 
   /** Aplica todas as regras da especificação e impede o envio quando alguma falha. */
   function validar(evento) {
-    // "Cadastrar com o Google" so confirma o e-mail: nada a validar aqui.
-    if (evento.submitter && evento.submitter.value === "google") {
-      return;
-    }
-
     var valido = true;
 
     var nome = valor("nome").replace(/\s+/g, " ");

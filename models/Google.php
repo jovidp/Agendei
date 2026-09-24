@@ -208,6 +208,49 @@ class Google
     }
 
     // -----------------------------------------------------------------
+    // Cadastro iniciado pelo Google
+    //
+    // O Google nao cria a conta: confirma o e-mail e a tela de cadastro
+    // termina o resto. Nome e e-mail esperam na sessao, presos a tela de
+    // origem ('cadastro' ou 'cadastro_empresa') e com prazo, para uma
+    // confirmacao esquecida nao reaparecer em outro cadastro nem dias depois.
+    // -----------------------------------------------------------------
+
+    /** Tempo para a pessoa completar o cadastro depois que o Google confirmou o e-mail. */
+    public const CADASTRO_SEGUNDOS = 1800;
+
+    /** Guarda nome e e-mail confirmados para a tela de origem preencher. */
+    public static function guardarCadastro(array $dados, string $origem): void
+    {
+        $_SESSION['google_cadastro'] = [
+            'nome'   => trim((string) ($dados['name'] ?? '')),
+            'email'  => (string) ($dados['email'] ?? ''),
+            'origem' => $origem,
+            'expira' => time() + self::CADASTRO_SEGUNDOS,
+        ];
+    }
+
+    /** Nome e e-mail confirmados para esta tela, ou null se nao ha, venceu ou pertence a outra tela. */
+    public static function cadastroPendente(string $origem): ?array
+    {
+        $pendente = $_SESSION['google_cadastro'] ?? null;
+        if (!is_array($pendente)) {
+            return null;
+        }
+        if ((int) ($pendente['expira'] ?? 0) < time()) {
+            self::limparCadastro();
+            return null;
+        }
+        return ($pendente['origem'] ?? '') === $origem ? $pendente : null;
+    }
+
+    /** Esquece a confirmacao: a conta foi criada ou a pessoa seguiu sem o Google. */
+    public static function limparCadastro(): void
+    {
+        unset($_SESSION['google_cadastro']);
+    }
+
+    // -----------------------------------------------------------------
     // Transporte
     // -----------------------------------------------------------------
 

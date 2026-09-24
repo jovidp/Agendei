@@ -169,9 +169,11 @@ php tests/master.php          # auditoria, contas master e bloqueios (banco temp
 php tests/entrada_global.php  # login geral sem link da empresa (nao usa banco)
 php tests/lembretes.php       # lembretes por WhatsApp, com provedor simulado (banco temporario)
 php tests/lembrar_google.php  # manter conectado e entrada com o Google (nao usa banco)
+php tests/cadastro_google.php # o botao do Google nao rouba o Enter dos formularios (banco temporario, so MySQL)
 ```
 
-Os tres ultimos criam e descartam um banco proprio e nunca tocam o banco de uso normal.
+Os testes com banco temporario criam e descartam um banco proprio e nunca
+tocam o banco de uso normal.
 
 ## Identidade visual
 
@@ -326,8 +328,10 @@ conta, porque o cadastro exige dados que ele nao fornece; e-mail sem conta e
 orientado a se cadastrar. Nas telas de cadastro (cliente e empresa) o botao
 "Cadastrar com o Google" confirma o e-mail e volta com nome e e-mail
 preenchidos; a pessoa completa o restante, e um e-mail que ja tem conta entra
-direto. O segundo fator continua valendo. Passo a passo das credenciais em
-[DEPLOY.md](DEPLOY.md).
+direto. A confirmacao vale 30 minutos e so para a tela em que foi pedida. O
+botao do Google fica num formulario proprio, fora do cadastro, para o Enter
+num campo enviar o cadastro e nao o pedido ao Google. O segundo fator continua
+valendo. Passo a passo das credenciais em [DEPLOY.md](DEPLOY.md).
 
 Bancos criados antes desta versao precisam de `php scripts/migrar_lembrar.php`
 (MySQL e PostgreSQL); o `migrar.php` ja o encadeia.

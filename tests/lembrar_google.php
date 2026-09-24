@@ -296,4 +296,21 @@ verificar(Google::contas('ana-fechado@teste.local', 'fechado') === [], 'Empresa 
 verificar(Google::contas('bruno@teste.local') === [], 'Conta inativa abriu pelo Google.');
 verificar(Google::contas('ninguem@teste.local') === [], 'E-mail sem conta devolveu algo.');
 
+// -------------------------------------------------------------------------
+// Cadastro pelo Google: nome e e-mail esperam so a tela de origem, por pouco tempo
+// -------------------------------------------------------------------------
+Google::guardarCadastro(['name' => ' Ana Souza ', 'email' => 'ana@teste.local'], 'cadastro');
+$pendente = Google::cadastroPendente('cadastro');
+verificar($pendente !== null && $pendente['nome'] === 'Ana Souza' && $pendente['email'] === 'ana@teste.local', 'A confirmacao nao voltou para a tela de origem.');
+verificar(Google::cadastroPendente('cadastro_empresa') === null, 'A confirmacao do cadastro do cliente vazou para o cadastro de empresa.');
+verificar(Google::cadastroPendente('cadastro') !== null, 'Consultar por outra tela apagou a confirmacao.');
+
+$_SESSION['google_cadastro']['expira'] = time() - 1;
+verificar(Google::cadastroPendente('cadastro') === null && !isset($_SESSION['google_cadastro']), 'Confirmacao vencida continuou valendo.');
+
+Google::guardarCadastro(['email' => 'ana@teste.local'], 'cadastro_empresa');
+verificar((Google::cadastroPendente('cadastro_empresa')['nome'] ?? 'x') === '', 'Sem nome vindo do Google, o nome deveria ficar vazio.');
+Google::limparCadastro();
+verificar(Google::cadastroPendente('cadastro_empresa') === null, 'limparCadastro nao esqueceu a confirmacao.');
+
 echo "OK: {$checagens} verificacoes de manter conectado e entrada com o Google.\n";

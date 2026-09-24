@@ -74,11 +74,6 @@
   }
 
   formulario.addEventListener("submit", function (evento) {
-    // "Cadastrar com o Google" so confirma o e-mail: nada a validar aqui.
-    if (evento.submitter && evento.submitter.value === "google") {
-      return;
-    }
-
     var telefone = valor("telefone").replace(/\D/g, "");
     var valido = true;
 

@@ -35,12 +35,13 @@ $dados = [
 
 // Cadastro iniciado pelo Google (google_login.php): nome e e-mail ja vem
 // confirmados e preenchidos; a pessoa completa o restante. Ela pode desistir
-// do Google e preencher tudo a mao.
+// do Google e preencher tudo a mao. A confirmacao vale so para esta tela e
+// por pouco tempo (Google::cadastroPendente).
 if (get('google') === 'cancelar') {
-    unset($_SESSION['google_cadastro']);
+    Google::limparCadastro();
     redirecionar('cadastro.php');
 }
-$googleCadastro = $_SESSION['google_cadastro'] ?? null;
+$googleCadastro = Google::cadastroPendente('cadastro');
 if (is_array($googleCadastro) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
     $dados['nome']  = (string) ($googleCadastro['nome'] ?? '');
     $dados['email'] = (string) ($googleCadastro['email'] ?? '');
@@ -149,7 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'uf'              => $dados['uf'],
             ]);
 
-            unset($_SESSION['google_cadastro']);
+            Google::limparCadastro();
             // A especificacao encerra o cadastro na tela de login.
             definirFlash('sucesso', 'Cadastro realizado com sucesso. Faça login para continuar.');
             redirecionar('login.php');
@@ -214,26 +215,30 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
                 </div>
             <?php endif; ?>
 
-            <?php /* Formulário de cadastro: os dados serão validados novamente pelo servidor. */ ?><form method="post" id="formCadastro" novalidate>
-                <?= campoCsrf() ?>
-
-                <?php if (is_array($googleCadastro)): ?>
-                    <div class="alerta alerta-info">
-                        <span class="alerta-texto">E-mail <strong><?= e((string) $googleCadastro['email']) ?></strong> confirmado pelo Google. Complete os dados abaixo.
-                            <a href="<?= url('cadastro.php?google=cancelar') ?>">Cadastrar sem o Google</a></span>
-                    </div>
-                <?php elseif (Google::configurado()): ?>
-                    <?php /* Posta este formulario em google_login.php; o Google confirma o e-mail e devolve nome e e-mail preenchidos. */ ?>
+            <?php if (is_array($googleCadastro)): ?>
+                <div class="alerta alerta-info">
+                    <span class="alerta-texto">E-mail <strong><?= e((string) $googleCadastro['email']) ?></strong> confirmado pelo Google. Complete os dados abaixo.
+                        <a href="<?= url('cadastro.php?google=cancelar') ?>">Cadastrar sem o Google</a></span>
+                </div>
+            <?php elseif (Google::configurado()): ?>
+                <?php /* Formulario proprio, fora do cadastro. Dentro dele o botao do Google seria o primeiro
+                         botao de envio, e o Enter em qualquer campo levaria ao Google em vez de enviar o
+                         cadastro. O Google confirma o e-mail e devolve nome e e-mail preenchidos. */ ?>
+                <form method="post" action="<?= url('google_login.php') ?>" id="formCadastroGoogle">
+                    <?= campoCsrf() ?>
                     <input type="hidden" name="estabelecimento" value="<?= e(Contexto::slug()) ?>">
                     <input type="hidden" name="origem" value="cadastro">
-                    <button type="submit" class="btn btn-contorno btn-bloco btn-grande btn-google"
-                            formaction="<?= url('google_login.php') ?>" formnovalidate name="acao" value="google">
+                    <button type="submit" class="btn btn-contorno btn-bloco btn-grande btn-google" name="acao" value="google">
                         <?= iconeGoogle() ?>
                         Cadastrar com o Google
                     </button>
                     <span class="ajuda-campo">Confirma seu e-mail e já preenche nome e e-mail. O restante você completa abaixo.</span>
-                    <div class="separador-ou"><span>ou preencha tudo</span></div>
-                <?php endif; ?>
+                </form>
+                <div class="separador-ou"><span>ou preencha tudo</span></div>
+            <?php endif; ?>
+
+            <?php /* Formulário de cadastro: os dados serão validados novamente pelo servidor. */ ?><form method="post" id="formCadastro" novalidate>
+                <?= campoCsrf() ?>
 
                 <fieldset class="grupo-campos">
                     <legend>Dados pessoais</legend>
