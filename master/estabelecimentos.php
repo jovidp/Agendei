@@ -27,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!preg_match('/^[a-z0-9](?:[a-z0-9-]{1,78}[a-z0-9])$/D', $dados['slug'])) $erros[] = 'Use um endereço de 3 a 80 letras minúsculas, números ou hífens.';
             if (!validarNomeSobrenome($dados['nome'])) $erros[] = 'Informe o nome e o sobrenome do responsável.';
             if (!validarEmail($dados['email'])) $erros[] = 'Informe um e-mail válido.';
+            elseif (Usuario::emailEmUso($dados['email'])) $erros[] = 'Já existe uma conta cadastrada com este e-mail.';
             if (!validarSenha($dados['senha'])) $erros[] = 'A senha deve ter pelo menos 6 caracteres.';
             if (!$erros) {
                 $id = Estabelecimento::contratar($dados);
@@ -101,6 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $dados = ['nome' => post('nome'), 'email' => mb_strtolower(post('email')), 'senha' => post('senha')];
             if (!$empresa) $erros[] = 'Estabelecimento não encontrado.';
             if (!validarNomeSobrenome($dados['nome']) || !validarEmail($dados['email']) || !validarSenha($dados['senha'])) $erros[] = 'Preencha nome e sobrenome, e-mail válido e senha de pelo menos 6 caracteres.';
+            elseif (Usuario::emailEmUso($dados['email'])) $erros[] = 'Já existe uma conta cadastrada com este e-mail.';
             if (!$erros) {
                 Estabelecimento::criarAdministrador($id, $dados);
                 LogMaster::registrar('admin_criado', [

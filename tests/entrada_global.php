@@ -3,9 +3,9 @@
  * Regressao da entrada geral (entrar.php): login sem o link do estabelecimento.
  * Usa apenas SQLite em memoria, como tests/acesso.php.
  *
- * Cobre: contexto neutro sob ENTRADA_GLOBAL, senha conferida em todas as
- * contas do e-mail, exclusao de conta e empresa inativas, escolha da empresa
- * por Contexto::assumir() e a sessao que nasce dela.
+ * Cobre: contexto neutro sob ENTRADA_GLOBAL, e-mail globalmente unico,
+ * exclusao de conta e empresa inativas, escolha da empresa por
+ * Contexto::assumir() e a sessao que nasce dela.
  */
 if (PHP_SAPI !== 'cli') {
     http_response_code(404);
@@ -42,7 +42,7 @@ function bd(): PDO
 
 // Somente as tabelas/colunas usadas neste fluxo; nenhum banco instalado e acessado.
 bd()->exec("CREATE TABLE estabelecimento (id_estabelecimento INTEGER PRIMARY KEY, nome TEXT, slug TEXT UNIQUE, status TEXT DEFAULT 'ativo');
-    CREATE TABLE usuarios (id_usuario INTEGER PRIMARY KEY, id_estabelecimento INTEGER, nome TEXT, email TEXT, senha_hash TEXT, tipo TEXT, status TEXT DEFAULT 'ativo', ultimo_acesso TEXT);
+    CREATE TABLE usuarios (id_usuario INTEGER PRIMARY KEY, id_estabelecimento INTEGER, nome TEXT, email TEXT UNIQUE, senha_hash TEXT, tipo TEXT, status TEXT DEFAULT 'ativo', ultimo_acesso TEXT);
     CREATE TABLE administradores (id_administrador INTEGER PRIMARY KEY, id_estabelecimento INTEGER, id_usuario INTEGER, nivel TEXT);
     CREATE TABLE administradores_master (id_master INTEGER PRIMARY KEY, nome TEXT, status TEXT DEFAULT 'ativo');
     CREATE TABLE logs_autenticacao (id_estabelecimento INTEGER, id_usuario INTEGER, login_informado TEXT, nome TEXT, cpf TEXT, perfil TEXT, evento TEXT, fator_2fa TEXT, ip TEXT);");
@@ -61,18 +61,28 @@ session_save_path(sys_get_temp_dir());
 iniciarSessao();
 verificar(session_status() === PHP_SESSION_ACTIVE, 'Sessao de teste nao iniciou.');
 
-// Quatro empresas com o mesmo e-mail responsavel:
-//   a e b: mesma senha (a pessoa tem duas contas validas);
-//   c: outra senha (nao pode aparecer na escolha);
-//   d: mesma senha, mas empresa inativa.
+// Quatro empresas com responsaveis diferentes. O e-mail e uma identidade
+// global e nao pode mais aparecer em duas contas.
 $ids = [];
 foreach (['empresa-a' => 'Senha-AB-1', 'empresa-b' => 'Senha-AB-1', 'empresa-c' => 'Senha-C-99', 'empresa-d' => 'Senha-AB-1'] as $slug => $senha) {
+    $email = 'pessoa-' . substr($slug, -1) . '@teste.local';
     $ids[$slug] = Estabelecimento::contratar([
         'estabelecimento' => $slug, 'slug' => $slug, 'nome' => 'Responsavel ' . $slug,
-        'email' => 'pessoa@teste.local', 'senha' => $senha,
+        'email' => $email, 'senha' => $senha,
     ]);
 }
 bd()->exec("UPDATE estabelecimento SET status = 'inativo' WHERE slug = 'empresa-d'");
+
+$duplicadoRecusado = false;
+try {
+    Estabelecimento::contratar([
+        'estabelecimento' => 'empresa-duplicada', 'slug' => 'empresa-duplicada',
+        'nome' => 'Responsavel duplicado', 'email' => 'PESSOA-A@teste.local ', 'senha' => 'Senha-AB-1',
+    ]);
+} catch (DomainException) {
+    $duplicadoRecusado = true;
+}
+verificar($duplicadoRecusado, 'O mesmo e-mail foi aceito em outra empresa.');
 
 // -------------------------------------------------------------------------
 // Contexto neutro: a entrada geral ignora o slug da URL e nao carrega empresa.
@@ -87,30 +97,30 @@ verificar(!str_contains(url('entrar.php'), 'estabelecimento='), 'A URL da entrad
 // -------------------------------------------------------------------------
 // Senha conferida em todas as contas do e-mail
 // -------------------------------------------------------------------------
-$contas = autenticarGlobal('pessoa@teste.local', 'Senha-AB-1');
+$contas = autenticarGlobal('pessoa-a@teste.local', 'Senha-AB-1');
 $empresas = array_map('intval', array_column($contas, 'id_estabelecimento'));
 sort($empresas);
-verificar($empresas === [$ids['empresa-a'], $ids['empresa-b']], 'A senha nao selecionou exatamente as contas em que ela vale.');
+verificar($empresas === [$ids['empresa-a']], 'A entrada geral nao selecionou a conta unica do e-mail.');
 verificar(!isset($contas[0]['senha_hash']), 'autenticarGlobal expos o hash de senha.');
 verificar($contas[0]['estabelecimento_slug'] === 'empresa-a', 'A conta veio sem o slug da empresa.');
 verificar($contas[0]['tipo'] === 'admin', 'A conta veio sem o tipo.');
 
-verificar(autenticarGlobal('pessoa@teste.local', 'Senha-C-99') !== [] && count(autenticarGlobal('pessoa@teste.local', 'Senha-C-99')) === 1, 'A senha exclusiva da empresa c nao achou so a conta dela.');
-verificar(autenticarGlobal('pessoa@teste.local', 'senha-errada') === [], 'Senha errada devolveu contas.');
-verificar(autenticarGlobal('PESSOA@teste.local ', 'Senha-AB-1') !== [], 'O e-mail nao foi normalizado.');
+verificar(autenticarGlobal('pessoa-c@teste.local', 'Senha-C-99') !== [] && count(autenticarGlobal('pessoa-c@teste.local', 'Senha-C-99')) === 1, 'A senha exclusiva da empresa c nao achou a conta.');
+verificar(autenticarGlobal('pessoa-a@teste.local', 'senha-errada') === [], 'Senha errada devolveu contas.');
+verificar(autenticarGlobal('PESSOA-A@teste.local ', 'Senha-AB-1') !== [], 'O e-mail nao foi normalizado.');
 verificar(autenticarGlobal('ninguem@teste.local', 'Senha-AB-1') === [], 'E-mail desconhecido devolveu contas.');
 verificar(autenticarGlobal('nao-e-email', 'Senha-AB-1') === [], 'Identificador que nao e e-mail foi aceito.');
-verificar(autenticarGlobal('pessoa@teste.local', '') === [], 'Senha vazia foi aceita.');
+verificar(autenticarGlobal('pessoa-a@teste.local', '') === [], 'Senha vazia foi aceita.');
 
 // Conta desligada some da escolha, mesmo com a senha certa.
 bd()->exec("UPDATE usuarios SET status = 'inativo' WHERE id_estabelecimento = {$ids['empresa-b']}");
-$contas = autenticarGlobal('pessoa@teste.local', 'Senha-AB-1');
-verificar(count($contas) === 1 && (int) $contas[0]['id_estabelecimento'] === $ids['empresa-a'], 'Conta inativa apareceu na entrada geral.');
+$contas = autenticarGlobal('pessoa-b@teste.local', 'Senha-AB-1');
+verificar($contas === [], 'Conta inativa apareceu na entrada geral.');
 bd()->exec("UPDATE usuarios SET status = 'ativo' WHERE id_estabelecimento = {$ids['empresa-b']}");
 
 // A consulta sem segredos, usada pelas telas, ve todos os vinculos (inclusive os inativos).
-$vinculos = Usuario::vinculosPorEmail('pessoa@teste.local');
-verificar(count($vinculos) === 4, 'vinculosPorEmail nao listou todas as empresas do e-mail.');
+$vinculos = Usuario::vinculosPorEmail('pessoa-a@teste.local');
+verificar(count($vinculos) === 1, 'vinculosPorEmail nao respeitou a unicidade global.');
 verificar(!isset($vinculos[0]['senha_hash']), 'vinculosPorEmail expos o hash de senha.');
 
 // -------------------------------------------------------------------------
@@ -127,14 +137,17 @@ Contexto::assumir($ids['empresa-b']);
 verificar(Contexto::id() === $ids['empresa-b'] && Contexto::slug() === 'empresa-b', 'assumir nao trocou para a empresa escolhida.');
 verificar(str_contains(url('dois_fatores.php'), 'estabelecimento=empresa-b'), 'Depois de assumir, a URL nao carrega o slug da empresa.');
 
-$escolhida = autenticarGlobal('pessoa@teste.local', 'Senha-AB-1')[1];
+$escolhida = autenticarGlobal('pessoa-b@teste.local', 'Senha-AB-1')[0];
 $usuario = Usuario::porId((int) $escolhida['id_usuario']);
 verificar($usuario !== null && (int) $usuario['id_estabelecimento'] === $ids['empresa-b'], 'A conta escolhida nao foi lida dentro da empresa.');
-verificar(Usuario::porId((int) autenticarGlobal('pessoa@teste.local', 'Senha-AB-1')[0]['id_usuario']) === null, 'A empresa assumida enxergou conta de outra empresa.');
+Contexto::assumir($ids['empresa-a']);
+$idUsuarioA = (int) autenticarGlobal('pessoa-a@teste.local', 'Senha-AB-1')[0]['id_usuario'];
+Contexto::assumir($ids['empresa-b']);
+verificar(Usuario::porId($idUsuarioA) === null, 'A empresa assumida enxergou conta de outra empresa.');
 
-LogAutenticacao::registrar('login_sucesso', 'pessoa@teste.local', $usuario);
-LogAutenticacao::registrarEm($ids['empresa-a'], 'login_falha', 'pessoa@teste.local', $vinculos[0]);
-LogAutenticacao::registrarEm(0, 'login_falha', 'pessoa@teste.local', null);
+LogAutenticacao::registrar('login_sucesso', 'pessoa-b@teste.local', $usuario);
+LogAutenticacao::registrarEm($ids['empresa-a'], 'login_falha', 'pessoa-a@teste.local', $vinculos[0]);
+LogAutenticacao::registrarEm(0, 'login_falha', 'pessoa-a@teste.local', null);
 $logs = bd()->query('SELECT id_estabelecimento, evento FROM logs_autenticacao ORDER BY rowid')->fetchAll();
 verificar(count($logs) === 2, 'Log sem empresa foi gravado, ou o log por empresa nao foi.');
 verificar((int) $logs[0]['id_estabelecimento'] === $ids['empresa-b'] && $logs[0]['evento'] === 'login_sucesso', 'O log de sucesso nao ficou na empresa assumida.');

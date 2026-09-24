@@ -65,13 +65,20 @@ foreach ($tabelas as $tabela => $pk) {
     // Toda nova gravação deve identificar explicitamente o estabelecimento.
     $db->exec("ALTER TABLE `$tabela` MODIFY id_estabelecimento INT UNSIGNED NOT NULL");
 }
-foreach ([['usuarios', 'uk_usuarios_email', 'email'], ['clientes', 'uk_clientes_cpf', 'cpf'], ['configuracoes', 'uk_config_chave', 'chave']] as [$tabela, $antigo, $campo]) {
+foreach ([['clientes', 'uk_clientes_cpf', 'cpf'], ['configuracoes', 'uk_config_chave', 'chave']] as [$tabela, $antigo, $campo]) {
     $novo = 'uk_estabelecimento_' . $campo;
     if (!$indiceExiste($tabela, $novo)) $db->exec("ALTER TABLE `$tabela` ADD UNIQUE KEY `$novo` (id_estabelecimento, `$campo`)");
     // Localiza o índice global pelo campo para funcionar também em instalações antigas.
     $ddl = $db->query("SHOW CREATE TABLE `$tabela`")->fetch(PDO::FETCH_NUM)[1];
     preg_match_all('/UNIQUE KEY `([^`]+)` \(`' . preg_quote($campo, '/') . '`\)/', $ddl, $indices);
     foreach ($indices[1] as $nome) $db->exec("ALTER TABLE `$tabela` DROP INDEX `$nome`");
+}
+// O e-mail passou a identificar uma unica conta em toda a plataforma. Roda
+// depois que usuarios.id_estabelecimento existe, para listar as repeticoes
+// por empresa; havendo alguma, para aqui sem escolher nem apagar dados.
+require_once __DIR__ . '/migrar_email_unico.php';
+if (!migrarEmailUnico($db)) {
+    exit(1);
 }
 // Chaves compostas impedem relacionar clientes, serviços e profissionais de empresas diferentes.
 $relacoes = [

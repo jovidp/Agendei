@@ -127,7 +127,7 @@ Tres argumentos para quem marca:
 
 1. Marca em um minuto, sem ligar nem esperar resposta.
 2. Recebe a confirmacao na hora e o lembrete antes.
-3. Entra com o mesmo e-mail em qualquer estabelecimento que use o Agendei.
+3. Entra pelo link do estabelecimento ou pela entrada geral, com e-mail e senha ou com o Google.
 
 Bio para redes sociais (ate 150 caracteres):
 

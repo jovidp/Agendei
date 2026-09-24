@@ -320,17 +320,26 @@ fator so e lembrado depois de responde-lo.
 `AGENDEI_GOOGLE_CLIENT_SECRET` definidas (ou `config/google.local.php`), o
 login e a entrada geral mostram o botao. O Google confirma o e-mail (OpenID
 Connect, `models/Google.php` e `google_login.php`) e o sistema abre a conta
-daquele e-mail: pelo link de uma empresa, a conta dela; pela entrada geral,
-todas, com a mesma escolha de empresa. O Google nao cria conta, porque o
-cadastro exige dados que ele nao fornece; e-mail sem conta e orientado a se
-cadastrar. Nas telas de cadastro (cliente e empresa) o botao "Cadastrar com
-o Google" confirma o e-mail e volta com nome e e-mail preenchidos; a pessoa
-completa o restante, e um e-mail que ja tem conta entra direto. O segundo
-fator continua valendo. Passo a passo das credenciais em
+unica daquele e-mail; pelo link de uma empresa, a conta precisa ser dela, e
+quem tem conta em outra e orientado a usar a entrada geral. O Google nao cria
+conta, porque o cadastro exige dados que ele nao fornece; e-mail sem conta e
+orientado a se cadastrar. Nas telas de cadastro (cliente e empresa) o botao
+"Cadastrar com o Google" confirma o e-mail e volta com nome e e-mail
+preenchidos; a pessoa completa o restante, e um e-mail que ja tem conta entra
+direto. O segundo fator continua valendo. Passo a passo das credenciais em
 [DEPLOY.md](DEPLOY.md).
 
 Bancos criados antes desta versao precisam de `php scripts/migrar_lembrar.php`
 (MySQL e PostgreSQL); o `migrar.php` ja o encadeia.
+
+**Um e-mail, uma conta.** O e-mail identifica a pessoa na entrada geral e no
+Google, por isso e unico em toda a plataforma (`uk_usuarios_email`), e nao
+apenas dentro de cada empresa: o cadastro de cliente, de profissional e de
+responsavel, e a edicao do perfil, recusam um e-mail que ja tenha conta em
+qualquer estabelecimento. Bancos criados antes desta versao precisam de
+`php scripts/migrar_email_unico.php` (MySQL e PostgreSQL); o `migrar.php` ja o
+encadeia. Se a base tiver e-mails repetidos, o script lista as contas
+envolvidas e para sem alterar nada: ajuste os e-mails e rode de novo.
 
 ## Lembretes por WhatsApp
 

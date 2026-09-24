@@ -92,7 +92,8 @@ CREATE TABLE `administradores_master` (
 
 -- ---------------------------------------------------------------------
 -- USUÁRIOS DOS ESTABELECIMENTOS
--- Toda conta local pertence obrigatoriamente a uma empresa. E-mail é único dentro dessa empresa.
+-- Toda conta local pertence obrigatoriamente a uma empresa. O e-mail e unico
+-- em toda a plataforma, pois identifica a pessoa na entrada geral e no Google.
 -- ---------------------------------------------------------------------
 CREATE TABLE `usuarios` (
   `id_usuario` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -125,7 +126,7 @@ CREATE TABLE `usuarios` (
   `id_estabelecimento` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id_usuario`),
   UNIQUE KEY `uk_estabelecimento_registro` (`id_estabelecimento`,`id_usuario`),
-  UNIQUE KEY `uk_estabelecimento_email` (`id_estabelecimento`,`email`),
+  UNIQUE KEY `uk_usuarios_email` (`email`),
   UNIQUE KEY `uk_estabelecimento_login` (`id_estabelecimento`,`login`),
   KEY `idx_usuarios_tipo_status` (`tipo`,`status`),
   KEY `idx_estabelecimento` (`id_estabelecimento`),

@@ -52,11 +52,12 @@ $plano = inserir('planos', ['nome' => 'Compartilhado']);
 $master = inserir('administradores_master', ['nome' => 'Master', 'email' => 'master@teste.local', 'senha_hash' => 'fixture']);
 $empresas = [];
 foreach (['empresa-a', 'empresa-b'] as $slug) {
-    $id = Estabelecimento::contratar(['estabelecimento' => $slug, 'slug' => $slug, 'nome' => 'Responsavel', 'email' => 'admin@teste.local', 'senha' => 'SenhaTeste123!']);
+    $sufixo = substr($slug, -1);
+    $id = Estabelecimento::contratar(['estabelecimento' => $slug, 'slug' => $slug, 'nome' => 'Responsavel', 'email' => 'admin-' . $sufixo . '@teste.local', 'senha' => 'SenhaTeste123!']);
     $empresas[] = $id;
     $vinculo = ['id_estabelecimento' => $id];
-    $idClienteUsuario = inserir('usuarios', $vinculo + ['nome' => 'Cliente', 'email' => 'cliente@teste.local', 'senha_hash' => 'fixture', 'tipo' => 'cliente']);
-    $idProfUsuario = inserir('usuarios', $vinculo + ['nome' => 'Profissional', 'email' => 'prof@teste.local', 'senha_hash' => 'fixture', 'tipo' => 'profissional']);
+    $idClienteUsuario = inserir('usuarios', $vinculo + ['nome' => 'Cliente', 'email' => 'cliente-' . $sufixo . '@teste.local', 'senha_hash' => 'fixture', 'tipo' => 'cliente']);
+    $idProfUsuario = inserir('usuarios', $vinculo + ['nome' => 'Profissional', 'email' => 'prof-' . $sufixo . '@teste.local', 'senha_hash' => 'fixture', 'tipo' => 'profissional']);
     $filial = inserir('filiais', $vinculo + ['nome' => 'Matriz']);
     $cliente = inserir('clientes', $vinculo + ['id_usuario' => $idClienteUsuario]);
     $profissional = inserir('profissionais', $vinculo + ['id_usuario' => $idProfUsuario, 'id_filial' => $filial]);

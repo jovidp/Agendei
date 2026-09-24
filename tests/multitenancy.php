@@ -55,12 +55,16 @@ $fixtures = [];
 $data = date('Y-m-d', strtotime('+2 days'));
 $semana = (int) date('w', strtotime($data));
 foreach (['empresa-a', 'empresa-b'] as $slug) {
-    Estabelecimento::contratar(['estabelecimento' => strtoupper($slug), 'slug' => $slug, 'nome' => 'Responsável Teste', 'email' => 'admin@teste.local', 'senha' => 'Teste12345!']);
+    $sufixo = substr($slug, -1);
+    $emailAdmin = 'admin-' . $sufixo . '@teste.local';
+    $emailCliente = 'cliente-' . $sufixo . '@teste.local';
+    $emailProfissional = 'profissional-' . $sufixo . '@teste.local';
+    Estabelecimento::contratar(['estabelecimento' => strtoupper($slug), 'slug' => $slug, 'nome' => 'Responsável Teste', 'email' => $emailAdmin, 'senha' => 'Teste12345!']);
     empresa($slug);
-    $admin = Usuario::porEmail('admin@teste.local');
+    $admin = Usuario::porEmail($emailAdmin);
     $servico = Servico::criar(['nome' => 'Serviço ' . $slug, 'descricao' => 'Teste', 'preco' => 80, 'duracao_minutos' => 30, 'destaque' => 1]);
-    $cliente = Cliente::criar(['nome' => 'Cliente ' . $slug, 'email' => 'cliente@teste.local', 'senha' => 'Teste12345!', 'telefone' => '11999999999', 'cpf' => '52998224725']);
-    $profissional = Profissional::criar(['nome' => 'Profissional ' . $slug, 'email' => 'profissional@teste.local', 'senha' => 'Teste12345!', 'especialidade' => 'Especialidade', 'pode_bloquear_agenda' => 1, 'servicos' => [$servico]]);
+    $cliente = Cliente::criar(['nome' => 'Cliente ' . $slug, 'email' => $emailCliente, 'senha' => 'Teste12345!', 'telefone' => '11999999999', 'cpf' => '52998224725']);
+    $profissional = Profissional::criar(['nome' => 'Profissional ' . $slug, 'email' => $emailProfissional, 'senha' => 'Teste12345!', 'especialidade' => 'Especialidade', 'pode_bloquear_agenda' => 1, 'servicos' => [$servico]]);
     $horario = Horario::criar(['id_profissional' => $profissional, 'dia_semana' => $semana, 'hora_inicio' => '08:00:00', 'hora_fim' => '18:00:00']);
     $bloqueio = Bloqueio::criar(['id_profissional' => $profissional, 'data_bloqueio' => $data, 'hora_inicio' => '16:00:00', 'hora_fim' => '17:00:00', 'motivo' => 'Teste', 'id_usuario_criou' => $admin['id_usuario']]);
     $reserva = Agendamento::criar(['id_cliente' => $cliente, 'id_profissional' => $profissional, 'id_servico' => $servico, 'data' => $data, 'hora_inicio' => '10:00', 'observacao' => '', 'origem' => 'admin'], ['ignorar_antecedencia' => true]);
@@ -69,7 +73,7 @@ foreach (['empresa-a', 'empresa-b'] as $slug) {
     $cor = $slug === 'empresa-a' ? '#8844AA' : '#227744';
     Estabelecimento::personalizar(strtoupper($slug), Tema::valores(['cor_primaria' => $cor, 'fonte' => 'georgia']), null);
     $token = Usuario::gerarTokenRecuperacao((int) $admin['id_usuario']);
-    $fixtures[$slug] = compact('admin', 'servico', 'cliente', 'profissional', 'horario', 'bloqueio', 'reserva', 'token', 'cor');
+    $fixtures[$slug] = compact('admin', 'servico', 'cliente', 'profissional', 'horario', 'bloqueio', 'reserva', 'token', 'cor', 'emailAdmin', 'emailCliente');
 }
 foreach ($fixtures as $slug => $f) {
     empresa($slug);
@@ -79,8 +83,8 @@ foreach ($fixtures as $slug => $f) {
     verificar(Usuario::porId((int) $outro['admin']['id_usuario']) === null, 'Conta de outra empresa acessível.');
     verificar(Usuario::porTokenRecuperacao($outro['token']) === null, 'Token de outra empresa acessível.');
     verificar(Usuario::porTokenRecuperacao($f['token']) !== null, 'Token da própria empresa indisponível.');
-    verificar(autenticar('admin@teste.local', 'Teste12345!')['id_usuario'] === $f['admin']['id_usuario'], 'Autenticação fora do estabelecimento.');
-    verificar(Usuario::emailEmUso('cliente@teste.local'), 'Verificação de e-mail falhou.');
+    verificar(autenticar($f['emailAdmin'], 'Teste12345!')['id_usuario'] === $f['admin']['id_usuario'], 'Autenticação fora do estabelecimento.');
+    verificar(Usuario::emailEmUso($f['emailCliente']), 'Verificação de e-mail falhou.');
     verificar(Cliente::cpfEmUso('52998224725'), 'Verificação de CPF falhou.');
     foreach (['Servico', 'Cliente', 'Profissional', 'Agendamento'] as $classeBusca) {
         verificar(count($classeBusca::listar(['busca' => $slug])) === 1, 'Filtro de busca falhou: ' . $classeBusca);

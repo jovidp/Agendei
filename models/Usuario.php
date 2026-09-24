@@ -73,7 +73,9 @@ class Usuario
     /** Verifica e-mail duplicado, ignorando a própria conta quando o ID é informado. */
     public static function emailEmUso(string $email, ?int $ignorarIdUsuario = null): bool
     {
-        $sql = 'SELECT id_usuario FROM usuarios WHERE id_estabelecimento = ' . Contexto::id() . ' AND email = :email';
+        // O e-mail identifica a pessoa na entrada geral e no login com Google:
+        // a verificacao precisa abranger todos os estabelecimentos.
+        $sql = 'SELECT id_usuario FROM usuarios WHERE email = :email';
         $parametros = [':email' => mb_strtolower(trim($email))];
 
         if ($ignorarIdUsuario !== null) {
@@ -92,6 +94,11 @@ class Usuario
      */
     public static function criar(array $dados): int
     {
+        $email = mb_strtolower(trim((string) ($dados['email'] ?? '')));
+        if (self::emailEmUso($email)) {
+            throw new DomainException('Ja existe uma conta cadastrada com este e-mail.');
+        }
+
         $sql = 'INSERT INTO usuarios (id_estabelecimento, nome, email, senha_hash, telefone, tipo, status,
                                       login, sexo, nome_materno, data_nascimento, telefone_fixo,
                                       cep, logradouro, numero, complemento, bairro, cidade, uf)
@@ -102,7 +109,7 @@ class Usuario
         $consulta = bd()->prepare($sql);
         $consulta->execute([
             ':nome'       => $dados['nome'],
-            ':email'      => mb_strtolower(trim($dados['email'])),
+            ':email'      => $email,
             ':senha_hash' => password_hash($dados['senha'], PASSWORD_DEFAULT),
             ':telefone'   => apenasNumeros($dados['telefone'] ?? '') ?: null,
             ':tipo'       => $dados['tipo'] ?? 'cliente',
@@ -154,13 +161,18 @@ class Usuario
     /** Persiste os campos editáveis do cadastro identificado pelo ID. */
     public static function atualizar(int $idUsuario, array $dados): bool
     {
+        $email = mb_strtolower(trim((string) ($dados['email'] ?? '')));
+        if (self::emailEmUso($email, $idUsuario)) {
+            throw new DomainException('Ja existe uma conta cadastrada com este e-mail.');
+        }
+
         $sql = 'UPDATE usuarios SET nome = :nome, email = :email, telefone = :telefone
                 WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id';
 
         $consulta = bd()->prepare($sql);
         return $consulta->execute([
             ':nome'     => $dados['nome'],
-            ':email'    => mb_strtolower(trim($dados['email'])),
+            ':email'    => $email,
             ':telefone' => apenasNumeros($dados['telefone'] ?? '') ?: null,
             ':id'       => $idUsuario,
         ]);
@@ -369,8 +381,9 @@ class Usuario
     // O vinculo conta -> empresa e a coluna usuarios.id_estabelecimento. As
     // buscas acima passam pelo Contexto e so enxergam a empresa da sessao; o
     // master nao tem empresa, e precisa responder "este e-mail e de quem?".
-    // O e-mail e unico apenas dentro de cada empresa, por isso o retorno e uma
-    // linha por vinculo: a mesma pessoa pode aparecer em varios estabelecimentos.
+    // O e-mail e unico em toda a plataforma. Os metodos abaixo continuam
+    // devolvendo listas para manter compatibilidade com bases antigas ate que
+    // a migracao da restricao seja executada.
     // ---------------------------------------------------------------------
 
     /** Tipos de conta local, na ordem em que aparecem nos filtros. */

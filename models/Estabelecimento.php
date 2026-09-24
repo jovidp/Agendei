@@ -65,6 +65,11 @@ class Estabelecimento
      */
     public static function contratar(array $dados): int
     {
+        $email = mb_strtolower(trim((string) ($dados['email'] ?? '')));
+        if (self::emailEmUsoGlobal($email)) {
+            throw new DomainException('Ja existe uma conta cadastrada com este e-mail.');
+        }
+
         $db = bd();
         $db->beginTransaction();
         try {
@@ -72,7 +77,7 @@ class Estabelecimento
             $q->execute([$dados['estabelecimento'], $dados['slug'], ($dados['status'] ?? 'ativo') === 'inativo' ? 'inativo' : 'ativo']);
             $id = (int) $db->lastInsertId();
             $q = $db->prepare('INSERT INTO usuarios (id_estabelecimento, nome, email, senha_hash, tipo) VALUES (?, ?, ?, ?, \'admin\')');
-            $q->execute([$id, $dados['nome'], $dados['email'], password_hash($dados['senha'], PASSWORD_DEFAULT)]);
+            $q->execute([$id, $dados['nome'], $email, password_hash($dados['senha'], PASSWORD_DEFAULT)]);
             $usuario = (int) $db->lastInsertId();
             $q = $db->prepare('INSERT INTO administradores (id_estabelecimento, id_usuario, nivel) VALUES (?, ?, \'super\')');
             $q->execute([$id, $usuario]);
@@ -202,11 +207,15 @@ class Estabelecimento
     public static function criarAdministrador(int $id, array $dados): int
     {
         if (!self::porIdGlobal($id)) throw new InvalidArgumentException('Estabelecimento não encontrado.');
+        $email = mb_strtolower(trim((string) ($dados['email'] ?? '')));
+        if (self::emailEmUsoGlobal($email)) {
+            throw new DomainException('Ja existe uma conta cadastrada com este e-mail.');
+        }
         $db = bd();
         $db->beginTransaction();
         try {
             $q = $db->prepare('INSERT INTO usuarios (id_estabelecimento, nome, email, senha_hash, tipo) VALUES (?, ?, ?, ?, \'admin\')');
-            $q->execute([$id, $dados['nome'], mb_strtolower($dados['email']), password_hash($dados['senha'], PASSWORD_DEFAULT)]);
+            $q->execute([$id, $dados['nome'], $email, password_hash($dados['senha'], PASSWORD_DEFAULT)]);
             $usuario = (int) $db->lastInsertId();
             $q = $db->prepare('INSERT INTO administradores (id_estabelecimento, id_usuario, nivel) VALUES (?, ?, \'super\')');
             $q->execute([$id, $usuario]);
@@ -216,6 +225,14 @@ class Estabelecimento
             if ($db->inTransaction()) $db->rollBack();
             throw $erro;
         }
+    }
+
+    /** Confere o identificador de acesso sem depender do Contexto da sessao master. */
+    private static function emailEmUsoGlobal(string $email): bool
+    {
+        $q = bd()->prepare('SELECT 1 FROM usuarios WHERE email = ? LIMIT 1');
+        $q->execute([mb_strtolower(trim($email))]);
+        return (bool) $q->fetchColumn();
     }
 
     // -----------------------------------------------------------------

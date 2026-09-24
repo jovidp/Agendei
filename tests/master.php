@@ -161,21 +161,35 @@ verificar('o vinculo traz o slug da empresa', $vinculos[0]['estabelecimento_slug
 verificar('o vinculo traz o tipo da conta', $vinculos[0]['tipo'] ?? '', 'admin');
 verificar('e-mail desconhecido nao tem vinculo', Usuario::vinculosPorEmail('ninguem@studio.test'), []);
 
-// A mesma pessoa em duas empresas gera dois vinculos, um por estabelecimento.
+// O e-mail identifica uma unica conta em toda a plataforma.
+$duplicadoRecusado = false;
+try {
+    Estabelecimento::contratar([
+        'estabelecimento' => 'Studio Duplicado',
+        'slug'            => 'studio-duplicado',
+        'nome'            => 'Ana Responsavel',
+        'email'           => 'ANA@studio.test ',
+        'senha'           => 'senha123',
+    ]);
+} catch (DomainException) {
+    $duplicadoRecusado = true;
+}
+verificar('o mesmo e-mail e recusado em outra empresa', $duplicadoRecusado, true);
+
 $idEmpresaB = Estabelecimento::contratar([
     'estabelecimento' => 'Studio Dois',
     'slug'            => 'studio-dois',
-    'nome'            => 'Ana Responsavel',
-    'email'           => 'ana@studio.test',
+    'nome'            => 'Carlos Responsavel',
+    'email'           => 'carlos@studio.test',
     'senha'           => 'senha123',
 ]);
 $vinculos = Usuario::vinculosPorEmail('ANA@studio.test ');
-verificar('o mesmo e-mail em duas empresas rende dois vinculos', count($vinculos), 2);
-verificar('cada vinculo aponta para uma empresa diferente', array_map('intval', array_column($vinculos, 'id_estabelecimento')) === [$idEmpresaB, $idEmpresa] || array_map('intval', array_column($vinculos, 'id_estabelecimento')) === [$idEmpresa, $idEmpresaB], true);
+verificar('o e-mail conserva somente um vinculo', count($vinculos), 1);
+verificar('o vinculo continua na empresa original', (int) ($vinculos[0]['id_estabelecimento'] ?? 0), $idEmpresa);
 
 verificar('busca global por parte do e-mail', Usuario::contarGlobal(['busca' => 'studio.test']), 2);
 verificar('busca global por parte do nome', Usuario::contarGlobal(['busca' => 'responsavel']), 2);
-verificar('busca global restrita a uma empresa', Usuario::contarGlobal(['busca' => 'ana', 'estabelecimento' => $idEmpresaB]), 1);
+verificar('busca global restrita a uma empresa', Usuario::contarGlobal(['busca' => 'carlos', 'estabelecimento' => $idEmpresaB]), 1);
 verificar('busca global filtra por tipo', Usuario::contarGlobal(['tipo' => 'cliente']), 0);
 verificar('tipo fora do catalogo e ignorado', Usuario::contarGlobal(['tipo' => 'master']), Usuario::contarGlobal());
 $linhas = Usuario::buscarGlobal(['estabelecimento' => $idEmpresaB]);

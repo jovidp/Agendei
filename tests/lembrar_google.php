@@ -39,7 +39,7 @@ function bd(): PDO
 
 // Somente as tabelas/colunas usadas neste fluxo.
 bd()->exec("CREATE TABLE estabelecimento (id_estabelecimento INTEGER PRIMARY KEY, nome TEXT, slug TEXT UNIQUE, status TEXT DEFAULT 'ativo');
-    CREATE TABLE usuarios (id_usuario INTEGER PRIMARY KEY, id_estabelecimento INTEGER, nome TEXT, email TEXT, login TEXT, senha_hash TEXT, tipo TEXT, status TEXT DEFAULT 'ativo', ultimo_acesso TEXT);
+    CREATE TABLE usuarios (id_usuario INTEGER PRIMARY KEY, id_estabelecimento INTEGER, nome TEXT, email TEXT UNIQUE, login TEXT, senha_hash TEXT, tipo TEXT, status TEXT DEFAULT 'ativo', ultimo_acesso TEXT);
     CREATE TABLE clientes (id_cliente INTEGER PRIMARY KEY, id_estabelecimento INTEGER, id_usuario INTEGER);
     CREATE TABLE logs_autenticacao (id_estabelecimento INTEGER, id_usuario INTEGER, login_informado TEXT, nome TEXT, cpf TEXT, perfil TEXT, evento TEXT, fator_2fa TEXT, ip TEXT);
     CREATE TABLE sessoes_lembradas (id_sessao INTEGER PRIMARY KEY, id_estabelecimento INTEGER, id_usuario INTEGER, seletor TEXT UNIQUE, validador_hash TEXT, expira_em TEXT, criado_em TEXT, ultimo_uso TEXT);");
@@ -58,13 +58,13 @@ session_save_path(sys_get_temp_dir());
 session_start();
 
 // -------------------------------------------------------------------------
-// Massa: duas empresas, uma pessoa com conta nas duas, uma empresa inativa
+// Massa: contas com e-mails unicos e uma empresa inativa
 // -------------------------------------------------------------------------
 bd()->exec("INSERT INTO estabelecimento (id_estabelecimento, nome, slug, status) VALUES (1, 'Studio Um', 'studio-um', 'ativo'), (2, 'Salao Dois', 'salao-dois', 'ativo'), (3, 'Fechado', 'fechado', 'inativo')");
 bd()->exec("INSERT INTO usuarios (id_usuario, id_estabelecimento, nome, email, login, senha_hash, tipo, status) VALUES
     (10, 1, 'Ana Souza', 'ana@teste.local', 'anasou', 'x', 'cliente', 'ativo'),
-    (11, 2, 'Ana Souza', 'ana@teste.local', NULL, 'x', 'admin', 'ativo'),
-    (12, 3, 'Ana Souza', 'ana@teste.local', NULL, 'x', 'cliente', 'ativo'),
+    (11, 2, 'Ana Souza', 'ana-dois@teste.local', NULL, 'x', 'admin', 'ativo'),
+    (12, 3, 'Ana Souza', 'ana-fechado@teste.local', NULL, 'x', 'cliente', 'ativo'),
     (13, 1, 'Bruno Lima', 'bruno@teste.local', NULL, 'x', 'cliente', 'inativo')");
 bd()->exec('INSERT INTO clientes (id_cliente, id_estabelecimento, id_usuario) VALUES (100, 1, 10)');
 
@@ -287,12 +287,12 @@ Google::$postar = null;
 // Google: quais contas o e-mail confirmado abre
 // -------------------------------------------------------------------------
 $todas = Google::contas('ana@teste.local');
-verificar(count($todas) === 2 && !isset($todas[0]['senha_hash']), 'Contas do e-mail: esperadas as duas empresas ativas, sem hash.');
+verificar(count($todas) === 1 && !isset($todas[0]['senha_hash']), 'Conta do e-mail: esperada uma unica empresa ativa, sem hash.');
 verificar(!in_array(3, array_map(static fn ($c) => (int) $c['id_estabelecimento'], $todas), true), 'Empresa inativa entrou na lista.');
 
-$daEmpresa = Google::contas('ANA@teste.local', 'salao-dois');
+$daEmpresa = Google::contas('ANA-DOIS@teste.local', 'salao-dois');
 verificar(count($daEmpresa) === 1 && (int) $daEmpresa[0]['id_usuario'] === 11, 'Com o link da empresa, so a conta dela deveria entrar.');
-verificar(Google::contas('ana@teste.local', 'fechado') === [], 'Empresa inativa abriu conta pelo link.');
+verificar(Google::contas('ana-fechado@teste.local', 'fechado') === [], 'Empresa inativa abriu conta pelo link.');
 verificar(Google::contas('bruno@teste.local') === [], 'Conta inativa abriu pelo Google.');
 verificar(Google::contas('ninguem@teste.local') === [], 'E-mail sem conta devolveu algo.');
 

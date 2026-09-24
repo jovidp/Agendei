@@ -237,6 +237,12 @@ return ['client_id' => '....apps.googleusercontent.com', 'client_secret' => '...
 `sessoes_lembradas`: banco criado antes desta versao roda uma vez, da sua
 maquina, `php scripts/migrar_lembrar.php` apontando para o Supabase.
 
+O e-mail passou a ser unico em toda a plataforma (e o que identifica a pessoa
+na entrada geral e no Google): banco criado antes desta versao roda uma vez,
+da sua maquina, `php scripts/migrar_email_unico.php` apontando para o
+Supabase. Se houver e-mails repetidos entre empresas, o script lista as contas
+e para sem alterar nada; corrija os e-mails e rode de novo.
+
 ---
 
 ## Detalhes que importam

@@ -90,6 +90,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($erros === [] && Solicitacao::slugEmUso($dados['slug'])) {
         $erros[] = 'Este endereço já está em uso. Escolha outro.';
     }
+    if ($erros === [] && Usuario::emailEmUso($dados['email'])) {
+        $erros[] = 'Já existe uma conta cadastrada com este e-mail.';
+    }
 
     if ($erros === []) {
         try {

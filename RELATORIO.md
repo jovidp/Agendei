@@ -182,7 +182,7 @@ ser burlada e a decisão final é sempre do PHP.
 | Nome completo | 15 a 80 caracteres, apenas letras e espaços |
 | CPF | 11 dígitos, sequências repetidas rejeitadas e conferência dos dois dígitos verificadores |
 | Nome materno | 5 a 120 caracteres, apenas letras e espaços |
-| E-mail | Formato válido e único dentro do estabelecimento |
+| E-mail | Formato válido e único em toda a plataforma (identifica a pessoa na entrada geral e no Google) |
 | CEP | 8 dígitos; preenche o endereço automaticamente pela API ViaCEP |
 | UF | Uma das 27 unidades da federação |
 | Telefone celular | DDD + 9 dígitos, gravado como `(+55)XX-XXXXXXXXX` |

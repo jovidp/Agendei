@@ -34,15 +34,16 @@ No painel do Supabase:
 
 Confira em **Table Editor** que apareceram as 25 tabelas.
 
-> Os scripts em `scripts/` (migrar.php etc.) atendem apenas MySQL e recusam
-> rodar no PostgreSQL — nao sao necessarios aqui, pois `banco_postgres.sql`
-> ja traz o esquema completo.
+> O `scripts/migrar.php` atende apenas MySQL e recusa rodar no PostgreSQL:
+> nao e necessario aqui, pois `banco_postgres.sql` ja traz o esquema completo.
 >
-> A excecao e `scripts/migrar_filiais.php`, que roda nos dois bancos. Um
-> Supabase criado antes das filiais (unidades) precisa rodar uma vez, com o
-> `driver` em `pgsql` (passo 3), `php scripts/migrar_filiais.php`: ele cria a
-> tabela `filiais` e a unidade **Matriz** e vincula a ela o que ja existia.
-> Instalacoes novas ja vem com a Matriz pelo `banco_postgres.sql`.
+> As migracoes pontuais rodam nos dois bancos e servem para um Supabase criado
+> em versao anterior, sempre com o `driver` em `pgsql` (passo 3):
+> `php scripts/migrar_filiais.php` (cria a tabela `filiais` e a unidade
+> **Matriz** e vincula a ela o que ja existia), `migrar_lembretes.php`,
+> `migrar_lembrar.php` e `migrar_email_unico.php` (torna o e-mail unico em
+> toda a plataforma; se houver repeticoes, lista as contas e para sem alterar
+> nada). Instalacoes novas ja vem com tudo isso pelo `banco_postgres.sql`.
 
 ---
 

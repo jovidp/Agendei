@@ -48,17 +48,19 @@ session_save_path(sys_get_temp_dir());
 iniciarSessao();
 verificar(session_status() === PHP_SESSION_ACTIVE, 'Sessao de teste nao iniciou.');
 foreach (['empresa-a', 'empresa-b'] as $slug) {
+    // O e-mail e unico em toda a plataforma: cada empresa tem o seu responsavel.
+    $email = 'admin-' . substr($slug, -1) . '@teste.local';
     $id = Estabelecimento::contratar([
         'estabelecimento' => $slug, 'slug' => $slug, 'nome' => 'Responsavel Teste',
-        'email' => 'admin@teste.local', 'senha' => 'Teste12345!',
+        'email' => $email, 'senha' => 'Teste12345!',
     ]);
     $_SESSION = [];
     $_GET = ['estabelecimento' => $slug];
     Contexto::iniciar();
-    $usuario = autenticar('admin@teste.local', 'Teste12345!');
+    $usuario = autenticar($email, 'Teste12345!');
     verificar($usuario !== null && (int) $usuario['id_estabelecimento'] === $id, 'Login selecionou outra empresa.');
     verificar($usuario['tipo'] === 'admin', 'Cadastro nao criou administrador local.');
-    verificar(autenticar('admin@teste.local', 'senha-errada') === null, 'Senha invalida aceita.');
+    verificar(autenticar($email, 'senha-errada') === null, 'Senha invalida aceita.');
 
     // Fora da entrada geral (tests/entrada_global.php), a requisicao nunca troca de empresa.
     try {
@@ -78,7 +80,7 @@ foreach (['empresa-a', 'empresa-b'] as $slug) {
     verificar(!sessaoAbertaEm('master') && perfil() === null, 'Identidade master nao foi descartada.');
     Contexto::iniciar();
     verificar(Contexto::id() === $id, 'Sem a identidade master, o slug nao resolveu o estabelecimento.');
-    verificar(autenticar('admin@teste.local', 'Teste12345!') !== null, 'Login local falhou apos descartar a identidade master.');
+    verificar(autenticar($email, 'Teste12345!') !== null, 'Login local falhou apos descartar a identidade master.');
     $_SESSION = [];
     Contexto::iniciar();
 

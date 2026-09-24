@@ -94,7 +94,7 @@ class Google
             'response_type' => 'code',
             'scope'         => 'openid email profile',
             'state'         => $estado,
-            // Sempre mostra a lista de contas: quem tem mais de uma escolhe.
+            // Sempre mostra a lista de contas Google disponiveis no navegador.
             'prompt'        => 'select_account',
         ];
 
@@ -171,9 +171,9 @@ class Google
     }
 
     /**
-     * Contas ativas, em empresas ativas, de um e-mail que o Google confirmou.
-     * Com o link de uma empresa (slug) so a conta dela entra; sem link, todas,
-     * e a entrada geral deixa a pessoa escolher. Nunca devolve o hash da senha.
+     * Conta ativa, em empresa ativa, do e-mail que o Google confirmou.
+     * O retorno continua sendo uma lista para tolerar bases antigas ainda nao
+     * migradas. Nunca devolve o hash da senha.
      */
     public static function contas(string $email, string $slug = ''): array
     {

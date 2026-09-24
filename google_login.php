@@ -5,14 +5,15 @@
  * Recebe o pedido dos formularios (POST, com CSRF) e leva a pessoa ao Google;
  * depois recebe a volta (GET com code e state), confirma o e-mail com o Google
  * (models/Google.php) e decide pelo campo "origem" do pedido:
- *   - login (padrao): abre a conta daquele e-mail. Vindo do login de uma
- *     empresa, so a conta naquela empresa serve; vindo da entrada geral,
- *     todas as contas do e-mail, com a escolha da propria entrada geral.
- *     Sem conta, a pessoa e orientada a se cadastrar.
+ *   - login (padrao): abre a conta unica daquele e-mail. Vindo do login de
+ *     uma empresa, a conta tambem precisa pertencer a ela; se for de outra,
+ *     a pessoa e orientada a usar a entrada geral. Sem conta, a se cadastrar.
  *   - cadastro: o cadastro do cliente. Com conta no estabelecimento, entra
- *     direto; sem conta, volta ao formulario com nome e e-mail preenchidos e
- *     o e-mail confirmado. O Google nao cria a conta sozinho porque o cadastro
- *     exige dados que ele nao fornece (CPF, login, nome materno...).
+ *     direto; sem conta em lugar nenhum, volta ao formulario com nome e e-mail
+ *     preenchidos e o e-mail confirmado; com conta em outra empresa, avisa,
+ *     porque o e-mail e unico na plataforma. O Google nao cria a conta sozinho
+ *     porque o cadastro exige dados que ele nao fornece (CPF, login, nome
+ *     materno...).
  *   - cadastro_empresa: o cadastro de empresa da pagina inicial, mesma ideia.
  * O segundo fator, quando a conta exige, continua valendo.
  *
@@ -162,14 +163,25 @@ if ($origem === 'cadastro_empresa') {
 $contas = Google::contas($email, $slug);
 
 if ($contas === []) {
-    if ($origem === 'cadastro') {
+    // O e-mail e unico na plataforma: com conta em outra empresa (ou uma conta
+    // desligada), o cadastro seria recusado e o link desta empresa nao a abre.
+    // O Google confirmou que o e-mail e da pessoa, entao ela pode saber disso.
+    $temContaEmOutroLugar = Usuario::vinculosPorEmail($email) !== [];
+
+    if ($origem === 'cadastro' && !$temContaEmOutroLugar) {
         prepararCadastro($dados);
         definirFlash('info', 'E-mail confirmado pelo Google. Nome e e-mail já vieram preenchidos; complete o restante para criar sua conta.');
         voltar($slug, $origem);
     }
     pedirLembrarDispositivo(false);
     registrarEventoSeguranca('google_sem_conta', ['slug' => $slug]);
-    definirFlash('erro', 'Não encontramos uma conta com o e-mail ' . $email . '. Crie sua conta primeiro ou entre com login e senha.');
+    if ($temContaEmOutroLugar) {
+        definirFlash('erro', $slug !== ''
+            ? 'O e-mail ' . $email . ' já tem conta em outro estabelecimento, ou ela está desativada. Tente pela entrada geral ou fale com quem te atende.'
+            : 'A conta do e-mail ' . $email . ' está desativada. Fale com o estabelecimento.');
+    } else {
+        definirFlash('erro', 'Não encontramos uma conta com o e-mail ' . $email . '. Crie sua conta primeiro ou entre com login e senha.');
+    }
     voltar($slug, $origem);
 }
 
@@ -177,8 +189,8 @@ if (count($contas) === 1) {
     concluirEntradaGoogle($contas[0], $email, $origem);
 }
 
-// Mais de uma empresa com este e-mail: a escolha e a mesma da entrada geral,
-// que ja sabe concluir a entrada sem pedir a senha de novo.
+// Compatibilidade com bases antigas que ainda tenham e-mail repetido: a
+// entrada geral sabe concluir sem pedir a senha de novo.
 $lista = [];
 foreach ($contas as $conta) {
     $lista[(int) $conta['id_usuario']] = [

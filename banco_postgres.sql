@@ -108,8 +108,8 @@ CREATE TABLE administradores_master (
 
 -- ---------------------------------------------------------------------
 -- USUARIOS DOS ESTABELECIMENTOS
--- Toda conta local pertence obrigatoriamente a uma empresa. E-mail e
--- unico dentro dessa empresa.
+-- Toda conta local pertence obrigatoriamente a uma empresa. O e-mail e unico
+-- em toda a plataforma, pois identifica a pessoa na entrada geral e no Google.
 -- Nas colunas opcionais o CHECK aceita NULL: em SQL, NULL IN (...) nao
 -- viola a restricao.
 -- ---------------------------------------------------------------------
@@ -144,7 +144,7 @@ CREATE TABLE usuarios (
   id_estabelecimento INTEGER NOT NULL,
   CONSTRAINT pk_usuarios PRIMARY KEY (id_usuario),
   CONSTRAINT uk_usuarios_registro UNIQUE (id_estabelecimento, id_usuario),
-  CONSTRAINT uk_estabelecimento_email UNIQUE (id_estabelecimento, email),
+  CONSTRAINT uk_usuarios_email UNIQUE (email),
   CONSTRAINT uk_estabelecimento_login UNIQUE (id_estabelecimento, login),
   CONSTRAINT ck_usuarios_sexo CHECK (sexo IN ('F','M','O')),
   CONSTRAINT ck_usuarios_tipo CHECK (tipo IN ('cliente','profissional','admin')),

@@ -4,15 +4,13 @@
  *
  * A tela login.php de cada empresa continua valendo — ela e o link direto,
  * com a marca da empresa. Esta pagina existe para quem nao sabe esse link:
- * pede e-mail e senha, confere a senha em todas as contas daquele e-mail
- * (autenticarGlobal) e:
+ * pede e-mail e senha, confere a conta daquele e-mail (autenticarGlobal) e:
  *   - com uma conta valida, entra direto no painel do tipo dela;
- *   - com varias, mostra os estabelecimentos para a pessoa escolher;
+ *   - com varias em uma base antiga, permite escolher ate a migracao;
  *   - sem nenhuma, responde "Login ou senha incorretos" como o login comum.
  *
- * A lista de empresas so aparece depois da senha conferida: sem isso a tela
- * revelaria em quais empresas um e-mail tem conta. O login de 6 letras nao e
- * aceito aqui porque e unico apenas dentro de cada empresa.
+ * A lista de compatibilidade so aparece depois da senha conferida. O login de
+ * 6 letras nao e aceito aqui porque e unico apenas dentro de cada empresa.
  *
  * ENTRADA_LOCAL descarta a identidade master, como no login comum.
  * ENTRADA_GLOBAL abre o Contexto sem empresa e libera Contexto::assumir().
