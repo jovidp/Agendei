@@ -14,7 +14,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             Configuracao::definir('pix_chave', post('pix_chave'), 'Chave Pix usada no sinal');
             Configuracao::definir('sinal_percentual', (string) max(0, min(100, (int) post('sinal_percentual'))));
             Configuracao::definir('pontos_por_real', (string) max(0, min(100, (int) post('pontos_por_real'))));
-            Configuracao::definir('lembrete_horas', (string) max(1, min(168, (int) post('lembrete_horas'))));
+            $lembreteHoras = max(1, min(168, (int) post('lembrete_horas')));
+            Configuracao::definir('lembrete_horas', (string) $lembreteHoras);
+            // A liberacao vem depois do lembrete, com folga para o cliente responder.
+            $liberarHoras = max(0, min(72, (int) post('liberar_sem_confirmacao_horas')));
+            $liberarHoras = min($liberarHoras, max(0, $lembreteHoras - Confirmacao::REACAO_MINIMA_HORAS));
+            Configuracao::definir('liberar_sem_confirmacao_horas', (string) $liberarHoras, 'Libera horarios sem confirmacao N horas antes (0 = nunca)');
             definirFlash('sucesso', 'Configurações dos diferenciais atualizadas.');
             redirecionar('admin/diferenciais.php');
         }
@@ -47,8 +52,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (WhatsApp::ativo()) {
                 $r = Lembrete::processar();
                 definirFlash('sucesso', sprintf(
-                    '%d novo(s) lembrete(s) na fila, %d enviado(s), %d falha(s), %d cancelado(s).',
-                    $r['geradas'], $r['enviadas'], $r['falhas'], $r['canceladas']
+                    '%d novo(s) lembrete(s) na fila, %d enviado(s), %d falha(s), %d cancelado(s), %d horario(s) liberado(s).',
+                    $r['geradas'], $r['enviadas'], $r['falhas'], $r['canceladas'], $r['liberadas']
                 ));
             } else {
                 $total = Diferencial::gerarLembretes();
@@ -147,6 +152,7 @@ require RAIZ . '/includes/painel_header.php';
 <form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="configurar">
 <div class="linha-campos"><div class="campo"><label for="pix_chave">Chave Pix</label><input id="pix_chave" name="pix_chave" maxlength="150" value="<?= e(Configuracao::obter('pix_chave')) ?>"><span class="ajuda-campo">Deixe vazio para não cobrar sinal.</span></div><div class="campo"><label for="sinal_percentual">Sinal sobre o serviço (%)</label><input type="number" id="sinal_percentual" name="sinal_percentual" min="0" max="100" value="<?= Configuracao::obterInteiro('sinal_percentual', 0) ?>"></div></div>
 <div class="linha-campos"><div class="campo"><label for="pontos_por_real">Pontos por real concluído</label><input type="number" id="pontos_por_real" name="pontos_por_real" min="0" max="100" value="<?= Configuracao::obterInteiro('pontos_por_real', 1) ?>"></div><div class="campo"><label for="lembrete_horas">Gerar lembrete até (horas)</label><input type="number" id="lembrete_horas" name="lembrete_horas" min="1" max="168" value="<?= Configuracao::obterInteiro('lembrete_horas', 24) ?>"></div></div>
+<div class="linha-campos"><div class="campo"><label for="liberar_sem_confirmacao_horas">Liberar horário sem confirmação (horas antes)</label><input type="number" id="liberar_sem_confirmacao_horas" name="liberar_sem_confirmacao_horas" min="0" max="72" value="<?= Configuracao::obterInteiro('liberar_sem_confirmacao_horas', 0) ?>"><span class="ajuda-campo">0 desliga. Vale para quem recebeu o lembrete e não respondeu pelo link; reserva com sinal pago nunca é liberada. Precisa ser menor que "Gerar lembrete até".</span></div></div>
 <button class="btn" type="submit">Salvar configurações</button>
 </form></div></div>
 
@@ -158,6 +164,8 @@ Os lembretes saem sozinhos ate <?= Configuracao::obterInteiro('lembrete_horas', 
 <?php else: ?>
 <p><strong>Envio manual.</strong> A fila abaixo monta a mensagem e voce a envia pelo link "Abrir WhatsApp". <?= e($whatsappPendencia) ?></p>
 <?php endif; ?>
+<?php $liberarHoras = Configuracao::obterInteiro('liberar_sem_confirmacao_horas', 0); ?>
+<p>Cada lembrete leva um link para o cliente confirmar a presenca ou avisar que nao vai.<?= $liberarHoras > 0 ? ' Quem nao responde perde o horario ' . $liberarHoras . ' h antes do atendimento, e a lista de espera e avisada.' : ' A liberacao automatica dos horarios sem resposta esta desligada (veja "Automação e fidelidade").' ?></p>
 <form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="whatsapp">
 <div class="campo"><label for="whatsapp_provedor">Provedor de envio</label><select id="whatsapp_provedor" name="whatsapp_provedor"><?php foreach (WhatsApp::PROVEDORES as $chave => $rotulo): ?><option value="<?= e($chave) ?>" <?= $whatsappEscolha === $chave ? 'selected' : '' ?>><?= e($rotulo) ?></option><?php endforeach; ?></select><span class="ajuda-campo">"Padrao da plataforma" usa o numero de quem hospeda o sistema, quando ele existe. Os demais usam as credenciais abaixo.</span></div>
 <div class="linha-campos"><div class="campo"><label for="whatsapp_url">Evolution API: URL</label><input id="whatsapp_url" name="whatsapp_url" maxlength="255" placeholder="https://evolution.seudominio.com.br" value="<?= e(Configuracao::obter('whatsapp_url')) ?>"></div><div class="campo"><label for="whatsapp_instancia">Evolution API: instancia</label><input id="whatsapp_instancia" name="whatsapp_instancia" maxlength="100" value="<?= e(Configuracao::obter('whatsapp_instancia')) ?>"></div></div>

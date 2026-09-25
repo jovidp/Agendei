@@ -61,6 +61,12 @@ Ainda na criacao do servico, abra **Environment / Advanced** e adicione:
 
 `AGENDEI_AMBIENTE=producao` ja vem embutido na imagem; nao precisa repetir.
 
+`AGENDEI_URL` (opcional) e o endereco publico do sistema, ex.:
+`https://seu-dominio`. Ele monta os links completos das mensagens (a
+confirmacao de presenca no lembrete) quando a tarefa roda fora de uma
+requisicao, como no cron; pelo `tarefas.php` o host da propria requisicao
+ja basta.
+
 Para o sistema mandar e-mail (aviso de cadastro de empresa, aprovacao e
 recuperacao de senha), adicione tambem as variaveis da secao
 [E-mail](#e-mail-avisos-e-recuperacao-de-senha), mais abaixo. Sem elas o

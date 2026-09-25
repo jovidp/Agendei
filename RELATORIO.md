@@ -378,13 +378,16 @@ O campo `status` identifica a situação do agendamento e assume quatro valores:
 
 | Status | Significado |
 |--------|-------------|
-| `agendado` | Reserva criada, aguardando confirmação do estabelecimento |
+| `agendado` | Reserva criada, aguardando confirmação do estabelecimento ou do cliente (botão em Meus agendamentos ou link do lembrete) |
 | `confirmado` | Atendimento confirmado |
 | `concluido` | Atendimento realizado |
 | `cancelado` | Reserva cancelada pelo cliente ou pelo estabelecimento |
 
 Quando a configuração `confirmar_automaticamente` está ativa, os agendamentos
 criados pelo cliente já nascem confirmados e o passo manual é dispensado.
+Com `liberar_sem_confirmacao_horas` maior que zero, a tarefa periódica
+cancela, N horas antes, as reservas que continuam `agendado` depois de o
+lembrete ter sido enviado, e avisa a lista de espera (`models/Confirmacao.php`).
 
 Apenas os agendamentos nas situações `agendado` e `confirmado` ocupam espaço na
 agenda. Os cancelados liberam o horário imediatamente, e os concluídos

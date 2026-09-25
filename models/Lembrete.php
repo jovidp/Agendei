@@ -74,6 +74,10 @@ class Lembrete
         $resultado = [
             'provedor'   => WhatsApp::provedor(),
             'geradas'    => Diferencial::gerarLembretes(),
+            // Quem recebeu o lembrete e nao respondeu a tempo perde o horario
+            // (Confirmacao). Vale tambem na fila manual: la "enviado" e o que o
+            // painel marcou.
+            'liberadas'  => Confirmacao::liberarSemConfirmacao(),
             'enviadas'   => 0,
             'falhas'     => 0,
             'canceladas' => 0,
@@ -166,24 +170,26 @@ class Lembrete
     /** Razao para nao enviar, ou null quando a mensagem deve sair. */
     private static function motivoParaCancelar(array $item): ?string
     {
-        $status = $item['status_agendamento'] ?? null;
+        $status     = $item['status_agendamento'] ?? null;
+        $ehLembrete = str_starts_with((string) $item['tipo'], 'lembrete_');
 
         // Notificacao sem agendamento (LEFT JOIN vazio): o registro foi apagado.
-        if ($status === null && $item['data_agendamento'] === null && str_starts_with((string) $item['tipo'], 'lembrete_')) {
+        if ($ehLembrete && $status === null && $item['data_agendamento'] === null) {
             return 'O agendamento nao existe mais.';
         }
 
-        if ($status === 'cancelado') {
+        // So o lembrete depende de a reserva continuar de pe. O aviso de vaga e
+        // o de horario liberado falam justamente de uma reserva cancelada.
+        if ($ehLembrete && $status === 'cancelado') {
             return 'Agendamento cancelado antes do envio.';
         }
 
-        if ($status === 'concluido') {
+        if ($ehLembrete && $status === 'concluido') {
             return 'Atendimento ja concluido.';
         }
 
         if (
-            str_starts_with((string) $item['tipo'], 'lembrete_')
-            && $item['data_agendamento'] !== null
+            $item['data_agendamento'] !== null
             && strtotime($item['data_agendamento'] . ' ' . $item['hora_inicio']) < time()
         ) {
             return 'O horario ja passou.';
@@ -285,18 +291,25 @@ class Lembrete
         }
 
         if (($empresa['provedor'] ?? 'manual') === 'manual') {
-            return sprintf('[%d] %s: %d lembrete(s) na fila manual (sem provedor de envio)', $id, $nome, $empresa['geradas'] ?? 0);
+            return sprintf(
+                '[%d] %s: %d lembrete(s) na fila manual (sem provedor de envio), %d horario(s) liberado(s)',
+                $id,
+                $nome,
+                $empresa['geradas'] ?? 0,
+                $empresa['liberadas'] ?? 0
+            );
         }
 
         return sprintf(
-            '[%d] %s (%s): %d gerado(s), %d enviado(s), %d falha(s), %d cancelado(s)',
+            '[%d] %s (%s): %d gerado(s), %d enviado(s), %d falha(s), %d cancelado(s), %d liberado(s)',
             $id,
             $nome,
             $empresa['provedor'],
             $empresa['geradas'] ?? 0,
             $empresa['enviadas'] ?? 0,
             $empresa['falhas'] ?? 0,
-            $empresa['canceladas'] ?? 0
+            $empresa['canceladas'] ?? 0,
+            $empresa['liberadas'] ?? 0
         );
     }
 }

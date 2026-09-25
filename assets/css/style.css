@@ -1567,3 +1567,11 @@ legend {
 .lista-escolha { list-style: none; padding: 0; margin: 0 0 20px; display: grid; gap: 10px; }
 .lista-escolha button { width: 100%; text-align: left; display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; }
 .lista-escolha small { color: var(--texto-secundario); font-size: 12.5px; }
+
+/* Confirmacao de presenca pelo link (confirmar.php) */
+.resumo-confirmacao { list-style: none; padding: 14px 16px; margin: 0 0 18px; border: 1px solid var(--borda); border-radius: var(--raio); display: grid; gap: 8px; }
+.resumo-confirmacao li { display: flex; justify-content: space-between; gap: 12px; }
+.resumo-confirmacao li span { color: var(--texto-secundario); }
+.resumo-confirmacao li strong { text-align: right; }
+.acoes-confirmacao { display: grid; gap: 10px; }
+.formulario-inline { display: inline; }

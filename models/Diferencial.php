@@ -145,10 +145,19 @@ class Diferencial
         $empresa = Estabelecimento::campo('nome', NOME_SISTEMA);
         $total = 0;
         foreach ($q->fetchAll() as $item) {
+            // O link assinado leva o cliente a confirmar.php. Sem host conhecido
+            // (cron sem AGENDEI_URL) a mensagem volta ao pedido de aviso.
+            $link = Confirmacao::link([
+                'id_agendamento'   => $item['id_agendamento'],
+                'data_agendamento' => $item['data_agendamento'],
+                'hora_inicio'      => $item['hora_inicio'],
+            ]);
             $mensagem = 'Olá, ' . explode(' ', trim($item['nome']))[0] . '! Lembrete do ' . $empresa . ': '
                 . $item['servico'] . ' em ' . formatarData($item['data_agendamento'])
                 . ' às ' . formatarHora($item['hora_inicio']) . ', com ' . explode(' ', trim($item['profissional']))[0]
-                . '. Se precisar remarcar, avise com antecedência.';
+                . '. ' . ($link !== ''
+                    ? 'Confirme sua presença ou avise se não puder ir: ' . $link
+                    : 'Se precisar remarcar, avise com antecedência.');
             $inserir->execute([
                 Contexto::id(), $item['id_usuario'], $item['id_agendamento'], 'whatsapp',
                 'lembrete_' . $horas . 'h', $item['telefone'], $mensagem,

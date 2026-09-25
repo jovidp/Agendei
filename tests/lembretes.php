@@ -72,6 +72,8 @@ ob_end_clean();
 
 restore_exception_handler();
 $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
+// O link de confirmacao precisa do endereco publico; fora de uma requisicao ele vem daqui.
+putenv('AGENDEI_URL=https://agendei.test');
 
 $total = 0;
 $falhas = 0;
@@ -296,7 +298,106 @@ verificar('resumo traz o provedor', $resumo[$idEmpresa]['provedor'], 'meta');
 verificar('resumo em texto e legivel', str_starts_with(Lembrete::resumoTexto($idEmpresa, $resumo[$idEmpresa]), "[{$idEmpresa}] Studio Lembrete (meta)"), true);
 
 // -------------------------------------------------------------------------
-// 7. Migracao repetida nao falha nem duplica
+// 7. Confirmacao de presenca pelo link e liberacao do horario sem resposta
+// -------------------------------------------------------------------------
+Configuracao::definir('whatsapp_provedor', 'evolution');
+verificar('volta ao provedor de texto livre', WhatsApp::provedor(), 'evolution');
+$idClienteD = Cliente::criar(['nome' => 'Diego Espera', 'email' => 'diego@teste.local', 'senha' => 'Teste12345!', 'telefone' => '11994444444', 'cpf' => '39053344705']);
+
+$agLink = agendar($idClienteA, $idProfissional, $idServico, $data, '15:00');
+$a = Agendamento::porId($agLink);
+$token = Confirmacao::token($a);
+verificar('token tem 32 hexadecimais', preg_match('/^[a-f0-9]{32}$/D', $token), 1);
+verificar('token e o mesmo a cada chamada', Confirmacao::token($a), $token);
+verificar('token muda se a hora mudar', Confirmacao::token(['hora_inicio' => '15:30:00'] + $a) !== $token, true);
+verificar('token aceita hora com ou sem segundos', Confirmacao::token(['hora_inicio' => '15:00'] + $a), $token);
+verificar('token errado nao abre nada', Confirmacao::porLink($agLink, str_repeat('0', 32)), null);
+verificar('token malformado nao abre nada', Confirmacao::porLink($agLink, 'abc'), null);
+verificar('token certo abre o agendamento', (int) (Confirmacao::porLink($agLink, $token)['id_agendamento'] ?? 0), $agLink);
+verificar('link completo com numero, assinatura e empresa', Confirmacao::link($a), 'https://agendei.test/confirmar.php?a=' . $agLink . '&t=' . $token . '&estabelecimento=studio-lembrete');
+
+$envios = [];
+$r = Lembrete::processar();
+verificar('lembrete novo entra na fila', $r['geradas'], 1);
+verificar('lembrete leva o link de confirmacao', str_contains(notificacaoDe($agLink)['mensagem'], Confirmacao::link($a)), true);
+verificar('lembrete recem-enviado nao libera nada', $r['liberadas'], 0);
+
+verificar('reserva nova esta aberta', Confirmacao::situacao($a), 'aberto');
+verificar('cliente confirma pelo link', Confirmacao::confirmar($a), true);
+$a = Agendamento::porId($agLink);
+verificar('confirmacao muda o status', $a['status'], 'confirmado');
+verificar('situacao passa a confirmada', Confirmacao::situacao($a), 'confirmado');
+verificar('confirmar de novo nao altera', Confirmacao::confirmar($a), false);
+
+Diferencial::entrarLista($idClienteD, $idServico, null, $data, 'tarde');
+verificar('cliente avisa que nao vai', Confirmacao::recusar($a), true);
+$a = Agendamento::porId($agLink);
+verificar('recusa cancela a reserva', $a['status'], 'cancelado');
+verificar('recusa registra o motivo', str_contains((string) $a['motivo_cancelamento'], 'link'), true);
+$vagas = array_values(array_filter(
+    Diferencial::notificacoesPendentes(),
+    fn(array $n): bool => str_starts_with((string) $n['tipo'], 'vaga_lista_') && (int) $n['id_agendamento'] === $agLink
+));
+verificar('recusa avisa quem esta na lista de espera', count($vagas), 1);
+verificar('aviso vai para o telefone de quem espera', $vagas[0]['destinatario'] ?? null, '11994444444');
+verificar('recusar de novo nao altera', Confirmacao::recusar($a), false);
+verificar('situacao passa a cancelada', Confirmacao::situacao($a), 'cancelado');
+
+// O aviso de vaga fala de uma reserva cancelada: a tarefa precisa envia-lo
+// mesmo assim (antes, o cancelamento da reserva derrubava o aviso junto).
+$envios = [];
+Lembrete::processar();
+$textos = array_map(fn(array $e): string => (string) ($e['corpo']['text'] ?? ''), $envios);
+verificar('aviso de vaga sai apesar da reserva cancelada', count(array_filter($textos, fn(string $t): bool => str_contains($t, 'Surgiu uma vaga em'))), 1);
+
+// Liberacao: so quem recebeu o lembrete ha pelo menos uma hora e nao respondeu.
+verificar('liberacao desligada por padrao', Confirmacao::liberarSemConfirmacao(), 0);
+Configuracao::definir('liberar_sem_confirmacao_horas', '46');
+$agSemResposta = agendar($idClienteA, $idProfissional, $idServico, $data, '16:00');
+$agConfirmado  = agendar($idClienteA, $idProfissional, $idServico, $data, '16:30');
+$agSemLembrete = agendar($idClienteA, $idProfissional, $idServico, $data, '17:00');
+Configuracao::definir('pix_chave', 'chave@pix.teste');
+Configuracao::definir('sinal_percentual', '50');
+$agComSinal = agendar($idClienteA, $idProfissional, $idServico, $data, '17:30');
+Configuracao::definir('sinal_percentual', '0');
+$pagamentoSinal = array_values(array_filter(Diferencial::pagamentos(), fn(array $p): bool => (int) $p['id_agendamento'] === $agComSinal));
+verificar('reserva com sinal gera a cobranca', count($pagamentoSinal), 1);
+Diferencial::atualizarPagamento((int) $pagamentoSinal[0]['id_pagamento'], 'pago');
+
+$envios = [];
+$r = Lembrete::processar();
+verificar('quatro lembretes novos na fila', $r['geradas'], 4);
+verificar('lembretes recem-enviados nao liberam', $r['liberadas'], 0);
+Confirmacao::confirmar(Agendamento::porId($agConfirmado));
+// Lembrete que ainda nao saiu (fila manual) nao conta como aviso dado.
+bd()->prepare('UPDATE notificacoes SET status = \'pendente\', data_envio = NULL WHERE id_estabelecimento = ? AND id_agendamento = ?')
+    ->execute([Contexto::id(), $agSemLembrete]);
+// Os lembretes das outras tres reservas novas sairam ha duas horas. As reservas
+// antigas do teste continuam com lembrete recente, para nao entrarem na conta.
+bd()->prepare('UPDATE notificacoes SET data_envio = ? WHERE id_estabelecimento = ? AND status = \'enviada\' AND tipo LIKE \'lembrete_%\' AND id_agendamento IN (?, ?, ?)')
+    ->execute([date('Y-m-d H:i:s', time() - 7200), Contexto::id(), $agSemResposta, $agConfirmado, $agComSinal]);
+
+verificar('libera so quem foi avisado e nao respondeu', Confirmacao::liberarSemConfirmacao(), 1);
+verificar('reserva sem resposta e cancelada', Agendamento::porId($agSemResposta)['status'], 'cancelado');
+verificar('cancelamento explica a liberacao', str_contains((string) Agendamento::porId($agSemResposta)['motivo_cancelamento'], 'sem confirmacao'), true);
+verificar('reserva confirmada fica', Agendamento::porId($agConfirmado)['status'], 'confirmado');
+verificar('reserva sem lembrete enviado fica', Agendamento::porId($agSemLembrete)['status'], 'agendado');
+verificar('reserva com sinal pago fica', Agendamento::porId($agComSinal)['status'], 'agendado');
+$q = bd()->prepare('SELECT * FROM notificacoes WHERE id_estabelecimento = ? AND id_agendamento = ? AND tipo = ?');
+$q->execute([Contexto::id(), $agSemResposta, Confirmacao::TIPO_LIBERACAO]);
+$avisoLiberacao = $q->fetch() ?: [];
+verificar('cliente recebe o aviso da liberacao na fila', $avisoLiberacao['status'] ?? null, 'pendente');
+verificar('aviso cita o horario liberado', str_contains((string) ($avisoLiberacao['mensagem'] ?? ''), '16:00'), true);
+verificar('liberar de novo nao repete', Confirmacao::liberarSemConfirmacao(), 0);
+
+$envios = [];
+Lembrete::processar();
+$textos = array_map(fn(array $e): string => (string) ($e['corpo']['text'] ?? ''), $envios);
+verificar('aviso de liberacao sai apesar da reserva cancelada', count(array_filter($textos, fn(string $t): bool => str_contains($t, 'foi liberado'))), 1);
+verificar('resumo em texto conta as liberacoes', str_contains(Lembrete::resumoTexto($idEmpresa, ['nome' => 'X', 'provedor' => 'evolution', 'liberadas' => 1]), '1 liberado(s)'), true);
+
+// -------------------------------------------------------------------------
+// 8. Migracao repetida nao falha nem duplica
 // -------------------------------------------------------------------------
 ob_start();
 require 'scripts/migrar_lembretes.php';

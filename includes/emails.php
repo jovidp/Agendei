@@ -12,6 +12,14 @@
 /** Endereco completo (esquema, host e caminho) de uma pagina do sistema. */
 function urlAbsoluta(string $caminho = ''): string
 {
+    // Endereco publico fixo (AGENDEI_URL, ex.: https://agendei.exemplo.com): vale
+    // para a tarefa periodica e a linha de comando, que nao recebem requisicao.
+    $fixo = rtrim((string) (getenv('AGENDEI_URL') ?: ''), '/');
+    if ($fixo !== '') {
+        // url() ja acrescenta a empresa ao caminho; so o caminho base da a vez ao endereco fixo.
+        return $fixo . substr(url($caminho), strlen(BASE_URL));
+    }
+
     $host = (string) ($_SERVER['HTTP_HOST'] ?? '');
     if ($host === '') {
         return url($caminho);

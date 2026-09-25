@@ -43,10 +43,12 @@ if (!defined('BASE_URL')) {
     $arquivoReal = str_replace(chr(92), '/', $arquivoReal ?: $arquivoExecutado);
     $scriptUrl = str_replace(chr(92), '/', $_SERVER['SCRIPT_NAME'] ?? '');
     $caminhoBase = '';
+    // Na linha de comando nao ha URL: o caminho do arquivo em disco nao e caminho publico.
+    $emRequisicao = PHP_SAPI !== 'cli';
 
-    if ($raizDocumento !== '' && strpos($raizProjeto, $raizDocumento) === 0) {
+    if ($emRequisicao && $raizDocumento !== '' && strpos($raizProjeto, $raizDocumento) === 0) {
         $caminhoBase = substr($raizProjeto, strlen($raizDocumento));
-    } elseif ($arquivoReal !== '' && strpos($arquivoReal, $raizProjeto . '/') === 0) {
+    } elseif ($emRequisicao && $arquivoReal !== '' && strpos($arquivoReal, $raizProjeto . '/') === 0) {
         $arquivoRelativo = substr($arquivoReal, strlen($raizProjeto));
         if ($arquivoRelativo !== '' && str_ends_with($scriptUrl, $arquivoRelativo)) {
             $caminhoBase = substr($scriptUrl, 0, -strlen($arquivoRelativo));

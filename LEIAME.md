@@ -168,7 +168,7 @@ php tests/fluxo_projeto.php   # cadastro, login, 2FA, log e exclusao (banco temp
 php tests/multitenancy.php    # isolamento entre estabelecimentos (banco temporario)
 php tests/master.php          # auditoria, contas master e bloqueios (banco temporario)
 php tests/entrada_global.php  # login geral sem link da empresa (nao usa banco)
-php tests/lembretes.php       # lembretes por WhatsApp, com provedor simulado (banco temporario)
+php tests/lembretes.php       # lembretes, confirmacao de presenca e liberacao de horario (banco temporario)
 php tests/lembrar_google.php  # manter conectado e entrada com o Google (nao usa banco)
 php tests/cadastro_google.php # o botao do Google nao rouba o Enter dos formularios (banco temporario, so MySQL)
 ```
@@ -423,6 +423,30 @@ sozinho, porque so ele tem modelo; o aviso de vaga da lista de espera segue manu
 Bancos criados antes desta versao precisam de `php scripts/migrar_lembretes.php`
 (MySQL e PostgreSQL); o `migrar.php` ja o encadeia.
 
+### Confirmacao de presenca e liberacao do horario
+
+O lembrete leva um link assinado para `confirmar.php`, onde o cliente, sem
+login, confirma que vai ou avisa que nao vai. O link e uma assinatura (HMAC)
+dos dados do agendamento — empresa, numero, data e hora —, por isso nao existe
+token guardado: remarcar invalida o link antigo (`models/Confirmacao.php`).
+Abrir o link nunca altera nada, porque os aplicativos de mensagem abrem o
+endereco sozinhos para montar a previa; as duas acoes sao botoes. "Nao poderei
+ir" cancela a reserva e avisa a lista de espera, como qualquer cancelamento.
+Quem ja esta na conta tem o botao "Confirmar presenca" em **Meus agendamentos**.
+
+Em **Admin > Diferenciais**, "Liberar horario sem confirmacao (horas antes)"
+liga a outra ponta: N horas antes do atendimento, a tarefa periodica cancela a
+reserva que continua `agendado` apesar de o lembrete ter sido enviado ha pelo
+menos 1 h, devolve o horario a agenda, avisa a lista de espera e poe na fila
+um aviso ao cliente. Reserva com sinal pago nunca e liberada; 0 desliga. O
+valor e sempre menor que "Gerar lembrete ate (horas)", senao o cliente nao
+teria tempo de responder. Na fila manual, "enviado" e o que o painel marcou.
+
+Para o link sair completo tambem pelo cron (`scripts/enviar_lembretes.php`),
+defina `AGENDEI_URL` com o endereco publico do sistema (ex.:
+`https://agendei.exemplo.com`); pelo `tarefas.php` o host da propria
+requisicao ja basta.
+
 ## Regras de negocio garantidas pelo servidor
 
 - Sem dois agendamentos no mesmo horario para o mesmo profissional.
@@ -475,6 +499,7 @@ O menu **Admin > Diferenciais** reúne os recursos opcionais de cada estabelecim
 
 - lista de espera com aviso quando um cancelamento libera uma vaga compatível;
 - lembretes por WhatsApp enviados sozinhos (Evolution API ou Meta), com fila manual de reserva;
+- confirmacao de presenca pelo link do lembrete, com liberacao automatica do horario sem resposta;
 - cobrança de sinal por chave Pix e confirmação manual do pagamento;
 - agendamentos semanais recorrentes;
 - pontos de fidelidade creditados quando o atendimento é concluído;
