@@ -113,7 +113,7 @@ class Lembrete
              FROM notificacoes n
              LEFT JOIN agendamentos a ON a.id_estabelecimento = n.id_estabelecimento AND a.id_agendamento = n.id_agendamento
              LEFT JOIN clientes c ON c.id_estabelecimento = a.id_estabelecimento AND c.id_cliente = a.id_cliente
-             LEFT JOIN usuarios u ON u.id_estabelecimento = c.id_estabelecimento AND u.id_usuario = c.id_usuario
+             LEFT JOIN usuarios u ON u.id_usuario = c.id_usuario
              LEFT JOIN servicos s ON s.id_estabelecimento = a.id_estabelecimento AND s.id_servico = a.id_servico
              WHERE n.id_estabelecimento = :empresa AND n.canal = \'whatsapp\' AND n.status = \'pendente\'
                AND n.tentativas < :maximo

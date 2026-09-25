@@ -191,6 +191,27 @@ verificar('a solicitacao recusada continua legivel', Solicitacao::porId($idSegun
 verificar('a empresa aprovada nao e afetada', Estabelecimento::porIdGlobal($idEmpresa)['status'] ?? null, 'ativo');
 
 // -------------------------------------------------------------------------
+// Autonomo: administra e atende no proprio negocio, com a Matriz e agenda propria
+// -------------------------------------------------------------------------
+$autonomo = ['estabelecimento' => 'Joana Manicure', 'slug' => 'joana-manicure', 'nome' => 'Joana Autonoma', 'email' => 'joana@autonoma.test', 'senha' => 'senha-forte-3', 'telefone' => '11977776666', 'mensagem' => '', 'autonomo' => true];
+$idTerceira = Solicitacao::abrir($autonomo);
+$idEmpresaC = (int) Solicitacao::porId($idTerceira)['id_estabelecimento'];
+$pessoaJoana = Usuario::pessoaPorEmail($autonomo['email']);
+verificar('a autonoma e uma pessoa so', $pessoaJoana !== null, true);
+$tiposJoana = array_column(Vinculo::daPessoa((int) $pessoaJoana['id_usuario']), 'tipo');
+sort($tiposJoana);
+verificar('a autonoma e administradora e profissional da propria empresa', $tiposJoana, ['admin', 'profissional']);
+verificar('a autonoma tem a unidade Matriz', (int) bd()->query("SELECT COUNT(*) FROM filiais WHERE id_estabelecimento = $idEmpresaC")->fetchColumn(), 1);
+verificar('a autonoma tem perfil de profissional', (int) bd()->query("SELECT COUNT(*) FROM profissionais WHERE id_estabelecimento = $idEmpresaC")->fetchColumn(), 1);
+
+// E-mail que ja tem conta: a nova empresa reaproveita a pessoa como responsavel.
+$reaproveitado = ['estabelecimento' => 'Segundo Negocio da Joana', 'slug' => 'joana-dois', 'nome' => 'Outro Nome', 'email' => 'joana@autonoma.test', 'senha' => 'qualquer', 'telefone' => '', 'mensagem' => ''];
+Solicitacao::abrir($reaproveitado);
+verificar('a segunda empresa reaproveita a pessoa', (int) bd()->query("SELECT COUNT(*) FROM usuarios WHERE email = 'joana@autonoma.test'")->fetchColumn(), 1);
+verificar('a pessoa passa a ter tres vinculos', count(Vinculo::daPessoa((int) $pessoaJoana['id_usuario'])), 3);
+verificar('a pessoa reaproveitada mantem o nome', Usuario::pessoaPorEmail('joana@autonoma.test')['nome'], 'Joana Autonoma');
+
+// -------------------------------------------------------------------------
 // Freio por origem do cadastro publico
 // -------------------------------------------------------------------------
 $limites = politicaLimites();

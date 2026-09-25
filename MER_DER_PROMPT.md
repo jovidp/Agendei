@@ -42,14 +42,17 @@ Escreva em português do Brasil, em tom técnico e objetivo.
   Quase toda tabela carrega `id_estabelecimento`, e as chaves estrangeiras são
   compostas por `(id_estabelecimento, id_registro)` justamente para impedir, no
   nível do banco, que um registro de uma empresa seja associado a outra.
-- **Quatro perfis**: `cliente`, `profissional` e `admin` (todos são linhas de
-  `usuarios`, diferenciadas pela coluna `tipo` e por uma tabela de
-  especialização própria) e o master global da plataforma, que vive em uma
-  tabela separada, sem vínculo com estabelecimento.
+- **Pessoa e vínculo**: `usuarios` é a pessoa, única em toda a plataforma
+  (e-mail único, senha, segundo fator); `vinculos` é o que ela é em cada
+  estabelecimento — `cliente`, `profissional` ou `admin` —, e cada vínculo tem
+  uma tabela de especialização própria. A mesma pessoa pode ter vários
+  vínculos, inclusive mais de um na mesma empresa (o autônomo que administra e
+  atende). O master global da plataforma vive em uma tabela separada, sem
+  vínculo com estabelecimento.
 - **Motor de agenda**: os horários livres são calculados a partir do expediente
   semanal do profissional (`horarios_profissionais`), descontando os
   agendamentos ativos e os bloqueios (`bloqueios_agenda`).
-- O banco tem 24 tabelas.
+- O banco tem 27 tabelas.
 
 ## Dicionário de dados
 
@@ -76,27 +79,24 @@ Colunas: `nome` VARCHAR(120) NN, `email` VARCHAR(150) NN UNIQUE,
 **Não possui `id_estabelecimento`**: é a conta global que cria os
 estabelecimentos. Não se relaciona por FK com nenhuma outra tabela.
 
-### 3. usuarios
-PK `id_usuario` INT UNSIGNED AI. FK `id_estabelecimento` → estabelecimento.
-Colunas: `nome` VARCHAR(120) NN, `email` VARCHAR(150) NN,
+### 3. usuarios  (a pessoa)
+PK `id_usuario` INT UNSIGNED AI.
+Colunas: `nome` VARCHAR(120) NN, `email` VARCHAR(150) NN UNIQUE,
 `senha_hash` VARCHAR(255) NN, `telefone` VARCHAR(20), `telefone_fixo` VARCHAR(20),
-`login` VARCHAR(6), `sexo` ENUM('F','M','O'), `nome_materno` VARCHAR(120),
+`sexo` ENUM('F','M','O'), `nome_materno` VARCHAR(120),
 `data_nascimento` DATE, `cep` CHAR(8), `logradouro` VARCHAR(150),
 `numero` VARCHAR(20), `complemento` VARCHAR(60), `bairro` VARCHAR(100),
 `cidade` VARCHAR(100), `uf` CHAR(2),
-`tipo` ENUM('cliente','profissional','admin') NN DEFAULT 'cliente',
 `status` ENUM('ativo','inativo'), `token_recuperacao` VARCHAR(64),
-`token_expiracao` DATETIME, `ultimo_acesso` DATETIME, `data_criacao` DATETIME,
-`data_atualizacao` DATETIME.
-UNIQUE: `(id_estabelecimento, id_usuario)`, `(id_estabelecimento, email)`,
-`(id_estabelecimento, login)`.
+`token_expiracao` DATETIME, `data_criacao` DATETIME, `data_atualizacao` DATETIME.
 Observações importantes para o modelo:
-- É a **superentidade** de uma especialização total e exclusiva: toda linha de
-  `usuarios` é exatamente uma de `clientes`, `profissionais` ou
-  `administradores`, conforme o valor de `tipo`.
+- **Não tem `id_estabelecimento`**: é a pessoa, única em toda a plataforma (o
+  e-mail é a chave natural). O que ela é em cada empresa fica em `vinculos`.
+- `status` é o bloqueio global da pessoa, que só o master aplica; a situação de
+  cada papel numa empresa fica no vínculo.
 - `nome_materno`, `data_nascimento` e `cep` são os três dados que respondem às
-  perguntas do segundo fator de autenticação. Ficam aqui, e não em `clientes`,
-  porque o administrador também passa pelo 2FA.
+  perguntas do segundo fator de autenticação. Ficam aqui porque o segundo fator
+  é da pessoa, e o administrador também passa por ele.
 - `totp_segredo` VARCHAR(255), `totp_ativado_em` DATETIME e
   `totp_ultimo_contador` BIGINT sustentam o segundo fator por código de uso
   único (TOTP, RFC 6238), que é o caminho padrão do 2FA. O segredo é gravado
@@ -105,28 +105,52 @@ Observações importantes para o modelo:
   `totp_ultimo_contador` guarda a janela de 30 s já aproveitada, para impedir
   que o mesmo código seja apresentado duas vezes. As três colunas se repetem em
   `administradores_master`, que tem seu próprio fluxo de segundo fator.
-- O `login` tem exatamente 6 letras e a senha exatamente 8 letras (regra de
-  negócio validada na aplicação, gravada com hash).
+- A senha do usuário comum tem exatamente 8 letras (regra de negócio validada
+  na aplicação, gravada com hash).
 
-### 4. clientes  (especialização de usuarios)
-PK `id_cliente` INT UNSIGNED AI. FK `id_usuario` → usuarios (UNIQUE, 1:1,
-ON DELETE CASCADE). FK `id_estabelecimento` → estabelecimento.
+### 3b. vinculos  (a pessoa em cada estabelecimento)
+PK `id_vinculo` INT UNSIGNED AI. FK `id_estabelecimento` → estabelecimento.
+FK `id_usuario` → usuarios (ON DELETE CASCADE).
+Colunas: `tipo` ENUM('cliente','profissional','admin') NN, `status`
+ENUM('ativo','inativo'), `login` VARCHAR(6), `ultimo_acesso` DATETIME,
+`data_criacao` DATETIME.
+UNIQUE: `(id_estabelecimento, id_vinculo)`, `(id_estabelecimento, id_usuario, tipo)`,
+`(id_estabelecimento, login)`.
+- Uma pessoa pode ter vários vínculos, inclusive mais de um na mesma empresa
+  (a autônoma que administra e atende no próprio negócio), mas um só por tipo
+  em cada empresa.
+- É a **superentidade** de uma especialização total e exclusiva: todo vínculo
+  é exatamente um de `clientes`, `profissionais` ou `administradores`, conforme
+  o valor de `tipo`, e as chaves compostas dos perfis apontam para cá: apagar o
+  vínculo leva o perfil junto.
+- O `login` tem exatamente 6 letras, é único por estabelecimento e aceita nulo
+  (contas criadas antes do campo entram pelo e-mail).
+
+### 4. clientes  (especialização de vinculos)
+PK `id_cliente` INT UNSIGNED AI. FK `id_vinculo` → vinculos (UNIQUE, 1:1, pela
+chave composta `(id_estabelecimento, id_vinculo)`, ON DELETE CASCADE).
+FK `id_usuario` → usuarios (a pessoa, para as junções).
+FK `id_estabelecimento` → estabelecimento.
 Colunas: `cpf` CHAR(11), `data_nascimento` DATE, `observacoes` TEXT,
 `pontos_fidelidade` INT UNSIGNED DEFAULT 0, `data_cadastro` DATETIME.
 UNIQUE: `(id_estabelecimento, id_cliente)`, `(id_estabelecimento, cpf)`.
 O **CPF fica aqui**, não em `usuarios`.
 
-### 5. profissionais  (especialização de usuarios)
-PK `id_profissional` INT UNSIGNED AI. FK `id_usuario` → usuarios (UNIQUE, 1:1,
-ON DELETE CASCADE). FK `id_estabelecimento` → estabelecimento.
+### 5. profissionais  (especialização de vinculos)
+PK `id_profissional` INT UNSIGNED AI. FK `id_vinculo` → vinculos (UNIQUE, 1:1,
+pela chave composta, ON DELETE CASCADE). FK `id_usuario` → usuarios.
+FK `id_estabelecimento` → estabelecimento. A agenda é por vínculo: a mesma
+pessoa em dois estabelecimentos tem duas agendas.
 Colunas: `especialidade` VARCHAR(120), `bio` TEXT, `foto` VARCHAR(255),
 `pode_bloquear_agenda` TINYINT(1) DEFAULT 1, `data_cadastro` DATETIME,
 `comissao_percentual` DECIMAL(5,2) DEFAULT 0.00, `token_calendario` CHAR(64).
 UNIQUE: `(id_estabelecimento, id_profissional)`.
 
-### 6. administradores  (especialização de usuarios)
-PK `id_administrador` INT UNSIGNED AI. FK `id_usuario` → usuarios (UNIQUE, 1:1,
-ON DELETE CASCADE). FK `id_estabelecimento` → estabelecimento.
+### 6. administradores  (especialização de vinculos)
+PK `id_administrador` INT UNSIGNED AI. FK `id_vinculo` → vinculos (UNIQUE, 1:1,
+pela chave composta, ON DELETE CASCADE). FK `id_usuario` → usuarios.
+FK `id_estabelecimento` → estabelecimento. No máximo dois por estabelecimento
+(regra da aplicação).
 Colunas: `nivel` ENUM('super','gerente') DEFAULT 'super', `data_cadastro` DATETIME.
 UNIQUE: `(id_estabelecimento, id_administrador)`.
 
@@ -317,8 +341,9 @@ nenhum, que é o comportamento original do sistema.
 
 | Relacionamento | Cardinalidade |
 |----------------|---------------|
-| estabelecimento **possui** usuarios | 1:N (um estabelecimento tem N usuários; todo usuário pertence a 1) |
-| usuarios **é** clientes / profissionais / administradores | 1:1 opcional em cada especialização, total e exclusiva no conjunto |
+| usuarios **tem** vinculos | 1:N (uma pessoa tem N vínculos; todo vínculo é de 1 pessoa) |
+| estabelecimento **possui** vinculos | 1:N (um estabelecimento tem N vínculos; todo vínculo pertence a 1) |
+| vinculos **é** clientes / profissionais / administradores | 1:1 opcional em cada especialização, total e exclusiva no conjunto |
 | estabelecimento **oferece** servicos | 1:N |
 | profissionais **executa** servicos | N:N, resolvido por `profissional_servico` |
 | profissionais **cumpre** horarios_profissionais | 1:N |

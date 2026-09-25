@@ -15,7 +15,7 @@ require_once __DIR__ . '/config/config.php';
 exigirLogin(['cliente', 'profissional', 'admin']);
 
 $idUsuario = (int) usuarioId();
-$usuario   = Usuario::porId($idUsuario);
+$usuario   = Usuario::porId($idUsuario, perfil());
 
 if ($usuario === null) {
     definirFlash('erro', 'Conta nao encontrada.');
@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Um segredo novo invalida o anterior: e isto que serve tambem para
         // quem trocou de celular e precisa cadastrar o aplicativo de novo.
         Usuario::totpPreparar($idUsuario, Totp::gerarSegredo());
-        $usuario = Usuario::porId($idUsuario);
+        $usuario = Usuario::porId($idUsuario, perfil());
         $ativo   = false;
         registrarEventoSeguranca('totp_preparado', ['usuario' => $idUsuario]);
     }
@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirecionar('autenticador.php');
         }
 
-        $usuario = Usuario::porId($idUsuario);
+        $usuario = Usuario::porId($idUsuario, perfil());
         $ativo   = Usuario::totpAtivo($usuario);
     }
 
@@ -96,7 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirecionar('autenticador.php');
         }
 
-        $usuario = Usuario::porId($idUsuario);
+        $usuario = Usuario::porId($idUsuario, perfil());
         $ativo   = Usuario::totpAtivo($usuario);
     }
 }

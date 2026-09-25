@@ -49,7 +49,7 @@ O sistema trabalha com quatro perfis de acesso. Dois deles correspondem
 diretamente aos perfis exigidos pela especificação do projeto acadêmico, e os
 outros dois existem para dar suporte à operação completa do estabelecimento.
 
-| Perfil da especificação | Perfil no sistema (`usuarios.tipo`) | Onde entra |
+| Perfil da especificação | Perfil no sistema (`vinculos.tipo`) | Onde entra |
 |-------------------------|--------------------------------------|------------|
 | Usuário master | `admin` | Criado pelo `instalar.php` |
 | Usuário comum | `cliente` | Cria a própria conta em `cadastro.php` |
@@ -163,6 +163,14 @@ slug) e personaliza nome, logotipo, cores e fonte em **Admin > Aparência**. Os
 clientes cadastrados por aquele endereço recebem o mesmo vínculo e enxergam
 apenas os serviços e profissionais daquela empresa.
 
+A pessoa, porém, é uma só na plataforma: a tabela `usuarios` guarda o e-mail
+(único), a senha, o segundo fator e o cadastro completo, e a tabela `vinculos`
+guarda o que ela é em cada estabelecimento (cliente, profissional ou
+administradora, com status e login próprios). Assim a mesma pessoa pode ser
+cliente de um salão, profissional de outro e dona do próprio negócio, e o
+sistema atende também o profissional autônomo, que administra e atende no
+mesmo estabelecimento.
+
 ## 5. Cadastro de Usuários
 
 O cadastro público (`cadastro.php`) cria sempre um usuário com perfil **comum**.
@@ -182,7 +190,7 @@ ser burlada e a decisão final é sempre do PHP.
 | Nome completo | 15 a 80 caracteres, apenas letras e espaços |
 | CPF | 11 dígitos, sequências repetidas rejeitadas e conferência dos dois dígitos verificadores |
 | Nome materno | 5 a 120 caracteres, apenas letras e espaços |
-| E-mail | Formato válido e único em toda a plataforma (identifica a pessoa na entrada geral e no Google) |
+| E-mail | Formato válido e único em toda a plataforma: identifica a pessoa, que pode ter vínculo com vários estabelecimentos |
 | CEP | 8 dígitos; preenche o endereço automaticamente pela API ViaCEP |
 | UF | Uma das 27 unidades da federação |
 | Telefone celular | DDD + 9 dígitos, gravado como `(+55)XX-XXXXXXXXX` |
@@ -476,7 +484,7 @@ de expiração gravados na conta.
 
 ## 17. Banco de Dados
 
-O banco `agendei` é criado pelo arquivo `banco.sql` e possui 20 tabelas.
+O banco `agendei` é criado pelo arquivo `banco.sql` e possui 27 tabelas.
 Todas as tabelas de dados operacionais carregam a coluna `id_estabelecimento`.
 
 ### 17.1 Tabelas centrais
@@ -484,7 +492,8 @@ Todas as tabelas de dados operacionais carregam a coluna `id_estabelecimento`.
 | Tabela | Finalidade |
 |--------|------------|
 | `estabelecimento` | Dados, identidade visual e endereço público de cada empresa |
-| `usuarios` | Conta de acesso: nome, e-mail, login, hash da senha, telefones, endereço, perfil, situação e os dados do segundo fator (nome materno, data de nascimento e CEP) |
+| `usuarios` | A pessoa, única na plataforma: nome, e-mail, hash da senha, telefones, endereço, bloqueio global e os dados do segundo fator (nome materno, data de nascimento e CEP) |
+| `vinculos` | A pessoa em cada estabelecimento: perfil (cliente, profissional ou administrador), situação, login de 6 letras e último acesso |
 | `clientes` | Dados específicos do cliente, incluindo o CPF e os pontos de fidelidade |
 | `profissionais` | Dados específicos do profissional e percentual de comissão |
 | `administradores` | Dados específicos do administrador do estabelecimento |
@@ -517,8 +526,9 @@ existir.
 
 ### 17.4 Relacionamentos
 
-Um usuário é cliente, profissional ou administrador. Um agendamento pertence a
-um cliente, a um profissional e a um serviço. Um profissional possui vários
+Uma pessoa tem um ou mais vínculos, e cada vínculo é cliente, profissional ou
+administrador de um estabelecimento. Um agendamento pertence a um cliente, a
+um profissional e a um serviço. Um profissional possui vários
 horários de expediente e executa vários serviços. As chaves estrangeiras são
 compostas por `id_estabelecimento` + identificador, o que impede no nível do
 banco qualquer associação entre registros de estabelecimentos diferentes.

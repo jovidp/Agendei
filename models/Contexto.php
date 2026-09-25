@@ -24,13 +24,12 @@ class Contexto
             return;
         }
         $idSessao = (int) ($_SESSION['estabelecimento_id'] ?? 0);
-        // Sessões anteriores à atualização recuperam o vínculo diretamente da conta.
+        // A sessao nasce de um vinculo (registrarSessao) e sempre sabe a empresa.
+        // Uma sessao antiga sem esse dado nao tem como ser reconstruida: a pessoa
+        // pode ter vinculos em varias empresas, e a escolha e dela, no login.
         if (!empty($_SESSION['usuario_id']) && $idSessao < 1) {
-            $q = bd()->prepare('SELECT id_estabelecimento FROM usuarios WHERE id_usuario = ?');
-            $q->execute([(int) $_SESSION['usuario_id']]);
-            $idSessao = (int) $q->fetchColumn();
-            if ($idSessao < 1) { encerrarSessao(); self::falhar(401, 'Faça login novamente.'); }
-            $_SESSION['estabelecimento_id'] = $idSessao;
+            encerrarSessao();
+            self::falhar(401, 'Faça login novamente.');
         }
         // A entrada geral (entrar.php) e a pagina inicial sem link de empresa
         // (index.php) nao pertencem a empresa nenhuma: sem sessao local abrem com
@@ -62,13 +61,16 @@ class Contexto
 
     /**
      * Assume a empresa de uma conta que acabou de ser autenticada pela entrada
-     * geral. E o unico caminho em que a requisicao troca de empresa depois de
-     * iniciada, e por isso so existe sob ENTRADA_GLOBAL: nas demais paginas a
-     * sessao nunca muda de estabelecimento pela URL nem por chamada de codigo.
+     * geral (ou escolhida em trocar.php). E o unico caminho em que a requisicao
+     * troca de empresa depois de iniciada, e por isso so existe sob
+     * ENTRADA_GLOBAL ou TROCA_VINCULO: nas demais paginas a sessao nunca muda
+     * de estabelecimento pela URL nem por chamada de codigo.
      */
     public static function assumir(int $idEstabelecimento): void
     {
-        if (!defined('ENTRADA_GLOBAL')) {
+        // TROCA_VINCULO e a pagina trocar.php: a pessoa logada escolhe outro
+        // vinculo seu por um POST com CSRF, e a sessao e refeita do zero.
+        if (!defined('ENTRADA_GLOBAL') && !defined('TROCA_VINCULO')) {
             throw new LogicException('Somente a entrada geral pode assumir um estabelecimento.');
         }
         $q = bd()->prepare('SELECT * FROM estabelecimento WHERE id_estabelecimento = ? AND status = \'ativo\'');

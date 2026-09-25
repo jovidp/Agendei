@@ -4,13 +4,15 @@
  *
  * A tela login.php de cada empresa continua valendo — ela e o link direto,
  * com a marca da empresa. Esta pagina existe para quem nao sabe esse link:
- * pede e-mail e senha, confere a conta daquele e-mail (autenticarGlobal) e:
- *   - com uma conta valida, entra direto no painel do tipo dela;
- *   - com varias em uma base antiga, permite escolher ate a migracao;
- *   - sem nenhuma, responde "Login ou senha incorretos" como o login comum.
+ * pede e-mail e senha, confere a senha da pessoa (autenticarGlobal) e:
+ *   - com um vinculo valido, entra direto no painel do tipo dele;
+ *   - com varios (empresas diferentes, ou tipos diferentes na mesma), mostra
+ *     a lista para a pessoa escolher onde e como entrar;
+ *   - sem nenhum, responde "Login ou senha incorretos" como o login comum.
  *
- * A lista de compatibilidade so aparece depois da senha conferida. O login de
- * 6 letras nao e aceito aqui porque e unico apenas dentro de cada empresa.
+ * A lista so aparece depois da senha conferida: sem isso a tela revelaria em
+ * quais empresas um e-mail tem conta. O login de 6 letras nao e aceito aqui
+ * porque e do vinculo, unico apenas dentro de cada empresa.
  *
  * ENTRADA_LOCAL descarta a identidade master, como no login comum.
  * ENTRADA_GLOBAL abre o Contexto sem empresa e libera Contexto::assumir().
@@ -48,8 +50,8 @@ function concluirEntrada(array $conta, string $email): never
     unset($_SESSION['entrada_escolha']);
 
     Contexto::assumir((int) $conta['id_estabelecimento']);
-    // Recarrega o registro completo ja dentro da empresa: o 2FA e a sessao leem daqui.
-    $usuario = Usuario::porId((int) $conta['id_usuario']);
+    // Recarrega o vinculo completo ja dentro da empresa: o 2FA e a sessao leem daqui.
+    $usuario = Usuario::porVinculo((int) $conta['id_vinculo']);
     if ($usuario === null || $usuario['status'] !== 'ativo') {
         definirFlash('erro', 'Esta conta nao esta mais disponivel.');
         redirecionar('entrar.php');
@@ -86,8 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (post('acao') === 'escolher') {
         // Segundo passo: a pessoa escolheu a empresa entre as contas ja conferidas.
         $pendente = escolhaPendente();
-        $idUsuario = (int) post('id_usuario');
-        $conta = $pendente['contas'][$idUsuario] ?? null;
+        $idVinculo = (int) post('id_vinculo');
+        $conta = $pendente['contas'][$idVinculo] ?? null;
 
         if ($pendente === null || $conta === null) {
             $erros[] = 'A escolha expirou. Informe o e-mail e a senha novamente.';
@@ -135,7 +137,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $lista = [];
                 foreach ($contas as $conta) {
-                    $lista[(int) $conta['id_usuario']] = [
+                    $lista[(int) $conta['id_vinculo']] = [
+                        'id_vinculo'           => (int) $conta['id_vinculo'],
                         'id_usuario'           => (int) $conta['id_usuario'],
                         'id_estabelecimento'   => (int) $conta['id_estabelecimento'],
                         'nome'                 => $conta['nome'],
@@ -184,7 +187,7 @@ $tituloPagina = 'Entrar | ' . $plataforma['nome'];
                 <a href="<?= url('entrar.php?acao=cancelar') ?>" class="voltar-site">&larr; Usar outro e-mail</a>
 
                 <h1>Escolha o estabelecimento</h1>
-                <p class="subtitulo">O e-mail <strong><?= e($pendente['email']) ?></strong> tem conta em mais de um lugar.</p>
+                <p class="subtitulo">O e-mail <strong><?= e($pendente['email']) ?></strong> pode entrar em mais de um lugar.</p>
 
                 <?php if ($erros !== []): ?>
                     <div class="alerta alerta-erro"><span class="alerta-texto"><?= e($erros[0]) ?></span></div>
@@ -196,7 +199,7 @@ $tituloPagina = 'Entrar | ' . $plataforma['nome'];
                     <ul class="lista-escolha">
                         <?php foreach ($pendente['contas'] as $conta): ?>
                             <li>
-                                <button type="submit" class="btn btn-contorno" name="id_usuario" value="<?= (int) $conta['id_usuario'] ?>">
+                                <button type="submit" class="btn btn-contorno" name="id_vinculo" value="<?= (int) $conta['id_vinculo'] ?>">
                                     <strong><?= e($conta['estabelecimento_nome']) ?></strong>
                                     <small><?= e(Usuario::TIPOS[$conta['tipo']] ?? $conta['tipo']) ?> &middot; <?= e($conta['nome']) ?></small>
                                 </button>

@@ -26,10 +26,11 @@ foreach (['der.png', 'der.svg', 'der.jpg'] as $arquivo) {
 // Entidades exibidas no diagrama: [x, y, titulo, [campos], destaque]
 $entidades = [
     ['x' => 20,  'y' => 20,  'nome' => 'estabelecimento', 'campos' => ['id_estabelecimento (PK)', 'nome', 'slug', 'cores / logo'], 'tipo' => 'base'],
-    ['x' => 20,  'y' => 190, 'nome' => 'usuarios',        'campos' => ['id_usuario (PK)', 'id_estabelecimento (FK)', 'nome, email, senha_hash', 'login (6 letras)', 'nome_materno, data_nascimento', 'cep, logradouro, numero', 'bairro, cidade, uf', 'sexo, telefone, telefone_fixo', 'totp_segredo, totp_ativado_em', 'tipo, status'], 'tipo' => 'auth'],
-    ['x' => 330, 'y' => 20,  'nome' => 'clientes',        'campos' => ['id_cliente (PK)', 'id_usuario (FK)', 'cpf', 'data_nascimento', 'pontos_fidelidade'], 'tipo' => 'perfil'],
-    ['x' => 330, 'y' => 190, 'nome' => 'administradores', 'campos' => ['id_administrador (PK)', 'id_usuario (FK)', 'nivel'], 'tipo' => 'perfil'],
-    ['x' => 330, 'y' => 330, 'nome' => 'profissionais',   'campos' => ['id_profissional (PK)', 'id_usuario (FK)', 'especialidade'], 'tipo' => 'perfil'],
+    ['x' => 20,  'y' => 150, 'nome' => 'usuarios',        'campos' => ['id_usuario (PK)', 'nome, email (unico)', 'senha_hash, status', 'nome_materno, data_nascimento', 'cep, logradouro, numero', 'bairro, cidade, uf', 'sexo, telefone, telefone_fixo', 'totp_segredo, totp_ativado_em'], 'tipo' => 'auth'],
+    ['x' => 20,  'y' => 340, 'nome' => 'vinculos',        'campos' => ['id_vinculo (PK)', 'id_estabelecimento (FK)', 'id_usuario (FK)', 'tipo, status', 'login (6 letras)', 'ultimo_acesso'], 'tipo' => 'auth'],
+    ['x' => 330, 'y' => 20,  'nome' => 'clientes',        'campos' => ['id_cliente (PK)', 'id_vinculo (FK)', 'id_usuario (FK)', 'cpf', 'data_nascimento', 'pontos_fidelidade'], 'tipo' => 'perfil'],
+    ['x' => 330, 'y' => 190, 'nome' => 'administradores', 'campos' => ['id_administrador (PK)', 'id_vinculo (FK)', 'id_usuario (FK)', 'nivel'], 'tipo' => 'perfil'],
+    ['x' => 330, 'y' => 330, 'nome' => 'profissionais',   'campos' => ['id_profissional (PK)', 'id_vinculo (FK)', 'id_usuario (FK)', 'especialidade'], 'tipo' => 'perfil'],
     ['x' => 630, 'y' => 20,  'nome' => 'logs_autenticacao', 'campos' => ['id_log (PK)', 'id_usuario (sem FK)', 'nome, cpf (copia)', 'evento', 'fator_2fa', 'data_hora, ip'], 'tipo' => 'auth'],
     ['x' => 630, 'y' => 230, 'nome' => 'agendamentos',    'campos' => ['id_agendamento (PK)', 'id_cliente (FK)', 'id_profissional (FK)', 'id_servico (FK)', 'data, hora, status'], 'tipo' => 'base'],
     ['x' => 630, 'y' => 420, 'nome' => 'servicos',        'campos' => ['id_servico (PK)', 'nome, preco', 'duracao_minutos'], 'tipo' => 'base'],
@@ -37,10 +38,11 @@ $entidades = [
 
 // Ligacoes: [origem, destino, rotulo]
 $ligacoes = [
-    ['estabelecimento', 'usuarios', '1:N'],
-    ['usuarios', 'clientes', '1:1'],
-    ['usuarios', 'administradores', '1:1'],
-    ['usuarios', 'profissionais', '1:1'],
+    ['estabelecimento', 'vinculos', '1:N'],
+    ['usuarios', 'vinculos', '1:N'],
+    ['vinculos', 'clientes', '1:1'],
+    ['vinculos', 'administradores', '1:1'],
+    ['vinculos', 'profissionais', '1:1'],
     ['clientes', 'agendamentos', '1:N'],
     ['servicos', 'agendamentos', 'N:1'],
 ];
@@ -147,8 +149,8 @@ require_once RAIZ . '/includes/painel_header.php';
             <tbody>
                 <tr>
                     <td class="celula-principal">Perfil do usuario</td>
-                    <td><code>usuarios.tipo</code></td>
-                    <td>O perfil master corresponde a <code>admin</code> e o comum a <code>cliente</code>. O controle de acesso le esse valor da sessao.</td>
+                    <td><code>vinculos.tipo</code></td>
+                    <td>O perfil master corresponde a <code>admin</code> e o comum a <code>cliente</code>. O controle de acesso le esse valor da sessao, que e sempre um vinculo: a pessoa (<code>usuarios</code>, e-mail unico) pode ter varios vinculos, em empresas diferentes ou com papeis diferentes na mesma.</td>
                 </tr>
                 <tr>
                     <td class="celula-principal">2FA por codigo</td>
@@ -162,8 +164,8 @@ require_once RAIZ . '/includes/painel_header.php';
                 </tr>
                 <tr>
                     <td class="celula-principal">Login de 6 letras</td>
-                    <td><code>usuarios.login</code></td>
-                    <td>Unico por estabelecimento. Aceita nulo para nao invalidar as contas criadas antes do campo existir.</td>
+                    <td><code>vinculos.login</code></td>
+                    <td>E do vinculo, unico por estabelecimento. Aceita nulo para nao invalidar as contas criadas antes do campo existir.</td>
                 </tr>
                 <tr>
                     <td class="celula-principal">Historico de acesso</td>

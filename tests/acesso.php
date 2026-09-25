@@ -30,8 +30,9 @@ function bd(): PDO
 
 // Somente as tabelas/colunas usadas neste fluxo; nenhum banco instalado e acessado.
 bd()->exec("CREATE TABLE estabelecimento (id_estabelecimento INTEGER PRIMARY KEY, nome TEXT, slug TEXT UNIQUE, status TEXT DEFAULT 'ativo');
-    CREATE TABLE usuarios (id_usuario INTEGER PRIMARY KEY, id_estabelecimento INTEGER, nome TEXT, email TEXT, senha_hash TEXT, tipo TEXT, status TEXT DEFAULT 'ativo', ultimo_acesso TEXT);
-    CREATE TABLE administradores (id_administrador INTEGER PRIMARY KEY, id_estabelecimento INTEGER, id_usuario INTEGER, nivel TEXT);
+    CREATE TABLE usuarios (id_usuario INTEGER PRIMARY KEY, nome TEXT, email TEXT UNIQUE, senha_hash TEXT, telefone TEXT, telefone_fixo TEXT, sexo TEXT, nome_materno TEXT, data_nascimento TEXT, cep TEXT, logradouro TEXT, numero TEXT, complemento TEXT, bairro TEXT, cidade TEXT, uf TEXT, status TEXT DEFAULT 'ativo');
+    CREATE TABLE vinculos (id_vinculo INTEGER PRIMARY KEY, id_estabelecimento INTEGER, id_usuario INTEGER, tipo TEXT, status TEXT DEFAULT 'ativo', login TEXT, ultimo_acesso TEXT, UNIQUE (id_estabelecimento, id_usuario, tipo));
+    CREATE TABLE administradores (id_administrador INTEGER PRIMARY KEY, id_estabelecimento INTEGER, id_vinculo INTEGER, id_usuario INTEGER, nivel TEXT);
     CREATE TABLE logs_autenticacao (id_estabelecimento INTEGER, id_usuario INTEGER, login_informado TEXT, nome TEXT, cpf TEXT, perfil TEXT, evento TEXT, fator_2fa TEXT, ip TEXT);");
 
 $checagens = 0;

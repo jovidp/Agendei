@@ -184,8 +184,8 @@ $recursos = [
             </article>
             <article class="argumento">
                 <span class="argumento-marca" aria-hidden="true"></span>
-                <h3>Um e-mail, uma conta</h3>
-                <p>Entra pelo link da empresa ou pela entrada geral, com e-mail e senha ou com o Google.</p>
+                <h3>Uma conta, todos os lugares</h3>
+                <p>Entra com o mesmo e-mail em qualquer empresa que use o Agendei, como cliente, profissional ou dono do negócio.</p>
             </article>
         </div>
     </div>

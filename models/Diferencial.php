@@ -568,12 +568,22 @@ class Diferencial
             $q->execute([Contexto::id(), $idUsuario]);
             $q = $db->prepare('UPDATE avaliacoes SET comentario=NULL,status=\'oculta\' WHERE id_estabelecimento=? AND id_cliente=?');
             $q->execute([Contexto::id(), $idCliente]);
-            $q = $db->prepare('UPDATE usuarios SET nome=\'Cliente removido\',email=?,telefone=NULL,senha_hash=?,status=\'inativo\',
-                               token_recuperacao=NULL,token_expiracao=NULL WHERE id_estabelecimento=? AND id_usuario=?');
-            $q->execute([
-                'removido-' . $idUsuario . '-' . bin2hex(random_bytes(4)) . '@anonimo.invalid',
-                password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT), Contexto::id(), $idUsuario,
-            ]);
+            // Encerra o vinculo com esta empresa: sem login e desligado.
+            $q = $db->prepare('UPDATE vinculos SET status=\'inativo\',login=NULL WHERE id_estabelecimento=? AND id_vinculo=?');
+            $q->execute([Contexto::id(), (int) $cliente['id_vinculo']]);
+            // A pessoa so e anonimizada quando este era o unico vinculo dela: se
+            // ela tambem e cliente ou profissional em outra empresa, a identidade
+            // continua valendo la, e o pedido diz respeito so a esta.
+            $q = $db->prepare('SELECT COUNT(*) FROM vinculos WHERE id_usuario=? AND id_vinculo<>?');
+            $q->execute([$idUsuario, (int) $cliente['id_vinculo']]);
+            if ((int) $q->fetchColumn() === 0) {
+                $q = $db->prepare('UPDATE usuarios SET nome=\'Cliente removido\',email=?,telefone=NULL,senha_hash=?,status=\'inativo\',
+                                   token_recuperacao=NULL,token_expiracao=NULL WHERE id_usuario=?');
+                $q->execute([
+                    'removido-' . $idUsuario . '-' . bin2hex(random_bytes(4)) . '@anonimo.invalid',
+                    password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT), $idUsuario,
+                ]);
+            }
             $db->commit();
         } catch (Throwable $erro) {
             if ($db->inTransaction()) {

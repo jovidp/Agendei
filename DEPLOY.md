@@ -243,6 +243,11 @@ da sua maquina, `php scripts/migrar_email_unico.php` apontando para o
 Supabase. Se houver e-mails repetidos entre empresas, o script lista as contas
 e para sem alterar nada; corrija os e-mails e rode de novo.
 
+Logo depois, `php scripts/migrar_vinculos.php` separa pessoa e vinculo: cada
+conta antiga vira a pessoa mais um vinculo com a empresa dela, sem perda, e a
+partir dai a mesma pessoa pode ter vinculos em varias empresas. Roda uma vez,
+da sua maquina, apontando para o Supabase, e pode ser repetido sem efeito.
+
 ---
 
 ## Detalhes que importam

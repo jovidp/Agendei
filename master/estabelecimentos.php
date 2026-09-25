@@ -27,8 +27,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!preg_match('/^[a-z0-9](?:[a-z0-9-]{1,78}[a-z0-9])$/D', $dados['slug'])) $erros[] = 'Use um endereço de 3 a 80 letras minúsculas, números ou hífens.';
             if (!validarNomeSobrenome($dados['nome'])) $erros[] = 'Informe o nome e o sobrenome do responsável.';
             if (!validarEmail($dados['email'])) $erros[] = 'Informe um e-mail válido.';
-            elseif (Usuario::emailEmUso($dados['email'])) $erros[] = 'Já existe uma conta cadastrada com este e-mail.';
-            if (!validarSenha($dados['senha'])) $erros[] = 'A senha deve ter pelo menos 6 caracteres.';
+            // E-mail conhecido vincula a pessoa que ja existe, com a senha que ela ja tem.
+            $pessoaExistente = validarEmail($dados['email']) && Usuario::emailEmUso($dados['email']);
+            if (!$pessoaExistente && !validarSenha($dados['senha'])) $erros[] = 'A senha deve ter pelo menos 6 caracteres.';
             if (!$erros) {
                 $id = Estabelecimento::contratar($dados);
                 LogMaster::registrar('estabelecimento_criado', [
@@ -37,7 +38,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'alvo'                 => $dados['email'],
                     'detalhe'              => 'endereço ' . $dados['slug'],
                 ]);
-                definirFlash('sucesso', 'Estabelecimento e sua primeira conta administrativa criados.');
+                definirFlash('sucesso', $pessoaExistente
+                    ? 'Estabelecimento criado e vinculado à pessoa que já tinha conta; a senha dela continua a mesma.'
+                    : 'Estabelecimento e sua primeira conta administrativa criados.');
                 redirecionar('master/estabelecimentos.php?acao=ver&id=' . $id);
             }
         }
@@ -101,8 +104,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $empresa = Estabelecimento::porIdGlobal($id);
             $dados = ['nome' => post('nome'), 'email' => mb_strtolower(post('email')), 'senha' => post('senha')];
             if (!$empresa) $erros[] = 'Estabelecimento não encontrado.';
-            if (!validarNomeSobrenome($dados['nome']) || !validarEmail($dados['email']) || !validarSenha($dados['senha'])) $erros[] = 'Preencha nome e sobrenome, e-mail válido e senha de pelo menos 6 caracteres.';
-            elseif (Usuario::emailEmUso($dados['email'])) $erros[] = 'Já existe uma conta cadastrada com este e-mail.';
+            // E-mail conhecido vincula a pessoa que ja existe, sem nome nem senha novos.
+            $pessoaExistente = validarEmail($dados['email']) && Usuario::emailEmUso($dados['email']);
+            if (!validarEmail($dados['email'])) $erros[] = 'Informe um e-mail válido.';
+            elseif (!$pessoaExistente && (!validarNomeSobrenome($dados['nome']) || !validarSenha($dados['senha']))) $erros[] = 'Preencha nome e sobrenome, e-mail válido e senha de pelo menos 6 caracteres.';
             if (!$erros) {
                 Estabelecimento::criarAdministrador($id, $dados);
                 LogMaster::registrar('admin_criado', [
@@ -110,7 +115,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'estabelecimento_nome' => $empresa['nome'],
                     'alvo'                 => $dados['email'],
                 ]);
-                definirFlash('sucesso', 'Nova conta administrativa adicionada ao estabelecimento.');
+                definirFlash('sucesso', $pessoaExistente
+                    ? 'Pessoa vinculada como administradora do estabelecimento; a senha dela continua a mesma.'
+                    : 'Nova conta administrativa adicionada ao estabelecimento.');
                 redirecionar('master/estabelecimentos.php?acao=ver&id=' . $id);
             }
         }
@@ -178,6 +185,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 redirecionar('master/estabelecimentos.php?acao=ver&id=' . $id);
             }
         }
+    } catch (DomainException $erro) {
+        // Regras do modelo: teto de administradores, vinculo repetido.
+        $erros[] = $erro->getMessage();
     } catch (PDOException $erro) {
         $erros[] = $acao === 'excluir'
             ? 'Não foi possível excluir o estabelecimento. Nenhum dado foi removido.'
@@ -233,7 +243,7 @@ require RAIZ . '/includes/painel_header.php';
 </tr>
 <?php endforeach; ?>
 </tbody></table></div></div>
-<div class="cartao"><div class="cartao-cabecalho"><h3>Adicionar administrador</h3></div><div class="cartao-corpo"><form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="novo_admin"><input type="hidden" name="id_estabelecimento" value="<?= (int) $selecionado['id_estabelecimento'] ?>"><div class="campo"><label for="nome_admin">Nome e sobrenome</label><input id="nome_admin" name="nome" required></div><div class="campo"><label for="email_admin">E-mail</label><input type="email" id="email_admin" name="email" required></div><div class="campo"><label for="senha_admin">Senha temporária</label><input type="password" id="senha_admin" name="senha" minlength="6" autocomplete="new-password" required></div><button class="btn" type="submit">Adicionar administrador</button></form></div></div>
+<div class="cartao"><div class="cartao-cabecalho"><h3>Adicionar administrador</h3></div><div class="cartao-corpo"><form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="novo_admin"><input type="hidden" name="id_estabelecimento" value="<?= (int) $selecionado['id_estabelecimento'] ?>"><div class="campo"><label for="nome_admin">Nome e sobrenome</label><input id="nome_admin" name="nome"></div><div class="campo"><label for="email_admin">E-mail</label><input type="email" id="email_admin" name="email" required><span class="ajuda-campo">Se o e-mail já tiver conta no Agendei, a pessoa é vinculada como administradora com a senha que já tem; nome e senha abaixo são ignorados. Máximo de <?= Estabelecimento::MAXIMO_ADMINISTRADORES ?> administradores por estabelecimento.</span></div><div class="campo"><label for="senha_admin">Senha temporária</label><input type="password" id="senha_admin" name="senha" minlength="6" autocomplete="new-password"></div><button class="btn" type="submit">Adicionar administrador</button></form></div></div>
 </div>
 <div class="cartao">
     <div class="cartao-cabecalho"><h3>Entrar no painel do estabelecimento</h3><small>Para atender um chamado vendo a mesma tela do cliente</small></div>

@@ -14,6 +14,9 @@ bloquearSeLogado();
 
 // Acumula falhas de validação para reapresentar o formulário sem criar um cadastro incompleto.
 $erros = [];
+// E-mail que ja tem conta no Agendei: em vez de cadastrar de novo, a pessoa
+// usa a conta que tem (vincular.php cria so o vinculo com este estabelecimento).
+$emailConhecido = null;
 $dados = [
     'nome'            => '',
     'data_nascimento' => '',
@@ -121,7 +124,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $erros[] = 'Este login ja esta em uso. Escolha outro.';
     }
     if ($erros === [] && Usuario::emailEmUso($dados['email'])) {
-        $erros[] = 'Ja existe uma conta cadastrada com este e-mail.';
+        $emailConhecido = $dados['email'];
+        $erros[] = 'Este e-mail ja tem conta no Agendei. Nao precisa cadastrar de novo: confirme a sua senha e a mesma conta passa a valer aqui.';
     }
     if ($erros === [] && Cliente::cpfEmUso($cpf)) {
         $erros[] = 'Ja existe uma conta cadastrada com este CPF.';
@@ -213,6 +217,11 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
                         </ul>
                     </div>
                 </div>
+            <?php endif; ?>
+
+            <?php if ($emailConhecido !== null): ?>
+                <a class="btn btn-contorno btn-bloco btn-grande" href="<?= url('vincular.php?email=' . rawurlencode($emailConhecido)) ?>">Usar minha conta neste estabelecimento</a>
+                <div class="separador-ou"><span>ou corrija o e-mail abaixo</span></div>
             <?php endif; ?>
 
             <?php if (is_array($googleCadastro)): ?>
@@ -414,6 +423,7 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
 
             <p class="autenticacao-rodape">
                 Ja tem uma conta? <a href="<?= url('login.php') ?>">Entrar</a>
+                &middot; Tem conta em outro estabelecimento? <a href="<?= url('vincular.php') ?>">Usar aqui</a>
             </p>
         </div>
     </div>

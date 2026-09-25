@@ -1,34 +1,94 @@
 <?php
 /**
- * Acesso a tabela usuarios (autenticacao e dados comuns a todos os perfis).
+ * Pessoas (tabela usuarios) e a leitura delas dentro de um estabelecimento.
+ *
+ * Uma pessoa tem um e-mail, uma senha e um segundo fator, e pode ter varios
+ * vinculos (models/Vinculo.php): cliente aqui, profissional ali, administradora
+ * do proprio negocio. As consultas por Contexto devolvem a pessoa JA JUNTADA ao
+ * vinculo dela na empresa da sessao: e o array "usuario" que as telas conhecem,
+ * com tipo, status, login e id_vinculo, e ele continua nulo para quem nao tem
+ * vinculo na empresa. Quando a pessoa tem mais de um vinculo na mesma empresa,
+ * o chamador diz qual tipo quer; sem isso vale a ordem admin, profissional,
+ * cliente.
+ *
+ * O 'status' do array e o efetivo: pessoa e vinculo ativos. 'status_pessoa' e
+ * o bloqueio global (so o master mexe) e 'status_vinculo' e o que o
+ * administrador da empresa liga e desliga.
+ *
+ * As operacoes sobre a pessoa (senha, dados, 2FA, token) exigem que ela tenha
+ * vinculo na empresa da sessao: e o isolamento de sempre, declarado no vinculo.
  */
 class Usuario
 {
-    /** Busca o registro pelo identificador; retorna null quando ele não existe. */
-    public static function porId(int $idUsuario): ?array
+    /** Tipos de vinculo, na ordem em que aparecem nos filtros. */
+    public const TIPOS = ['admin' => 'Administrador', 'profissional' => 'Profissional', 'cliente' => 'Cliente'];
+
+    /** Colunas do vinculo que acompanham a pessoa. 'status' por ultimo, para sobrepor o u.status. */
+    private const CAMPOS_VINCULO = "v.id_vinculo, v.id_estabelecimento, v.tipo, v.login, v.ultimo_acesso,
+        v.status AS status_vinculo, u.status AS status_pessoa,
+        CASE WHEN u.status = 'ativo' AND v.status = 'ativo' THEN 'ativo' ELSE 'inativo' END AS status";
+
+    /** A pessoa precisa ter vinculo na empresa da sessao para ser alterada por ela. */
+    private static function comVinculoAqui(): string
     {
-        $sql = 'SELECT * FROM usuarios WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id LIMIT 1';
+        return ' AND EXISTS (SELECT 1 FROM vinculos v WHERE v.id_usuario = usuarios.id_usuario AND v.id_estabelecimento = ' . Contexto::id() . ')';
+    }
+
+    /** Pessoa + vinculo na empresa da sessao que atende a condicao, ou null. */
+    private static function selecionar(string $condicao, array $parametros, ?string $tipo = null): ?array
+    {
+        $sql = 'SELECT u.*, ' . self::CAMPOS_VINCULO . '
+                FROM usuarios u
+                JOIN vinculos v ON v.id_usuario = u.id_usuario AND v.id_estabelecimento = ' . Contexto::id() . '
+                WHERE ' . $condicao;
+        if ($tipo !== null) {
+            $sql .= ' AND v.tipo = :tipo';
+            $parametros[':tipo'] = $tipo;
+        }
+        $sql .= ' ORDER BY ' . Vinculo::ORDEM_TIPO . ', v.id_vinculo LIMIT 1';
+
         $consulta = bd()->prepare($sql);
-        $consulta->execute([':id' => $idUsuario]);
+        $consulta->execute($parametros);
         return $consulta->fetch() ?: null;
+    }
+
+    // -----------------------------------------------------------------
+    // Leitura dentro da empresa da sessao
+    // -----------------------------------------------------------------
+
+    /** Pessoa pelo id, com o vinculo dela nesta empresa; null quando nao tem vinculo aqui. */
+    public static function porId(int $idUsuario, ?string $tipo = null): ?array
+    {
+        return self::selecionar('u.id_usuario = :id', [':id' => $idUsuario], $tipo);
+    }
+
+    /** Pessoa + vinculo pelo id do vinculo, desde que ele seja desta empresa. */
+    public static function porVinculo(int $idVinculo): ?array
+    {
+        return self::selecionar('v.id_vinculo = :id', [':id' => $idVinculo]);
+    }
+
+    /** A conta da sessao aberta: o vinculo escolhido no login, nunca outro da mesma pessoa. */
+    public static function daSessao(): ?array
+    {
+        $idVinculo = vinculoId();
+        if ($idVinculo !== null) {
+            return self::porVinculo($idVinculo);
+        }
+        $idUsuario = usuarioId();
+        return $idUsuario === null ? null : self::porId($idUsuario, perfil());
     }
 
     /** Busca a conta pelo e-mail para autenticação e recuperação de acesso. */
-    public static function porEmail(string $email): ?array
+    public static function porEmail(string $email, ?string $tipo = null): ?array
     {
-        $sql = 'SELECT * FROM usuarios WHERE id_estabelecimento = ' . Contexto::id() . ' AND email = :email LIMIT 1';
-        $consulta = bd()->prepare($sql);
-        $consulta->execute([':email' => mb_strtolower(trim($email))]);
-        return $consulta->fetch() ?: null;
+        return self::selecionar('u.email = :email', [':email' => mb_strtolower(trim($email))], $tipo);
     }
 
-    /** Busca a conta pelo login de acesso (exatamente 6 letras). */
+    /** Busca a conta pelo login de acesso (exatamente 6 letras), que e do vinculo. */
     public static function porLogin(string $login): ?array
     {
-        $sql = 'SELECT * FROM usuarios WHERE id_estabelecimento = ' . Contexto::id() . ' AND login = :login LIMIT 1';
-        $consulta = bd()->prepare($sql);
-        $consulta->execute([':login' => mb_strtolower(trim($login))]);
-        return $consulta->fetch() ?: null;
+        return self::selecionar('v.login = :login', [':login' => mb_strtolower(trim($login))]);
     }
 
     /**
@@ -49,7 +109,7 @@ class Usuario
         return self::porEmail($identificador);
     }
 
-    /** Verifica login duplicado, ignorando a própria conta quando o ID é informado. */
+    /** Verifica login duplicado nesta empresa, ignorando os vinculos da propria pessoa quando o ID é informado. */
     public static function loginEmUso(string $login, ?int $ignorarIdUsuario = null): bool
     {
         $login = trim($login);
@@ -57,7 +117,7 @@ class Usuario
             return false;
         }
 
-        $sql = 'SELECT id_usuario FROM usuarios WHERE id_estabelecimento = ' . Contexto::id() . ' AND login = :login';
+        $sql = 'SELECT id_vinculo FROM vinculos WHERE id_estabelecimento = ' . Contexto::id() . ' AND login = :login';
         $parametros = [':login' => mb_strtolower($login)];
 
         if ($ignorarIdUsuario !== null) {
@@ -70,11 +130,9 @@ class Usuario
         return (bool) $consulta->fetch();
     }
 
-    /** Verifica e-mail duplicado, ignorando a própria conta quando o ID é informado. */
+    /** Verifica e-mail duplicado em toda a plataforma, ignorando a própria pessoa quando o ID é informado. */
     public static function emailEmUso(string $email, ?int $ignorarIdUsuario = null): bool
     {
-        // O e-mail identifica a pessoa na entrada geral e no login com Google:
-        // a verificacao precisa abranger todos os estabelecimentos.
         $sql = 'SELECT id_usuario FROM usuarios WHERE email = :email';
         $parametros = [':email' => mb_strtolower(trim($email))];
 
@@ -88,9 +146,38 @@ class Usuario
         return (bool) $consulta->fetch();
     }
 
+    // -----------------------------------------------------------------
+    // A pessoa, sem empresa (identidade global)
+    // -----------------------------------------------------------------
+
+    /** Linha da pessoa pelo e-mail, em qualquer empresa. Traz o hash: uso restrito a autenticacao. */
+    public static function pessoaPorEmail(string $email): ?array
+    {
+        $email = mb_strtolower(trim($email));
+        if ($email === '') {
+            return null;
+        }
+        $consulta = bd()->prepare('SELECT * FROM usuarios WHERE email = :email LIMIT 1');
+        $consulta->execute([':email' => $email]);
+        return $consulta->fetch() ?: null;
+    }
+
+    /** Linha da pessoa pelo id, sem hash nem segredos. Para o master e as telas de vinculo. */
+    public static function pessoaPorId(int $idUsuario): ?array
+    {
+        $consulta = bd()->prepare('SELECT * FROM usuarios WHERE id_usuario = :id LIMIT 1');
+        $consulta->execute([':id' => $idUsuario]);
+        $pessoa = $consulta->fetch();
+        if (!$pessoa) {
+            return null;
+        }
+        unset($pessoa['senha_hash'], $pessoa['totp_segredo'], $pessoa['token_recuperacao']);
+        return $pessoa;
+    }
+
     /**
-     * Cria o registro base de autenticacao.
-     * Use os models Cliente/Profissional para criar o perfil completo.
+     * Cria a pessoa: identidade, senha e dados do cadastro completo. Nao cria
+     * vinculo nenhum; Cliente, Profissional e Estabelecimento criam o deles.
      */
     public static function criar(array $dados): int
     {
@@ -99,11 +186,11 @@ class Usuario
             throw new DomainException('Ja existe uma conta cadastrada com este e-mail.');
         }
 
-        $sql = 'INSERT INTO usuarios (id_estabelecimento, nome, email, senha_hash, telefone, tipo, status,
-                                      login, sexo, nome_materno, data_nascimento, telefone_fixo,
+        $sql = 'INSERT INTO usuarios (nome, email, senha_hash, telefone, status,
+                                      sexo, nome_materno, data_nascimento, telefone_fixo,
                                       cep, logradouro, numero, complemento, bairro, cidade, uf)
-                VALUES (' . Contexto::id() . ', :nome, :email, :senha_hash, :telefone, :tipo, :status,
-                        :login, :sexo, :nome_materno, :data_nascimento, :telefone_fixo,
+                VALUES (:nome, :email, :senha_hash, :telefone, :status,
+                        :sexo, :nome_materno, :data_nascimento, :telefone_fixo,
                         :cep, :logradouro, :numero, :complemento, :bairro, :cidade, :uf)';
 
         $consulta = bd()->prepare($sql);
@@ -112,8 +199,7 @@ class Usuario
             ':email'      => $email,
             ':senha_hash' => password_hash($dados['senha'], PASSWORD_DEFAULT),
             ':telefone'   => apenasNumeros($dados['telefone'] ?? '') ?: null,
-            ':tipo'       => $dados['tipo'] ?? 'cliente',
-            ':status'     => $dados['status'] ?? 'ativo',
+            ':status'     => 'ativo',
         ] + self::parametrosPessoais($dados));
 
         return (int) bd()->lastInsertId();
@@ -125,11 +211,9 @@ class Usuario
      */
     private static function parametrosPessoais(array $dados): array
     {
-        $login = trim((string) ($dados['login'] ?? ''));
-        $cep   = apenasNumeros($dados['cep'] ?? '');
+        $cep = apenasNumeros($dados['cep'] ?? '');
 
         return [
-            ':login'           => $login !== '' ? mb_strtolower($login) : null,
             ':sexo'            => in_array($dados['sexo'] ?? '', ['F', 'M', 'O'], true) ? $dados['sexo'] : null,
             ':nome_materno'    => trim((string) ($dados['nome_materno'] ?? '')) ?: null,
             ':data_nascimento' => $dados['data_nascimento'] ?? null,
@@ -144,21 +228,21 @@ class Usuario
         ];
     }
 
-    /** Atualiza somente os dados pessoais do cadastro completo. */
+    /** Atualiza somente os dados pessoais do cadastro completo (o login e do vinculo: Vinculo::definirLogin). */
     public static function atualizarDadosPessoais(int $idUsuario, array $dados): bool
     {
         $sql = 'UPDATE usuarios SET
-                    login = :login, sexo = :sexo, nome_materno = :nome_materno,
+                    sexo = :sexo, nome_materno = :nome_materno,
                     data_nascimento = :data_nascimento, telefone_fixo = :telefone_fixo,
                     cep = :cep, logradouro = :logradouro, numero = :numero,
                     complemento = :complemento, bairro = :bairro, cidade = :cidade, uf = :uf
-                WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id';
+                WHERE id_usuario = :id' . self::comVinculoAqui();
 
         $consulta = bd()->prepare($sql);
         return $consulta->execute(self::parametrosPessoais($dados) + [':id' => $idUsuario]);
     }
 
-    /** Persiste os campos editáveis do cadastro identificado pelo ID. */
+    /** Persiste nome, e-mail e telefone da pessoa. */
     public static function atualizar(int $idUsuario, array $dados): bool
     {
         $email = mb_strtolower(trim((string) ($dados['email'] ?? '')));
@@ -167,7 +251,7 @@ class Usuario
         }
 
         $sql = 'UPDATE usuarios SET nome = :nome, email = :email, telefone = :telefone
-                WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id';
+                WHERE id_usuario = :id' . self::comVinculoAqui();
 
         $consulta = bd()->prepare($sql);
         return $consulta->execute([
@@ -178,10 +262,23 @@ class Usuario
         ]);
     }
 
+    /**
+     * A pessoa so tem vinculo nesta empresa? Quando sim, a empresa e a unica
+     * dona da conta e o administrador dela pode mexer em nome, e-mail e senha;
+     * quando nao, esses dados valem em outras empresas e so a propria pessoa
+     * (ou o master) os altera.
+     */
+    public static function pertenceSoAqui(int $idUsuario): bool
+    {
+        $q = bd()->prepare('SELECT COUNT(*) FROM vinculos WHERE id_usuario = ? AND id_estabelecimento <> ?');
+        $q->execute([$idUsuario, Contexto::id()]);
+        return (int) $q->fetchColumn() === 0;
+    }
+
     /** Gera um novo hash antes de substituir a senha armazenada. */
     public static function atualizarSenha(int $idUsuario, string $senhaPura): bool
     {
-        $consulta = bd()->prepare('UPDATE usuarios SET senha_hash = :hash WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id');
+        $consulta = bd()->prepare('UPDATE usuarios SET senha_hash = :hash WHERE id_usuario = :id' . self::comVinculoAqui());
         return $consulta->execute([
             ':hash' => password_hash($senhaPura, PASSWORD_DEFAULT),
             ':id'   => $idUsuario,
@@ -191,31 +288,42 @@ class Usuario
     /** Compara a senha fornecida com o hash da conta usando password_verify. */
     public static function senhaConfere(int $idUsuario, string $senha): bool
     {
-        $consulta = bd()->prepare('SELECT senha_hash FROM usuarios WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id LIMIT 1');
+        $consulta = bd()->prepare('SELECT senha_hash FROM usuarios WHERE id_usuario = :id' . self::comVinculoAqui() . ' LIMIT 1');
         $consulta->execute([':id' => $idUsuario]);
         $registro = $consulta->fetch();
 
         return $registro && password_verify($senha, $registro['senha_hash']);
     }
 
-    /** Atualiza a situação do registro identificado pelo ID. */
-    public static function alterarStatus(int $idUsuario, string $status): bool
+    /**
+     * Liga ou desliga os vinculos da pessoa nesta empresa (um tipo, ou todos).
+     * A pessoa em si nao muda: continua entrando nas outras empresas dela.
+     */
+    public static function alterarStatus(int $idUsuario, string $status, ?string $tipo = null): bool
     {
         $status = $status === 'ativo' ? 'ativo' : 'inativo';
-        $consulta = bd()->prepare('UPDATE usuarios SET status = :status WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id');
+        $sql = 'UPDATE vinculos SET status = :status WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id';
+        $parametros = [':status' => $status, ':id' => $idUsuario];
+        if ($tipo !== null) {
+            $sql .= ' AND tipo = :tipo';
+            $parametros[':tipo'] = $tipo;
+        }
+        $consulta = bd()->prepare($sql);
+        return $consulta->execute($parametros);
+    }
+
+    /** Bloqueio global da pessoa: so o master. Desligada, ela nao entra em empresa nenhuma. */
+    public static function alterarStatusPessoa(int $idUsuario, string $status): bool
+    {
+        $status = $status === 'ativo' ? 'ativo' : 'inativo';
+        $consulta = bd()->prepare('UPDATE usuarios SET status = :status WHERE id_usuario = :id');
         return $consulta->execute([':status' => $status, ':id' => $idUsuario]);
     }
 
-    /** Atualiza a data do último acesso após o login. */
-    public static function registrarAcesso(int $idUsuario): void
-    {
-        self::registrarAcessoEm(Contexto::id(), $idUsuario);
-    }
-
-    /** Variante com a empresa explicita: a sessao lembrada abre antes de o Contexto existir. */
+    /** Atualiza a data do último acesso dos vinculos da pessoa na empresa indicada. */
     public static function registrarAcessoEm(int $idEstabelecimento, int $idUsuario): void
     {
-        $consulta = bd()->prepare('UPDATE usuarios SET ultimo_acesso = NOW() WHERE id_estabelecimento = :empresa AND id_usuario = :id');
+        $consulta = bd()->prepare('UPDATE vinculos SET ultimo_acesso = NOW() WHERE id_estabelecimento = :empresa AND id_usuario = :id');
         $consulta->execute([':empresa' => $idEstabelecimento, ':id' => $idUsuario]);
     }
 
@@ -259,43 +367,62 @@ class Usuario
         $consulta = bd()->prepare(
             'UPDATE usuarios
              SET token_recuperacao = :token, token_expiracao = ' . Sql::somarHoras('NOW()', ':horas') . '
-             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id'
+             WHERE id_usuario = :id' . self::comVinculoAqui()
         );
         $consulta->execute([':token' => $token, ':horas' => $validadeHoras, ':id' => $idUsuario]);
 
         return $token;
     }
 
-    /** Busca a conta associada ao token de recuperação ainda válido. */
+    /** Busca a conta associada ao token de recuperação ainda válido, com vinculo nesta empresa. */
     public static function porTokenRecuperacao(string $token): ?array
     {
-        $consulta = bd()->prepare(
-            'SELECT * FROM usuarios
-             WHERE id_estabelecimento = ' . Contexto::id() . ' AND token_recuperacao = :token AND token_expiracao > NOW() AND status = \'ativo\'
-             LIMIT 1'
+        $usuario = self::selecionar(
+            'u.token_recuperacao = :token AND u.token_expiracao > NOW() AND u.status = \'ativo\'',
+            [':token' => $token]
         );
-        $consulta->execute([':token' => $token]);
-        return $consulta->fetch() ?: null;
+        return $usuario !== null && $usuario['status'] === 'ativo' ? $usuario : null;
     }
 
     /** Invalida o token após a recuperação para impedir sua reutilização. */
     public static function limparTokenRecuperacao(int $idUsuario): void
     {
         $consulta = bd()->prepare(
-            'UPDATE usuarios SET token_recuperacao = NULL, token_expiracao = NULL WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id'
+            'UPDATE usuarios SET token_recuperacao = NULL, token_expiracao = NULL WHERE id_usuario = :id' . self::comVinculoAqui()
         );
         $consulta->execute([':id' => $idUsuario]);
     }
 
-    /** Executa a exclusão pelo ID; as restrições do banco continuam sendo aplicadas. */
+    // -----------------------------------------------------------------
+    // Exclusao
+    // -----------------------------------------------------------------
+
+    /**
+     * Apaga os vinculos da pessoa nesta empresa (perfis e dados dependentes
+     * caem em cascata). A pessoa so some se nao restar vinculo em nenhuma
+     * outra empresa. Devolve true quando havia o que apagar.
+     */
     public static function excluir(int $idUsuario): bool
     {
-        $consulta = bd()->prepare('DELETE FROM usuarios WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id');
-        return $consulta->execute([':id' => $idUsuario]);
+        $consulta = bd()->prepare('DELETE FROM vinculos WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id');
+        $consulta->execute([':id' => $idUsuario]);
+        $apagou = $consulta->rowCount() > 0;
+        self::apagarSeSemVinculo($idUsuario);
+        return $apagou;
+    }
+
+    /** Apaga a pessoa que ficou sem nenhum vinculo. Chamado depois de remover vinculos. */
+    public static function apagarSeSemVinculo(int $idUsuario): void
+    {
+        $consulta = bd()->prepare(
+            'DELETE FROM usuarios WHERE id_usuario = :id
+               AND NOT EXISTS (SELECT 1 FROM vinculos v WHERE v.id_usuario = :id_vinculo)'
+        );
+        $consulta->execute([':id' => $idUsuario, ':id_vinculo' => $idUsuario]);
     }
 
     // -----------------------------------------------------------------
-    // Segundo fator por codigo (TOTP)
+    // Segundo fator por codigo (TOTP) — e da pessoa, vale em todas as empresas
     // -----------------------------------------------------------------
 
     /** Indica se a conta ja concluiu o cadastro do aplicativo autenticador. */
@@ -323,7 +450,7 @@ class Usuario
         $consulta = bd()->prepare(
             'UPDATE usuarios
              SET totp_segredo = :segredo, totp_ativado_em = NULL, totp_ultimo_contador = NULL
-             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id'
+             WHERE id_usuario = :id' . self::comVinculoAqui()
         );
         $consulta->execute([':segredo' => Totp::cifrar($segredo), ':id' => $idUsuario]);
     }
@@ -334,7 +461,7 @@ class Usuario
         $consulta = bd()->prepare(
             'UPDATE usuarios
              SET totp_ativado_em = NOW(), totp_ultimo_contador = :contador
-             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id'
+             WHERE id_usuario = :id' . self::comVinculoAqui()
         );
         $consulta->execute([':contador' => $contadorUsado, ':id' => $idUsuario]);
     }
@@ -345,7 +472,7 @@ class Usuario
         $consulta = bd()->prepare(
             'UPDATE usuarios
              SET totp_segredo = NULL, totp_ativado_em = NULL, totp_ultimo_contador = NULL
-             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id'
+             WHERE id_usuario = :id' . self::comVinculoAqui()
         );
         $consulta->execute([':id' => $idUsuario]);
     }
@@ -368,7 +495,7 @@ class Usuario
 
         $consulta = bd()->prepare(
             'UPDATE usuarios SET totp_ultimo_contador = :contador
-             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_usuario = :id'
+             WHERE id_usuario = :id' . self::comVinculoAqui()
         );
         $consulta->execute([':contador' => $contador, ':id' => $idUsuario]);
 
@@ -378,16 +505,10 @@ class Usuario
     // ---------------------------------------------------------------------
     // Consulta global (painel master)
     //
-    // O vinculo conta -> empresa e a coluna usuarios.id_estabelecimento. As
-    // buscas acima passam pelo Contexto e so enxergam a empresa da sessao; o
-    // master nao tem empresa, e precisa responder "este e-mail e de quem?".
-    // O e-mail e unico em toda a plataforma. Os metodos abaixo continuam
-    // devolvendo listas para manter compatibilidade com bases antigas ate que
-    // a migracao da restricao seja executada.
+    // As buscas acima passam pelo Contexto e so enxergam a empresa da sessao;
+    // o master nao tem empresa, e precisa responder "este e-mail e de quem?".
+    // A resposta e a lista de vinculos: uma linha por (pessoa, empresa, tipo).
     // ---------------------------------------------------------------------
-
-    /** Tipos de conta local, na ordem em que aparecem nos filtros. */
-    public const TIPOS = ['admin' => 'Administrador', 'profissional' => 'Profissional', 'cliente' => 'Cliente'];
 
     /** Monta o WHERE e os parametros da consulta global a partir dos filtros. */
     private static function filtrosGlobais(array $filtros): array
@@ -398,7 +519,7 @@ class Usuario
         $busca = trim((string) ($filtros['busca'] ?? ''));
         if ($busca !== '') {
             $como = Sql::como();
-            $condicoes[] = '(u.email ' . $como . ' :busca_email OR u.nome ' . $como . ' :busca_nome OR u.login = :busca_login)';
+            $condicoes[] = '(u.email ' . $como . ' :busca_email OR u.nome ' . $como . ' :busca_nome OR v.login = :busca_login)';
             $parametros[':busca_email'] = '%' . $busca . '%';
             $parametros[':busca_nome'] = '%' . $busca . '%';
             $parametros[':busca_login'] = mb_strtolower($busca);
@@ -406,42 +527,43 @@ class Usuario
 
         $tipo = (string) ($filtros['tipo'] ?? '');
         if (isset(self::TIPOS[$tipo])) {
-            $condicoes[] = 'u.tipo = :tipo';
+            $condicoes[] = 'v.tipo = :tipo';
             $parametros[':tipo'] = $tipo;
         }
 
         $empresa = (int) ($filtros['estabelecimento'] ?? 0);
         if ($empresa > 0) {
-            $condicoes[] = 'u.id_estabelecimento = :estabelecimento';
+            $condicoes[] = 'v.id_estabelecimento = :estabelecimento';
             $parametros[':estabelecimento'] = $empresa;
         }
 
         return [$condicoes ? ' WHERE ' . implode(' AND ', $condicoes) : '', $parametros];
     }
 
-    /** Conta as contas locais de todas as empresas que atendem aos filtros. */
+    /** Conta os vinculos de todas as empresas que atendem aos filtros. */
     public static function contarGlobal(array $filtros = []): int
     {
         [$where, $parametros] = self::filtrosGlobais($filtros);
-        $consulta = bd()->prepare('SELECT COUNT(*) FROM usuarios u' . $where);
+        $consulta = bd()->prepare('SELECT COUNT(*) FROM vinculos v JOIN usuarios u ON u.id_usuario = v.id_usuario' . $where);
         $consulta->execute($parametros);
         return (int) $consulta->fetchColumn();
     }
 
     /**
-     * Lista contas locais de qualquer empresa com o estabelecimento ao lado.
+     * Lista vinculos de qualquer empresa com a pessoa e o estabelecimento ao lado.
      * Nunca devolve hash de senha nem segredos de 2FA.
      */
     public static function buscarGlobal(array $filtros = []): array
     {
         [$where, $parametros] = self::filtrosGlobais($filtros);
-        $sql = 'SELECT u.id_usuario, u.nome, u.email, u.login, u.tipo, u.status, u.telefone,
-                       u.ultimo_acesso, u.data_criacao, u.id_estabelecimento,
+        $sql = 'SELECT u.id_usuario, u.nome, u.email, u.telefone, u.data_criacao, u.status AS status_pessoa,
+                       v.id_vinculo, v.login, v.tipo, v.status, v.ultimo_acesso, v.id_estabelecimento,
                        e.nome AS estabelecimento_nome, e.slug AS estabelecimento_slug, e.status AS estabelecimento_status
-                FROM usuarios u
-                JOIN estabelecimento e ON e.id_estabelecimento = u.id_estabelecimento'
+                FROM vinculos v
+                JOIN usuarios u ON u.id_usuario = v.id_usuario
+                JOIN estabelecimento e ON e.id_estabelecimento = v.id_estabelecimento'
             . $where
-            . ' ORDER BY u.email, e.nome, u.id_usuario';
+            . ' ORDER BY u.email, e.nome, ' . Vinculo::ORDEM_TIPO . ', v.id_vinculo';
 
         $limite = (int) ($filtros['limite'] ?? 0);
         if ($limite > 0) {
@@ -453,38 +575,10 @@ class Usuario
         return $consulta->fetchAll();
     }
 
-    /**
-     * Contas de um e-mail em qualquer empresa, com o hash de senha.
-     * Uso exclusivo da autenticacao pela entrada geral (autenticarGlobal):
-     * as telas devem usar vinculosPorEmail(), que nao devolve segredos.
-     */
-    public static function porEmailGlobal(string $email): array
-    {
-        $email = mb_strtolower(trim($email));
-        if ($email === '') {
-            return [];
-        }
-        $consulta = bd()->prepare('SELECT u.*, e.nome AS estabelecimento_nome, e.slug AS estabelecimento_slug, e.status AS estabelecimento_status
-                                   FROM usuarios u
-                                   JOIN estabelecimento e ON e.id_estabelecimento = u.id_estabelecimento
-                                   WHERE u.email = :email ORDER BY e.nome, u.id_usuario');
-        $consulta->execute([':email' => $email]);
-        return $consulta->fetchAll();
-    }
-
-    /** Todos os vinculos de um e-mail, em qualquer empresa. Resposta direta para "esta conta e de qual estabelecimento?". */
+    /** Todos os vinculos de um e-mail, em qualquer empresa, sem segredos. Resposta direta para "esta conta e de qual estabelecimento?". */
     public static function vinculosPorEmail(string $email): array
     {
-        $email = mb_strtolower(trim($email));
-        if ($email === '') {
-            return [];
-        }
-        $consulta = bd()->prepare('SELECT u.id_usuario, u.nome, u.tipo, u.status, u.id_estabelecimento,
-                                          e.nome AS estabelecimento_nome, e.slug AS estabelecimento_slug
-                                   FROM usuarios u
-                                   JOIN estabelecimento e ON e.id_estabelecimento = u.id_estabelecimento
-                                   WHERE u.email = :email ORDER BY e.nome, u.id_usuario');
-        $consulta->execute([':email' => $email]);
-        return $consulta->fetchAll();
+        $pessoa = self::pessoaPorEmail($email);
+        return $pessoa === null ? [] : Vinculo::daPessoa((int) $pessoa['id_usuario']);
     }
 }

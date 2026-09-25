@@ -4,10 +4,9 @@
  *
  * Responde a pergunta "este e-mail (ou nome, ou login) pertence a qual
  * empresa?". O vinculo e uma coluna so, usuarios.id_estabelecimento, e esta
- * tela le direto dela, sem passar pela sessao de nenhuma empresa. O e-mail e
- * unico em toda a plataforma, entao cada e-mail aparece em uma linha; so uma
- * base antiga, ainda nao migrada (scripts/migrar_email_unico.php), pode
- * mostrar o mesmo e-mail em mais de uma empresa.
+ * tela le direto dela, sem passar pela sessao de nenhuma empresa. Cada linha
+ * e um vinculo: a mesma pessoa (um e-mail) aparece uma vez por empresa e por
+ * papel que tem nela (cliente, profissional, administradora).
  *
  * Tela de consulta: nada aqui altera dados. Ajustes na conta continuam sendo
  * feitos pela tela do estabelecimento, que registra auditoria.
@@ -47,7 +46,7 @@ require RAIZ . '/includes/painel_header.php';
         <div class="campo campo-busca">
             <label for="busca">E-mail, nome ou login</label>
             <input type="search" id="busca" name="busca" value="<?= e($busca) ?>" placeholder="pessoa@exemplo.com" autofocus>
-            <span class="ajuda-campo">Procura em todas as empresas. Cada e-mail tem uma unica conta na plataforma.</span>
+            <span class="ajuda-campo">Procura em todas as empresas. A mesma pessoa aparece uma vez por vinculo: empresa e papel.</span>
         </div>
 
         <div class="campo">

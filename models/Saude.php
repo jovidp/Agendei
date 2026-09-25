@@ -247,9 +247,9 @@ class Saude
         try {
             $sql = 'SELECT COUNT(*) FROM estabelecimento e
                     WHERE e.status = \'ativo\'
-                      AND NOT EXISTS (SELECT 1 FROM usuarios u
-                                       WHERE u.id_estabelecimento = e.id_estabelecimento
-                                         AND u.tipo = \'admin\' AND u.status = \'ativo\')';
+                      AND NOT EXISTS (SELECT 1 FROM vinculos v JOIN usuarios u ON u.id_usuario = v.id_usuario
+                                       WHERE v.id_estabelecimento = e.id_estabelecimento
+                                         AND v.tipo = \'admin\' AND v.status = \'ativo\' AND u.status = \'ativo\')';
             $semAdmin = (int) bd()->query($sql)->fetchColumn();
 
             $itens[] = self::item(

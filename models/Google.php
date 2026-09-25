@@ -171,9 +171,10 @@ class Google
     }
 
     /**
-     * Conta ativa, em empresa ativa, do e-mail que o Google confirmou.
-     * O retorno continua sendo uma lista para tolerar bases antigas ainda nao
-     * migradas. Nunca devolve o hash da senha.
+     * Vinculos que o e-mail confirmado pelo Google pode abrir: vinculo, pessoa
+     * e empresa ativos. Com o link de uma empresa (slug), so os vinculos dela;
+     * sem link, todos, e a entrada geral deixa a pessoa escolher. Nunca devolve
+     * o hash da senha.
      */
     public static function contas(string $email, string $slug = ''): array
     {
@@ -182,10 +183,12 @@ class Google
             return [];
         }
 
-        $sql = 'SELECT u.id_usuario, u.id_estabelecimento, u.nome, u.tipo, u.status,
-                       e.nome AS estabelecimento_nome, e.slug AS estabelecimento_slug, e.status AS estabelecimento_status
-                FROM usuarios u
-                JOIN estabelecimento e ON e.id_estabelecimento = u.id_estabelecimento
+        $sql = 'SELECT v.id_vinculo, v.id_usuario, v.id_estabelecimento, v.tipo, v.login, u.nome, u.email,
+                       e.nome AS estabelecimento_nome, e.slug AS estabelecimento_slug, e.status AS estabelecimento_status,
+                       CASE WHEN u.status = \'ativo\' AND v.status = \'ativo\' THEN \'ativo\' ELSE \'inativo\' END AS status
+                FROM vinculos v
+                JOIN usuarios u ON u.id_usuario = v.id_usuario
+                JOIN estabelecimento e ON e.id_estabelecimento = v.id_estabelecimento
                 WHERE u.email = :email';
         $parametros = [':email' => $email];
 
@@ -194,7 +197,7 @@ class Google
             $parametros[':slug'] = $slug;
         }
 
-        $consulta = bd()->prepare($sql . ' ORDER BY e.nome, u.id_usuario');
+        $consulta = bd()->prepare($sql . ' ORDER BY e.nome, ' . Vinculo::ORDEM_TIPO . ', v.id_vinculo');
         $consulta->execute($parametros);
 
         $contas = [];
@@ -248,6 +251,43 @@ class Google
     public static function limparCadastro(): void
     {
         unset($_SESSION['google_cadastro']);
+    }
+
+    // -----------------------------------------------------------------
+    // Adesao a um estabelecimento (vincular.php)
+    //
+    // A pessoa ja tem conta e quer usa-la em outra empresa. O Google provou
+    // que o e-mail e dela; a tela de adesao aproveita essa prova no lugar da
+    // senha, presa ao link da empresa e com prazo.
+    // -----------------------------------------------------------------
+
+    /** Guarda o e-mail confirmado pelo Google para a adesao ao estabelecimento do slug. */
+    public static function guardarVinculo(string $email, string $slug): void
+    {
+        $_SESSION['google_vinculo'] = [
+            'email'  => mb_strtolower(trim($email)),
+            'slug'   => $slug,
+            'expira' => time() + self::CADASTRO_SEGUNDOS,
+        ];
+    }
+
+    /** E-mail confirmado para este slug, ou null se nao ha, venceu ou e de outra empresa. */
+    public static function vinculoPendente(string $slug): ?array
+    {
+        $pendente = $_SESSION['google_vinculo'] ?? null;
+        if (!is_array($pendente)) {
+            return null;
+        }
+        if ((int) ($pendente['expira'] ?? 0) < time() || ($pendente['slug'] ?? '') !== $slug) {
+            self::limparVinculo();
+            return null;
+        }
+        return $pendente;
+    }
+
+    public static function limparVinculo(): void
+    {
+        unset($_SESSION['google_vinculo']);
     }
 
     // -----------------------------------------------------------------

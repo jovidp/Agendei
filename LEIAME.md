@@ -86,7 +86,8 @@ senha master é pedida de novo.
 
 O sistema foi adaptado para atender a especificacao da disciplina sem descartar o
 que ja existia. Os dois perfis exigidos correspondem a perfis que o sistema ja
-tinha, e o controle continua sendo feito pela sessao (`usuarios.tipo`):
+tinha, e o controle continua sendo feito pela sessao (`vinculos.tipo`, o papel
+escolhido no login):
 
 | Perfil da especificacao | Perfil no sistema | Onde entra                 |
 |-------------------------|-------------------|----------------------------|
@@ -336,14 +337,47 @@ valendo. Passo a passo das credenciais em [DEPLOY.md](DEPLOY.md).
 Bancos criados antes desta versao precisam de `php scripts/migrar_lembrar.php`
 (MySQL e PostgreSQL); o `migrar.php` ja o encadeia.
 
-**Um e-mail, uma conta.** O e-mail identifica a pessoa na entrada geral e no
-Google, por isso e unico em toda a plataforma (`uk_usuarios_email`), e nao
-apenas dentro de cada empresa: o cadastro de cliente, de profissional e de
-responsavel, e a edicao do perfil, recusam um e-mail que ja tenha conta em
-qualquer estabelecimento. Bancos criados antes desta versao precisam de
-`php scripts/migrar_email_unico.php` (MySQL e PostgreSQL); o `migrar.php` ja o
-encadeia. Se a base tiver e-mails repetidos, o script lista as contas
-envolvidas e para sem alterar nada: ajuste os e-mails e rode de novo.
+## Uma conta, varios vinculos
+
+A pessoa e uma so em toda a plataforma (tabela `usuarios`: e-mail unico, senha,
+segundo fator e o cadastro completo). O que ela e em cada estabelecimento fica
+em `vinculos`: cliente, profissional ou administradora, com status, login de 6
+letras e ultimo acesso proprios. A mesma pessoa pode ser cliente de um salao,
+profissional de outro e dona do proprio negocio, com um so e-mail e uma so
+senha. Os perfis (`clientes`, `profissionais`, `administradores`) apontam para
+o vinculo, e agenda, historico, pontos e pacotes continuam separados por
+estabelecimento.
+
+- **Entrar.** O login de uma empresa abre o vinculo daquela empresa; a entrada
+  geral e o Google listam todos os vinculos da pessoa para ela escolher. No
+  painel, quem tem mais de um vinculo ve o botao **Trocar** (`trocar.php`),
+  que fecha a sessao atual e abre a escolhida, passando de novo pelo segundo
+  fator quando o vinculo novo o exige. A URL sozinha continua nao trocando de
+  empresa.
+- **Aderir.** Quem ja tem conta e se cadastra em outra empresa nao cria outra
+  pessoa: o cadastro oferece `vincular.php`, que confirma a senha (ou o Google)
+  e pede so o login e o CPF daquela empresa. O administrador que cadastra um
+  profissional com e-mail conhecido vincula a pessoa, sem senha nova; o master
+  faz o mesmo ao adicionar administradores.
+- **Autonomo.** No cadastro de empresa, "Sou autonomo(a)" cria, na mesma
+  pessoa, o vinculo de administrador e o de profissional, com a unidade Matriz
+  e agenda propria: ela administra e atende no proprio negocio.
+- **Teto.** Cada estabelecimento tem no maximo dois administradores
+  (`Estabelecimento::MAXIMO_ADMINISTRADORES`); a regra vale para criacoes novas.
+- **Quem mexe em que.** Nome, e-mail, telefone e senha sao da pessoa: a
+  empresa so os altera enquanto a pessoa tiver vinculo apenas nela; depois,
+  so a propria pessoa (no perfil) e o master. O administrador da empresa liga
+  e desliga o vinculo, nunca a pessoa; o bloqueio global e do master. Encerrar
+  a conta (LGPD) encerra o vinculo com a empresa e so anonimiza a pessoa quando
+  nao resta outro vinculo. Excluir um estabelecimento apaga os vinculos dele e
+  as pessoas que so existiam por causa dele.
+
+Bancos criados antes desta versao rodam, nesta ordem, `php
+scripts/migrar_email_unico.php` (o e-mail vira a chave da pessoa; se houver
+e-mails repetidos entre empresas, o script lista as contas e para sem alterar
+nada) e `php scripts/migrar_vinculos.php` (cada conta antiga vira a pessoa mais
+um vinculo, sem perda). Os dois rodam em MySQL e PostgreSQL; o `migrar.php` ja
+os encadeia.
 
 ## Lembretes por WhatsApp
 

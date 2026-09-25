@@ -215,6 +215,18 @@ try {
     verificar('no login o Google envia para google_login.php', str_contains($tela['google'][0]['destino'], 'google_login.php'), true);
     verificar('o login leva o link da empresa ao Google', $tela['forms'][$tela['google'][0]['dono']]['ocultos']['estabelecimento'] ?? null, $slug);
 
+    // ---------------------------------------------------------------------
+    // Adesao (vincular.php): o Google fica num formulario proprio; o Enter no
+    // e-mail ou na senha confirma pela senha.
+    // ---------------------------------------------------------------------
+    $tela = formularios(baixar($base . 'vincular.php?estabelecimento=' . rawurlencode($slug), $log), 'vincular.php');
+    verificar('a adesao tem o botao do Google', count($tela['google']), 1);
+    verificar('o botao padrao da adesao e o de confirmar pela senha', $tela['forms']['formConfirmar']['padrao'], 'Confirmar');
+    verificar('o botao do Google nao pertence ao formulario de senha', $tela['google'][0]['dono'] !== 'formConfirmar', true);
+    verificar('na adesao o Google envia para google_login.php', str_contains($tela['google'][0]['destino'], 'google_login.php'), true);
+    verificar('a adesao pelo Google leva a origem "cadastro"', $tela['forms'][$tela['google'][0]['dono']]['ocultos']['origem'] ?? null, 'cadastro');
+    verificar('o formulario de senha continua com o token CSRF', isset($tela['forms']['formConfirmar']['ocultos']['csrf_token']), true);
+
     $tela = formularios(baixar($base . 'entrar.php', $log), 'entrar.php');
     verificar('a entrada geral tem o botao do Google', count($tela['google']), 1);
     foreach ($tela['forms'] as $chave => $form) {

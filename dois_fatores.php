@@ -18,7 +18,10 @@ if ($pendente === null) {
     redirecionar('login.php');
 }
 
-$usuario = Usuario::porId((int) $pendente['usuario_id']);
+// O desafio e de um vinculo: a sessao que abre depois e exatamente ele.
+$usuario = !empty($pendente['vinculo_id'])
+    ? Usuario::porVinculo((int) $pendente['vinculo_id'])
+    : Usuario::porId((int) $pendente['usuario_id']);
 if ($usuario === null || $usuario['status'] !== 'ativo') {
     cancelarSegundoFator();
     definirFlash('erro', 'Nao foi possivel continuar a autenticacao. Faca login novamente.');

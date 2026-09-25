@@ -19,18 +19,21 @@ class SessaoLembrada
     /** Validade do cookie, renovada a cada uso. */
     public const DIAS = 30;
 
-    /** Cria o registro e devolve o valor do cookie ("seletor:validador"). */
-    public static function criar(int $idEstabelecimento, int $idUsuario): string
+    /**
+     * Cria o registro e devolve o valor do cookie ("seletor:validador").
+     * O dispositivo lembra um vinculo: a pessoa numa empresa, com um tipo.
+     */
+    public static function criar(int $idEstabelecimento, int $idUsuario, int $idVinculo): string
     {
         $seletor   = bin2hex(random_bytes(12));
         $validador = bin2hex(random_bytes(32));
         $agora     = date('Y-m-d H:i:s');
 
         $q = bd()->prepare(
-            'INSERT INTO sessoes_lembradas (id_estabelecimento, id_usuario, seletor, validador_hash, expira_em, criado_em, ultimo_uso)
-             VALUES (?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO sessoes_lembradas (id_estabelecimento, id_usuario, id_vinculo, seletor, validador_hash, expira_em, criado_em, ultimo_uso)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         );
-        $q->execute([$idEstabelecimento, $idUsuario, $seletor, self::hash($validador), self::vencimento(), $agora, $agora]);
+        $q->execute([$idEstabelecimento, $idUsuario, $idVinculo, $seletor, self::hash($validador), self::vencimento(), $agora, $agora]);
 
         return $seletor . ':' . $validador;
     }

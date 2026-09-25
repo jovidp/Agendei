@@ -62,8 +62,8 @@ class Servico
                 FROM servicos s
                 INNER JOIN profissional_servico ps ON ps.id_servico = s.id_servico
                 INNER JOIN profissionais p ON p.id_profissional = ps.id_profissional
-                INNER JOIN usuarios u ON u.id_usuario = p.id_usuario
-                WHERE s.id_estabelecimento = ' . Contexto::id() . ' AND s.status = \'ativo\' AND u.status = \'ativo\'
+                INNER JOIN vinculos v ON v.id_vinculo = p.id_vinculo
+                WHERE s.id_estabelecimento = ' . Contexto::id() . ' AND s.status = \'ativo\' AND v.status = \'ativo\'
                 ORDER BY s.nome ASC';
 
         return bd()->query($sql)->fetchAll();

@@ -64,6 +64,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $confirmacao    = post('confirmar_senha');
     $telefone       = apenasNumeros($dados['telefone']);
 
+    // E-mail que ja tem conta: a pessoa existe e sera vinculada como responsavel,
+    // com a senha que ja tem. A senha digitada e a prova de que o e-mail e dela;
+    // o Google, quando confirmou o e-mail nesta mesma tela, tambem serve.
+    $pessoaExistente     = validarEmail($dados['email']) ? Usuario::pessoaPorEmail($dados['email']) : null;
+    $confirmadoPeloGoogle = is_array($googleCadastro) && ($googleCadastro['email'] ?? '') === $dados['email'];
+
     if (mb_strlen($dados['estabelecimento']) < 2 || mb_strlen($dados['estabelecimento']) > 120) {
         $erros[] = 'Informe o nome da empresa.';
     }
@@ -82,17 +88,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (mb_strlen($dados['mensagem']) > 255) {
         $erros[] = 'A mensagem deve ter no máximo 255 caracteres.';
     }
-    if (!validarSenha($senha)) {
-        $erros[] = 'A senha deve ter pelo menos 6 caracteres.';
-    }
-    if ($senha !== $confirmacao) {
-        $erros[] = 'As senhas não conferem.';
+    if ($pessoaExistente !== null) {
+        if (!$confirmadoPeloGoogle && !password_verify($senha, $pessoaExistente['senha_hash'])) {
+            $erros[] = 'Este e-mail já tem conta no Agendei. Informe a senha dela para vincular a empresa nova; a senha continua a mesma.';
+        }
+    } else {
+        if (!validarSenha($senha)) {
+            $erros[] = 'A senha deve ter pelo menos 6 caracteres.';
+        }
+        if ($senha !== $confirmacao) {
+            $erros[] = 'As senhas não conferem.';
+        }
     }
     if ($erros === [] && Solicitacao::slugEmUso($dados['slug'])) {
         $erros[] = 'Este endereço já está em uso. Escolha outro.';
-    }
-    if ($erros === [] && Usuario::emailEmUso($dados['email'])) {
-        $erros[] = 'Já existe uma conta cadastrada com este e-mail.';
     }
 
     if ($erros === []) {
@@ -105,6 +114,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'senha'           => $senha,
                 'telefone'        => $telefone,
                 'mensagem'        => $dados['mensagem'],
+                // Autonomo: a mesma pessoa administra e atende, com agenda propria.
+                'autonomo'        => post('autonomo') === '1',
             ]);
             // Sem master na sessao: a auditoria guarda o pedido com o master em branco.
             LogMaster::registrar('cadastro_solicitado', [
@@ -261,7 +272,7 @@ $tituloPagina = 'Cadastrar empresa | ' . NOME_SISTEMA;
                         <label for="email">E-mail</label>
                         <input type="email" id="email" name="email" value="<?= e($dados['email']) ?>" maxlength="150" autocomplete="email" required>
                         <span class="mensagem-campo"></span>
-                        <span class="ajuda-campo">Será o seu login e o canal do aviso de aprovação.</span>
+                        <span class="ajuda-campo">Será o seu login e o canal do aviso de aprovação. Se já tiver conta no Agendei, use a senha dela: a empresa nova entra na mesma conta.</span>
                     </div>
 
                     <div class="linha-campos">
@@ -269,12 +280,21 @@ $tituloPagina = 'Cadastrar empresa | ' . NOME_SISTEMA;
                             <label for="senha">Senha</label>
                             <input type="password" id="senha" name="senha" minlength="6" autocomplete="new-password" required>
                             <span class="mensagem-campo"></span>
+                            <span class="ajuda-campo">Nova, ou a da sua conta se o e-mail já tiver uma.</span>
                         </div>
                         <div class="campo">
                             <label for="confirmar_senha">Confirmar senha</label>
                             <input type="password" id="confirmar_senha" name="confirmar_senha" minlength="6" autocomplete="new-password" required>
                             <span class="mensagem-campo"></span>
                         </div>
+                    </div>
+
+                    <div class="campo">
+                        <div class="campo-checkbox">
+                            <input type="checkbox" id="autonomo" name="autonomo" value="1" <?= post('autonomo') === '1' ? 'checked' : '' ?>>
+                            <label for="autonomo">Sou autônomo(a): eu mesmo(a) atendo os clientes</label>
+                        </div>
+                        <span class="ajuda-campo">Você entra como administrador(a) e também como profissional, com agenda própria, no mesmo estabelecimento. No nome da empresa pode usar o seu nome ou o nome fantasia.</span>
                     </div>
 
                     <div class="campo">

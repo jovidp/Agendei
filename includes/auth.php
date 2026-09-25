@@ -49,10 +49,27 @@ function estaLogado(): bool
     return !empty($_SESSION['usuario_id']) || !empty($_SESSION['master_id']);
 }
 
-/** Retorna o ID da conta autenticada ou null quando não há login. */
+/** Retorna o ID da pessoa autenticada ou null quando não há login. */
 function usuarioId(): ?int
 {
     return isset($_SESSION['usuario_id']) ? (int) $_SESSION['usuario_id'] : null;
+}
+
+/** ID do vinculo escolhido no login: a pessoa nesta empresa, com este tipo. */
+function vinculoId(): ?int
+{
+    return isset($_SESSION['vinculo_id']) ? (int) $_SESSION['vinculo_id'] : null;
+}
+
+/** A pessoa tem outro vinculo em que pode entrar? Decide se o painel oferece "Trocar" (trocar.php). */
+function podeTrocarVinculo(): bool
+{
+    static $resultado = null;
+    if ($resultado === null) {
+        $idUsuario = usuarioId();
+        $resultado = $idUsuario !== null && !ehMaster() && count(Vinculo::daPessoa($idUsuario, true)) > 1;
+    }
+    return $resultado;
 }
 
 /** Recupera o nome salvo na sessão para exibição no painel. */
@@ -124,8 +141,11 @@ function ehMaster(): bool
 // ---------------------------------------------------------------------
 
 /**
- * Verifica as credenciais. Retorna o usuario ou null.
- * O identificador aceita o login de 6 letras ou o e-mail da conta.
+ * Verifica as credenciais no estabelecimento da requisicao. Retorna a pessoa
+ * juntada ao vinculo dela aqui (o array "usuario"), ou null.
+ * O identificador aceita o login de 6 letras (que e do vinculo) ou o e-mail
+ * da pessoa. Com mais de um vinculo na mesma empresa, o login de 6 letras
+ * escolhe o seu; o e-mail abre o de maior alcada (admin, profissional, cliente).
  */
 function autenticar(string $identificador, string $senha): ?array
 {
@@ -154,12 +174,11 @@ function autenticar(string $identificador, string $senha): ?array
 /**
  * Autenticacao pela entrada geral, sem estabelecimento na URL.
  *
- * O e-mail e unico em toda a plataforma, entao normalmente ha uma conta so.
- * O retorno continua sendo uma lista para tolerar bases antigas ainda nao
- * migradas (scripts/migrar_email_unico.php): a senha e conferida em cada
- * conta, e so as que batem (e estao ativas, em empresa ativa) voltam, sem que
- * a tela revele em quais empresas um e-mail existe. O login de 6 letras nao
- * serve aqui porque e unico so por empresa.
+ * O e-mail identifica a pessoa; a senha e uma so. Conferida a senha, voltam
+ * os vinculos em que ela pode entrar (vinculo, pessoa e empresa ativos): com
+ * um, a tela entra direto; com varios, a pessoa escolhe. Nada e revelado antes
+ * de a senha conferir. O login de 6 letras nao serve aqui porque e do vinculo,
+ * unico so dentro de cada empresa.
  *
  * Nao grava log nem abre sessao: isso exige a empresa definida, e fica a cargo
  * de quem chama, depois de Contexto::assumir(). O hash nunca sai daqui.
@@ -171,19 +190,12 @@ function autenticarGlobal(string $email, string $senha): array
         return [];
     }
 
-    $contas = [];
-    foreach (Usuario::porEmailGlobal($email) as $conta) {
-        if (!password_verify($senha, $conta['senha_hash'])) {
-            continue;
-        }
-        if ($conta['status'] !== 'ativo' || $conta['estabelecimento_status'] !== 'ativo') {
-            continue;
-        }
-        unset($conta['senha_hash'], $conta['totp_segredo'], $conta['token_recuperacao']);
-        $contas[] = $conta;
+    $pessoa = Usuario::pessoaPorEmail($email);
+    if ($pessoa === null || !password_verify($senha, $pessoa['senha_hash']) || $pessoa['status'] !== 'ativo') {
+        return [];
     }
 
-    return $contas;
+    return Vinculo::daPessoa((int) $pessoa['id_usuario'], true);
 }
 
 /** CPF do perfil de cliente, usado apenas para alimentar o filtro da tela de log. */
@@ -280,6 +292,7 @@ function iniciarSegundoFator(array $usuario, string $identificador): void
 
     $_SESSION['segundo_fator'] = [
         'usuario_id'    => (int) $usuario['id_usuario'],
+        'vinculo_id'    => (int) ($usuario['id_vinculo'] ?? 0),
         'identificador' => $identificador,
         'fator'         => $usaCodigo ? 'totp' : array_rand(fatoresDisponiveis($usuario)),
         'tentativas'    => 0,
@@ -420,20 +433,29 @@ function registrarSessao(array $usuario): void
     // Um login local nunca herda a identidade global ou uma simulacao anterior.
     unset($_SESSION['master_id'], $_SESSION['simulacao'], $_SESSION['segundo_fator_master'], $_SESSION['segundo_fator']);
 
+    // A sessao e um vinculo: a pessoa numa empresa, com um tipo. Tudo vem do
+    // array "usuario" (pessoa juntada ao vinculo), e nao do Contexto: a sessao
+    // lembrada (restaurarSessaoLembrada) abre antes de o Contexto resolver a empresa.
+    $idVinculo = (int) ($usuario['id_vinculo'] ?? 0);
     $_SESSION['estabelecimento_id'] = (int) $usuario['id_estabelecimento'];
+    $_SESSION['vinculo_id']    = $idVinculo;
     $_SESSION['usuario_id']    = (int) $usuario['id_usuario'];
     $_SESSION['usuario_nome']  = $usuario['nome'];
     $_SESSION['usuario_email'] = $usuario['email'];
     $_SESSION['usuario_login'] = ($usuario['login'] ?? '') ?: $usuario['email'];
     $_SESSION['usuario_tipo']  = $usuario['tipo'];
-    // A empresa vem da propria conta, e nao do Contexto: a sessao lembrada
-    // (restaurarSessaoLembrada) abre antes de o Contexto resolver a empresa.
-    $_SESSION['perfil_id']     = Usuario::idDoPerfilEm((int) $usuario['id_estabelecimento'], (int) $usuario['id_usuario'], $usuario['tipo']);
+    $_SESSION['perfil_id']     = $idVinculo > 0
+        ? Vinculo::idDoPerfil($idVinculo, $usuario['tipo'])
+        : Usuario::idDoPerfilEm((int) $usuario['id_estabelecimento'], (int) $usuario['id_usuario'], $usuario['tipo']);
 
     // Marca os instantes que controlam inatividade, duracao maxima e dispositivo.
     marcarInicioSessao();
 
-    Usuario::registrarAcessoEm((int) $usuario['id_estabelecimento'], (int) $usuario['id_usuario']);
+    if ($idVinculo > 0) {
+        Vinculo::registrarAcesso($idVinculo);
+    } else {
+        Usuario::registrarAcessoEm((int) $usuario['id_estabelecimento'], (int) $usuario['id_usuario']);
+    }
 }
 
 /**
@@ -447,7 +469,7 @@ function registrarSessaoMaster(array $master, bool $auditar = true): void
     // usuario_login precisa sair junto: na volta de uma simulacao ele ainda
     // guarda o login do administrador, e o topo do painel passaria a anunciar
     // a conta errada para quem ja voltou a ser master.
-    unset($_SESSION['usuario_id'], $_SESSION['estabelecimento_id'], $_SESSION['perfil_id'], $_SESSION['usuario_login'], $_SESSION['simulacao'], $_SESSION['segundo_fator'], $_SESSION['segundo_fator_master']);
+    unset($_SESSION['usuario_id'], $_SESSION['vinculo_id'], $_SESSION['estabelecimento_id'], $_SESSION['perfil_id'], $_SESSION['usuario_login'], $_SESSION['simulacao'], $_SESSION['segundo_fator'], $_SESSION['segundo_fator_master']);
     $_SESSION['master_id'] = (int) $master['id_master'];
     $_SESSION['usuario_nome'] = $master['nome'];
     $_SESSION['usuario_email'] = $master['email'];
@@ -498,6 +520,7 @@ function iniciarSimulacao(array $usuario, array $master, ?int $perfilId): void
 
     unset($_SESSION['master_id']);
     $_SESSION['estabelecimento_id'] = (int) $usuario['id_estabelecimento'];
+    $_SESSION['vinculo_id']    = (int) ($usuario['id_vinculo'] ?? 0);
     $_SESSION['usuario_id']    = (int) $usuario['id_usuario'];
     $_SESSION['usuario_nome']  = $usuario['nome'];
     $_SESSION['usuario_email'] = $usuario['email'];
@@ -707,8 +730,10 @@ function alterarSenhaUsuario(int $idUsuario, string $senhaAtual, string $novaSen
         $erros[] = 'A senha atual esta incorreta.';
     }
 
-    // O usuario comum segue a regra da especificacao; os demais perfis mantem o minimo antigo.
-    $usuario = Usuario::porId($idUsuario);
+    // O usuario comum segue a regra da especificacao; os demais perfis mantem o
+    // minimo antigo. A regra vem do vinculo aberto na sessao: a mesma pessoa
+    // pode ser cliente aqui e profissional ali.
+    $usuario = Usuario::porId($idUsuario, usuarioId() === $idUsuario ? perfil() : null);
     if (($usuario['tipo'] ?? '') === 'cliente') {
         if (!validarSenhaProjeto($novaSenha)) {
             $erros[] = 'A nova senha deve ter exatamente 8 caracteres alfabeticos.';
@@ -772,7 +797,7 @@ function lembrarSeSolicitado(array $usuario): void
     unset($_SESSION['lembrar_dispositivo']);
 
     try {
-        gravarCookieLembrar(SessaoLembrada::criar((int) $usuario['id_estabelecimento'], (int) $usuario['id_usuario']));
+        gravarCookieLembrar(SessaoLembrada::criar((int) $usuario['id_estabelecimento'], (int) $usuario['id_usuario'], (int) $usuario['id_vinculo']));
     } catch (Throwable $erro) {
         // Sem a tabela (banco anterior a migracao) o login segue normal, so nao lembra.
         error_log('Nao foi possivel lembrar o dispositivo: ' . $erro->getMessage());
@@ -838,13 +863,19 @@ function restaurarSessaoLembrada(): void
             return;
         }
 
+        // O cookie lembra um vinculo: reabre exatamente ele, com pessoa,
+        // vinculo e empresa ainda ativos.
         $q = bd()->prepare(
-            'SELECT u.*, e.slug AS estabelecimento_slug, e.status AS estabelecimento_status
-             FROM usuarios u
-             JOIN estabelecimento e ON e.id_estabelecimento = u.id_estabelecimento
-             WHERE u.id_usuario = ? AND u.id_estabelecimento = ? LIMIT 1'
+            'SELECT u.*, v.id_vinculo, v.id_estabelecimento, v.tipo, v.login, v.ultimo_acesso,
+                    v.status AS status_vinculo, u.status AS status_pessoa,
+                    e.slug AS estabelecimento_slug, e.status AS estabelecimento_status,
+                    CASE WHEN u.status = \'ativo\' AND v.status = \'ativo\' THEN \'ativo\' ELSE \'inativo\' END AS status
+             FROM vinculos v
+             JOIN usuarios u ON u.id_usuario = v.id_usuario
+             JOIN estabelecimento e ON e.id_estabelecimento = v.id_estabelecimento
+             WHERE v.id_vinculo = ? AND v.id_usuario = ? AND v.id_estabelecimento = ? LIMIT 1'
         );
-        $q->execute([(int) $registro['id_usuario'], (int) $registro['id_estabelecimento']]);
+        $q->execute([(int) $registro['id_vinculo'], (int) $registro['id_usuario'], (int) $registro['id_estabelecimento']]);
         $usuario = $q->fetch();
 
         if (!$usuario || $usuario['status'] !== 'ativo' || $usuario['estabelecimento_status'] !== 'ativo') {

@@ -33,21 +33,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $podeBloquear  = post('pode_bloquear_agenda') === '1';
         $idFilial      = (int) post('id_filial');
 
-        if (mb_strlen($nome) < 5 || !str_contains($nome, ' ')) {
+        // Cadastro novo com e-mail conhecido: a pessoa ja existe (cliente ou
+        // profissional em outra empresa, ou administradora desta) e ganha o
+        // vinculo aqui, sem senha nova e sem que os dados dela sejam reescritos.
+        $pessoaExistente = !$profissional && validarEmail($email) ? Usuario::pessoaPorEmail($email) : null;
+        // Na edicao, nome, e-mail e senha so podem ser alterados pela empresa se
+        // a pessoa nao tiver vinculo em outro lugar; fora disso esses dados sao
+        // dela, valem nas outras empresas, e so ela os altera no proprio perfil.
+        $pessoaCompartilhada = $profissional && !Usuario::pertenceSoAqui((int) $profissional['id_usuario']);
+        $dadosDaPessoa = !$pessoaExistente && !$pessoaCompartilhada;
+
+        if ($dadosDaPessoa && (mb_strlen($nome) < 5 || !str_contains($nome, ' '))) {
             $erros[] = 'Informe o nome completo do profissional.';
         }
         if (!validarEmail($email)) {
             $erros[] = 'Informe um e-mail valido.';
-        } elseif (Usuario::emailEmUso($email, $profissional ? (int) $profissional['id_usuario'] : null)) {
+        } elseif ($profissional && !$pessoaCompartilhada && Usuario::emailEmUso($email, (int) $profissional['id_usuario'])) {
             $erros[] = 'Este e-mail ja esta cadastrado em outra conta.';
+        } elseif ($pessoaExistente && Vinculo::porPessoaEmpresaTipo(Contexto::id(), (int) $pessoaExistente['id_usuario'], 'profissional') !== null) {
+            $erros[] = 'Esta pessoa ja e profissional deste estabelecimento.';
         }
-        if ($telefone !== '' && !in_array(strlen($telefone), [10, 11], true)) {
+        if ($dadosDaPessoa && $telefone !== '' && !in_array(strlen($telefone), [10, 11], true)) {
             $erros[] = 'Informe um telefone valido com DDD.';
         }
-        if (!$profissional && !validarSenha($senha)) {
+        if (!$profissional && !$pessoaExistente && !validarSenha($senha)) {
             $erros[] = 'Defina uma senha de acesso com no minimo 6 caracteres.';
         }
-        if ($profissional && $senha !== '' && !validarSenha($senha)) {
+        if ($profissional && !$pessoaCompartilhada && $senha !== '' && !validarSenha($senha)) {
             $erros[] = 'A nova senha deve ter no minimo 6 caracteres.';
         }
         if ($servicos === []) {
@@ -72,16 +84,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($erros === []) {
             try {
                 if ($profissional) {
-                    Usuario::atualizar((int) $profissional['id_usuario'], [
-                        'nome'     => $nome,
-                        'email'    => $email,
-                        'telefone' => $telefone,
-                    ]);
-                    Usuario::alterarStatus((int) $profissional['id_usuario'], $status);
-
-                    if ($senha !== '') {
-                        Usuario::atualizarSenha((int) $profissional['id_usuario'], $senha);
+                    if (!$pessoaCompartilhada) {
+                        Usuario::atualizar((int) $profissional['id_usuario'], [
+                            'nome'     => $nome,
+                            'email'    => $email,
+                            'telefone' => $telefone,
+                        ]);
+                        if ($senha !== '') {
+                            Usuario::atualizarSenha((int) $profissional['id_usuario'], $senha);
+                        }
                     }
+                    Vinculo::alterarStatus((int) $profissional['id_vinculo'], $status);
 
                     Profissional::atualizar($idProfissional, [
                         'id_filial'            => $idFilial,
@@ -94,6 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     definirFlash('sucesso', 'Profissional atualizado com sucesso.');
                 } else {
                     Profissional::criar([
+                        'id_usuario'           => $pessoaExistente ? (int) $pessoaExistente['id_usuario'] : 0,
                         'nome'                 => $nome,
                         'email'                => $email,
                         'senha'                => $senha,
@@ -106,7 +120,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'servicos'             => $servicos,
                     ]);
 
-                    definirFlash('sucesso', 'Profissional cadastrado com sucesso. Configure o expediente em Horarios.');
+                    definirFlash('sucesso', $pessoaExistente
+                        ? 'Profissional vinculado: ' . $pessoaExistente['nome'] . ' ja tinha conta e entra com a senha de sempre. Configure o expediente em Horarios.'
+                        : 'Profissional cadastrado com sucesso. Configure o expediente em Horarios.');
                 }
 
                 redirecionar('admin/profissionais.php');
@@ -130,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($limitePlano !== null) {
                 definirFlash('erro', $limitePlano);
             } else {
-                Usuario::alterarStatus((int) $profissional['id_usuario'], $novoStatus);
+                Vinculo::alterarStatus((int) $profissional['id_vinculo'], $novoStatus);
                 definirFlash('sucesso', $novoStatus === 'ativo' ? 'Profissional ativado.' : 'Profissional desativado.');
             }
         }
@@ -147,7 +163,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($totalAgendamentos > 0) {
             definirFlash('erro', 'Este profissional possui agendamentos registrados e nao pode ser excluido. Desative o cadastro.');
         } else {
-            Usuario::excluir((int) $profissional['id_usuario']);
+            // Apaga o vinculo profissional (agenda, horarios e servicos caem em
+            // cascata); a pessoa so some se nao tiver vinculo em outra empresa.
+            Vinculo::excluir((int) $profissional['id_vinculo']);
             definirFlash('sucesso', 'Profissional excluido.');
         }
 
@@ -167,6 +185,9 @@ if ($acaoTela === 'editar') {
     }
     $servicosVinculados = Profissional::idsServicos((int) $edicao['id_profissional']);
 }
+// Pessoa com vinculo em outra empresa: nome, e-mail, telefone e senha sao dela.
+$edicaoCompartilhada = $edicao && !Usuario::pertenceSoAqui((int) $edicao['id_usuario']);
+$soLeitura = $edicaoCompartilhada ? ' readonly' : '';
 
 $formularioAberto = in_array($acaoTela, ['novo', 'editar'], true) || $erros !== [];
 
@@ -239,7 +260,10 @@ require_once RAIZ . '/includes/painel_header.php';
                     <div class="campo">
                         <label for="nome">Nome completo <span class="obrigatorio">*</span></label>
                         <input type="text" id="nome" name="nome" maxlength="120"
-                            value="<?= e($edicao['nome'] ?? post('nome')) ?>" required<?= $bloqueio ?>>
+                            value="<?= e($edicao['nome'] ?? post('nome')) ?>" required<?= $bloqueio ?><?= $soLeitura ?>>
+                        <?php if ($edicaoCompartilhada): ?>
+                            <span class="ajuda-campo">Esta pessoa tambem tem conta em outro estabelecimento: nome, e-mail, telefone e senha sao dela e so ela os altera, no proprio perfil.</span>
+                        <?php endif; ?>
                     </div>
 
                     <div class="campo">
@@ -269,23 +293,29 @@ require_once RAIZ . '/includes/painel_header.php';
                     <div class="campo">
                         <label for="email">E-mail de acesso <span class="obrigatorio">*</span></label>
                         <input type="email" id="email" name="email" maxlength="150"
-                            value="<?= e($edicao['email'] ?? post('email')) ?>" required<?= $bloqueio ?>>
+                            value="<?= e($edicao['email'] ?? post('email')) ?>" required<?= $bloqueio ?><?= $soLeitura ?>>
+                        <?php if (!$edicao): ?>
+                            <span class="ajuda-campo">Se o e-mail ja tiver conta no Agendei, a pessoa e vinculada como profissional e entra com a senha que ja tem.</span>
+                        <?php endif; ?>
                     </div>
 
                     <div class="campo">
                         <label for="telefone">Telefone</label>
                         <input type="tel" id="telefone" name="telefone" data-mascara="telefone" inputmode="numeric"
-                            value="<?= e($edicao ? formatarTelefone($edicao['telefone']) : post('telefone')) ?>"<?= $bloqueio ?>>
+                            value="<?= e($edicao ? formatarTelefone($edicao['telefone']) : post('telefone')) ?>"<?= $bloqueio ?><?= $soLeitura ?>>
                     </div>
                 </div>
 
                 <div class="linha-campos">
                     <div class="campo">
-                        <label for="senha"><?= $edicao ? 'Nova senha (opcional)' : 'Senha de acesso' ?>
-                            <?= $edicao ? '' : '<span class="obrigatorio">*</span>' ?>
-                        </label>
-                        <input type="password" id="senha" name="senha" autocomplete="new-password" <?= $edicao ? '' : 'required' ?><?= $bloqueio ?>>
-                        <span class="ajuda-campo"><?= $edicao ? 'Deixe em branco para manter a senha atual.' : 'Minimo de 6 caracteres.' ?></span>
+                        <?php if ($edicaoCompartilhada): ?>
+                            <label>Senha de acesso</label>
+                            <p class="texto-secundario sem-margem">A senha e da pessoa e vale em todas as empresas dela: so ela a troca.</p>
+                        <?php else: ?>
+                            <label for="senha"><?= $edicao ? 'Nova senha (opcional)' : 'Senha de acesso' ?></label>
+                            <input type="password" id="senha" name="senha" autocomplete="new-password"<?= $bloqueio ?>>
+                            <span class="ajuda-campo"><?= $edicao ? 'Deixe em branco para manter a senha atual.' : 'Minimo de 6 caracteres. Dispensada quando o e-mail ja tem conta no Agendei.' ?></span>
+                        <?php endif; ?>
                     </div>
 
                     <div class="campo">

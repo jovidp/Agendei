@@ -139,11 +139,11 @@ class Filial
             'SELECT DISTINCT ' . self::CAMPOS . '
              FROM filiais f
              INNER JOIN profissionais p ON p.id_filial = f.id_filial AND p.id_estabelecimento = f.id_estabelecimento
-             INNER JOIN usuarios u ON u.id_usuario = p.id_usuario
+             INNER JOIN vinculos v ON v.id_vinculo = p.id_vinculo
              INNER JOIN profissional_servico ps ON ps.id_profissional = p.id_profissional AND ps.id_estabelecimento = f.id_estabelecimento
              WHERE f.id_estabelecimento = ' . Contexto::id() . '
                AND f.status = \'ativo\'
-               AND u.status = \'ativo\'
+               AND v.status = \'ativo\'
                AND ps.id_servico = :id_servico
              ORDER BY f.ordem ASC, f.nome ASC'
         );

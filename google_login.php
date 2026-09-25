@@ -5,15 +5,16 @@
  * Recebe o pedido dos formularios (POST, com CSRF) e leva a pessoa ao Google;
  * depois recebe a volta (GET com code e state), confirma o e-mail com o Google
  * (models/Google.php) e decide pelo campo "origem" do pedido:
- *   - login (padrao): abre a conta unica daquele e-mail. Vindo do login de
- *     uma empresa, a conta tambem precisa pertencer a ela; se for de outra,
- *     a pessoa e orientada a usar a entrada geral. Sem conta, a se cadastrar.
- *   - cadastro: o cadastro do cliente. Com conta no estabelecimento, entra
+ *   - login (padrao): abre o vinculo daquele e-mail; com mais de um, a
+ *     entrada geral deixa escolher. Vindo do login de uma empresa, so os
+ *     vinculos dela servem; se a pessoa so tem vinculo em outra, e orientada
+ *     a usar a entrada geral. Sem vinculo nenhum, a se cadastrar.
+ *   - cadastro: o cadastro do cliente. Com vinculo no estabelecimento, entra
  *     direto; sem conta em lugar nenhum, volta ao formulario com nome e e-mail
- *     preenchidos e o e-mail confirmado; com conta em outra empresa, avisa,
- *     porque o e-mail e unico na plataforma. O Google nao cria a conta sozinho
- *     porque o cadastro exige dados que ele nao fornece (CPF, login, nome
- *     materno...).
+ *     preenchidos e o e-mail confirmado; com conta em outra empresa, segue
+ *     para a adesao (vincular.php), que cria so o vinculo aqui. O Google nao
+ *     cria a conta sozinho porque o cadastro exige dados que ele nao fornece
+ *     (CPF, login, nome materno...).
  *   - cadastro_empresa: o cadastro de empresa da pagina inicial, mesma ideia.
  * O segundo fator, quando a conta exige, continua valendo.
  *
@@ -64,7 +65,7 @@ function prepararCadastro(array $dados, string $origem): void
 function concluirEntradaGoogle(array $conta, string $email, string $origem): never
 {
     Contexto::assumir((int) $conta['id_estabelecimento']);
-    $usuario = Usuario::porId((int) $conta['id_usuario']);
+    $usuario = Usuario::porVinculo((int) $conta['id_vinculo']);
     if ($usuario === null || $usuario['status'] !== 'ativo') {
         definirFlash('erro', 'Esta conta não está mais disponível.');
         voltar((string) $conta['estabelecimento_slug'], $origem);
@@ -168,6 +169,15 @@ if ($contas === []) {
     // O Google confirmou que o e-mail e da pessoa, entao ela pode saber disso.
     $temContaEmOutroLugar = Usuario::vinculosPorEmail($email) !== [];
 
+    if ($origem === 'cadastro' && $temContaEmOutroLugar && $slug !== '') {
+        // A pessoa ja existe e o Google provou que o e-mail e dela: o cadastro
+        // vira adesao, sem senha e sem repetir dados que ela ja informou.
+        pedirLembrarDispositivo(false);
+        Google::guardarVinculo($email, $slug);
+        definirFlash('info', 'E-mail confirmado pelo Google. Sua conta ja existe: complete so o que este estabelecimento precisa.');
+        redirecionar('vincular.php?estabelecimento=' . rawurlencode($slug));
+    }
+
     if ($origem === 'cadastro' && !$temContaEmOutroLugar) {
         prepararCadastro($dados, $origem);
         definirFlash('info', 'E-mail confirmado pelo Google. Nome e e-mail já vieram preenchidos; complete o restante para criar sua conta.');
@@ -189,11 +199,12 @@ if (count($contas) === 1) {
     concluirEntradaGoogle($contas[0], $email, $origem);
 }
 
-// Compatibilidade com bases antigas que ainda tenham e-mail repetido: a
-// entrada geral sabe concluir sem pedir a senha de novo.
+// Mais de um vinculo (empresas diferentes, ou tipos diferentes na mesma): a
+// escolha e a mesma da entrada geral, que ja sabe concluir sem pedir a senha.
 $lista = [];
 foreach ($contas as $conta) {
-    $lista[(int) $conta['id_usuario']] = [
+    $lista[(int) $conta['id_vinculo']] = [
+        'id_vinculo'           => (int) $conta['id_vinculo'],
         'id_usuario'           => (int) $conta['id_usuario'],
         'id_estabelecimento'   => (int) $conta['id_estabelecimento'],
         'nome'                 => $conta['nome'],

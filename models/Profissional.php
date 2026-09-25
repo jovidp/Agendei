@@ -1,14 +1,30 @@
 <?php
 /**
  * Profissionais e o vinculo N:N com os servicos que executam.
+ *
+ * O perfil e o vinculo da pessoa com a empresa como profissional: aponta para
+ * vinculos (status, ultimo acesso) e para usuarios (nome, e-mail, telefone).
+ * A agenda e por vinculo: a mesma pessoa em dois saloes tem duas agendas.
  */
 class Profissional
 {
-    private const CAMPOS = 'p.id_profissional, p.id_usuario, p.id_filial, p.especialidade, p.bio, p.foto,
-                            p.pode_bloquear_agenda, p.data_cadastro,
-                            u.nome, u.email, u.telefone, u.status';
+    private const CAMPOS = 'p.id_profissional, p.id_vinculo, p.id_usuario, p.id_filial, p.especialidade, p.bio, p.foto,
+                            p.pode_bloquear_agenda, p.data_cadastro, p.token_calendario,
+                            u.nome, u.email, u.telefone, v.status';
 
-    /** Cria usuario + profissional + vinculos de servico. Retorna o id_profissional. */
+    /** Juncao do perfil com o vinculo (da empresa da sessao) e a pessoa. */
+    private static function juncao(): string
+    {
+        return 'INNER JOIN vinculos v ON v.id_vinculo = p.id_vinculo AND v.id_estabelecimento = ' . Contexto::id() . '
+                INNER JOIN usuarios u ON u.id_usuario = v.id_usuario';
+    }
+
+    /**
+     * Cria o perfil de profissional + vinculos de servico. Retorna o id_profissional.
+     * Sem 'id_usuario' cria a pessoa (nome, e-mail, senha, telefone); com
+     * 'id_usuario' vincula uma pessoa que ja existe (em outra empresa ou como
+     * administradora desta).
+     */
     public static function criar(array $dados): int
     {
         $conexao = bd();
@@ -16,13 +32,17 @@ class Profissional
         $conexao->beginTransaction();
 
         try {
-            $idUsuario = Usuario::criar([
-                'nome'     => $dados['nome'],
-                'email'    => $dados['email'],
-                'senha'    => $dados['senha'],
-                'telefone' => $dados['telefone'] ?? null,
-                'tipo'     => 'profissional',
-                'status'   => $dados['status'] ?? 'ativo',
+            $idUsuario = (int) ($dados['id_usuario'] ?? 0);
+            if ($idUsuario <= 0) {
+                $idUsuario = Usuario::criar([
+                    'nome'     => $dados['nome'],
+                    'email'    => $dados['email'],
+                    'senha'    => $dados['senha'],
+                    'telefone' => $dados['telefone'] ?? null,
+                ]);
+            }
+            $idVinculo = Vinculo::criar(Contexto::id(), $idUsuario, 'profissional', [
+                'status' => $dados['status'] ?? 'ativo',
             ]);
 
             // Todo profissional pertence a uma filial; sem escolha explicita, vai para a padrao.
@@ -33,10 +53,11 @@ class Profissional
             }
 
             $consulta = $conexao->prepare(
-                'INSERT INTO profissionais (id_estabelecimento, id_usuario, id_filial, especialidade, bio, pode_bloquear_agenda)
-                 VALUES (' . Contexto::id() . ', :id_usuario, :id_filial, :especialidade, :bio, :pode_bloquear)'
+                'INSERT INTO profissionais (id_estabelecimento, id_vinculo, id_usuario, id_filial, especialidade, bio, pode_bloquear_agenda)
+                 VALUES (' . Contexto::id() . ', :id_vinculo, :id_usuario, :id_filial, :especialidade, :bio, :pode_bloquear)'
             );
             $consulta->execute([
+                ':id_vinculo'     => $idVinculo,
                 ':id_usuario'     => $idUsuario,
                 ':id_filial'      => $idFilial,
                 ':especialidade'  => $dados['especialidade'] ?: null,
@@ -88,7 +109,7 @@ class Profissional
     {
         $sql = 'SELECT ' . self::CAMPOS . '
                 FROM profissionais p
-                INNER JOIN usuarios u ON u.id_usuario = p.id_usuario AND u.id_estabelecimento = ' . Contexto::id() . '
+                ' . self::juncao() . '
                 WHERE p.id_estabelecimento = ' . Contexto::id() . ' AND p.id_profissional = :id LIMIT 1';
 
         $consulta = bd()->prepare($sql);
@@ -96,12 +117,12 @@ class Profissional
         return $consulta->fetch() ?: null;
     }
 
-    /** Localiza os dados do perfil a partir do identificador da conta de acesso. */
+    /** Localiza os dados do perfil a partir do identificador da pessoa. */
     public static function porUsuario(int $idUsuario): ?array
     {
         $sql = 'SELECT ' . self::CAMPOS . '
                 FROM profissionais p
-                INNER JOIN usuarios u ON u.id_usuario = p.id_usuario AND u.id_estabelecimento = ' . Contexto::id() . '
+                ' . self::juncao() . '
                 WHERE p.id_estabelecimento = ' . Contexto::id() . ' AND p.id_usuario = :id LIMIT 1';
 
         $consulta = bd()->prepare($sql);
@@ -123,7 +144,7 @@ class Profissional
         }
 
         if (!empty($filtros['status'])) {
-            $condicoes[] = 'u.status = :status';
+            $condicoes[] = 'v.status = :status';
             $parametros[':status'] = $filtros['status'];
         }
 
@@ -132,7 +153,7 @@ class Profissional
         $sql = 'SELECT ' . self::CAMPOS . ',
                        (SELECT COUNT(*) FROM profissional_servico ps WHERE ps.id_estabelecimento = ' . Contexto::id() . ' AND ps.id_profissional = p.id_profissional) AS total_servicos
                 FROM profissionais p
-                INNER JOIN usuarios u ON u.id_usuario = p.id_usuario AND u.id_estabelecimento = ' . Contexto::id() . '
+                ' . self::juncao() . '
                 ' . $where . '
                 ORDER BY u.nome ASC';
 
@@ -152,9 +173,9 @@ class Profissional
     {
         $sql = 'SELECT ' . self::CAMPOS . '
                 FROM profissionais p
-                INNER JOIN usuarios u ON u.id_usuario = p.id_usuario AND u.id_estabelecimento = ' . Contexto::id() . '
+                ' . self::juncao() . '
                 INNER JOIN profissional_servico ps ON ps.id_profissional = p.id_profissional
-                WHERE ps.id_estabelecimento = ' . Contexto::id() . ' AND ps.id_servico = :id_servico AND u.status = \'ativo\'
+                WHERE ps.id_estabelecimento = ' . Contexto::id() . ' AND ps.id_servico = :id_servico AND v.status = \'ativo\'
                 ORDER BY u.nome ASC';
 
         $consulta = bd()->prepare($sql);
@@ -162,19 +183,18 @@ class Profissional
         return $consulta->fetchAll();
     }
 
-    /** Confere o vínculo que permite ao profissional realizar o serviço. */
     /** Profissionais ativos de uma filial que executam o servico: a etapa apos a escolha da unidade. */
     public static function porServicoEFilial(int $idServico, int $idFilial): array
     {
         $consulta = bd()->prepare(
             'SELECT ' . self::CAMPOS . '
              FROM profissionais p
-             INNER JOIN usuarios u ON u.id_usuario = p.id_usuario AND u.id_estabelecimento = ' . Contexto::id() . '
+             ' . self::juncao() . '
              INNER JOIN profissional_servico ps ON ps.id_profissional = p.id_profissional
              WHERE ps.id_estabelecimento = ' . Contexto::id() . '
                AND ps.id_servico = :id_servico
                AND p.id_filial = :id_filial
-               AND u.status = \'ativo\'
+               AND v.status = \'ativo\'
              ORDER BY u.nome ASC'
         );
         $consulta->execute([':id_servico' => $idServico, ':id_filial' => $idFilial]);
@@ -182,6 +202,7 @@ class Profissional
         return $consulta->fetchAll();
     }
 
+    /** Confere o vínculo que permite ao profissional realizar o serviço. */
     public static function executaServico(int $idProfissional, int $idServico): bool
     {
         $consulta = bd()->prepare(
@@ -244,15 +265,16 @@ class Profissional
         }
     }
 
-    /** Conta os registros cadastrados, restringindo pelo status quando informado. */
+    /** Conta os registros cadastrados, restringindo pelo status do vinculo quando informado. */
     public static function total(?string $status = null): int
     {
         $sql = 'SELECT COUNT(*) AS total FROM profissionais p
-                INNER JOIN usuarios u ON u.id_usuario = p.id_usuario AND u.id_estabelecimento = ' . Contexto::id() . '';
+                ' . self::juncao() . '
+                WHERE p.id_estabelecimento = ' . Contexto::id();
         $parametros = [];
 
         if ($status !== null) {
-            $sql .= ' WHERE u.id_estabelecimento = ' . Contexto::id() . ' AND u.status = :status';
+            $sql .= ' AND v.status = :status';
             $parametros[':status'] = $status;
         }
 
@@ -266,8 +288,8 @@ class Profissional
     {
         $consulta = bd()->prepare(
             'SELECT 1 FROM profissionais p
-             INNER JOIN usuarios u ON u.id_usuario = p.id_usuario AND u.id_estabelecimento = ' . Contexto::id() . '
-             WHERE p.id_estabelecimento = ' . Contexto::id() . ' AND p.id_profissional = :id AND u.status = \'ativo\' LIMIT 1'
+             ' . self::juncao() . '
+             WHERE p.id_estabelecimento = ' . Contexto::id() . ' AND p.id_profissional = :id AND v.status = \'ativo\' LIMIT 1'
         );
         $consulta->execute([':id' => $idProfissional]);
         return (bool) $consulta->fetch();

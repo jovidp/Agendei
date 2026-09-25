@@ -39,10 +39,11 @@ function bd(): PDO
 
 // Somente as tabelas/colunas usadas neste fluxo.
 bd()->exec("CREATE TABLE estabelecimento (id_estabelecimento INTEGER PRIMARY KEY, nome TEXT, slug TEXT UNIQUE, status TEXT DEFAULT 'ativo');
-    CREATE TABLE usuarios (id_usuario INTEGER PRIMARY KEY, id_estabelecimento INTEGER, nome TEXT, email TEXT UNIQUE, login TEXT, senha_hash TEXT, tipo TEXT, status TEXT DEFAULT 'ativo', ultimo_acesso TEXT);
-    CREATE TABLE clientes (id_cliente INTEGER PRIMARY KEY, id_estabelecimento INTEGER, id_usuario INTEGER);
+    CREATE TABLE usuarios (id_usuario INTEGER PRIMARY KEY, nome TEXT, email TEXT UNIQUE, senha_hash TEXT, status TEXT DEFAULT 'ativo');
+    CREATE TABLE vinculos (id_vinculo INTEGER PRIMARY KEY, id_estabelecimento INTEGER, id_usuario INTEGER, tipo TEXT, status TEXT DEFAULT 'ativo', login TEXT, ultimo_acesso TEXT, UNIQUE (id_estabelecimento, id_usuario, tipo));
+    CREATE TABLE clientes (id_cliente INTEGER PRIMARY KEY, id_estabelecimento INTEGER, id_vinculo INTEGER, id_usuario INTEGER);
     CREATE TABLE logs_autenticacao (id_estabelecimento INTEGER, id_usuario INTEGER, login_informado TEXT, nome TEXT, cpf TEXT, perfil TEXT, evento TEXT, fator_2fa TEXT, ip TEXT);
-    CREATE TABLE sessoes_lembradas (id_sessao INTEGER PRIMARY KEY, id_estabelecimento INTEGER, id_usuario INTEGER, seletor TEXT UNIQUE, validador_hash TEXT, expira_em TEXT, criado_em TEXT, ultimo_uso TEXT);");
+    CREATE TABLE sessoes_lembradas (id_sessao INTEGER PRIMARY KEY, id_estabelecimento INTEGER, id_usuario INTEGER, id_vinculo INTEGER, seletor TEXT UNIQUE, validador_hash TEXT, expira_em TEXT, criado_em TEXT, ultimo_uso TEXT);");
 
 $checagens = 0;
 function verificar(bool $condicao, string $mensagem): void
@@ -61,20 +62,30 @@ session_start();
 // Massa: contas com e-mails unicos e uma empresa inativa
 // -------------------------------------------------------------------------
 bd()->exec("INSERT INTO estabelecimento (id_estabelecimento, nome, slug, status) VALUES (1, 'Studio Um', 'studio-um', 'ativo'), (2, 'Salao Dois', 'salao-dois', 'ativo'), (3, 'Fechado', 'fechado', 'inativo')");
-bd()->exec("INSERT INTO usuarios (id_usuario, id_estabelecimento, nome, email, login, senha_hash, tipo, status) VALUES
-    (10, 1, 'Ana Souza', 'ana@teste.local', 'anasou', 'x', 'cliente', 'ativo'),
-    (11, 2, 'Ana Souza', 'ana-dois@teste.local', NULL, 'x', 'admin', 'ativo'),
-    (12, 3, 'Ana Souza', 'ana-fechado@teste.local', NULL, 'x', 'cliente', 'ativo'),
-    (13, 1, 'Bruno Lima', 'bruno@teste.local', NULL, 'x', 'cliente', 'inativo')");
-bd()->exec('INSERT INTO clientes (id_cliente, id_estabelecimento, id_usuario) VALUES (100, 1, 10)');
+bd()->exec("INSERT INTO usuarios (id_usuario, nome, email, senha_hash, status) VALUES
+    (10, 'Ana Souza', 'ana@teste.local', 'x', 'ativo'),
+    (11, 'Ana Souza', 'ana-dois@teste.local', 'x', 'ativo'),
+    (12, 'Ana Souza', 'ana-fechado@teste.local', 'x', 'ativo'),
+    (13, 'Bruno Lima', 'bruno@teste.local', 'x', 'ativo')");
+// Um vinculo por pessoa; o de Bruno esta desligado na empresa.
+bd()->exec("INSERT INTO vinculos (id_vinculo, id_estabelecimento, id_usuario, tipo, status, login) VALUES
+    (110, 1, 10, 'cliente', 'ativo', 'anasou'),
+    (111, 2, 11, 'admin', 'ativo', NULL),
+    (112, 3, 12, 'cliente', 'ativo', NULL),
+    (113, 1, 13, 'cliente', 'inativo', NULL)");
+bd()->exec('INSERT INTO clientes (id_cliente, id_estabelecimento, id_vinculo, id_usuario) VALUES (100, 1, 110, 10)');
 
 $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 $_SERVER['HTTP_HOST'] = 'agendei.test';
 
-/** Linha da conta como as telas a recebem. */
+/** Pessoa juntada ao vinculo, como as telas a recebem. */
 function conta(int $id): array
 {
-    $q = bd()->prepare('SELECT * FROM usuarios WHERE id_usuario = ?');
+    $q = bd()->prepare("SELECT u.*, v.id_vinculo, v.id_estabelecimento, v.tipo, v.login, v.ultimo_acesso,
+                               v.status AS status_vinculo, u.status AS status_pessoa,
+                               CASE WHEN u.status = 'ativo' AND v.status = 'ativo' THEN 'ativo' ELSE 'inativo' END AS status
+                        FROM vinculos v JOIN usuarios u ON u.id_usuario = v.id_usuario
+                        WHERE v.id_usuario = ? ORDER BY v.id_vinculo LIMIT 1");
     $q->execute([$id]);
     return $q->fetch();
 }
@@ -82,7 +93,7 @@ function conta(int $id): array
 // -------------------------------------------------------------------------
 // SessaoLembrada: criar, reconhecer, renovar, apagar
 // -------------------------------------------------------------------------
-$cookie = SessaoLembrada::criar(1, 10);
+$cookie = SessaoLembrada::criar(1, 10, 110);
 verificar((bool) preg_match('/^[a-f0-9]{24}:[a-f0-9]{64}$/D', $cookie), 'Cookie fora do formato seletor:validador.');
 
 $registro = SessaoLembrada::porCookie($cookie);
@@ -96,7 +107,7 @@ verificar(SessaoLembrada::porCookie(str_repeat('a', 24) . ':' . str_repeat('b', 
 verificar(SessaoLembrada::porCookie($seletor . ':' . str_repeat('c', 64)) === null, 'Seletor certo com segredo errado foi aceito.');
 verificar(SessaoLembrada::porCookie($cookie) === null, 'Copia com segredo errado nao invalidou o registro legitimo.');
 
-$cookie = SessaoLembrada::criar(1, 10);
+$cookie = SessaoLembrada::criar(1, 10, 110);
 $registro = SessaoLembrada::porCookie($cookie);
 $novo = SessaoLembrada::renovar($registro);
 verificar($novo !== $cookie && explode(':', $novo)[0] === $seletorNovo = explode(':', $cookie)[0], 'Renovar deveria trocar so o segredo.');
@@ -105,13 +116,13 @@ verificar(SessaoLembrada::porCookie($cookie) === null, 'Segredo antigo continuou
 // Usar o segredo antigo e o que uma copia roubada faria: o dispositivo inteiro cai.
 verificar(SessaoLembrada::porCookie($novo) === null, 'Copia antiga usada nao derrubou o dispositivo.');
 
-$vencido = SessaoLembrada::criar(1, 10);
+$vencido = SessaoLembrada::criar(1, 10, 110);
 bd()->exec("UPDATE sessoes_lembradas SET expira_em = '2000-01-01 00:00:00'");
 verificar(SessaoLembrada::porCookie($vencido) === null, 'Cookie vencido foi aceito.');
 verificar((int) bd()->query('SELECT COUNT(*) FROM sessoes_lembradas')->fetchColumn() === 0, 'Registro vencido nao foi apagado ao ser usado.');
 
-SessaoLembrada::criar(1, 10);
-SessaoLembrada::criar(2, 11);
+SessaoLembrada::criar(1, 10, 110);
+SessaoLembrada::criar(2, 11, 111);
 SessaoLembrada::apagarDoUsuario(10);
 verificar((int) bd()->query('SELECT COUNT(*) FROM sessoes_lembradas')->fetchColumn() === 1, 'apagarDoUsuario apagou de mais ou de menos.');
 bd()->exec("UPDATE sessoes_lembradas SET expira_em = '2000-01-01 00:00:00'");
@@ -150,7 +161,7 @@ verificar((int) bd()->query('SELECT COUNT(*) FROM sessoes_lembradas')->fetchColu
 // -------------------------------------------------------------------------
 $_SESSION = [];
 $_GET = [];
-$_COOKIE = [LEMBRAR_COOKIE => SessaoLembrada::criar(1, 10)];
+$_COOKIE = [LEMBRAR_COOKIE => SessaoLembrada::criar(1, 10, 110)];
 $antes = $_COOKIE[LEMBRAR_COOKIE];
 restaurarSessaoLembrada();
 verificar(estaLogado() && (int) usuarioId() === 10 && (int) $_SESSION['estabelecimento_id'] === 1 && perfil() === 'cliente', 'Cookie valido nao reabriu a sessao.');
@@ -179,14 +190,14 @@ $_GET = [];
 
 // Conta inativa: registro e cookie somem.
 $_SESSION = [];
-$_COOKIE = [LEMBRAR_COOKIE => SessaoLembrada::criar(1, 13)];
+$_COOKIE = [LEMBRAR_COOKIE => SessaoLembrada::criar(1, 13, 113)];
 restaurarSessaoLembrada();
 verificar(!estaLogado() && !isset($_COOKIE[LEMBRAR_COOKIE]), 'Conta inativa reabriu a sessao ou manteve o cookie.');
 verificar((int) bd()->query('SELECT COUNT(*) FROM sessoes_lembradas WHERE id_usuario = 13')->fetchColumn() === 0, 'Registro da conta inativa ficou no banco.');
 
 // Empresa inativa: idem.
 $_SESSION = [];
-$_COOKIE = [LEMBRAR_COOKIE => SessaoLembrada::criar(3, 12)];
+$_COOKIE = [LEMBRAR_COOKIE => SessaoLembrada::criar(3, 12, 112)];
 restaurarSessaoLembrada();
 verificar(!estaLogado() && !isset($_COOKIE[LEMBRAR_COOKIE]), 'Empresa inativa reabriu a sessao.');
 
@@ -198,15 +209,15 @@ verificar(!estaLogado() && !isset($_COOKIE[LEMBRAR_COOKIE]), 'Cookie invalido na
 
 // Sessao master aberta: nada muda.
 $_SESSION = ['master_id' => 5, 'usuario_tipo' => 'master'];
-$_COOKIE = [LEMBRAR_COOKIE => SessaoLembrada::criar(1, 10)];
+$_COOKIE = [LEMBRAR_COOKIE => SessaoLembrada::criar(1, 10, 110)];
 restaurarSessaoLembrada();
 verificar(ehMaster() && !isset($_SESSION['usuario_id']), 'Cookie lembrado derrubou a sessao master.');
 $_SESSION = [];
 $_COOKIE = [];
 
 // Troca de senha esquece todos os dispositivos da conta.
-SessaoLembrada::criar(1, 10);
-SessaoLembrada::criar(1, 10);
+SessaoLembrada::criar(1, 10, 110);
+SessaoLembrada::criar(1, 10, 110);
 verificar((int) bd()->query('SELECT COUNT(*) FROM sessoes_lembradas WHERE id_usuario = 10')->fetchColumn() >= 3, 'Massa dos dispositivos da conta 10.');
 SessaoLembrada::apagarDoUsuario(10);
 verificar((int) bd()->query('SELECT COUNT(*) FROM sessoes_lembradas WHERE id_usuario = 10')->fetchColumn() === 0, 'Dispositivos da conta nao foram apagados.');

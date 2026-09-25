@@ -3,8 +3,8 @@
  * Regressao da entrada geral (entrar.php): login sem o link do estabelecimento.
  * Usa apenas SQLite em memoria, como tests/acesso.php.
  *
- * Cobre: contexto neutro sob ENTRADA_GLOBAL, e-mail globalmente unico,
- * exclusao de conta e empresa inativas, escolha da empresa por
+ * Cobre: contexto neutro sob ENTRADA_GLOBAL, pessoa unica com varios
+ * vinculos, exclusao de vinculo e empresa inativos, escolha da empresa por
  * Contexto::assumir() e a sessao que nasce dela.
  */
 if (PHP_SAPI !== 'cli') {
@@ -42,8 +42,9 @@ function bd(): PDO
 
 // Somente as tabelas/colunas usadas neste fluxo; nenhum banco instalado e acessado.
 bd()->exec("CREATE TABLE estabelecimento (id_estabelecimento INTEGER PRIMARY KEY, nome TEXT, slug TEXT UNIQUE, status TEXT DEFAULT 'ativo');
-    CREATE TABLE usuarios (id_usuario INTEGER PRIMARY KEY, id_estabelecimento INTEGER, nome TEXT, email TEXT UNIQUE, senha_hash TEXT, tipo TEXT, status TEXT DEFAULT 'ativo', ultimo_acesso TEXT);
-    CREATE TABLE administradores (id_administrador INTEGER PRIMARY KEY, id_estabelecimento INTEGER, id_usuario INTEGER, nivel TEXT);
+    CREATE TABLE usuarios (id_usuario INTEGER PRIMARY KEY, nome TEXT, email TEXT UNIQUE, senha_hash TEXT, telefone TEXT, telefone_fixo TEXT, sexo TEXT, nome_materno TEXT, data_nascimento TEXT, cep TEXT, logradouro TEXT, numero TEXT, complemento TEXT, bairro TEXT, cidade TEXT, uf TEXT, status TEXT DEFAULT 'ativo');
+    CREATE TABLE vinculos (id_vinculo INTEGER PRIMARY KEY, id_estabelecimento INTEGER, id_usuario INTEGER, tipo TEXT, status TEXT DEFAULT 'ativo', login TEXT, ultimo_acesso TEXT, UNIQUE (id_estabelecimento, id_usuario, tipo));
+    CREATE TABLE administradores (id_administrador INTEGER PRIMARY KEY, id_estabelecimento INTEGER, id_vinculo INTEGER, id_usuario INTEGER, nivel TEXT);
     CREATE TABLE administradores_master (id_master INTEGER PRIMARY KEY, nome TEXT, status TEXT DEFAULT 'ativo');
     CREATE TABLE logs_autenticacao (id_estabelecimento INTEGER, id_usuario INTEGER, login_informado TEXT, nome TEXT, cpf TEXT, perfil TEXT, evento TEXT, fator_2fa TEXT, ip TEXT);");
 
@@ -73,16 +74,22 @@ foreach (['empresa-a' => 'Senha-AB-1', 'empresa-b' => 'Senha-AB-1', 'empresa-c' 
 }
 bd()->exec("UPDATE estabelecimento SET status = 'inativo' WHERE slug = 'empresa-d'");
 
-$duplicadoRecusado = false;
+// O mesmo e-mail em outra empresa nao cria outra pessoa: a que existe ganha um
+// segundo vinculo (administradora tambem da empresa nova) e a senha dela fica.
+$ids['empresa-e'] = Estabelecimento::contratar([
+    'estabelecimento' => 'empresa-e', 'slug' => 'empresa-e',
+    'nome' => 'Responsavel duplicado', 'email' => 'PESSOA-A@teste.local ', 'senha' => 'outra-senha-ignorada',
+]);
+$idPessoaA = (int) bd()->query("SELECT id_usuario FROM usuarios WHERE email = 'pessoa-a@teste.local'")->fetchColumn();
+verificar((int) bd()->query("SELECT COUNT(*) FROM usuarios WHERE email = 'pessoa-a@teste.local'")->fetchColumn() === 1, 'O segundo vinculo criou outra pessoa.');
+verificar(count(Vinculo::daPessoa($idPessoaA)) === 2, 'A pessoa nao ficou com dois vinculos.');
+$vinculoRepetido = false;
 try {
-    Estabelecimento::contratar([
-        'estabelecimento' => 'empresa-duplicada', 'slug' => 'empresa-duplicada',
-        'nome' => 'Responsavel duplicado', 'email' => 'PESSOA-A@teste.local ', 'senha' => 'Senha-AB-1',
-    ]);
+    Estabelecimento::vincularAdministrador($ids['empresa-e'], $idPessoaA);
 } catch (DomainException) {
-    $duplicadoRecusado = true;
+    $vinculoRepetido = true;
 }
-verificar($duplicadoRecusado, 'O mesmo e-mail foi aceito em outra empresa.');
+verificar($vinculoRepetido, 'A mesma pessoa virou administradora duas vezes da mesma empresa.');
 
 // -------------------------------------------------------------------------
 // Contexto neutro: a entrada geral ignora o slug da URL e nao carrega empresa.
@@ -100,10 +107,11 @@ verificar(!str_contains(url('entrar.php'), 'estabelecimento='), 'A URL da entrad
 $contas = autenticarGlobal('pessoa-a@teste.local', 'Senha-AB-1');
 $empresas = array_map('intval', array_column($contas, 'id_estabelecimento'));
 sort($empresas);
-verificar($empresas === [$ids['empresa-a']], 'A entrada geral nao selecionou a conta unica do e-mail.');
+verificar($empresas === [$ids['empresa-a'], $ids['empresa-e']], 'A entrada geral nao listou os dois vinculos da pessoa.');
 verificar(!isset($contas[0]['senha_hash']), 'autenticarGlobal expos o hash de senha.');
-verificar($contas[0]['estabelecimento_slug'] === 'empresa-a', 'A conta veio sem o slug da empresa.');
+verificar($contas[0]['estabelecimento_slug'] === 'empresa-a' && (int) $contas[0]['id_vinculo'] > 0, 'A conta veio sem o slug da empresa ou sem o vinculo.');
 verificar($contas[0]['tipo'] === 'admin', 'A conta veio sem o tipo.');
+verificar(autenticarGlobal('pessoa-a@teste.local', 'outra-senha-ignorada') === [], 'O segundo vinculo trocou a senha da pessoa.');
 
 verificar(autenticarGlobal('pessoa-c@teste.local', 'Senha-C-99') !== [] && count(autenticarGlobal('pessoa-c@teste.local', 'Senha-C-99')) === 1, 'A senha exclusiva da empresa c nao achou a conta.');
 verificar(autenticarGlobal('pessoa-a@teste.local', 'senha-errada') === [], 'Senha errada devolveu contas.');
@@ -112,15 +120,20 @@ verificar(autenticarGlobal('ninguem@teste.local', 'Senha-AB-1') === [], 'E-mail 
 verificar(autenticarGlobal('nao-e-email', 'Senha-AB-1') === [], 'Identificador que nao e e-mail foi aceito.');
 verificar(autenticarGlobal('pessoa-a@teste.local', '') === [], 'Senha vazia foi aceita.');
 
-// Conta desligada some da escolha, mesmo com a senha certa.
-bd()->exec("UPDATE usuarios SET status = 'inativo' WHERE id_estabelecimento = {$ids['empresa-b']}");
+// Vinculo desligado some da escolha, mesmo com a senha certa.
+bd()->exec("UPDATE vinculos SET status = 'inativo' WHERE id_estabelecimento = {$ids['empresa-b']}");
 $contas = autenticarGlobal('pessoa-b@teste.local', 'Senha-AB-1');
-verificar($contas === [], 'Conta inativa apareceu na entrada geral.');
-bd()->exec("UPDATE usuarios SET status = 'ativo' WHERE id_estabelecimento = {$ids['empresa-b']}");
+verificar($contas === [], 'Vinculo inativo apareceu na entrada geral.');
+bd()->exec("UPDATE vinculos SET status = 'ativo' WHERE id_estabelecimento = {$ids['empresa-b']}");
+
+// Pessoa bloqueada pelo master nao entra em lugar nenhum, mesmo com vinculos ativos.
+Usuario::alterarStatusPessoa($idPessoaA, 'inativo');
+verificar(autenticarGlobal('pessoa-a@teste.local', 'Senha-AB-1') === [], 'Pessoa bloqueada entrou pela entrada geral.');
+Usuario::alterarStatusPessoa($idPessoaA, 'ativo');
 
 // A consulta sem segredos, usada pelas telas, ve todos os vinculos (inclusive os inativos).
 $vinculos = Usuario::vinculosPorEmail('pessoa-a@teste.local');
-verificar(count($vinculos) === 1, 'vinculosPorEmail nao respeitou a unicidade global.');
+verificar(count($vinculos) === 2, 'vinculosPorEmail nao listou os dois vinculos da pessoa.');
 verificar(!isset($vinculos[0]['senha_hash']), 'vinculosPorEmail expos o hash de senha.');
 
 // -------------------------------------------------------------------------

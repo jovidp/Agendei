@@ -51,7 +51,7 @@ php scripts/preparar_hospedagem.php
 
 Isso cria `banco_hospedagem.sql` (arquivo gerado, fora do git). No phpMyAdmin
 da hospedagem, **selecione o banco criado no passo 2** e importe esse arquivo.
-Confira ao final: devem existir **20 tabelas**.
+Confira ao final: devem existir **27 tabelas**.
 
 ---
 

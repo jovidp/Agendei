@@ -12,7 +12,7 @@ $urlEntrar = BASE_URL . '/login.php'
 
 // Registra a saida no log de autenticacao antes de perder os dados da sessao.
 if (estaLogado() && usuarioId() !== null) {
-    $usuarioSaindo = Usuario::porId((int) usuarioId());
+    $usuarioSaindo = Usuario::daSessao();
     if ($usuarioSaindo !== null) {
         LogAutenticacao::registrar('logout', (string) ($usuarioSaindo['login'] ?? $usuarioSaindo['email']), $usuarioSaindo, null, cpfDoUsuario($usuarioSaindo));
     }

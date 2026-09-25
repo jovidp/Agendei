@@ -207,6 +207,33 @@ verificar(Diferencial::pagamentos($clientePrivacidade)[0]['status'] === 'cancela
 verificar(Cliente::porId($clientePrivacidade)['status'] === 'inativo', 'Anonimização não desativou a conta.');
 verificar(Agendamento::porId((int) $reservaPrivacidade['id_agendamento'])['status'] === 'cancelado', 'Anonimização não cancelou a reserva futura.');
 
+// Uma pessoa, dois vinculos: o cliente da empresa A vira profissional da
+// empresa B com a mesma conta. Desligar o vinculo em uma empresa nao mexe na
+// outra, e as consultas continuam isoladas por vinculo.
+$fa = $fixtures['empresa-a'];
+$pessoaDupla = (int) Cliente::porId($fa['cliente'])['id_usuario'];
+empresa('empresa-b');
+$profissionalDuplo = Profissional::criar([
+    'id_usuario' => $pessoaDupla, 'especialidade' => 'Convidado',
+    'pode_bloquear_agenda' => 1, 'servicos' => [$fixtures['empresa-b']['servico']],
+]);
+verificar((int) Profissional::porId($profissionalDuplo)['id_usuario'] === $pessoaDupla, 'O profissional nao reaproveitou a pessoa existente.');
+verificar((int) bd()->query("SELECT COUNT(*) FROM usuarios WHERE id_usuario = $pessoaDupla")->fetchColumn() === 1, 'A pessoa foi duplicada.');
+verificar(count(Vinculo::daPessoa($pessoaDupla)) === 2, 'A pessoa nao ficou com dois vinculos.');
+verificar(Cliente::porUsuario($pessoaDupla) === null, 'O perfil de cliente da empresa A apareceu na empresa B.');
+verificar(autenticar($fa['emailCliente'], 'Teste12345!')['tipo'] === 'profissional', 'Na empresa B a pessoa nao entra como profissional.');
+// Desligar o profissional em B nao desliga o cliente em A.
+Vinculo::alterarStatus((int) Profissional::porId($profissionalDuplo)['id_vinculo'], 'inativo');
+verificar(autenticar($fa['emailCliente'], 'Teste12345!') === null, 'Vinculo desligado ainda entra na empresa B.');
+empresa('empresa-a');
+verificar(autenticar($fa['emailCliente'], 'Teste12345!')['tipo'] === 'cliente', 'Desligar em B derrubou o vinculo de cliente em A.');
+verificar(Cliente::porId($fa['cliente'])['status'] === 'ativo', 'O cliente de A foi desativado por tabela.');
+// Bloqueio global da pessoa (so o master): nao entra em lugar nenhum.
+Usuario::alterarStatusPessoa($pessoaDupla, 'inativo');
+verificar(autenticar($fa['emailCliente'], 'Teste12345!') === null, 'Pessoa bloqueada entrou na empresa A.');
+Usuario::alterarStatusPessoa($pessoaDupla, 'ativo');
+verificar(autenticar($fa['emailCliente'], 'Teste12345!') !== null, 'Pessoa desbloqueada nao voltou a entrar.');
+
 empresa('empresa-b');
 verificar(Diferencial::listaAdministrativa() === [], 'Lista de espera vazou entre estabelecimentos.');
 verificar(Diferencial::pagamentos() === [], 'Pagamentos vazaram entre estabelecimentos.');
