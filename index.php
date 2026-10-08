@@ -47,7 +47,7 @@ $recursos = [
     <meta name="description" content="Agendamento online para quem atende e para quem marca. Marcou, confirmou.">
     <title><?= e($tituloPagina) ?></title>
     <link rel="stylesheet" href="<?= url('assets/css/style.css') ?>">
-    <link rel="stylesheet" href="<?= url('assets/css/inicio.css') ?>">
+    <link rel="stylesheet" href="<?= url('assets/css/inicio.css?v=' . filemtime(RAIZ . '/assets/css/inicio.css')) ?>">
     <?php require RAIZ . '/includes/tema.php'; ?>
 </head>
 <body class="pagina-produto">
@@ -257,5 +257,6 @@ $recursos = [
 
 <div id="notificacoes"></div>
 <script src="<?= url('assets/js/main.js') ?>"></script>
+<script src="<?= url('assets/js/inicio.js?v=' . filemtime(RAIZ . '/assets/js/inicio.js')) ?>" defer></script>
 </body>
 </html>
