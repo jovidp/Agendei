@@ -32,11 +32,10 @@ a listagem de restrições preserva todas elas.
 
 ## MER: entidades e funcionamento
 
-O estabelecimento organiza usuários, catálogo, agenda e configurações. Usuários
-possuem perfis de cliente, profissional ou administrador local; a conta master é
-global e independente dessa especialização. O fluxo de cadastro cria o perfil
-correspondente, mas o SQL permite zero ou um registro em cada subtipo e não impõe
-exclusividade entre as três tabelas.
+O estabelecimento organiza vinculos, catalogo, agenda, filiais e configuracoes.
+usuarios identifica a pessoa; vinculos permite que ela seja cliente, profissional
+ou administradora em varias empresas. Cada vinculo tem no maximo um registro em
+cada tabela de perfil. A conta master e global e independente dessa especializacao.
 
 `profissional_servico` é a associação N:N entre profissionais e serviços, com PK
 composta pelos dois identificadores. `cliente_pacotes` representa a aquisição de
@@ -107,7 +106,7 @@ Para atualizar estes arquivos: `php scripts/gerar_modelo_bd.php`.
 
 Apresente o MER e o DER do sistema Agendei estritamente conforme o documento
 `docs/MER_DER.md` fornecido junto com este prompt. Não invente nem omita tabelas,
-colunas, restrições ou relacionamentos. Use as 25 tabelas documentadas, incluindo
+colunas, restrições ou relacionamentos. Use as 28 tabelas documentadas, incluindo
 assinaturas, planos, administração master, agenda, benefícios e segurança.
 
 1. Explique o MER conceitual e seus relacionamentos com cardinalidade mínima e

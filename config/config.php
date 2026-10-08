@@ -43,10 +43,12 @@ if (!defined('BASE_URL')) {
     $arquivoReal = str_replace(chr(92), '/', $arquivoReal ?: $arquivoExecutado);
     $scriptUrl = str_replace(chr(92), '/', $_SERVER['SCRIPT_NAME'] ?? '');
     $caminhoBase = '';
+    // Na linha de comando nao ha URL: o caminho do arquivo em disco nao e caminho publico.
+    $emRequisicao = PHP_SAPI !== 'cli';
 
-    if ($raizDocumento !== '' && strpos($raizProjeto, $raizDocumento) === 0) {
+    if ($emRequisicao && $raizDocumento !== '' && strpos($raizProjeto, $raizDocumento) === 0) {
         $caminhoBase = substr($raizProjeto, strlen($raizDocumento));
-    } elseif ($arquivoReal !== '' && strpos($arquivoReal, $raizProjeto . '/') === 0) {
+    } elseif ($emRequisicao && $arquivoReal !== '' && strpos($arquivoReal, $raizProjeto . '/') === 0) {
         $arquivoRelativo = substr($arquivoReal, strlen($raizProjeto));
         if ($arquivoRelativo !== '' && str_ends_with($scriptUrl, $arquivoRelativo)) {
             $caminhoBase = substr($scriptUrl, 0, -strlen($arquivoRelativo));
@@ -63,6 +65,7 @@ require_once RAIZ . '/includes/funcoes.php';
 require_once RAIZ . '/includes/auth.php';
 require_once RAIZ . '/includes/seguranca.php';
 require_once RAIZ . '/includes/marca.php';
+require_once RAIZ . '/includes/emails.php';
 
 /** Carregamento automatico dos models. */
 spl_autoload_register(function (string $classe): void {
@@ -80,6 +83,18 @@ aplicarCabecalhosSeguranca();
 iniciarSessao();
 
 // Resolve a empresa antes de consultar cadastros ou renderizar a identidade visual.
+// Paginas de entrada local (login, cadastro, 2FA, senha) nunca rodam sob a
+// identidade master: quem chega nelas quer uma sessao local. Descarta-la aqui e
+// o que permite ao master entrar no estabelecimento que acabou de criar, sem que
+// a conta global assuma um estabelecimento pela URL nas demais paginas.
+if (defined('ENTRADA_LOCAL')) {
+    descartarIdentidadeMaster();
+}
+
+// "Manter conectado": sem sessao aberta, o cookie de dispositivo lembrado
+// reabre a conta antes de o Contexto resolver a empresa (includes/auth.php).
+restaurarSessaoLembrada();
+
 Contexto::iniciar();
 
 // Derruba sessao vencida por inatividade, por tempo total ou usada em outro

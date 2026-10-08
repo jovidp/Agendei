@@ -166,7 +166,8 @@ require_once RAIZ . '/includes/painel_header.php';
 
                 <div class="campo">
                     <label for="cep">CEP</label>
-                    <input type="text" id="cep" name="cep" data-mascara="cep" value="<?= e($estabelecimento['cep'] ?? '') ?>">
+                    <input type="text" id="cep" name="cep" data-mascara="cep" data-busca-cep inputmode="numeric" maxlength="9" value="<?= e($estabelecimento['cep'] ?? '') ?>">
+                    <span class="ajuda-campo" data-cep-situacao>Preenche o endereço automaticamente.</span>
                 </div>
             </div>
 

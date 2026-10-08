@@ -11,7 +11,7 @@ Para atualizar estes arquivos: `php scripts/gerar_modelo_bd.php`.
 
 Apresente o MER e o DER do sistema Agendei estritamente conforme o documento
 `docs/MER_DER.md` fornecido junto com este prompt. Não invente nem omita tabelas,
-colunas, restrições ou relacionamentos. Use as 25 tabelas documentadas, incluindo
+colunas, restrições ou relacionamentos. Use as 28 tabelas documentadas, incluindo
 assinaturas, planos, administração master, agenda, benefícios e segurança.
 
 1. Explique o MER conceitual e seus relacionamentos com cardinalidade mínima e

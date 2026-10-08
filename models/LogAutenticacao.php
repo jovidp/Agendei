@@ -25,14 +25,24 @@ class LogAutenticacao
      */
     public static function registrar(string $evento, string $loginInformado, ?array $usuario = null, ?string $fator = null, ?string $cpf = null): void
     {
-        if (!in_array($evento, self::EVENTOS, true)) {
+        self::registrarEm(Contexto::id(), $evento, $loginInformado, $usuario, $fator, $cpf);
+    }
+
+    /**
+     * Grava o evento numa empresa indicada, sem depender do Contexto.
+     * Usado pela entrada geral, que testa a senha em contas de varias empresas
+     * antes de assumir uma delas.
+     */
+    public static function registrarEm(int $idEstabelecimento, string $evento, string $loginInformado, ?array $usuario = null, ?string $fator = null, ?string $cpf = null): void
+    {
+        if (!in_array($evento, self::EVENTOS, true) || $idEstabelecimento < 1) {
             return;
         }
 
         $sql = 'INSERT INTO logs_autenticacao
                     (id_estabelecimento, id_usuario, login_informado, nome, cpf, perfil, evento, fator_2fa, ip)
                 VALUES
-                    (' . Contexto::id() . ', :id_usuario, :login, :nome, :cpf, :perfil, :evento, :fator, :ip)';
+                    (' . $idEstabelecimento . ', :id_usuario, :login, :nome, :cpf, :perfil, :evento, :fator, :ip)';
 
         try {
             $consulta = bd()->prepare($sql);

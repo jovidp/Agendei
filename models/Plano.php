@@ -230,8 +230,8 @@ class Plano
     {
         $profissionais = bd()->prepare(
             'SELECT COUNT(*) FROM profissionais p
-             JOIN usuarios u ON u.id_usuario = p.id_usuario
-             WHERE p.id_estabelecimento = ? AND u.status = \'ativo\''
+             JOIN vinculos v ON v.id_vinculo = p.id_vinculo
+             WHERE p.id_estabelecimento = ? AND v.status = \'ativo\''
         );
         $profissionais->execute([$idEstabelecimento]);
 

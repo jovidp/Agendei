@@ -113,16 +113,25 @@ class Diferencial
         return $total;
     }
 
-    /** Gera a fila de lembretes; o envio pode ser aberto no WhatsApp pelo administrador. */
+    /**
+     * Gera a fila de lembretes dos agendamentos das proximas N horas.
+     *
+     * A fila e uma so: o painel a mostra com o link "Abrir WhatsApp" e a tarefa
+     * periodica (Lembrete) a envia sozinha quando ha provedor configurado.
+     * A chave unica (empresa, agendamento, tipo) garante um lembrete por reserva.
+     */
     public static function gerarLembretes(): int
     {
         $horas = max(1, Configuracao::obterInteiro('lembrete_horas', 24));
         $q = bd()->prepare(
-            'SELECT a.id_agendamento,c.id_usuario,u.nome,u.telefone,a.data_agendamento,a.hora_inicio,s.nome servico
+            'SELECT a.id_agendamento,c.id_usuario,u.nome,u.telefone,a.data_agendamento,a.hora_inicio,
+                    s.nome servico,p.nome profissional
              FROM agendamentos a
              JOIN clientes c ON c.id_cliente=a.id_cliente
              JOIN usuarios u ON u.id_usuario=c.id_usuario
              JOIN servicos s ON s.id_servico=a.id_servico
+             JOIN profissionais pr ON pr.id_profissional=a.id_profissional
+             JOIN usuarios p ON p.id_usuario=pr.id_usuario
              WHERE a.id_estabelecimento=? AND a.status IN (\'agendado\',\'confirmado\')
                AND ' . Sql::dataHora('a.data_agendamento', 'a.hora_inicio')
                  . ' BETWEEN NOW() AND ' . Sql::somarHoras('NOW()', '?')
@@ -133,10 +142,22 @@ class Diferencial
              (id_estabelecimento,id_usuario,id_agendamento,canal,tipo,destinatario,mensagem,data_programada)
              VALUES (?,?,?,?,?,?,?,NOW())' . Sql::ignorarConflito()
         );
+        $empresa = Estabelecimento::campo('nome', NOME_SISTEMA);
         $total = 0;
         foreach ($q->fetchAll() as $item) {
-            $mensagem = 'Olá, ' . explode(' ', $item['nome'])[0] . '! Lembrete: ' . $item['servico']
-                . ' em ' . formatarData($item['data_agendamento']) . ' às ' . formatarHora($item['hora_inicio']) . '.';
+            // O link assinado leva o cliente a confirmar.php. Sem host conhecido
+            // (cron sem AGENDEI_URL) a mensagem volta ao pedido de aviso.
+            $link = Confirmacao::link([
+                'id_agendamento'   => $item['id_agendamento'],
+                'data_agendamento' => $item['data_agendamento'],
+                'hora_inicio'      => $item['hora_inicio'],
+            ]);
+            $mensagem = 'Olá, ' . explode(' ', trim($item['nome']))[0] . '! Lembrete do ' . $empresa . ': '
+                . $item['servico'] . ' em ' . formatarData($item['data_agendamento'])
+                . ' às ' . formatarHora($item['hora_inicio']) . ', com ' . explode(' ', trim($item['profissional']))[0]
+                . '. ' . ($link !== ''
+                    ? 'Confirme sua presença ou avise se não puder ir: ' . $link
+                    : 'Se precisar remarcar, avise com antecedência.');
             $inserir->execute([
                 Contexto::id(), $item['id_usuario'], $item['id_agendamento'], 'whatsapp',
                 'lembrete_' . $horas . 'h', $item['telefone'], $mensagem,
@@ -152,6 +173,17 @@ class Diferencial
             'SELECT * FROM notificacoes WHERE id_estabelecimento=' . Contexto::id() . '
              AND status=\'pendente\' ORDER BY data_programada,data_criacao'
         )->fetchAll();
+    }
+
+    /** Ultimas mensagens que sairam da fila (enviadas ou canceladas), para o painel. */
+    public static function notificacoesRecentes(int $limite = 15): array
+    {
+        $q = bd()->prepare(
+            'SELECT * FROM notificacoes WHERE id_estabelecimento = ? AND status <> \'pendente\'
+             ORDER BY COALESCE(data_envio, data_criacao) DESC, id_notificacao DESC LIMIT ' . max(1, $limite)
+        );
+        $q->execute([Contexto::id()]);
+        return $q->fetchAll();
     }
 
     public static function marcarNotificacao(int $id): void
@@ -545,12 +577,22 @@ class Diferencial
             $q->execute([Contexto::id(), $idUsuario]);
             $q = $db->prepare('UPDATE avaliacoes SET comentario=NULL,status=\'oculta\' WHERE id_estabelecimento=? AND id_cliente=?');
             $q->execute([Contexto::id(), $idCliente]);
-            $q = $db->prepare('UPDATE usuarios SET nome=\'Cliente removido\',email=?,telefone=NULL,senha_hash=?,status=\'inativo\',
-                               token_recuperacao=NULL,token_expiracao=NULL WHERE id_estabelecimento=? AND id_usuario=?');
-            $q->execute([
-                'removido-' . $idUsuario . '-' . bin2hex(random_bytes(4)) . '@anonimo.invalid',
-                password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT), Contexto::id(), $idUsuario,
-            ]);
+            // Encerra o vinculo com esta empresa: sem login e desligado.
+            $q = $db->prepare('UPDATE vinculos SET status=\'inativo\',login=NULL WHERE id_estabelecimento=? AND id_vinculo=?');
+            $q->execute([Contexto::id(), (int) $cliente['id_vinculo']]);
+            // A pessoa so e anonimizada quando este era o unico vinculo dela: se
+            // ela tambem e cliente ou profissional em outra empresa, a identidade
+            // continua valendo la, e o pedido diz respeito so a esta.
+            $q = $db->prepare('SELECT COUNT(*) FROM vinculos WHERE id_usuario=? AND id_vinculo<>?');
+            $q->execute([$idUsuario, (int) $cliente['id_vinculo']]);
+            if ((int) $q->fetchColumn() === 0) {
+                $q = $db->prepare('UPDATE usuarios SET nome=\'Cliente removido\',email=?,telefone=NULL,senha_hash=?,status=\'inativo\',
+                                   token_recuperacao=NULL,token_expiracao=NULL WHERE id_usuario=?');
+                $q->execute([
+                    'removido-' . $idUsuario . '-' . bin2hex(random_bytes(4)) . '@anonimo.invalid',
+                    password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT), $idUsuario,
+                ]);
+            }
             $db->commit();
         } catch (Throwable $erro) {
             if ($db->inTransaction()) {

@@ -13,6 +13,7 @@ $menus = [
     'master' => [
         ['rotulo' => 'Visão geral', 'arquivo' => 'master/dashboard.php', 'icone' => 'dashboard'],
         ['rotulo' => 'Estabelecimentos', 'arquivo' => 'master/estabelecimentos.php', 'icone' => 'clientes'],
+        ['rotulo' => 'Contas por estabelecimento', 'arquivo' => 'master/usuarios.php', 'icone' => 'perfil'],
         ['rotulo' => 'Uso da plataforma', 'arquivo' => 'master/uso.php', 'icone' => 'relatorios'],
         ['rotulo' => 'Planos e limites', 'arquivo' => 'master/planos.php', 'icone' => 'servicos'],
         ['separador' => 'Plataforma'],
@@ -32,6 +33,7 @@ $menus = [
         ['separador' => 'Cadastros'],
         ['rotulo' => 'Clientes',      'arquivo' => 'admin/clientes.php',      'icone' => 'clientes'],
         ['rotulo' => 'Profissionais', 'arquivo' => 'admin/profissionais.php', 'icone' => 'profissionais'],
+        ['rotulo' => 'Filiais',       'arquivo' => 'admin/filiais.php',       'icone' => 'dashboard'],
         ['rotulo' => 'Servicos',      'arquivo' => 'admin/servicos.php',      'icone' => 'servicos'],
         ['rotulo' => 'Horarios',      'arquivo' => 'admin/horarios.php',      'icone' => 'horarios'],
         ['separador' => 'Sistema'],
@@ -64,7 +66,6 @@ $menus = [
         ['rotulo' => 'Meu perfil',        'arquivo' => 'cliente/perfil.php',       'icone' => 'perfil'],
         ['rotulo' => 'Privacidade',        'arquivo' => 'cliente/privacidade.php',   'icone' => 'configuracoes'],
         ['rotulo' => 'Verificacao em 2 etapas', 'arquivo' => 'autenticador.php', 'icone' => 'bloqueio'],
-        ['rotulo' => 'Modelo do BD',      'arquivo' => 'modelo_bd.php',            'icone' => 'relatorios'],
     ],
 ];
 

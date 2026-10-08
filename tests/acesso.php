@@ -30,8 +30,9 @@ function bd(): PDO
 
 // Somente as tabelas/colunas usadas neste fluxo; nenhum banco instalado e acessado.
 bd()->exec("CREATE TABLE estabelecimento (id_estabelecimento INTEGER PRIMARY KEY, nome TEXT, slug TEXT UNIQUE, status TEXT DEFAULT 'ativo');
-    CREATE TABLE usuarios (id_usuario INTEGER PRIMARY KEY, id_estabelecimento INTEGER, nome TEXT, email TEXT, senha_hash TEXT, tipo TEXT, status TEXT DEFAULT 'ativo', ultimo_acesso TEXT);
-    CREATE TABLE administradores (id_administrador INTEGER PRIMARY KEY, id_estabelecimento INTEGER, id_usuario INTEGER, nivel TEXT);
+    CREATE TABLE usuarios (id_usuario INTEGER PRIMARY KEY, nome TEXT, email TEXT UNIQUE, senha_hash TEXT, telefone TEXT, telefone_fixo TEXT, sexo TEXT, nome_materno TEXT, data_nascimento TEXT, cep TEXT, logradouro TEXT, numero TEXT, complemento TEXT, bairro TEXT, cidade TEXT, uf TEXT, status TEXT DEFAULT 'ativo');
+    CREATE TABLE vinculos (id_vinculo INTEGER PRIMARY KEY, id_estabelecimento INTEGER, id_usuario INTEGER, tipo TEXT, status TEXT DEFAULT 'ativo', login TEXT, ultimo_acesso TEXT, UNIQUE (id_estabelecimento, id_usuario, tipo));
+    CREATE TABLE administradores (id_administrador INTEGER PRIMARY KEY, id_estabelecimento INTEGER, id_vinculo INTEGER, id_usuario INTEGER, nivel TEXT);
     CREATE TABLE logs_autenticacao (id_estabelecimento INTEGER, id_usuario INTEGER, login_informado TEXT, nome TEXT, cpf TEXT, perfil TEXT, evento TEXT, fator_2fa TEXT, ip TEXT);");
 
 $checagens = 0;
@@ -48,25 +49,52 @@ session_save_path(sys_get_temp_dir());
 iniciarSessao();
 verificar(session_status() === PHP_SESSION_ACTIVE, 'Sessao de teste nao iniciou.');
 foreach (['empresa-a', 'empresa-b'] as $slug) {
+    // O e-mail e unico em toda a plataforma: cada empresa tem o seu responsavel.
+    $email = 'admin-' . substr($slug, -1) . '@teste.local';
     $id = Estabelecimento::contratar([
         'estabelecimento' => $slug, 'slug' => $slug, 'nome' => 'Responsavel Teste',
-        'email' => 'admin@teste.local', 'senha' => 'Teste12345!',
+        'email' => $email, 'senha' => 'Teste12345!',
     ]);
     $_SESSION = [];
     $_GET = ['estabelecimento' => $slug];
     Contexto::iniciar();
-    $usuario = autenticar('admin@teste.local', 'Teste12345!');
+    $usuario = autenticar($email, 'Teste12345!');
     verificar($usuario !== null && (int) $usuario['id_estabelecimento'] === $id, 'Login selecionou outra empresa.');
     verificar($usuario['tipo'] === 'admin', 'Cadastro nao criou administrador local.');
-    verificar(autenticar('admin@teste.local', 'senha-errada') === null, 'Senha invalida aceita.');
+    verificar(autenticar($email, 'senha-errada') === null, 'Senha invalida aceita.');
+
+    // Fora da entrada geral (tests/entrada_global.php), a requisicao nunca troca de empresa.
+    try {
+        Contexto::assumir($id);
+        verificar(false, 'Contexto::assumir aceito fora da entrada geral.');
+    } catch (LogicException) {
+        verificar(Contexto::id() === $id, 'Contexto mudou apos a recusa do assumir.');
+    }
+
+    // A conta master e global e nunca assume um estabelecimento pela URL (o
+    // multitenancy cobre isso com o esquema completo). As paginas de entrada
+    // local descartam a identidade master primeiro (ENTRADA_LOCAL) - e ai o slug
+    // resolve e o login local funciona: e assim que o master entra no que
+    // acabou de criar.
+    $_SESSION = ['master_id' => 99, 'usuario_tipo' => 'master'];
+    descartarIdentidadeMaster();
+    verificar(!sessaoAbertaEm('master') && perfil() === null, 'Identidade master nao foi descartada.');
+    Contexto::iniciar();
+    verificar(Contexto::id() === $id, 'Sem a identidade master, o slug nao resolveu o estabelecimento.');
+    verificar(autenticar($email, 'Teste12345!') !== null, 'Login local falhou apos descartar a identidade master.');
+    $_SESSION = [];
+    Contexto::iniciar();
 
     // Residuos de outra identidade nao podem sobreviver ao login local.
     $_SESSION['master_id'] = 99;
     $_SESSION['simulacao'] = ['master_id' => 99];
     $_SESSION['segundo_fator_master'] = ['master_id' => 99];
     $_SESSION['redirecionar_apos_login'] = BASE_URL . '/master/dashboard.php';
+    // A tela de login local precisa continuar acessivel com a sessao master aberta.
+    verificar(!sessaoAbertaEm('local') && sessaoAbertaEm('master'), 'Sessao master bloqueou a tela de login local.');
     registrarSessao($usuario);
     verificar(ehAdmin() && !ehMaster() && !ehSimulacao() && !isset($_SESSION['master_id']), 'Login manteve identidade master.');
+    verificar(sessaoAbertaEm('local') && !sessaoAbertaEm('master'), 'Login local nao encerrou a sessao master.');
     verificar(segundoFatorMasterPendente() === null, 'Login manteve desafio master.');
     verificar(perfilId() !== null, 'Login perdeu o perfil administrativo.');
     verificar(perfilRotulo() === 'Administrador do estabelecimento', 'Rotulo confunde admin com master.');

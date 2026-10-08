@@ -31,26 +31,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $status        = post('status') === 'inativo' ? 'inativo' : 'ativo';
         $servicos      = array_map('intval', (array) ($_POST['servicos'] ?? []));
         $podeBloquear  = post('pode_bloquear_agenda') === '1';
+        $idFilial      = (int) post('id_filial');
 
-        if (mb_strlen($nome) < 5 || !str_contains($nome, ' ')) {
+        // Cadastro novo com e-mail conhecido: a pessoa ja existe (cliente ou
+        // profissional em outra empresa, ou administradora desta) e ganha o
+        // vinculo aqui, sem senha nova e sem que os dados dela sejam reescritos.
+        $pessoaExistente = !$profissional && validarEmail($email) ? Usuario::pessoaPorEmail($email) : null;
+        // Na edicao, nome, e-mail e senha so podem ser alterados pela empresa se
+        // a pessoa nao tiver vinculo em outro lugar; fora disso esses dados sao
+        // dela, valem nas outras empresas, e so ela os altera no proprio perfil.
+        $pessoaCompartilhada = $profissional && !Usuario::pertenceSoAqui((int) $profissional['id_usuario']);
+        $dadosDaPessoa = !$pessoaExistente && !$pessoaCompartilhada;
+
+        if ($dadosDaPessoa && (mb_strlen($nome) < 5 || !str_contains($nome, ' '))) {
             $erros[] = 'Informe o nome completo do profissional.';
         }
         if (!validarEmail($email)) {
             $erros[] = 'Informe um e-mail valido.';
-        } elseif (Usuario::emailEmUso($email, $profissional ? (int) $profissional['id_usuario'] : null)) {
+        } elseif ($profissional && !$pessoaCompartilhada && Usuario::emailEmUso($email, (int) $profissional['id_usuario'])) {
             $erros[] = 'Este e-mail ja esta cadastrado em outra conta.';
+        } elseif ($pessoaExistente && Vinculo::porPessoaEmpresaTipo(Contexto::id(), (int) $pessoaExistente['id_usuario'], 'profissional') !== null) {
+            $erros[] = 'Esta pessoa ja e profissional deste estabelecimento.';
         }
-        if ($telefone !== '' && !in_array(strlen($telefone), [10, 11], true)) {
+        if ($dadosDaPessoa && $telefone !== '' && !in_array(strlen($telefone), [10, 11], true)) {
             $erros[] = 'Informe um telefone valido com DDD.';
         }
-        if (!$profissional && !validarSenha($senha)) {
+        if (!$profissional && !$pessoaExistente && !validarSenha($senha)) {
             $erros[] = 'Defina uma senha de acesso com no minimo 6 caracteres.';
         }
-        if ($profissional && $senha !== '' && !validarSenha($senha)) {
+        if ($profissional && !$pessoaCompartilhada && $senha !== '' && !validarSenha($senha)) {
             $erros[] = 'A nova senha deve ter no minimo 6 caracteres.';
         }
         if ($servicos === []) {
             $erros[] = 'Selecione ao menos um servico executado pelo profissional.';
+        }
+        // Todo profissional pertence a uma filial do estabelecimento.
+        if ($idFilial <= 0 || Filial::porId($idFilial) === null) {
+            $erros[] = 'Escolha a filial do profissional.';
         }
 
         // O teto do plano vale para equipe nova e para reativacao: os dois
@@ -67,18 +84,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($erros === []) {
             try {
                 if ($profissional) {
-                    Usuario::atualizar((int) $profissional['id_usuario'], [
-                        'nome'     => $nome,
-                        'email'    => $email,
-                        'telefone' => $telefone,
-                    ]);
-                    Usuario::alterarStatus((int) $profissional['id_usuario'], $status);
-
-                    if ($senha !== '') {
-                        Usuario::atualizarSenha((int) $profissional['id_usuario'], $senha);
+                    if (!$pessoaCompartilhada) {
+                        Usuario::atualizar((int) $profissional['id_usuario'], [
+                            'nome'     => $nome,
+                            'email'    => $email,
+                            'telefone' => $telefone,
+                        ]);
+                        if ($senha !== '') {
+                            Usuario::atualizarSenha((int) $profissional['id_usuario'], $senha);
+                        }
                     }
+                    Vinculo::alterarStatus((int) $profissional['id_vinculo'], $status);
 
                     Profissional::atualizar($idProfissional, [
+                        'id_filial'            => $idFilial,
                         'especialidade'        => $especialidade,
                         'bio'                  => post('bio'),
                         'pode_bloquear_agenda' => $podeBloquear,
@@ -88,10 +107,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     definirFlash('sucesso', 'Profissional atualizado com sucesso.');
                 } else {
                     Profissional::criar([
+                        'id_usuario'           => $pessoaExistente ? (int) $pessoaExistente['id_usuario'] : 0,
                         'nome'                 => $nome,
                         'email'                => $email,
                         'senha'                => $senha,
                         'telefone'             => $telefone,
+                        'id_filial'            => $idFilial,
                         'especialidade'        => $especialidade,
                         'bio'                  => post('bio'),
                         'status'               => $status,
@@ -99,7 +120,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'servicos'             => $servicos,
                     ]);
 
-                    definirFlash('sucesso', 'Profissional cadastrado com sucesso. Configure o expediente em Horarios.');
+                    definirFlash('sucesso', $pessoaExistente
+                        ? 'Profissional vinculado: ' . $pessoaExistente['nome'] . ' ja tinha conta e entra com a senha de sempre. Configure o expediente em Horarios.'
+                        : 'Profissional cadastrado com sucesso. Configure o expediente em Horarios.');
                 }
 
                 redirecionar('admin/profissionais.php');
@@ -123,7 +146,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($limitePlano !== null) {
                 definirFlash('erro', $limitePlano);
             } else {
-                Usuario::alterarStatus((int) $profissional['id_usuario'], $novoStatus);
+                Vinculo::alterarStatus((int) $profissional['id_vinculo'], $novoStatus);
                 definirFlash('sucesso', $novoStatus === 'ativo' ? 'Profissional ativado.' : 'Profissional desativado.');
             }
         }
@@ -140,7 +163,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($totalAgendamentos > 0) {
             definirFlash('erro', 'Este profissional possui agendamentos registrados e nao pode ser excluido. Desative o cadastro.');
         } else {
-            Usuario::excluir((int) $profissional['id_usuario']);
+            // Apaga o vinculo profissional (agenda, horarios e servicos caem em
+            // cascata); a pessoa so some se nao tiver vinculo em outra empresa.
+            Vinculo::excluir((int) $profissional['id_vinculo']);
             definirFlash('sucesso', 'Profissional excluido.');
         }
 
@@ -160,6 +185,9 @@ if ($acaoTela === 'editar') {
     }
     $servicosVinculados = Profissional::idsServicos((int) $edicao['id_profissional']);
 }
+// Pessoa com vinculo em outra empresa: nome, e-mail, telefone e senha sao dela.
+$edicaoCompartilhada = $edicao && !Usuario::pertenceSoAqui((int) $edicao['id_usuario']);
+$soLeitura = $edicaoCompartilhada ? ' readonly' : '';
 
 $formularioAberto = in_array($acaoTela, ['novo', 'editar'], true) || $erros !== [];
 
@@ -171,6 +199,21 @@ $busca  = get('busca');
 $status = get('status');
 $lista  = Profissional::listar(array_filter(['busca' => $busca, 'status' => $status]));
 $servicosDisponiveis = Servico::listar();
+
+// Filiais para o select e um mapa id => nome para a listagem (uma consulta so).
+$filiais      = Filial::listar();
+$nomesFiliais = array_column($filiais, 'nome', 'id_filial');
+$semFiliais   = Filial::total() === 0;
+
+// Na edicao marca a filial atual; no cadastro, se ha uma so, ja vem escolhida.
+$filialSelecionada = (int) ($edicao['id_filial'] ?? post('id_filial'));
+if ($filialSelecionada <= 0 && count($filiais) === 1) {
+    $filialSelecionada = (int) $filiais[0]['id_filial'];
+}
+
+// Sem filial nao ha onde lotar o profissional: o formulario de criacao fica travado.
+$formularioBloqueado = $semFiliais && !$edicao;
+$bloqueio            = $formularioBloqueado ? ' disabled' : '';
 
 // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Profissionais';
@@ -192,6 +235,15 @@ require_once RAIZ . '/includes/painel_header.php';
     </div>
 <?php endif; ?>
 
+<?php if ($semFiliais): ?>
+    <div class="alerta alerta-aviso" role="status">
+        <span class="alerta-texto">
+            Cadastre uma filial antes de cadastrar profissionais: cada profissional pertence a uma unidade.
+            <a href="<?= url('admin/filiais.php') ?>">Cadastrar filial</a>
+        </span>
+    </div>
+<?php endif; ?>
+
 <?php if ($formularioAberto): ?>
 
     <div class="cartao">
@@ -208,14 +260,32 @@ require_once RAIZ . '/includes/painel_header.php';
                     <div class="campo">
                         <label for="nome">Nome completo <span class="obrigatorio">*</span></label>
                         <input type="text" id="nome" name="nome" maxlength="120"
-                            value="<?= e($edicao['nome'] ?? post('nome')) ?>" required>
+                            value="<?= e($edicao['nome'] ?? post('nome')) ?>" required<?= $bloqueio ?><?= $soLeitura ?>>
+                        <?php if ($edicaoCompartilhada): ?>
+                            <span class="ajuda-campo">Esta pessoa tambem tem conta em outro estabelecimento: nome, e-mail, telefone e senha sao dela e so ela os altera, no proprio perfil.</span>
+                        <?php endif; ?>
                     </div>
 
                     <div class="campo">
                         <label for="especialidade">Especialidade</label>
                         <input type="text" id="especialidade" name="especialidade" maxlength="120"
                             value="<?= e($edicao['especialidade'] ?? post('especialidade')) ?>"
-                            placeholder="Ex.: Barbeiro, Cabeleireira">
+                            placeholder="Ex.: Barbeiro, Cabeleireira"<?= $bloqueio ?>>
+                    </div>
+                </div>
+
+                <div class="linha-campos">
+                    <div class="campo">
+                        <label for="id_filial">Filial <span class="obrigatorio">*</span></label>
+                        <select id="id_filial" name="id_filial" required<?= $bloqueio ?>>
+                            <option value="">Selecione a filial</option>
+                            <?php foreach ($filiais as $filial): ?>
+                                <option value="<?= (int) $filial['id_filial'] ?>" <?= $filialSelecionada === (int) $filial['id_filial'] ? 'selected' : '' ?>>
+                                    <?= e($filial['nome']) ?><?= $filial['status'] === 'inativo' ? ' (inativa)' : '' ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                        <span class="ajuda-campo">Unidade em que o profissional atende.</span>
                     </div>
                 </div>
 
@@ -223,28 +293,34 @@ require_once RAIZ . '/includes/painel_header.php';
                     <div class="campo">
                         <label for="email">E-mail de acesso <span class="obrigatorio">*</span></label>
                         <input type="email" id="email" name="email" maxlength="150"
-                            value="<?= e($edicao['email'] ?? post('email')) ?>" required>
+                            value="<?= e($edicao['email'] ?? post('email')) ?>" required<?= $bloqueio ?><?= $soLeitura ?>>
+                        <?php if (!$edicao): ?>
+                            <span class="ajuda-campo">Se o e-mail ja tiver conta no Agendei, a pessoa e vinculada como profissional e entra com a senha que ja tem.</span>
+                        <?php endif; ?>
                     </div>
 
                     <div class="campo">
                         <label for="telefone">Telefone</label>
                         <input type="tel" id="telefone" name="telefone" data-mascara="telefone" inputmode="numeric"
-                            value="<?= e($edicao ? formatarTelefone($edicao['telefone']) : post('telefone')) ?>">
+                            value="<?= e($edicao ? formatarTelefone($edicao['telefone']) : post('telefone')) ?>"<?= $bloqueio ?><?= $soLeitura ?>>
                     </div>
                 </div>
 
                 <div class="linha-campos">
                     <div class="campo">
-                        <label for="senha"><?= $edicao ? 'Nova senha (opcional)' : 'Senha de acesso' ?>
-                            <?= $edicao ? '' : '<span class="obrigatorio">*</span>' ?>
-                        </label>
-                        <input type="password" id="senha" name="senha" autocomplete="new-password" <?= $edicao ? '' : 'required' ?>>
-                        <span class="ajuda-campo"><?= $edicao ? 'Deixe em branco para manter a senha atual.' : 'Minimo de 6 caracteres.' ?></span>
+                        <?php if ($edicaoCompartilhada): ?>
+                            <label>Senha de acesso</label>
+                            <p class="texto-secundario sem-margem">A senha e da pessoa e vale em todas as empresas dela: so ela a troca.</p>
+                        <?php else: ?>
+                            <label for="senha"><?= $edicao ? 'Nova senha (opcional)' : 'Senha de acesso' ?></label>
+                            <input type="password" id="senha" name="senha" autocomplete="new-password"<?= $bloqueio ?>>
+                            <span class="ajuda-campo"><?= $edicao ? 'Deixe em branco para manter a senha atual.' : 'Minimo de 6 caracteres. Dispensada quando o e-mail ja tem conta no Agendei.' ?></span>
+                        <?php endif; ?>
                     </div>
 
                     <div class="campo">
                         <label for="status">Status</label>
-                        <select id="status" name="status">
+                        <select id="status" name="status"<?= $bloqueio ?>>
                             <option value="ativo" <?= ($edicao['status'] ?? 'ativo') === 'ativo' ? 'selected' : '' ?>>Ativo</option>
                             <option value="inativo" <?= ($edicao['status'] ?? '') === 'inativo' ? 'selected' : '' ?>>Inativo</option>
                         </select>
@@ -254,7 +330,7 @@ require_once RAIZ . '/includes/painel_header.php';
 
                 <div class="campo">
                     <label for="bio">Apresentacao</label>
-                    <textarea id="bio" name="bio" maxlength="400"><?= e($edicao['bio'] ?? post('bio')) ?></textarea>
+                    <textarea id="bio" name="bio" maxlength="400"<?= $bloqueio ?>><?= e($edicao['bio'] ?? post('bio')) ?></textarea>
                 </div>
 
                 <fieldset>
@@ -271,7 +347,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                 <div class="campo-checkbox">
                                     <input type="checkbox" id="servico<?= (int) $servico['id_servico'] ?>"
                                         name="servicos[]" value="<?= (int) $servico['id_servico'] ?>"
-                                        <?= in_array((int) $servico['id_servico'], $servicosVinculados, true) ? 'checked' : '' ?>>
+                                        <?= in_array((int) $servico['id_servico'], $servicosVinculados, true) ? 'checked' : '' ?><?= $bloqueio ?>>
                                     <label for="servico<?= (int) $servico['id_servico'] ?>">
                                         <?= e($servico['nome']) ?>
                                         <?= $servico['status'] === 'inativo' ? ' (inativo)' : '' ?>
@@ -284,12 +360,12 @@ require_once RAIZ . '/includes/painel_header.php';
 
                 <div class="campo-checkbox">
                     <input type="checkbox" id="pode_bloquear_agenda" name="pode_bloquear_agenda" value="1"
-                        <?= (!$edicao || !empty($edicao['pode_bloquear_agenda'])) ? 'checked' : '' ?>>
+                        <?= (!$edicao || !empty($edicao['pode_bloquear_agenda'])) ? 'checked' : '' ?><?= $bloqueio ?>>
                     <label for="pode_bloquear_agenda">Permitir que o profissional bloqueie a propria agenda</label>
                 </div>
 
                 <div class="grupo-botoes">
-                    <button type="submit" class="btn"><?= $edicao ? 'Salvar alteracoes' : 'Cadastrar profissional' ?></button>
+                    <button type="submit" class="btn"<?= $bloqueio ?>><?= $edicao ? 'Salvar alteracoes' : 'Cadastrar profissional' ?></button>
                     <a href="<?= url('admin/profissionais.php') ?>" class="btn btn-contorno">Cancelar</a>
                 </div>
             </form>
@@ -335,6 +411,7 @@ require_once RAIZ . '/includes/painel_header.php';
                         <th>Profissional</th>
                         <th>Contato</th>
                         <th>Especialidade</th>
+                        <th>Filial</th>
                         <th>Servicos</th>
                         <th>Status</th>
                         <th class="coluna-acoes">Acoes</th>
@@ -353,6 +430,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                 <span class="celula-secundaria"><?= e(formatarTelefone($profissional['telefone'])) ?></span>
                             </td>
                             <td><?= e($profissional['especialidade'] ?: '-') ?></td>
+                            <td><?= e($nomesFiliais[(int) $profissional['id_filial']] ?? '-') ?></td>
                             <td><?= (int) $profissional['total_servicos'] ?></td>
                             <td><?= badgeStatus($profissional['status']) ?></td>
                             <td class="coluna-acoes">

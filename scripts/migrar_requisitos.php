@@ -25,8 +25,11 @@ function migrarRequisitos(PDO $db): void
     // Dados pessoais do cadastro ficam em usuarios: assim tanto o usuario
     // comum quanto o master respondem as perguntas do segundo fator.
     // -----------------------------------------------------------------
+    // O login de 6 letras so vive em usuarios ate a separacao pessoa/vinculo
+    // (migrar_vinculos.php); numa base ja migrada ele mora em vinculos.
+    $contaTemEmpresa = $colunaExiste('usuarios', 'id_estabelecimento');
+
     $campos = [
-        'login'           => 'VARCHAR(6) NULL',
         'sexo'            => "ENUM('F','M','O') NULL",
         'nome_materno'    => 'VARCHAR(120) NULL',
         'data_nascimento' => 'DATE NULL',
@@ -40,6 +43,9 @@ function migrarRequisitos(PDO $db): void
         'uf'              => 'CHAR(2) NULL',
     ];
 
+    if ($contaTemEmpresa) {
+        $campos = ['login' => 'VARCHAR(6) NULL'] + $campos;
+    }
     foreach ($campos as $campo => $definicao) {
         if (!$colunaExiste('usuarios', $campo)) {
             $db->exec("ALTER TABLE usuarios ADD COLUMN `$campo` $definicao");
@@ -48,7 +54,7 @@ function migrarRequisitos(PDO $db): void
 
     // O login e opcional no banco: as contas antigas continuam entrando pelo e-mail.
     // O indice aceita varios NULL, entao so impede logins repetidos na mesma empresa.
-    if (!$indiceExiste('usuarios', 'uk_estabelecimento_login')) {
+    if ($contaTemEmpresa && !$indiceExiste('usuarios', 'uk_estabelecimento_login')) {
         $db->exec('ALTER TABLE usuarios ADD UNIQUE KEY uk_estabelecimento_login (id_estabelecimento, login)');
     }
 

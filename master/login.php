@@ -2,7 +2,7 @@
 /** Entrada exclusiva do administrador global. */
 define('AREA_MASTER', true);
 require_once __DIR__ . '/../config/config.php';
-bloquearSeLogado();
+bloquearSeLogado('master');
 
 // Um desafio de codigo em andamento nao pode ficar preso a uma tentativa anterior.
 cancelarSegundoFatorMaster();

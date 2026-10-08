@@ -43,9 +43,14 @@ function politicaLimites(): array
         'recuperar_ip'   => ['limite' => 10, 'janela' => 3600, 'espera' => 1800],
         // Cadastro publico: freia a criacao automatizada de contas.
         'cadastro_ip'    => ['limite' => 10, 'janela' => 3600, 'espera' => 1800],
+        // Cadastro de empresa pela pagina inicial: cada envio cria uma empresa
+        // inativa que o master precisa avaliar, por isso a tolerancia e menor.
+        'cadastro_empresa_ip' => ['limite' => 5, 'janela' => 3600, 'espera' => 3600],
         // Chave do instalador: balde proprio, para que tentativas aqui nao
         // tranquem o login master (nem o contrario).
         'instalador_ip'  => ['limite' => 5,  'janela' => 3600, 'espera' => 3600],
+        // Chave do gatilho das tarefas (tarefas.php): mesma logica do instalador.
+        'tarefas_ip'     => ['limite' => 5,  'janela' => 3600, 'espera' => 3600],
     ];
 }
 
@@ -243,16 +248,20 @@ function aplicarCabecalhosSeguranca(): void
         // A logo da empresa e guardada como data: URI pela tela de aparencia.
         "img-src 'self' data:",
         "font-src 'self'",
-        // A tela de cadastro consulta o ViaCEP para preencher o endereco
-        // (assets/js/cadastro.js). E o unico destino externo do sistema: qualquer
+        // Os campos de CEP (cadastro, filiais, configuracoes) consultam o ViaCEP
+        // para preencher o endereco (assets/js/main.js, data-busca-cep). E o
+        // unico destino externo do sistema: qualquer
         // outro endereco que apareca numa requisicao e sinal de codigo injetado.
         "connect-src 'self' https://viacep.com.br",
         // Nada de Flash, applet ou plugin: o sistema nao usa nenhum.
         "object-src 'none'",
         // Impede que uma injecao mude a base das URLs relativas da pagina.
         "base-uri 'self'",
-        // Formularios so podem postar para o proprio sistema.
-        "form-action 'self'",
+        // Formularios so podem postar para o proprio sistema. O Google entra porque
+        // o navegador aplica esta regra tambem ao redirecionamento que segue o envio:
+        // o botao "Entrar com o Google" posta em google_login.php, que manda para
+        // accounts.google.com (models/Google.php).
+        "form-action 'self' https://accounts.google.com",
         // Substitui o X-Frame-Options nos navegadores atuais.
         "frame-ancestors 'none'",
         "frame-src 'none'",

@@ -1,6 +1,7 @@
 /* =====================================================================
    AGENDEI - Tela de cadastro do usuario comum
-   Aplica as regras da especificacao no navegador e busca o endereco pelo CEP.
+   Aplica as regras da especificacao no navegador. O endereco pelo CEP vem
+   do comportamento comum de main.js (campo com data-busca-cep).
    As mesmas regras sao conferidas novamente no PHP.
    ===================================================================== */
 
@@ -50,92 +51,6 @@
     return String(texto).replace(/\D/g, "");
   }
 
-  // -----------------------------------------------------------------
-  // Preenchimento do endereco pelo CEP
-  // -----------------------------------------------------------------
-
-  /** Escreve a situação da consulta abaixo do campo de CEP. */
-  function situacaoCep(mensagem) {
-    var alvo = formulario.querySelector("[data-cep-situacao]");
-    if (alvo) {
-      alvo.textContent = mensagem;
-    }
-  }
-
-  /**
-   * Consulta o ViaCEP e preenche logradouro, bairro, cidade e UF.
-   * Sem conexao ou com CEP inexistente, os campos continuam editaveis
-   * para preenchimento manual, como pede a especificacao.
-   */
-  function buscarCep() {
-    var elemento = formulario.querySelector("[data-busca-cep]");
-    if (!elemento) {
-      return;
-    }
-
-    var cep = digitos(elemento.value);
-    if (cep.length !== 8) {
-      situacaoCep("Informe os oito digitos do CEP.");
-      return;
-    }
-
-    situacaoCep("Buscando endereco...");
-
-    window
-      .fetch("https://viacep.com.br/ws/" + cep + "/json/")
-      .then(function (resposta) {
-        if (!resposta.ok) {
-          throw new Error("resposta invalida");
-        }
-        return resposta.json();
-      })
-      .then(function (dados) {
-        if (dados.erro) {
-          situacaoCep("CEP nao encontrado. Preencha o endereco manualmente.");
-          return;
-        }
-
-        preencher("logradouro", dados.logradouro);
-        preencher("bairro", dados.bairro);
-        preencher("cidade", dados.localidade);
-        preencher("uf", dados.uf);
-
-        situacaoCep("Endereco preenchido. Confira o numero e o complemento.");
-
-        var numero = campo("numero");
-        if (numero && numero.value === "") {
-          numero.focus();
-        }
-      })
-      .catch(function () {
-        // Falha de rede não pode travar o cadastro: o usuário digita o endereço.
-        situacaoCep("Nao foi possivel consultar o CEP. Preencha o endereco manualmente.");
-      });
-  }
-
-  /** Copia o valor devolvido pela API para o campo, quando ele veio preenchido. */
-  function preencher(nome, conteudo) {
-    var elemento = campo(nome);
-    if (elemento && conteudo) {
-      elemento.value = conteudo;
-      Agendei.limparErro(elemento);
-    }
-  }
-
-  /** Dispara a consulta ao sair do campo e assim que os oito dígitos são digitados. */
-  function iniciarBuscaCep() {
-    var elemento = formulario.querySelector("[data-busca-cep]");
-    if (!elemento) {
-      return;
-    }
-
-    elemento.addEventListener("blur", buscarCep);
-    elemento.addEventListener("input", function () {
-      if (digitos(elemento.value).length === 8) {
-        buscarCep();
-      }
-    });
-  }
 
   // -----------------------------------------------------------------
   // Validacao do formulario
@@ -265,14 +180,12 @@
       formulario.querySelectorAll(".invalido").forEach(function (elemento) {
         Agendei.limparErro(elemento);
       });
-      situacaoCep("Preenche o endereco automaticamente.");
     });
   }
 
   // Inicializa os comportamentos somente depois que os elementos da página estão disponíveis.
   document.addEventListener("DOMContentLoaded", function () {
     limparAoDigitar();
-    iniciarBuscaCep();
     iniciarLimpeza();
     formulario.addEventListener("submit", validar);
   });

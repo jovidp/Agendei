@@ -42,13 +42,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($acao === 'status') {
         $idAgendamento = (int) post('id_agendamento');
         $novoStatus    = post('status');
+        $agendamento   = Agendamento::porId($idAgendamento);
 
         if (!in_array($novoStatus, ['agendado', 'confirmado', 'concluido'], true)) {
-            definirFlash('erro', 'Status invalido.');
+            definirFlash('erro', 'Status inválido.');
+        } elseif (!$agendamento) {
+            definirFlash('erro', 'Agendamento não encontrado.');
+        } elseif ($novoStatus === 'concluido' && !Agendamento::jaComecou($agendamento)) {
+            // Concluir antes da hora daria como atendido algo que ainda nao aconteceu
+            // (e creditaria pontos de fidelidade). A mesma regra vale no painel do profissional.
+            definirFlash('erro', 'O atendimento só pode ser concluído a partir de ' . formatarData($agendamento['data_agendamento']) . ' às ' . formatarHora($agendamento['hora_inicio']) . '.');
         } elseif (Agendamento::alterarStatus($idAgendamento, $novoStatus)) {
             definirFlash('sucesso', 'Status atualizado para ' . $novoStatus . '.');
         } else {
-            definirFlash('erro', 'Nao foi possivel atualizar o status.');
+            definirFlash('erro', 'Não foi possível atualizar o status.');
         }
 
         redirecionar('admin/agendamentos.php');
@@ -351,6 +358,8 @@ require_once RAIZ . '/includes/painel_header.php';
                                 <?php endif; ?>
 
                                 <?php if (in_array($agendamento['status'], ['agendado', 'confirmado'], true)): ?>
+                                    <?php /* Concluir so aparece depois do horario de inicio; o servidor confere de novo. */ ?>
+                                    <?php if (Agendamento::jaComecou($agendamento)): ?>
                                     <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
                                         <?= campoCsrf() ?>
                                         <input type="hidden" name="acao" value="status">
@@ -358,6 +367,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                         <input type="hidden" name="status" value="concluido">
                                         <button type="submit" class="btn btn-secundario btn-pequeno">Concluir</button>
                                     </form>
+                                    <?php endif; ?>
 
                                     <button type="button" class="btn btn-perigo btn-pequeno"
                                         data-modal="modalCancelar"

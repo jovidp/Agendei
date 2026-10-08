@@ -40,6 +40,8 @@ $servicos      = Relatorio::servicosMaisAgendados($dataInicial, $dataFinal, 10);
 $profissionais = Relatorio::profissionaisMaisAtendimentos($dataInicial, $dataFinal, 10);
 $clientes      = Relatorio::clientesMaisFrequentes($dataInicial, $dataFinal, 10);
 $movimento     = Relatorio::movimentoPorDia($dataInicial, $dataFinal);
+// Comparativo entre as unidades no mesmo periodo (ja ordenado por faturamento).
+$faturamentoFiliais = Filial::faturamento($dataInicial, $dataFinal);
 
 $totalPeriodo = array_sum(array_column($resumo, 'total'));
 $taxaCancelamento = $totalPeriodo > 0
@@ -249,6 +251,54 @@ require_once RAIZ . '/includes/painel_header.php';
             </div>
         <?php endif; ?>
     </div>
+</div>
+
+<div class="cartao">
+    <div class="cartao-cabecalho">
+        <h3>Faturamento por unidade</h3>
+    </div>
+
+    <?php if ($faturamentoFiliais === []): ?>
+        <div class="estado-vazio"><strong>Nenhuma unidade cadastrada</strong>
+            <p>Cadastre uma filial para acompanhar o faturamento por unidade.</p>
+        </div>
+    <?php else: ?>
+        <div class="tabela-area">
+            <?php /* Tabela de apresentacao dos registros retornados pela consulta. */ ?><table class="tabela" style="min-width:auto">
+                <thead>
+                    <tr>
+                        <th>Unidade</th>
+                        <th>Atendimentos</th>
+                        <th>Concluidos</th>
+                        <th class="coluna-acoes">Faturamento</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($faturamentoFiliais as $posicao => $filial): ?>
+                        <?php // A lista ja vem ordenada da que mais fatura para a que menos; a primeira so ganha destaque quando ha valor. ?>
+                        <?php $lider = $posicao === 0 && (float) $filial['valor_total'] > 0; ?>
+                        <tr>
+                            <td>
+                                <span class="celula-principal"><?= e($filial['nome']) ?></span>
+                                <?php if ($lider): ?>
+                                    <span class="badge badge-ativo">Maior faturamento</span>
+                                <?php endif; ?>
+                            </td>
+                            <td><?= (int) $filial['atendimentos'] ?></td>
+                            <td><?= (int) $filial['concluidos'] ?></td>
+                            <td class="coluna-acoes">
+                                <?php if ($lider): ?>
+                                    <strong><?= formatarMoeda($filial['valor_total']) ?></strong>
+                                <?php else: ?>
+                                    <?= formatarMoeda($filial['valor_total']) ?>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
 </div>
 
 <?php require_once RAIZ . '/includes/painel_footer.php'; ?>

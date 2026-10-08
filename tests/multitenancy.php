@@ -35,6 +35,8 @@ ob_start();
 require 'scripts/migrar.php';
 require 'scripts/migrar.php';
 require 'config/config.php';
+// O tratador do bootstrap sairia com codigo 0 e esconderia a falha.
+restore_exception_handler();
 ob_end_clean();
 $checagens = 0;
 function verificar(bool $condicao, string $mensagem): void
@@ -53,12 +55,16 @@ $fixtures = [];
 $data = date('Y-m-d', strtotime('+2 days'));
 $semana = (int) date('w', strtotime($data));
 foreach (['empresa-a', 'empresa-b'] as $slug) {
-    Estabelecimento::contratar(['estabelecimento' => strtoupper($slug), 'slug' => $slug, 'nome' => 'Responsável Teste', 'email' => 'admin@teste.local', 'senha' => 'Teste12345!']);
+    $sufixo = substr($slug, -1);
+    $emailAdmin = 'admin-' . $sufixo . '@teste.local';
+    $emailCliente = 'cliente-' . $sufixo . '@teste.local';
+    $emailProfissional = 'profissional-' . $sufixo . '@teste.local';
+    Estabelecimento::contratar(['estabelecimento' => strtoupper($slug), 'slug' => $slug, 'nome' => 'Responsável Teste', 'email' => $emailAdmin, 'senha' => 'Teste12345!']);
     empresa($slug);
-    $admin = Usuario::porEmail('admin@teste.local');
+    $admin = Usuario::porEmail($emailAdmin);
     $servico = Servico::criar(['nome' => 'Serviço ' . $slug, 'descricao' => 'Teste', 'preco' => 80, 'duracao_minutos' => 30, 'destaque' => 1]);
-    $cliente = Cliente::criar(['nome' => 'Cliente ' . $slug, 'email' => 'cliente@teste.local', 'senha' => 'Teste12345!', 'telefone' => '11999999999', 'cpf' => '52998224725']);
-    $profissional = Profissional::criar(['nome' => 'Profissional ' . $slug, 'email' => 'profissional@teste.local', 'senha' => 'Teste12345!', 'especialidade' => 'Especialidade', 'pode_bloquear_agenda' => 1, 'servicos' => [$servico]]);
+    $cliente = Cliente::criar(['nome' => 'Cliente ' . $slug, 'email' => $emailCliente, 'senha' => 'Teste12345!', 'telefone' => '11999999999', 'cpf' => '52998224725']);
+    $profissional = Profissional::criar(['nome' => 'Profissional ' . $slug, 'email' => $emailProfissional, 'senha' => 'Teste12345!', 'especialidade' => 'Especialidade', 'pode_bloquear_agenda' => 1, 'servicos' => [$servico]]);
     $horario = Horario::criar(['id_profissional' => $profissional, 'dia_semana' => $semana, 'hora_inicio' => '08:00:00', 'hora_fim' => '18:00:00']);
     $bloqueio = Bloqueio::criar(['id_profissional' => $profissional, 'data_bloqueio' => $data, 'hora_inicio' => '16:00:00', 'hora_fim' => '17:00:00', 'motivo' => 'Teste', 'id_usuario_criou' => $admin['id_usuario']]);
     $reserva = Agendamento::criar(['id_cliente' => $cliente, 'id_profissional' => $profissional, 'id_servico' => $servico, 'data' => $data, 'hora_inicio' => '10:00', 'observacao' => '', 'origem' => 'admin'], ['ignorar_antecedencia' => true]);
@@ -67,7 +73,7 @@ foreach (['empresa-a', 'empresa-b'] as $slug) {
     $cor = $slug === 'empresa-a' ? '#8844AA' : '#227744';
     Estabelecimento::personalizar(strtoupper($slug), Tema::valores(['cor_primaria' => $cor, 'fonte' => 'georgia']), null);
     $token = Usuario::gerarTokenRecuperacao((int) $admin['id_usuario']);
-    $fixtures[$slug] = compact('admin', 'servico', 'cliente', 'profissional', 'horario', 'bloqueio', 'reserva', 'token', 'cor');
+    $fixtures[$slug] = compact('admin', 'servico', 'cliente', 'profissional', 'horario', 'bloqueio', 'reserva', 'token', 'cor', 'emailAdmin', 'emailCliente');
 }
 foreach ($fixtures as $slug => $f) {
     empresa($slug);
@@ -77,8 +83,8 @@ foreach ($fixtures as $slug => $f) {
     verificar(Usuario::porId((int) $outro['admin']['id_usuario']) === null, 'Conta de outra empresa acessível.');
     verificar(Usuario::porTokenRecuperacao($outro['token']) === null, 'Token de outra empresa acessível.');
     verificar(Usuario::porTokenRecuperacao($f['token']) !== null, 'Token da própria empresa indisponível.');
-    verificar(autenticar('admin@teste.local', 'Teste12345!')['id_usuario'] === $f['admin']['id_usuario'], 'Autenticação fora do estabelecimento.');
-    verificar(Usuario::emailEmUso('cliente@teste.local'), 'Verificação de e-mail falhou.');
+    verificar(autenticar($f['emailAdmin'], 'Teste12345!')['id_usuario'] === $f['admin']['id_usuario'], 'Autenticação fora do estabelecimento.');
+    verificar(Usuario::emailEmUso($f['emailCliente']), 'Verificação de e-mail falhou.');
     verificar(Cliente::cpfEmUso('52998224725'), 'Verificação de CPF falhou.');
     foreach (['Servico', 'Cliente', 'Profissional', 'Agendamento'] as $classeBusca) {
         verificar(count($classeBusca::listar(['busca' => $slug])) === 1, 'Filtro de busca falhou: ' . $classeBusca);
@@ -200,6 +206,33 @@ Diferencial::anonimizarCliente($clientePrivacidade, $usuarioPrivacidade);
 verificar(Diferencial::pagamentos($clientePrivacidade)[0]['status'] === 'cancelado', 'Anonimização manteve cobrança pendente.');
 verificar(Cliente::porId($clientePrivacidade)['status'] === 'inativo', 'Anonimização não desativou a conta.');
 verificar(Agendamento::porId((int) $reservaPrivacidade['id_agendamento'])['status'] === 'cancelado', 'Anonimização não cancelou a reserva futura.');
+
+// Uma pessoa, dois vinculos: o cliente da empresa A vira profissional da
+// empresa B com a mesma conta. Desligar o vinculo em uma empresa nao mexe na
+// outra, e as consultas continuam isoladas por vinculo.
+$fa = $fixtures['empresa-a'];
+$pessoaDupla = (int) Cliente::porId($fa['cliente'])['id_usuario'];
+empresa('empresa-b');
+$profissionalDuplo = Profissional::criar([
+    'id_usuario' => $pessoaDupla, 'especialidade' => 'Convidado',
+    'pode_bloquear_agenda' => 1, 'servicos' => [$fixtures['empresa-b']['servico']],
+]);
+verificar((int) Profissional::porId($profissionalDuplo)['id_usuario'] === $pessoaDupla, 'O profissional nao reaproveitou a pessoa existente.');
+verificar((int) bd()->query("SELECT COUNT(*) FROM usuarios WHERE id_usuario = $pessoaDupla")->fetchColumn() === 1, 'A pessoa foi duplicada.');
+verificar(count(Vinculo::daPessoa($pessoaDupla)) === 2, 'A pessoa nao ficou com dois vinculos.');
+verificar(Cliente::porUsuario($pessoaDupla) === null, 'O perfil de cliente da empresa A apareceu na empresa B.');
+verificar(autenticar($fa['emailCliente'], 'Teste12345!')['tipo'] === 'profissional', 'Na empresa B a pessoa nao entra como profissional.');
+// Desligar o profissional em B nao desliga o cliente em A.
+Vinculo::alterarStatus((int) Profissional::porId($profissionalDuplo)['id_vinculo'], 'inativo');
+verificar(autenticar($fa['emailCliente'], 'Teste12345!') === null, 'Vinculo desligado ainda entra na empresa B.');
+empresa('empresa-a');
+verificar(autenticar($fa['emailCliente'], 'Teste12345!')['tipo'] === 'cliente', 'Desligar em B derrubou o vinculo de cliente em A.');
+verificar(Cliente::porId($fa['cliente'])['status'] === 'ativo', 'O cliente de A foi desativado por tabela.');
+// Bloqueio global da pessoa (so o master): nao entra em lugar nenhum.
+Usuario::alterarStatusPessoa($pessoaDupla, 'inativo');
+verificar(autenticar($fa['emailCliente'], 'Teste12345!') === null, 'Pessoa bloqueada entrou na empresa A.');
+Usuario::alterarStatusPessoa($pessoaDupla, 'ativo');
+verificar(autenticar($fa['emailCliente'], 'Teste12345!') !== null, 'Pessoa desbloqueada nao voltou a entrar.');
 
 empresa('empresa-b');
 verificar(Diferencial::listaAdministrativa() === [], 'Lista de espera vazou entre estabelecimentos.');

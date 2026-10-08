@@ -5,6 +5,8 @@
  * novamente no servidor, mesmo quando o JavaScript ja validou a tela.
  */
 // Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
+// Pagina de entrada local: nunca roda sob a identidade master (ver config.php).
+define('ENTRADA_LOCAL', true);
 require_once __DIR__ . '/config/config.php';
 
 // Encaminha quem já está autenticado ao painel, evitando repetir o fluxo de acesso.
@@ -12,6 +14,9 @@ bloquearSeLogado();
 
 // Acumula falhas de validação para reapresentar o formulário sem criar um cadastro incompleto.
 $erros = [];
+// E-mail que ja tem conta no Agendei: em vez de cadastrar de novo, a pessoa
+// usa a conta que tem (vincular.php cria so o vinculo com este estabelecimento).
+$emailConhecido = null;
 $dados = [
     'nome'            => '',
     'data_nascimento' => '',
@@ -30,6 +35,20 @@ $dados = [
     'uf'              => '',
     'login'           => '',
 ];
+
+// Cadastro iniciado pelo Google (google_login.php): nome e e-mail ja vem
+// confirmados e preenchidos; a pessoa completa o restante. Ela pode desistir
+// do Google e preencher tudo a mao. A confirmacao vale so para esta tela e
+// por pouco tempo (Google::cadastroPendente).
+if (get('google') === 'cancelar') {
+    Google::limparCadastro();
+    redirecionar('cadastro.php');
+}
+$googleCadastro = Google::cadastroPendente('cadastro');
+if (is_array($googleCadastro) && $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    $dados['nome']  = (string) ($googleCadastro['nome'] ?? '');
+    $dados['email'] = (string) ($googleCadastro['email'] ?? '');
+}
 
 // Processa o formulário enviado antes de montar o HTML da página.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -105,7 +124,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $erros[] = 'Este login ja esta em uso. Escolha outro.';
     }
     if ($erros === [] && Usuario::emailEmUso($dados['email'])) {
-        $erros[] = 'Ja existe uma conta cadastrada com este e-mail.';
+        $emailConhecido = $dados['email'];
+        $erros[] = 'Este e-mail ja tem conta no Agendei. Nao precisa cadastrar de novo: confirme a sua senha e a mesma conta passa a valer aqui.';
     }
     if ($erros === [] && Cliente::cpfEmUso($cpf)) {
         $erros[] = 'Ja existe uma conta cadastrada com este CPF.';
@@ -134,8 +154,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'uf'              => $dados['uf'],
             ]);
 
+            Google::limparCadastro();
             // A especificacao encerra o cadastro na tela de login.
-            definirFlash('sucesso', 'Cadastro realizado com sucesso. Faca login para continuar.');
+            definirFlash('sucesso', 'Cadastro realizado com sucesso. Faça login para continuar.');
             redirecionar('login.php');
         } catch (Throwable $erro) {
             error_log('Falha no cadastro de cliente: ' . $erro->getMessage());
@@ -181,7 +202,9 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
             <a href="<?= url('index.php') ?>" class="voltar-site">&larr; Voltar ao site</a>
 
             <h1>Criar conta</h1>
-            <p class="subtitulo">Preencha seus dados para comecar.</p>
+            <p class="subtitulo">Preencha seus dados para começar.</p>
+
+            <?php exibirFlash(); ?>
 
             <?php if ($erros !== []): ?>
                 <div class="alerta alerta-erro">
@@ -194,6 +217,33 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
                         </ul>
                     </div>
                 </div>
+            <?php endif; ?>
+
+            <?php if ($emailConhecido !== null): ?>
+                <a class="btn btn-contorno btn-bloco btn-grande" href="<?= url('vincular.php?email=' . rawurlencode($emailConhecido)) ?>">Usar minha conta neste estabelecimento</a>
+                <div class="separador-ou"><span>ou corrija o e-mail abaixo</span></div>
+            <?php endif; ?>
+
+            <?php if (is_array($googleCadastro)): ?>
+                <div class="alerta alerta-info">
+                    <span class="alerta-texto">E-mail <strong><?= e((string) $googleCadastro['email']) ?></strong> confirmado pelo Google. Complete os dados abaixo.
+                        <a href="<?= url('cadastro.php?google=cancelar') ?>">Cadastrar sem o Google</a></span>
+                </div>
+            <?php elseif (Google::configurado()): ?>
+                <?php /* Formulario proprio, fora do cadastro. Dentro dele o botao do Google seria o primeiro
+                         botao de envio, e o Enter em qualquer campo levaria ao Google em vez de enviar o
+                         cadastro. O Google confirma o e-mail e devolve nome e e-mail preenchidos. */ ?>
+                <form method="post" action="<?= url('google_login.php') ?>" id="formCadastroGoogle">
+                    <?= campoCsrf() ?>
+                    <input type="hidden" name="estabelecimento" value="<?= e(Contexto::slug()) ?>">
+                    <input type="hidden" name="origem" value="cadastro">
+                    <button type="submit" class="btn btn-contorno btn-bloco btn-grande btn-google" name="acao" value="google">
+                        <?= iconeGoogle() ?>
+                        Cadastrar com o Google
+                    </button>
+                    <span class="ajuda-campo">Confirma seu e-mail e já preenche nome e e-mail. O restante você completa abaixo.</span>
+                </form>
+                <div class="separador-ou"><span>ou preencha tudo</span></div>
             <?php endif; ?>
 
             <?php /* Formulário de cadastro: os dados serão validados novamente pelo servidor. */ ?><form method="post" id="formCadastro" novalidate>
@@ -285,7 +335,7 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
                             <input type="text" id="cep" name="cep" value="<?= e($dados['cep']) ?>"
                                    data-mascara="cep" data-busca-cep inputmode="numeric" placeholder="00000-000" required>
                             <span class="mensagem-campo"></span>
-                            <span class="ajuda-campo" data-cep-situacao>Preenche o endereco automaticamente.</span>
+                            <span class="ajuda-campo" data-cep-situacao>Preenche o endereço automaticamente.</span>
                         </div>
 
                         <div class="campo">
@@ -373,6 +423,7 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
 
             <p class="autenticacao-rodape">
                 Ja tem uma conta? <a href="<?= url('login.php') ?>">Entrar</a>
+                &middot; Tem conta em outro estabelecimento? <a href="<?= url('vincular.php') ?>">Usar aqui</a>
             </p>
         </div>
     </div>

@@ -7,7 +7,7 @@
 define('AREA_MASTER', true);
 require_once __DIR__ . '/../config/config.php';
 
-bloquearSeLogado();
+bloquearSeLogado('master');
 
 // Sem desafio pendente nao ha o que responder: o fluxo recomeca pelo login.
 $pendente = segundoFatorMasterPendente();

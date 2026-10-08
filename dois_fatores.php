@@ -4,6 +4,8 @@
  * A sessao do usuario so e aberta aqui, depois que a pergunta sorteada e respondida.
  */
 // Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
+// Pagina de entrada local: nunca roda sob a identidade master (ver config.php).
+define('ENTRADA_LOCAL', true);
 require_once __DIR__ . '/config/config.php';
 
 // Encaminha quem já está autenticado ao painel, evitando repetir o fluxo de acesso.
@@ -16,7 +18,10 @@ if ($pendente === null) {
     redirecionar('login.php');
 }
 
-$usuario = Usuario::porId((int) $pendente['usuario_id']);
+// O desafio e de um vinculo: a sessao que abre depois e exatamente ele.
+$usuario = !empty($pendente['vinculo_id'])
+    ? Usuario::porVinculo((int) $pendente['vinculo_id'])
+    : Usuario::porId((int) $pendente['usuario_id']);
 if ($usuario === null || $usuario['status'] !== 'ativo') {
     cancelarSegundoFator();
     definirFlash('erro', 'Nao foi possivel continuar a autenticacao. Faca login novamente.');
@@ -60,6 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Identidade confirmada nos dois fatores: agora a sessao pode ser aberta.
         registrarSessao($usuario);
+        lembrarSeSolicitado($usuario);
         definirFlash('sucesso', 'Bem-vindo(a), ' . explode(' ', $usuario['nome'])[0] . '.');
         header('Location: ' . destinoAposLogin());
         exit;

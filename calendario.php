@@ -15,9 +15,10 @@ if (!preg_match('/^[a-f0-9]{64}$/D', $token)) {
 
 $q = bd()->prepare(
     'SELECT p.id_profissional,p.id_estabelecimento,u.nome,e.nome estabelecimento
-     FROM profissionais p JOIN usuarios u ON u.id_usuario=p.id_usuario
+     FROM profissionais p JOIN vinculos v ON v.id_vinculo=p.id_vinculo
+     JOIN usuarios u ON u.id_usuario=v.id_usuario
      JOIN estabelecimento e ON e.id_estabelecimento=p.id_estabelecimento
-     WHERE p.token_calendario=? AND u.status=\'ativo\' AND e.status=\'ativo\' LIMIT 1'
+     WHERE p.token_calendario=? AND v.status=\'ativo\' AND u.status=\'ativo\' AND e.status=\'ativo\' LIMIT 1'
 );
 $q->execute([$token]);
 $profissional = $q->fetch(PDO::FETCH_ASSOC);

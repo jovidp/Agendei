@@ -1,15 +1,29 @@
 <?php
 /**
  * Clientes: perfil de quem agenda os servicos.
+ *
+ * O perfil e o vinculo da pessoa com a empresa como cliente: aponta para
+ * vinculos (status, login, ultimo acesso) e para usuarios (dados pessoais).
  */
 class Cliente
 {
-    private const CAMPOS = 'c.id_cliente, c.id_usuario, c.cpf, c.data_nascimento, c.observacoes,
-                            c.data_cadastro, c.pontos_fidelidade, u.nome, u.email, u.telefone, u.status,
-                            u.login, u.sexo, u.nome_materno, u.telefone_fixo, u.cep, u.logradouro,
-                            u.numero, u.complemento, u.bairro, u.cidade, u.uf, u.ultimo_acesso';
+    private const CAMPOS = 'c.id_cliente, c.id_vinculo, c.id_usuario, c.cpf, c.data_nascimento, c.observacoes,
+                            c.data_cadastro, c.pontos_fidelidade, u.nome, u.email, u.telefone, v.status,
+                            v.login, u.sexo, u.nome_materno, u.telefone_fixo, u.cep, u.logradouro,
+                            u.numero, u.complemento, u.bairro, u.cidade, u.uf, v.ultimo_acesso';
 
-    /** Cria usuario + cliente em uma unica transacao. Retorna o id_cliente. */
+    /** Juncao do perfil com o vinculo (da empresa da sessao) e a pessoa. */
+    private static function juncao(): string
+    {
+        return 'INNER JOIN vinculos v ON v.id_vinculo = c.id_vinculo AND v.id_estabelecimento = ' . Contexto::id() . '
+                INNER JOIN usuarios u ON u.id_usuario = v.id_usuario';
+    }
+
+    /**
+     * Cria o perfil de cliente em uma unica transacao. Retorna o id_cliente.
+     * Sem 'id_usuario' cria a pessoa (nome, e-mail, senha e cadastro completo);
+     * com 'id_usuario' vincula uma pessoa que ja existe em outra empresa.
+     */
     public static function criar(array $dados): int
     {
         $conexao = bd();
@@ -17,17 +31,23 @@ class Cliente
         $conexao->beginTransaction();
 
         try {
-            // Os dados pessoais ficam em usuarios; clientes guarda o que é específico do perfil.
-            $idUsuario = Usuario::criar($dados + [
-                'tipo'   => 'cliente',
+            // Os dados pessoais ficam em usuarios; o vinculo guarda status e login;
+            // clientes guarda o que é específico do perfil.
+            $idUsuario = (int) ($dados['id_usuario'] ?? 0);
+            if ($idUsuario <= 0) {
+                $idUsuario = Usuario::criar($dados);
+            }
+            $idVinculo = Vinculo::criar(Contexto::id(), $idUsuario, 'cliente', [
                 'status' => $dados['status'] ?? 'ativo',
+                'login'  => $dados['login'] ?? '',
             ]);
 
             $consulta = $conexao->prepare(
-                'INSERT INTO clientes (id_estabelecimento, id_usuario, cpf, data_nascimento)
-                 VALUES (' . Contexto::id() . ', :id_usuario, :cpf, :data_nascimento)'
+                'INSERT INTO clientes (id_estabelecimento, id_vinculo, id_usuario, cpf, data_nascimento)
+                 VALUES (' . Contexto::id() . ', :id_vinculo, :id_usuario, :cpf, :data_nascimento)'
             );
             $consulta->execute([
+                ':id_vinculo'      => $idVinculo,
                 ':id_usuario'      => $idUsuario,
                 ':cpf'             => apenasNumeros($dados['cpf'] ?? '') ?: null,
                 ':data_nascimento' => $dados['data_nascimento'] ?? null,
@@ -50,7 +70,7 @@ class Cliente
     {
         $sql = 'SELECT ' . self::CAMPOS . '
                 FROM clientes c
-                INNER JOIN usuarios u ON u.id_usuario = c.id_usuario AND u.id_estabelecimento = ' . Contexto::id() . '
+                ' . self::juncao() . '
                 WHERE c.id_estabelecimento = ' . Contexto::id() . ' AND c.id_cliente = :id LIMIT 1';
 
         $consulta = bd()->prepare($sql);
@@ -58,12 +78,12 @@ class Cliente
         return $consulta->fetch() ?: null;
     }
 
-    /** Localiza os dados do perfil a partir do identificador da conta de acesso. */
+    /** Localiza os dados do perfil a partir do identificador da pessoa. */
     public static function porUsuario(int $idUsuario): ?array
     {
         $sql = 'SELECT ' . self::CAMPOS . '
                 FROM clientes c
-                INNER JOIN usuarios u ON u.id_usuario = c.id_usuario AND u.id_estabelecimento = ' . Contexto::id() . '
+                ' . self::juncao() . '
                 WHERE c.id_estabelecimento = ' . Contexto::id() . ' AND c.id_usuario = :id LIMIT 1';
 
         $consulta = bd()->prepare($sql);
@@ -102,7 +122,7 @@ class Cliente
         $sql = 'SELECT ' . self::CAMPOS . ',
                        (SELECT COUNT(*) FROM agendamentos a WHERE a.id_estabelecimento = ' . Contexto::id() . ' AND a.id_cliente = c.id_cliente) AS total_agendamentos
                 FROM clientes c
-                INNER JOIN usuarios u ON u.id_usuario = c.id_usuario AND u.id_estabelecimento = ' . Contexto::id() . '
+                ' . self::juncao() . '
                 ' . $where . '
                 ORDER BY u.nome ASC';
 
@@ -122,7 +142,7 @@ class Cliente
 
         $sql = 'SELECT COUNT(*) AS total
                 FROM clientes c
-                INNER JOIN usuarios u ON u.id_usuario = c.id_usuario AND u.id_estabelecimento = ' . Contexto::id() . ' ' . $where;
+                ' . self::juncao() . ' ' . $where;
 
         $consulta = bd()->prepare($sql);
         $consulta->execute($parametros);
@@ -144,7 +164,7 @@ class Cliente
         }
 
         if (!empty($filtros['status'])) {
-            $condicoes[] = 'u.status = :status';
+            $condicoes[] = 'v.status = :status';
             $parametros[':status'] = $filtros['status'];
         }
 
@@ -185,15 +205,16 @@ class Cliente
         return $gravou;
     }
 
-    /** Conta os registros cadastrados, restringindo pelo status quando informado. */
+    /** Conta os registros cadastrados, restringindo pelo status do vinculo quando informado. */
     public static function total(?string $status = null): int
     {
         $sql = 'SELECT COUNT(*) AS total FROM clientes c
-                INNER JOIN usuarios u ON u.id_usuario = c.id_usuario AND u.id_estabelecimento = ' . Contexto::id() . '';
+                ' . self::juncao() . '
+                WHERE c.id_estabelecimento = ' . Contexto::id();
         $parametros = [];
 
         if ($status !== null) {
-            $sql .= ' WHERE u.id_estabelecimento = ' . Contexto::id() . ' AND u.status = :status';
+            $sql .= ' AND v.status = :status';
             $parametros[':status'] = $status;
         }
 

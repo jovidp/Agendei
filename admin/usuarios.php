@@ -23,9 +23,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             definirFlash('erro', 'Usuario nao encontrado.');
         } else {
             try {
-                // A exclusao em usuarios remove o perfil de cliente em cascata.
+                // Apaga o vinculo de cliente com esta empresa (o perfil cai em
+                // cascata); a pessoa so some se nao tiver vinculo em outra empresa.
                 // O log de autenticacao permanece: ele guarda nome e CPF por copia.
-                Usuario::excluir((int) $cliente['id_usuario']);
+                Vinculo::excluir((int) $cliente['id_vinculo']);
                 definirFlash('sucesso', 'Usuario ' . $cliente['nome'] . ' excluido com sucesso.');
             } catch (Throwable $erro) {
                 error_log('Falha ao excluir usuario: ' . $erro->getMessage());

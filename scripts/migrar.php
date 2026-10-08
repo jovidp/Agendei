@@ -47,8 +47,10 @@ if ($idOriginal < 1) {
     $db->exec("INSERT INTO estabelecimento (nome, slug) VALUES ('Agendei', 'agendei')");
     $idOriginal = (int) $db->lastInsertId();
 }
+// usuarios fica de fora: desde a separacao pessoa/vinculo ela nao tem empresa
+// (scripts/migrar_vinculos.php, encadeado no fim, faz essa conversao).
 $tabelas = [
-    'usuarios' => 'id_usuario', 'clientes' => 'id_cliente', 'profissionais' => 'id_profissional',
+    'clientes' => 'id_cliente', 'profissionais' => 'id_profissional',
     'administradores' => 'id_administrador', 'servicos' => 'id_servico',
     'profissional_servico' => null, 'horarios_profissionais' => 'id_horario',
     'bloqueios_agenda' => 'id_bloqueio', 'agendamentos' => 'id_agendamento', 'configuracoes' => 'id_configuracao',
@@ -66,7 +68,7 @@ foreach ($tabelas as $tabela => $pk) {
     // Toda nova gravação deve identificar explicitamente o estabelecimento.
     $db->exec("ALTER TABLE `$tabela` MODIFY id_estabelecimento INT UNSIGNED NOT NULL");
 }
-foreach ([['usuarios', 'uk_usuarios_email', 'email'], ['clientes', 'uk_clientes_cpf', 'cpf'], ['configuracoes', 'uk_config_chave', 'chave']] as [$tabela, $antigo, $campo]) {
+foreach ([['clientes', 'uk_clientes_cpf', 'cpf'], ['configuracoes', 'uk_config_chave', 'chave']] as [$tabela, $antigo, $campo]) {
     $novo = 'uk_estabelecimento_' . $campo;
     if (!$indiceExiste($tabela, $novo)) $db->exec("ALTER TABLE `$tabela` ADD UNIQUE KEY `$novo` (id_estabelecimento, `$campo`)");
     // Localiza o índice global pelo campo para funcionar também em instalações antigas.
@@ -74,11 +76,17 @@ foreach ([['usuarios', 'uk_usuarios_email', 'email'], ['clientes', 'uk_clientes_
     preg_match_all('/UNIQUE KEY `([^`]+)` \(`' . preg_quote($campo, '/') . '`\)/', $ddl, $indices);
     foreach ($indices[1] as $nome) $db->exec("ALTER TABLE `$tabela` DROP INDEX `$nome`");
 }
-// Chaves compostas impedem relacionar clientes, serviços e profissionais de empresas diferentes.
+// O e-mail passou a identificar uma unica pessoa em toda a plataforma. Roda
+// enquanto usuarios ainda tem id_estabelecimento (base antiga), para listar
+// as repeticoes por empresa; havendo alguma, para aqui sem escolher nem
+// apagar dados. Numa base ja no modelo pessoa/vinculo nao ha o que fazer.
+require_once __DIR__ . '/migrar_email_unico.php';
+if ($colunaExiste('usuarios', 'id_estabelecimento') && !migrarEmailUnico($db)) {
+    exit(1);
+}
+// Chaves compostas impedem relacionar clientes, serviços e profissionais de
+// empresas diferentes. As dos perfis com a pessoa ficaram para migrar_vinculos.php.
 $relacoes = [
-    ['clientes', 'id_usuario', 'usuarios', 'CASCADE'],
-    ['profissionais', 'id_usuario', 'usuarios', 'CASCADE'],
-    ['administradores', 'id_usuario', 'usuarios', 'CASCADE'],
     ['profissional_servico', 'id_profissional', 'profissionais', 'CASCADE'],
     ['profissional_servico', 'id_servico', 'servicos', 'CASCADE'],
     ['horarios_profissionais', 'id_profissional', 'profissionais', 'CASCADE'],
@@ -124,3 +132,19 @@ if (!(int) $db->query('SELECT COUNT(*) FROM administradores_master')->fetchColum
 }
 echo "Atualização concluída. Os dados existentes pertencem ao estabelecimento $idOriginal.\n";
 if ($masterCriado) echo "Conta master criada: master@agendei.com.br / agendei-master-2026 (altere a senha no primeiro acesso).\n";
+
+// Filiais (unidades): tabela, id_filial em profissionais/agendamentos e a Matriz.
+require __DIR__ . '/migrar_filiais.php';
+
+// Lembretes automaticos: tentativas e erro na fila de notificacoes.
+require __DIR__ . '/migrar_lembretes.php';
+
+// "Manter conectado": tabela dos dispositivos lembrados.
+require __DIR__ . '/migrar_lembrar.php';
+
+// Pessoa e vinculo separados: por ultimo, porque mexe em tudo o que veio antes.
+require_once __DIR__ . '/migrar_vinculos.php';
+$feitoVinculos = migrarVinculos($db);
+echo $feitoVinculos === []
+    ? "Pessoa e vinculo: o esquema ja estava pronto.\n"
+    : "Pessoa e vinculo separados:\n  - " . implode("\n  - ", $feitoVinculos) . "\n";

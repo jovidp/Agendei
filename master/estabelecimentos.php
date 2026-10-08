@@ -25,9 +25,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $dados = ['estabelecimento' => post('estabelecimento'), 'slug' => strtolower(post('slug')), 'nome' => post('nome'), 'email' => mb_strtolower(post('email')), 'senha' => post('senha')];
             if (mb_strlen($dados['estabelecimento']) < 2 || mb_strlen($dados['estabelecimento']) > 120) $erros[] = 'Informe o nome do estabelecimento.';
             if (!preg_match('/^[a-z0-9](?:[a-z0-9-]{1,78}[a-z0-9])$/D', $dados['slug'])) $erros[] = 'Use um endereço de 3 a 80 letras minúsculas, números ou hífens.';
-            if (mb_strlen($dados['nome']) < 3) $erros[] = 'Informe o nome do administrador local.';
+            if (!validarNomeSobrenome($dados['nome'])) $erros[] = 'Informe o nome e o sobrenome do responsável.';
             if (!validarEmail($dados['email'])) $erros[] = 'Informe um e-mail válido.';
-            if (!validarSenha($dados['senha'])) $erros[] = 'A senha deve ter pelo menos 6 caracteres.';
+            // E-mail conhecido vincula a pessoa que ja existe, com a senha que ela ja tem.
+            $pessoaExistente = validarEmail($dados['email']) && Usuario::emailEmUso($dados['email']);
+            if (!$pessoaExistente && !validarSenha($dados['senha'])) $erros[] = 'A senha deve ter pelo menos 6 caracteres.';
             if (!$erros) {
                 $id = Estabelecimento::contratar($dados);
                 LogMaster::registrar('estabelecimento_criado', [
@@ -36,8 +38,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'alvo'                 => $dados['email'],
                     'detalhe'              => 'endereço ' . $dados['slug'],
                 ]);
-                definirFlash('sucesso', 'Estabelecimento e sua primeira conta administrativa criados.');
+                definirFlash('sucesso', $pessoaExistente
+                    ? 'Estabelecimento criado e vinculado à pessoa que já tinha conta; a senha dela continua a mesma.'
+                    : 'Estabelecimento e sua primeira conta administrativa criados.');
                 redirecionar('master/estabelecimentos.php?acao=ver&id=' . $id);
+            }
+        }
+        if ($acao === 'aprovar_cadastro' || $acao === 'recusar_cadastro') {
+            $idSolicitacao = (int) post('id_solicitacao');
+            $solicitacao = Solicitacao::porId($idSolicitacao);
+            if (!$solicitacao || $solicitacao['status'] !== 'pendente') {
+                $erros[] = 'Solicitação de cadastro não encontrada ou já decidida.';
+            } elseif ($acao === 'aprovar_cadastro') {
+                Solicitacao::aprovar($idSolicitacao);
+                LogMaster::registrar('cadastro_aprovado', [
+                    'estabelecimento'      => (int) $solicitacao['id_estabelecimento'],
+                    'estabelecimento_nome' => $solicitacao['estabelecimento_nome'],
+                    'alvo'                 => $solicitacao['email'],
+                    'detalhe'              => 'endereço ' . $solicitacao['slug'],
+                ]);
+                [$assunto, $texto, $html] = emailCadastroAprovado($solicitacao);
+                $avisado = Email::configurado() && Email::enviar($solicitacao['email'], $assunto, $texto, $html, $solicitacao['responsavel']);
+                definirFlash('sucesso', $avisado
+                    ? 'Cadastro aprovado. O responsável recebeu o aviso por e-mail.'
+                    : 'Cadastro aprovado. Avise o responsável que o acesso está liberado (o e-mail automático não foi enviado).');
+                redirecionar('master/estabelecimentos.php?acao=ver&id=' . (int) $solicitacao['id_estabelecimento']);
+            } else {
+                // Recusar apaga a empresa e a conta do responsável: só a solicitação fica, como histórico.
+                Solicitacao::recusar($idSolicitacao);
+                LogMaster::registrar('cadastro_recusado', [
+                    'estabelecimento_nome' => $solicitacao['estabelecimento_nome'],
+                    'alvo'                 => $solicitacao['email'],
+                    'detalhe'              => 'endereço ' . $solicitacao['slug'],
+                ]);
+                [$assunto, $texto, $html] = emailCadastroRecusado($solicitacao);
+                $avisado = Email::configurado() && Email::enviar($solicitacao['email'], $assunto, $texto, $html, $solicitacao['responsavel']);
+                definirFlash('sucesso', $avisado
+                    ? 'Cadastro recusado e dados removidos. O responsável foi avisado por e-mail.'
+                    : 'Cadastro recusado e dados removidos.');
+                redirecionar('master/estabelecimentos.php');
             }
         }
         if ($acao === 'excluir') {
@@ -65,7 +104,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $empresa = Estabelecimento::porIdGlobal($id);
             $dados = ['nome' => post('nome'), 'email' => mb_strtolower(post('email')), 'senha' => post('senha')];
             if (!$empresa) $erros[] = 'Estabelecimento não encontrado.';
-            if (mb_strlen($dados['nome']) < 3 || !validarEmail($dados['email']) || !validarSenha($dados['senha'])) $erros[] = 'Preencha nome, e-mail válido e senha de pelo menos 6 caracteres.';
+            // E-mail conhecido vincula a pessoa que ja existe, sem nome nem senha novos.
+            $pessoaExistente = validarEmail($dados['email']) && Usuario::emailEmUso($dados['email']);
+            if (!validarEmail($dados['email'])) $erros[] = 'Informe um e-mail válido.';
+            elseif (!$pessoaExistente && (!validarNomeSobrenome($dados['nome']) || !validarSenha($dados['senha']))) $erros[] = 'Preencha nome e sobrenome, e-mail válido e senha de pelo menos 6 caracteres.';
             if (!$erros) {
                 Estabelecimento::criarAdministrador($id, $dados);
                 LogMaster::registrar('admin_criado', [
@@ -73,7 +115,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'estabelecimento_nome' => $empresa['nome'],
                     'alvo'                 => $dados['email'],
                 ]);
-                definirFlash('sucesso', 'Nova conta administrativa adicionada ao estabelecimento.');
+                definirFlash('sucesso', $pessoaExistente
+                    ? 'Pessoa vinculada como administradora do estabelecimento; a senha dela continua a mesma.'
+                    : 'Nova conta administrativa adicionada ao estabelecimento.');
                 redirecionar('master/estabelecimentos.php?acao=ver&id=' . $id);
             }
         }
@@ -158,6 +202,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 redirecionar('master/estabelecimentos.php?acao=ver&id=' . $id);
             }
         }
+    } catch (DomainException $erro) {
+        // Regras do modelo: teto de administradores, vinculo repetido.
+        $erros[] = $erro->getMessage();
     } catch (PDOException $erro) {
         $erros[] = $acao === 'excluir'
             ? 'Não foi possível excluir o estabelecimento. Nenhum dado foi removido.'
@@ -170,6 +217,8 @@ $idSelecionado = $acaoTela === 'ver' ? (int) get('id') : (int) post('id_estabele
 $selecionado = $idSelecionado > 0 ? Estabelecimento::porIdGlobal($idSelecionado) : null;
 $administradores = $selecionado ? Estabelecimento::administradores((int) $selecionado['id_estabelecimento']) : [];
 $empresas = Estabelecimento::listarTodos();
+$solicitacoes = Solicitacao::pendentes();
+$empresasPendentes = Solicitacao::empresasPendentes();
 $tituloPagina = 'Estabelecimentos';
 $subtituloTopo = 'Cada empresa possui seus próprios administradores, clientes, equipe e serviços';
 $acoesTopo = $acaoTela === 'novo' ? '<a class="btn btn-contorno btn-pequeno" href="' . url('master/estabelecimentos.php') . '">Voltar</a>' : '<a class="btn btn-pequeno" href="' . url('master/estabelecimentos.php?acao=novo') . '">Novo estabelecimento</a>';
@@ -181,7 +230,7 @@ require RAIZ . '/includes/painel_header.php';
     <form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="criar">
         <div class="linha-campos"><div class="campo"><label for="estabelecimento">Nome do estabelecimento</label><input id="estabelecimento" name="estabelecimento" maxlength="120" required></div><div class="campo"><label for="slug">Endereço exclusivo</label><input id="slug" name="slug" placeholder="studio-da-ana" maxlength="80" pattern="[a-z0-9][a-z0-9-]{1,78}[a-z0-9]" required><span class="ajuda-campo">Sem espaços nem acentos.</span></div></div>
         <h4>Primeira conta administrativa</h4>
-        <div class="linha-campos"><div class="campo"><label for="nome">Nome do responsável</label><input id="nome" name="nome" maxlength="120" required></div><div class="campo"><label for="email">E-mail</label><input type="email" id="email" name="email" maxlength="150" required></div></div>
+        <div class="linha-campos"><div class="campo"><label for="nome">Nome e sobrenome do responsável</label><input id="nome" name="nome" maxlength="120" required></div><div class="campo"><label for="email">E-mail</label><input type="email" id="email" name="email" maxlength="150" required></div></div>
         <div class="campo"><label for="senha">Senha temporária</label><input type="password" id="senha" name="senha" minlength="6" autocomplete="new-password" required></div>
         <button class="btn" type="submit">Criar estabelecimento</button>
     </form>
@@ -218,7 +267,7 @@ require RAIZ . '/includes/painel_header.php';
 </tr>
 <?php endforeach; ?>
 </tbody></table></div></div>
-<div class="cartao"><div class="cartao-cabecalho"><h3>Adicionar administrador</h3></div><div class="cartao-corpo"><form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="novo_admin"><input type="hidden" name="id_estabelecimento" value="<?= (int) $selecionado['id_estabelecimento'] ?>"><div class="campo"><label for="nome_admin">Nome</label><input id="nome_admin" name="nome" required></div><div class="campo"><label for="email_admin">E-mail</label><input type="email" id="email_admin" name="email" required></div><div class="campo"><label for="senha_admin">Senha temporária</label><input type="password" id="senha_admin" name="senha" minlength="6" autocomplete="new-password" required></div><button class="btn" type="submit">Adicionar administrador</button></form></div></div>
+<div class="cartao"><div class="cartao-cabecalho"><h3>Adicionar administrador</h3></div><div class="cartao-corpo"><form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="novo_admin"><input type="hidden" name="id_estabelecimento" value="<?= (int) $selecionado['id_estabelecimento'] ?>"><div class="campo"><label for="nome_admin">Nome e sobrenome</label><input id="nome_admin" name="nome"></div><div class="campo"><label for="email_admin">E-mail</label><input type="email" id="email_admin" name="email" required><span class="ajuda-campo">Se o e-mail já tiver conta no Agendei, a pessoa é vinculada como administradora com a senha que já tem; nome e senha abaixo são ignorados. Máximo de <?= Estabelecimento::MAXIMO_ADMINISTRADORES ?> administradores por estabelecimento.</span></div><div class="campo"><label for="senha_admin">Senha temporária</label><input type="password" id="senha_admin" name="senha" minlength="6" autocomplete="new-password"></div><button class="btn" type="submit">Adicionar administrador</button></form></div></div>
 </div>
 <div class="cartao">
     <div class="cartao-cabecalho"><h3>Entrar no painel do estabelecimento</h3><small>Para atender um chamado vendo a mesma tela do cliente</small></div>
@@ -291,6 +340,34 @@ require RAIZ . '/includes/painel_header.php';
     </div>
 </div>
 <?php else: ?>
+<?php if ($solicitacoes !== []): ?>
+<div class="cartao" id="cadastros-pendentes">
+    <div class="cartao-cabecalho"><h3>Cadastros aguardando aprovação</h3><small>Empresas que se cadastraram pela página inicial. Aprovar libera o login; recusar apaga a empresa e a conta.</small></div>
+    <div class="tabela-area"><table class="tabela"><thead><tr><th>Empresa</th><th>Responsável</th><th>Contato</th><th>Mensagem</th><th>Quando</th><th class="coluna-acoes">Decisão</th></tr></thead><tbody>
+    <?php foreach ($solicitacoes as $solicitacao): ?>
+    <tr>
+        <td class="celula-principal"><?= e($solicitacao['estabelecimento_nome']) ?><span class="celula-secundaria"><?= e($solicitacao['slug']) ?></span></td>
+        <td><?= e($solicitacao['responsavel']) ?></td>
+        <td class="celula-principal"><?= e($solicitacao['email']) ?><span class="celula-secundaria"><?= e((string) ($solicitacao['telefone'] ?? '') ?: '-') ?></span></td>
+        <td><?= e((string) ($solicitacao['mensagem'] ?? '') ?: '-') ?></td>
+        <td><?= e(formatarData(substr((string) $solicitacao['data_solicitacao'], 0, 10))) ?></td>
+        <td class="coluna-acoes"><div class="acoes-tabela">
+            <form method="post"><?= campoCsrf() ?>
+                <input type="hidden" name="acao" value="aprovar_cadastro">
+                <input type="hidden" name="id_solicitacao" value="<?= (int) $solicitacao['id_solicitacao'] ?>">
+                <button class="btn btn-secundario btn-pequeno" type="submit" data-confirmar="Aprovar o cadastro e liberar o login desta empresa?">Aprovar</button>
+            </form>
+            <form method="post"><?= campoCsrf() ?>
+                <input type="hidden" name="acao" value="recusar_cadastro">
+                <input type="hidden" name="id_solicitacao" value="<?= (int) $solicitacao['id_solicitacao'] ?>">
+                <button class="btn btn-perigo btn-pequeno" type="submit" data-confirmar="Recusar o cadastro? A empresa e a conta do responsável serão apagadas.">Recusar</button>
+            </form>
+        </div></td>
+    </tr>
+    <?php endforeach; ?>
+    </tbody></table></div>
+</div>
+<?php endif; ?>
 <div class="cartao"><div class="tabela-area"><table class="tabela"><thead><tr><th>Estabelecimento</th><th>Administrador</th><th>Clientes</th><th>Profissionais</th><th>Serviços</th><th>Status</th><th>Ações</th></tr></thead><tbody>
 <?php foreach ($empresas as $empresa): ?>
 <tr>
@@ -299,7 +376,7 @@ require RAIZ . '/includes/painel_header.php';
     <td><?= (int) $empresa['total_clientes'] ?></td>
     <td><?= (int) $empresa['total_profissionais'] ?></td>
     <td><?= (int) $empresa['total_servicos'] ?></td>
-    <td><?= badgeStatus($empresa['status']) ?></td>
+    <td><?= in_array((int) $empresa['id_estabelecimento'], $empresasPendentes, true) ? '<span class="badge badge-agendado">Aguardando aprovação</span>' : badgeStatus($empresa['status']) ?></td>
     <td><div class="acoes-tabela">
         <a class="btn btn-contorno btn-pequeno" href="<?= url('master/estabelecimentos.php?acao=ver&id=' . $empresa['id_estabelecimento']) ?>">Detalhes</a>
         <form method="post"><?= campoCsrf() ?>

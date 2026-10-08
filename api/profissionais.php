@@ -11,15 +11,21 @@ require_once __DIR__ . '/../config/config.php';
 exigirLogin();
 
 $idServico = (int) get('id_servico');
+$idFilial  = (int) get('id_filial');
 
 if ($idServico <= 0 || !Servico::estaAtivo($idServico)) {
     jsonResposta(['sucesso' => false, 'mensagem' => 'Servico invalido ou indisponivel.', 'profissionais' => []], 400);
 }
 
+// Com a unidade escolhida, so entram os profissionais dela; sem ela, todos que fazem o servico.
+$profissionais = $idFilial > 0
+    ? Profissional::porServicoEFilial($idServico, $idFilial)
+    : Profissional::porServico($idServico);
+
 $lista = [];
 
 // Devolve somente os campos necessários à escolha do profissional na interface.
-foreach (Profissional::porServico($idServico) as $profissional) {
+foreach ($profissionais as $profissional) {
     $lista[] = [
         'id_profissional' => (int) $profissional['id_profissional'],
         'nome'            => $profissional['nome'],

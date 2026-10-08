@@ -47,7 +47,7 @@ require RAIZ . '/includes/painel_header.php';
             <h3>Baixar meus dados</h3>
         </div>
         <div class="cartao-corpo">
-            <p>Receba uma cópia em JSON dos seus dados cadastrais, agendamentos, pontos, pacotes, avaliações e lista de espera.</p><a class="btn" href="<?= url('cliente/privacidade.php?exportar=1') ?>">Exportar meus dados</a>
+            <p>Baixe um arquivo com uma cópia de tudo o que guardamos sobre você: dados cadastrais, agendamentos, pontos, pacotes, avaliações e lista de espera.</p><a class="btn" href="<?= url('cliente/privacidade.php?exportar=1') ?>">Exportar meus dados</a>
         </div>
     </div>
     <div class="cartao">

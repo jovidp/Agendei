@@ -52,8 +52,9 @@ if ($acao === '') {
     }
 
     $usuarios = $db->query(
-        'SELECT email, login, tipo, totp_ativado_em FROM usuarios
-         WHERE totp_ativado_em IS NOT NULL ORDER BY email'
+        'SELECT u.email, v.login, v.tipo, u.totp_ativado_em FROM usuarios u
+         LEFT JOIN vinculos v ON v.id_usuario = u.id_usuario
+         WHERE u.totp_ativado_em IS NOT NULL ORDER BY u.email'
     )->fetchAll(PDO::FETCH_ASSOC);
 
     echo "\nusuario:\n";
@@ -103,8 +104,10 @@ if ($acao === 'master') {
 // isto esta no servidor e precisa alcancar a conta sem saber a qual empresa
 // ela pertence.
 // -------------------------------------------------------------------------
-$consulta = $db->prepare('UPDATE usuarios SET ' . $limpar . ' WHERE email = :alvo OR login = :alvo');
-$consulta->execute([':alvo' => mb_strtolower(trim($alvo))]);
+// O login de 6 letras e do vinculo; o segundo fator e da pessoa.
+$consulta = $db->prepare('UPDATE usuarios SET ' . $limpar . '
+    WHERE email = :alvo OR id_usuario IN (SELECT id_usuario FROM vinculos WHERE login = :login)');
+$consulta->execute([':alvo' => mb_strtolower(trim($alvo)), ':login' => mb_strtolower(trim($alvo))]);
 
 if ($consulta->rowCount() === 0) {
     fwrite(STDERR, "Nenhuma conta com este e-mail ou login.\n");

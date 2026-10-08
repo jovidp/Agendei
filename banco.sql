@@ -29,6 +29,7 @@ DROP TABLE IF EXISTS `servicos`;
 DROP TABLE IF EXISTS `administradores`;
 DROP TABLE IF EXISTS `profissionais`;
 DROP TABLE IF EXISTS `clientes`;
+DROP TABLE IF EXISTS `vinculos`;
 DROP TABLE IF EXISTS `usuarios`;
 DROP TABLE IF EXISTS `administradores_master`;
 DROP TABLE IF EXISTS `estabelecimento`;
@@ -106,8 +107,10 @@ CREATE TABLE `administradores_master` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
--- USUÁRIOS DOS ESTABELECIMENTOS
--- Toda conta local pertence obrigatoriamente a uma empresa. E-mail é único dentro dessa empresa.
+-- USUÁRIOS (PESSOAS)
+-- Uma linha por pessoa em toda a plataforma: e-mail unico, senha, segundo
+-- fator e o cadastro completo da especificacao. O que a pessoa e em cada
+-- estabelecimento (cliente, profissional, administradora) fica em vinculos.
 -- ---------------------------------------------------------------------
 CREATE TABLE `usuarios` (
   `id_usuario` int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -116,7 +119,6 @@ CREATE TABLE `usuarios` (
   `senha_hash` varchar(255) NOT NULL,
   `telefone` varchar(20) DEFAULT NULL,
   `telefone_fixo` varchar(20) DEFAULT NULL,
-  `login` varchar(6) DEFAULT NULL,
   `sexo` enum('F','M','O') DEFAULT NULL,
   `nome_materno` varchar(120) DEFAULT NULL,
   `data_nascimento` date DEFAULT NULL,
@@ -127,32 +129,56 @@ CREATE TABLE `usuarios` (
   `bairro` varchar(100) DEFAULT NULL,
   `cidade` varchar(100) DEFAULT NULL,
   `uf` char(2) DEFAULT NULL,
-  `tipo` enum('cliente','profissional','admin') NOT NULL DEFAULT 'cliente',
+  -- Bloqueio global da pessoa (so o master): desligada, nao entra em empresa nenhuma.
   `status` enum('ativo','inativo') NOT NULL DEFAULT 'ativo',
   `totp_segredo` varchar(255) DEFAULT NULL,
   `totp_ativado_em` datetime DEFAULT NULL,
   `totp_ultimo_contador` bigint(20) DEFAULT NULL,
   `token_recuperacao` varchar(64) DEFAULT NULL,
   `token_expiracao` datetime DEFAULT NULL,
-  `ultimo_acesso` datetime DEFAULT NULL,
   `data_criacao` datetime NOT NULL DEFAULT current_timestamp(),
   `data_atualizacao` datetime DEFAULT NULL ON UPDATE current_timestamp(),
-  `id_estabelecimento` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id_usuario`),
-  UNIQUE KEY `uk_estabelecimento_registro` (`id_estabelecimento`,`id_usuario`),
-  UNIQUE KEY `uk_estabelecimento_email` (`id_estabelecimento`,`email`),
+  UNIQUE KEY `uk_usuarios_email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+-- VINCULOS
+-- A pessoa dentro de cada estabelecimento: cliente, profissional ou
+-- administradora, com status, login de 6 letras e ultimo acesso proprios.
+-- A mesma pessoa pode ter varios vinculos (inclusive mais de um na mesma
+-- empresa: a autonoma que administra e atende no proprio negocio), mas um
+-- so por tipo em cada empresa. Os perfis (clientes, profissionais,
+-- administradores) apontam para ca pela chave composta e caem em cascata
+-- com o vinculo. Para atualizar uma base existente: php scripts/migrar_vinculos.php
+-- ---------------------------------------------------------------------
+CREATE TABLE `vinculos` (
+  `id_vinculo` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `id_estabelecimento` int(10) unsigned NOT NULL,
+  `id_usuario` int(10) unsigned NOT NULL,
+  `tipo` enum('cliente','profissional','admin') NOT NULL DEFAULT 'cliente',
+  `status` enum('ativo','inativo') NOT NULL DEFAULT 'ativo',
+  `login` varchar(6) DEFAULT NULL,
+  `ultimo_acesso` datetime DEFAULT NULL,
+  `data_criacao` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_vinculo`),
+  UNIQUE KEY `uk_vinculos_registro` (`id_estabelecimento`,`id_vinculo`),
+  UNIQUE KEY `uk_vinculos_pessoa_tipo` (`id_estabelecimento`,`id_usuario`,`tipo`),
   UNIQUE KEY `uk_estabelecimento_login` (`id_estabelecimento`,`login`),
-  KEY `idx_usuarios_tipo_status` (`tipo`,`status`),
-  KEY `idx_estabelecimento` (`id_estabelecimento`),
-  CONSTRAINT `fk_usuarios_estabelecimento` FOREIGN KEY (`id_estabelecimento`) REFERENCES `estabelecimento` (`id_estabelecimento`)
+  KEY `idx_vinculos_usuario` (`id_usuario`),
+  KEY `idx_vinculos_tipo_status` (`id_estabelecimento`,`tipo`,`status`),
+  CONSTRAINT `fk_vinculos_estabelecimento` FOREIGN KEY (`id_estabelecimento`) REFERENCES `estabelecimento` (`id_estabelecimento`),
+  CONSTRAINT `fk_vinculos_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
 -- CLIENTES
--- O vínculo composto impede associar o perfil a uma conta de outra empresa.
+-- Perfil do vinculo de cliente. A chave composta com vinculos impede
+-- associar o perfil a um vinculo de outra empresa.
 -- ---------------------------------------------------------------------
 CREATE TABLE `clientes` (
   `id_cliente` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `id_vinculo` int(10) unsigned NOT NULL,
   `id_usuario` int(10) unsigned NOT NULL,
   `cpf` char(11) DEFAULT NULL,
   `data_nascimento` date DEFAULT NULL,
@@ -161,22 +187,25 @@ CREATE TABLE `clientes` (
   `data_cadastro` datetime NOT NULL DEFAULT current_timestamp(),
   `id_estabelecimento` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id_cliente`),
-  UNIQUE KEY `uk_clientes_usuario` (`id_usuario`),
+  UNIQUE KEY `uk_clientes_vinculo` (`id_vinculo`),
   UNIQUE KEY `uk_estabelecimento_registro` (`id_estabelecimento`,`id_cliente`),
   UNIQUE KEY `uk_estabelecimento_cpf` (`id_estabelecimento`,`cpf`),
   KEY `idx_estabelecimento` (`id_estabelecimento`),
-  KEY `fk_tenant_clientes_id_usuario` (`id_estabelecimento`,`id_usuario`),
+  KEY `idx_clientes_pessoa` (`id_estabelecimento`,`id_usuario`),
+  KEY `fk_tenant_clientes_id_vinculo` (`id_estabelecimento`,`id_vinculo`),
   CONSTRAINT `fk_clientes_estabelecimento` FOREIGN KEY (`id_estabelecimento`) REFERENCES `estabelecimento` (`id_estabelecimento`),
   CONSTRAINT `fk_clientes_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_tenant_clientes_id_usuario` FOREIGN KEY (`id_estabelecimento`, `id_usuario`) REFERENCES `usuarios` (`id_estabelecimento`, `id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_tenant_clientes_id_vinculo` FOREIGN KEY (`id_estabelecimento`, `id_vinculo`) REFERENCES `vinculos` (`id_estabelecimento`, `id_vinculo`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
 -- PROFISSIONAIS
--- Equipe isolada por estabelecimento.
+-- Perfil do vinculo de profissional. A agenda e por vinculo: a mesma pessoa
+-- em dois saloes tem duas agendas.
 -- ---------------------------------------------------------------------
 CREATE TABLE `profissionais` (
   `id_profissional` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `id_vinculo` int(10) unsigned NOT NULL,
   `id_usuario` int(10) unsigned NOT NULL,
   `especialidade` varchar(120) DEFAULT NULL,
   `bio` text DEFAULT NULL,
@@ -187,33 +216,37 @@ CREATE TABLE `profissionais` (
   `token_calendario` char(64) DEFAULT NULL,
   `id_estabelecimento` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id_profissional`),
-  UNIQUE KEY `uk_profissionais_usuario` (`id_usuario`),
+  UNIQUE KEY `uk_profissionais_vinculo` (`id_vinculo`),
   UNIQUE KEY `uk_estabelecimento_registro` (`id_estabelecimento`,`id_profissional`),
   KEY `idx_estabelecimento` (`id_estabelecimento`),
-  KEY `fk_tenant_profissionais_id_usuario` (`id_estabelecimento`,`id_usuario`),
+  KEY `idx_profissionais_pessoa` (`id_estabelecimento`,`id_usuario`),
+  KEY `fk_tenant_profissionais_id_vinculo` (`id_estabelecimento`,`id_vinculo`),
   CONSTRAINT `fk_profissionais_estabelecimento` FOREIGN KEY (`id_estabelecimento`) REFERENCES `estabelecimento` (`id_estabelecimento`),
   CONSTRAINT `fk_profissionais_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_tenant_profissionais_id_usuario` FOREIGN KEY (`id_estabelecimento`, `id_usuario`) REFERENCES `usuarios` (`id_estabelecimento`, `id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_tenant_profissionais_id_vinculo` FOREIGN KEY (`id_estabelecimento`, `id_vinculo`) REFERENCES `vinculos` (`id_estabelecimento`, `id_vinculo`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
 -- ADMINISTRADORES LOCAIS
--- Cada empresa tem pelo menos uma conta administrativa criada junto com seu cadastro.
+-- Perfil do vinculo administrativo. Cada empresa nasce com um e tem no
+-- maximo dois (Estabelecimento::MAXIMO_ADMINISTRADORES).
 -- ---------------------------------------------------------------------
 CREATE TABLE `administradores` (
   `id_administrador` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `id_vinculo` int(10) unsigned NOT NULL,
   `id_usuario` int(10) unsigned NOT NULL,
   `nivel` enum('super','gerente') NOT NULL DEFAULT 'super',
   `data_cadastro` datetime NOT NULL DEFAULT current_timestamp(),
   `id_estabelecimento` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id_administrador`),
-  UNIQUE KEY `uk_administradores_usuario` (`id_usuario`),
+  UNIQUE KEY `uk_administradores_vinculo` (`id_vinculo`),
   UNIQUE KEY `uk_estabelecimento_registro` (`id_estabelecimento`,`id_administrador`),
   KEY `idx_estabelecimento` (`id_estabelecimento`),
-  KEY `fk_tenant_administradores_id_usuario` (`id_estabelecimento`,`id_usuario`),
+  KEY `idx_administradores_pessoa` (`id_estabelecimento`,`id_usuario`),
+  KEY `fk_tenant_administradores_id_vinculo` (`id_estabelecimento`,`id_vinculo`),
   CONSTRAINT `fk_administradores_estabelecimento` FOREIGN KEY (`id_estabelecimento`) REFERENCES `estabelecimento` (`id_estabelecimento`),
   CONSTRAINT `fk_administradores_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE,
-  CONSTRAINT `fk_tenant_administradores_id_usuario` FOREIGN KEY (`id_estabelecimento`, `id_usuario`) REFERENCES `usuarios` (`id_estabelecimento`, `id_usuario`) ON DELETE CASCADE ON UPDATE CASCADE
+  CONSTRAINT `fk_tenant_administradores_id_vinculo` FOREIGN KEY (`id_estabelecimento`, `id_vinculo`) REFERENCES `vinculos` (`id_estabelecimento`, `id_vinculo`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------
@@ -394,12 +427,14 @@ CREATE TABLE notificacoes (
         status ENUM('pendente','enviada','lida','cancelada') NOT NULL DEFAULT 'pendente',
         data_programada DATETIME NULL,
         data_envio DATETIME NULL,
+        tentativas INT UNSIGNED NOT NULL DEFAULT 0,
+        erro VARCHAR(255) NULL,
         data_criacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id_notificacao),
         UNIQUE KEY uk_notificacao_agendamento_tipo (id_estabelecimento,id_agendamento,tipo),
         KEY idx_notificacao_fila (id_estabelecimento,status,data_programada),
         CONSTRAINT fk_notificacao_empresa FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento(id_estabelecimento),
-        CONSTRAINT fk_notificacao_usuario_tenant FOREIGN KEY (id_estabelecimento,id_usuario) REFERENCES usuarios(id_estabelecimento,id_usuario) ON DELETE CASCADE,
+        CONSTRAINT fk_notificacao_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) ON DELETE CASCADE,
         CONSTRAINT fk_notificacao_agendamento_tenant FOREIGN KEY (id_estabelecimento,id_agendamento) REFERENCES agendamentos(id_estabelecimento,id_agendamento) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -648,3 +683,69 @@ INSERT INTO `servicos` (`id_estabelecimento`,`nome`,`descricao`,`preco`,`duracao
   (1, 'Hidratacao capilar',        'Tratamento profundo de reconstrucao e brilho.', 90.00, 60, 'ativo', 0),
   (1, 'Manicure',                  'Cuidado completo das unhas das maos com esmaltacao.', 40.00, 45, 'ativo', 0),
   (1, 'Pedicure',                  'Cuidado completo das unhas dos pes com esmaltacao.', 45.00, 45, 'ativo', 0);
+
+-- =====================================================================
+-- Filiais (unidades). Cada profissional pertence a uma; cada agendamento
+-- grava em qual foi marcado. A foto vai em base64 (MEDIUMTEXT, como o logo).
+-- Para atualizar uma base ja existente use: php scripts/migrar_filiais.php
+-- =====================================================================
+DROP TABLE IF EXISTS `filiais`;
+CREATE TABLE `filiais` (
+  `id_filial` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `id_estabelecimento` int(10) unsigned NOT NULL,
+  `nome` varchar(120) NOT NULL,
+  `telefone` varchar(20) DEFAULT NULL,
+  `cep` char(8) DEFAULT NULL,
+  `logradouro` varchar(150) DEFAULT NULL,
+  `numero` varchar(20) DEFAULT NULL,
+  `complemento` varchar(60) DEFAULT NULL,
+  `bairro` varchar(100) DEFAULT NULL,
+  `cidade` varchar(100) DEFAULT NULL,
+  `uf` char(2) DEFAULT NULL,
+  `foto` mediumtext DEFAULT NULL,
+  `status` enum('ativo','inativo') NOT NULL DEFAULT 'ativo',
+  `ordem` smallint(5) NOT NULL DEFAULT 0,
+  `data_cadastro` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_filial`),
+  UNIQUE KEY `uk_filiais_registro` (`id_estabelecimento`,`id_filial`),
+  KEY `idx_filiais_estabelecimento` (`id_estabelecimento`,`status`),
+  CONSTRAINT `fk_filiais_estabelecimento` FOREIGN KEY (`id_estabelecimento`) REFERENCES `estabelecimento` (`id_estabelecimento`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `profissionais`
+  ADD COLUMN `id_filial` int(10) unsigned DEFAULT NULL,
+  ADD KEY `idx_profissionais_filial` (`id_estabelecimento`,`id_filial`),
+  ADD CONSTRAINT `fk_profissionais_filial` FOREIGN KEY (`id_filial`) REFERENCES `filiais` (`id_filial`);
+
+ALTER TABLE `agendamentos`
+  ADD COLUMN `id_filial` int(10) unsigned DEFAULT NULL,
+  ADD KEY `idx_agendamentos_filial` (`id_estabelecimento`,`id_filial`),
+  ADD CONSTRAINT `fk_agendamentos_filial` FOREIGN KEY (`id_filial`) REFERENCES `filiais` (`id_filial`);
+
+-- Toda instalacao nasce com uma unidade: a Matriz do estabelecimento semeado.
+INSERT INTO `filiais` (`id_estabelecimento`, `nome`, `status`, `ordem`)
+SELECT `id_estabelecimento`, 'Matriz', 'ativo', 0 FROM `estabelecimento` WHERE `slug` = 'agendei-studio';
+
+-- ---------------------------------------------------------------------
+-- SESSOES LEMBRADAS ("manter conectado")
+-- Guarda so o hash do segredo do cookie; o segredo em si vive no navegador.
+-- Para atualizar uma base ja existente use: php scripts/migrar_lembrar.php
+-- ---------------------------------------------------------------------
+CREATE TABLE `sessoes_lembradas` (
+  `id_sessao` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `id_estabelecimento` int(10) unsigned NOT NULL,
+  `id_usuario` int(10) unsigned NOT NULL,
+  `id_vinculo` int(10) unsigned NOT NULL,
+  `seletor` char(24) NOT NULL,
+  `validador_hash` char(64) NOT NULL,
+  `expira_em` datetime NOT NULL,
+  `criado_em` datetime NOT NULL DEFAULT current_timestamp(),
+  `ultimo_uso` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_sessao`),
+  UNIQUE KEY `uk_sessoes_lembradas_seletor` (`seletor`),
+  KEY `idx_sessoes_lembradas_usuario` (`id_estabelecimento`,`id_usuario`),
+  KEY `idx_sessoes_lembradas_expira` (`expira_em`),
+  KEY `idx_sessoes_lembradas_vinculo` (`id_vinculo`),
+  CONSTRAINT `fk_sessoes_lembradas_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE,
+  CONSTRAINT `fk_sessoes_lembradas_vinculo` FOREIGN KEY (`id_vinculo`) REFERENCES `vinculos` (`id_vinculo`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

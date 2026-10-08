@@ -51,7 +51,7 @@ php scripts/preparar_hospedagem.php
 
 Isso cria `banco_hospedagem.sql` (arquivo gerado, fora do git). No phpMyAdmin
 da hospedagem, **selecione o banco criado no passo 2** e importe esse arquivo.
-Confira ao final: devem existir **20 tabelas**.
+Confira ao final: devem existir **27 tabelas**.
 
 ---
 
@@ -158,9 +158,12 @@ alterar o `banco.sql`, gerar de novo com `preparar_hospedagem.php` e reimportar
 **Limite de tamanho.** InfinityFree limita cada banco a 50 MB. Para este
 projeto é folgado, mas não serve para carga de longo prazo.
 
-**E-mail.** Hospedagem gratuita costuma bloquear `mail()`. O sistema não envia
-e-mail hoje, então isso não afeta nada — mas limita o "esqueci minha senha" se
-ele for implementado depois.
+**E-mail.** Hospedagem gratuita costuma bloquear `mail()`. Por isso o sistema
+não usa `mail()`: ele fala SMTP com um provedor (Gmail com senha de app, Brevo
+etc.), configurado por variáveis `AGENDEI_EMAIL_*` ou por
+`config/email.local.php`. O passo a passo está em [DEPLOY.md](DEPLOY.md). Sem
+configuração o sistema funciona, mas não avisa por e-mail e o "esqueci minha
+senha" só mostra o link em desenvolvimento.
 
 ---
 

@@ -24,6 +24,7 @@ class Saude
             self::banco(),
             self::tabelasDeApoio(),
             self::ambiente(),
+            self::email(),
             self::operacao()
         );
     }
@@ -187,6 +188,29 @@ class Saude
     }
 
     // -----------------------------------------------------------------
+    // E-mail
+    // -----------------------------------------------------------------
+
+    private static function email(): array
+    {
+        $config = Email::configuracao();
+        $meio = Email::meio();
+
+        return [self::item(
+            'Envio de e-mail',
+            $meio !== '' ? self::OK : self::AVISO,
+            match ($meio) {
+                'api'   => 'API Brevo (HTTPS)',
+                'smtp'  => $config['host'] . ':' . $config['porta'] . ' (' . $config['seguranca'] . ')',
+                default => 'nao configurado',
+            },
+            $meio !== ''
+                ? 'Cadastro de empresa, aprovacao e recuperacao de senha avisam por e-mail a partir de ' . $config['remetente'] . '. Use o teste abaixo para confirmar a entrega.'
+                : 'Defina AGENDEI_EMAIL_API_CHAVE e AGENDEI_EMAIL_REMETENTE (Brevo, funciona no Render) ou AGENDEI_EMAIL_HOST, _USUARIO e _SENHA (SMTP). Sem isso, os avisos ficam por sua conta e a recuperacao de senha so funciona em desenvolvimento.'
+        )];
+    }
+
+    // -----------------------------------------------------------------
     // Operacao
     // -----------------------------------------------------------------
 
@@ -223,9 +247,9 @@ class Saude
         try {
             $sql = 'SELECT COUNT(*) FROM estabelecimento e
                     WHERE e.status = \'ativo\'
-                      AND NOT EXISTS (SELECT 1 FROM usuarios u
-                                       WHERE u.id_estabelecimento = e.id_estabelecimento
-                                         AND u.tipo = \'admin\' AND u.status = \'ativo\')';
+                      AND NOT EXISTS (SELECT 1 FROM vinculos v JOIN usuarios u ON u.id_usuario = v.id_usuario
+                                       WHERE v.id_estabelecimento = e.id_estabelecimento
+                                         AND v.tipo = \'admin\' AND v.status = \'ativo\' AND u.status = \'ativo\')';
             $semAdmin = (int) bd()->query($sql)->fetchColumn();
 
             $itens[] = self::item(

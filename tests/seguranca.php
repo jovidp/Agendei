@@ -200,7 +200,7 @@ foreach (politicaLimites() as $escopo => $regra) {
 }
 
 // Todo escopo citado no codigo das telas precisa existir na politica.
-foreach (['login_conta', 'login_ip', 'master_ip', 'fator_ip', 'recuperar_ip', 'cadastro_ip', 'instalador_ip'] as $esperado) {
+foreach (['login_conta', 'login_ip', 'master_ip', 'fator_ip', 'recuperar_ip', 'cadastro_ip', 'instalador_ip', 'tarefas_ip'] as $esperado) {
     verificar("escopo {$esperado} esta na politica", in_array($esperado, $politica, true), true);
 }
 

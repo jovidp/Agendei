@@ -9,6 +9,15 @@ class ModeloBanco
         if ($sql === false) {
             throw new RuntimeException('Não foi possível ler o esquema do banco.');
         }
+        // Os esquemas acrescentam filiais por ALTER TABLE depois das tabelas
+        // principais. Incorpora essas colunas e FKs ao dicionario tambem.
+        preg_match_all('/^ALTER TABLE `?(\w+)`?\s+ADD\s+(?:COLUMN\s+)?([^;]+);/mi', $sql, $alteracoes, PREG_SET_ORDER);
+        foreach ($alteracoes as $alteracao) {
+            $definicao = preg_replace('/^\s*ADD\s+(?:COLUMN\s+)?/mi', '  ', trim($alteracao[2]));
+            $padrao = '/(^CREATE TABLE `?' . preg_quote($alteracao[1], '/') . '`? \\(\\R)(.*?)(^[\\t ]*\\)[^;]*;)/ms';
+            $sql = preg_replace_callback($padrao, static fn(array $m): string =>
+                $m[1] . rtrim($m[2]) . ",\n  " . $definicao . "\n" . $m[3], $sql);
+        }
         // Leitor limitado ao formato dos scripts do projeto: uma definição por linha.
         preg_match_all('/^CREATE TABLE `?(\w+)`? \(\R(.*?)^[\t ]*\)[^;]*;/ms', $sql, $blocos, PREG_SET_ORDER);
         $tabelas = [];
@@ -113,7 +122,7 @@ class ModeloBanco
     public static function regras(): array
     {
         return [
-            'Perfis e master' => 'usuarios.tipo distingue cliente, profissional e admin da empresa. clientes, profissionais e administradores têm id_usuario único: cada usuário pode ter zero ou um registro em cada tabela. O fluxo da aplicação cria o perfil correspondente; as FKs não impõem, sozinhas, especialização total e exclusiva. administradores_master contém as contas globais e não pertence a estabelecimento.',
+            'Perfis e master' => 'usuarios identifica a pessoa, com e-mail unico na plataforma. vinculos.tipo distingue cliente, profissional e admin por empresa. Uma pessoa pode ter varios vinculos; clientes, profissionais e administradores possuem id_vinculo unico e id_usuario nao exclusivo. As FKs compostas associam cada perfil ao vinculo da mesma empresa. administradores_master contem as contas globais e nao pertence a estabelecimento.',
             'Isolamento das empresas' => 'As FKs compostas incluem id_estabelecimento e o identificador do registro. Chaves únicas compostas não tornam cada coluna única isoladamente. Os vínculos id_usuario_criou e id_usuario_cancelou usam FKs simples; o DER não deve atribuir a eles uma restrição composta inexistente.',
             'Agenda' => 'agendamentos relaciona exatamente um cliente, um profissional e um serviço. profissional_servico resolve quais profissionais executam quais serviços (N:N). Disponibilidade.php verifica expediente semanal, bloqueios, antecedência e conflitos. Agendamento.php também verifica conflito do cliente. Essas verificações são feitas pela aplicação, não por uma restrição SQL de sobreposição.',
             'Histórico da reserva' => 'Agendamento.php copia o preço para valor e calcula hora_fim com a duração do serviço ao criar a reserva. Alterações posteriores no catálogo não recalculam essas colunas. Cancelar mantém o registro, altera o status e libera o intervalo. grupo_recorrencia agrupa reservas; não existe tabela de recorrências.',

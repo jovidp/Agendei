@@ -16,7 +16,7 @@ foreach (['mysql', 'pgsql'] as $dialeto) {
     $sql = file_get_contents(dirname(__DIR__) . '/' . $modelo['arquivo']);
     preg_match_all('/^CREATE TABLE `?(\w+)`?/m', $sql, $nomes);
     conferir(array_keys($modelo['tabelas']) === $nomes[1], "$dialeto: todas as tabelas do SQL");
-    conferir(count($nomes[1]) === 25, "$dialeto: inventário atual de 25 tabelas");
+    conferir(count($nomes[1]) === 28, "$dialeto: inventário atual de 28 tabelas");
     conferir(count(ModeloBanco::relacoes($modelo)) === substr_count($sql, 'FOREIGN KEY'), "$dialeto: nenhuma FK perdida");
     $mermaid = ModeloBanco::mermaid($modelo);
     foreach ($modelo['tabelas'] as $nome => $tabela) {
@@ -39,7 +39,8 @@ foreach (['mysql', 'pgsql'] as $dialeto) {
         conferir(!in_array('FK', $tabelas[$nome]['colunas'][$campo]['chaves'], true), "$dialeto/$nome/$campo: referência sem FK");
     }
     $esperadas = [
-        'clientes:usuarios' => ['1', '0..1'],
+        'clientes:usuarios' => ['1', '0..N'],
+        'clientes:vinculos' => ['1', '0..1'],
         'assinaturas:estabelecimento' => ['1', '0..1'],
         'estabelecimento_plano:estabelecimento' => ['1', '0..1'],
         'estabelecimento_plano:planos' => ['1', '0..N'],

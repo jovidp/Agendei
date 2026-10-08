@@ -16,12 +16,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Confere o token da sessão antes de aceitar alterações enviadas pelo formulário.
     exigirCsrf();
 
+    $acao          = post('acao', 'cancelar');
     $idAgendamento = (int) post('id_agendamento');
     $agendamento   = Agendamento::porId($idAgendamento);
 
     // Recusa tentativas de alterar agendamentos de outro cliente, mesmo com um ID válido.
     if (!$agendamento || (int) $agendamento['id_cliente'] !== $idCliente) {
         definirFlash('erro', 'Agendamento nao encontrado.');
+    } elseif ($acao === 'confirmar') {
+        // O mesmo gesto do link do lembrete, para quem ja esta na conta.
+        if (Confirmacao::confirmar($agendamento)) {
+            definirFlash('sucesso', 'Presenca confirmada. Ate la!');
+        } else {
+            definirFlash('erro', 'Este agendamento nao pode mais ser confirmado.');
+        }
     } elseif (!Agendamento::clientePodeCancelar($agendamento)) {
         $limite = Configuracao::obterInteiro('cancelamento_limite_horas', 4);
         definirFlash('erro', "Este agendamento nao pode mais ser cancelado pelo painel (limite de {$limite}h antes do atendimento). Entre em contato com o estabelecimento.");
@@ -135,6 +143,15 @@ require_once RAIZ . '/includes/painel_header.php';
                                     Detalhes
                                 </button>
 
+                                <?php if ($agendamento['status'] === 'agendado' && !Agendamento::jaComecou($agendamento)): ?>
+                                    <form method="post" class="formulario-inline">
+                                        <?= campoCsrf() ?>
+                                        <input type="hidden" name="acao" value="confirmar">
+                                        <input type="hidden" name="id_agendamento" value="<?= (int) $agendamento['id_agendamento'] ?>">
+                                        <button type="submit" class="btn btn-pequeno">Confirmar presenca</button>
+                                    </form>
+                                <?php endif; ?>
+
                                 <?php if (Agendamento::clientePodeCancelar($agendamento)): ?>
                                     <button type="button" class="btn btn-perigo btn-pequeno"
                                             data-modal="modalCancelar"
@@ -192,6 +209,7 @@ require_once RAIZ . '/includes/painel_header.php';
 <?php /* Janela controlada pelo JavaScript para detalhes ou ações da página. */ ?><div class="modal" id="modalCancelar">
     <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" class="modal-caixa">
         <?= campoCsrf() ?>
+        <input type="hidden" name="acao" value="cancelar">
         <input type="hidden" name="id_agendamento" value="">
 
         <div class="modal-cabecalho">

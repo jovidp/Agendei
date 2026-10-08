@@ -4,8 +4,8 @@ FROM php:8.2-apache
 
 # pdo_pgsql precisa da libpq; pdo_mysql ja vem com o necessario.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libpq-dev \
-    && docker-php-ext-install pdo pdo_mysql pdo_pgsql \
+    && apt-get install -y --no-install-recommends libpq-dev libonig-dev \
+    && docker-php-ext-install pdo pdo_mysql pdo_pgsql mbstring \
     && a2enmod rewrite headers \
     && rm -rf /var/lib/apt/lists/*
 

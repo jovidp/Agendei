@@ -13,11 +13,15 @@ foreach ($empresas as $empresa) {
 // Atividade recente da propria administração: o dashboard mostrava só o que
 // foi cadastrado, nunca o que o master andou fazendo com esses cadastros.
 $acoesRecentes = LogMaster::listar(['limite' => 6]);
+$cadastrosPendentes = Solicitacao::contarPendentes();
 $tituloPagina = 'Visão geral';
 $subtituloTopo = 'Administração global e isolamento dos estabelecimentos';
 $acoesTopo = '<a class="btn btn-pequeno" href="' . url('master/estabelecimentos.php?acao=novo') . '">Novo estabelecimento</a>';
 require RAIZ . '/includes/painel_header.php';
 ?>
+<?php if ($cadastrosPendentes > 0): ?>
+<div class="alerta alerta-aviso" role="status"><span class="alerta-texto"><?= $cadastrosPendentes ?> cadastro(s) de empresa aguardando aprovação.</span> <a href="<?= url('master/estabelecimentos.php#cadastros-pendentes') ?>">Ver e decidir</a></div>
+<?php endif; ?>
 <div class="grade-indicadores">
     <div class="indicador indicador-destaque"><span class="indicador-rotulo">Estabelecimentos</span><strong class="indicador-valor"><?= count($empresas) ?></strong><span class="indicador-nota"><?= $ativos ?> ativo(s)</span></div>
     <div class="indicador"><span class="indicador-rotulo">Clientes vinculados</span><strong class="indicador-valor"><?= $totais['clientes'] ?></strong></div>

@@ -49,10 +49,27 @@ function estaLogado(): bool
     return !empty($_SESSION['usuario_id']) || !empty($_SESSION['master_id']);
 }
 
-/** Retorna o ID da conta autenticada ou null quando não há login. */
+/** Retorna o ID da pessoa autenticada ou null quando não há login. */
 function usuarioId(): ?int
 {
     return isset($_SESSION['usuario_id']) ? (int) $_SESSION['usuario_id'] : null;
+}
+
+/** ID do vinculo escolhido no login: a pessoa nesta empresa, com este tipo. */
+function vinculoId(): ?int
+{
+    return isset($_SESSION['vinculo_id']) ? (int) $_SESSION['vinculo_id'] : null;
+}
+
+/** A pessoa tem outro vinculo em que pode entrar? Decide se o painel oferece "Trocar" (trocar.php). */
+function podeTrocarVinculo(): bool
+{
+    static $resultado = null;
+    if ($resultado === null) {
+        $idUsuario = usuarioId();
+        $resultado = $idUsuario !== null && !ehMaster() && count(Vinculo::daPessoa($idUsuario, true)) > 1;
+    }
+    return $resultado;
 }
 
 /** Recupera o nome salvo na sessão para exibição no painel. */
@@ -124,8 +141,11 @@ function ehMaster(): bool
 // ---------------------------------------------------------------------
 
 /**
- * Verifica as credenciais. Retorna o usuario ou null.
- * O identificador aceita o login de 6 letras ou o e-mail da conta.
+ * Verifica as credenciais no estabelecimento da requisicao. Retorna a pessoa
+ * juntada ao vinculo dela aqui (o array "usuario"), ou null.
+ * O identificador aceita o login de 6 letras (que e do vinculo) ou o e-mail
+ * da pessoa. Com mais de um vinculo na mesma empresa, o login de 6 letras
+ * escolhe o seu; o e-mail abre o de maior alcada (admin, profissional, cliente).
  */
 function autenticar(string $identificador, string $senha): ?array
 {
@@ -149,6 +169,33 @@ function autenticar(string $identificador, string $senha): ?array
     LogAutenticacao::registrar('login_sucesso', $identificador, $usuario, null, cpfDoUsuario($usuario));
 
     return $usuario;
+}
+
+/**
+ * Autenticacao pela entrada geral, sem estabelecimento na URL.
+ *
+ * O e-mail identifica a pessoa; a senha e uma so. Conferida a senha, voltam
+ * os vinculos em que ela pode entrar (vinculo, pessoa e empresa ativos): com
+ * um, a tela entra direto; com varios, a pessoa escolhe. Nada e revelado antes
+ * de a senha conferir. O login de 6 letras nao serve aqui porque e do vinculo,
+ * unico so dentro de cada empresa.
+ *
+ * Nao grava log nem abre sessao: isso exige a empresa definida, e fica a cargo
+ * de quem chama, depois de Contexto::assumir(). O hash nunca sai daqui.
+ */
+function autenticarGlobal(string $email, string $senha): array
+{
+    $email = mb_strtolower(trim($email));
+    if ($senha === '' || !validarEmail($email)) {
+        return [];
+    }
+
+    $pessoa = Usuario::pessoaPorEmail($email);
+    if ($pessoa === null || !password_verify($senha, $pessoa['senha_hash']) || $pessoa['status'] !== 'ativo') {
+        return [];
+    }
+
+    return Vinculo::daPessoa((int) $pessoa['id_usuario'], true);
 }
 
 /** CPF do perfil de cliente, usado apenas para alimentar o filtro da tela de log. */
@@ -245,6 +292,7 @@ function iniciarSegundoFator(array $usuario, string $identificador): void
 
     $_SESSION['segundo_fator'] = [
         'usuario_id'    => (int) $usuario['id_usuario'],
+        'vinculo_id'    => (int) ($usuario['id_vinculo'] ?? 0),
         'identificador' => $identificador,
         'fator'         => $usaCodigo ? 'totp' : array_rand(fatoresDisponiveis($usuario)),
         'tentativas'    => 0,
@@ -385,18 +433,29 @@ function registrarSessao(array $usuario): void
     // Um login local nunca herda a identidade global ou uma simulacao anterior.
     unset($_SESSION['master_id'], $_SESSION['simulacao'], $_SESSION['segundo_fator_master'], $_SESSION['segundo_fator']);
 
+    // A sessao e um vinculo: a pessoa numa empresa, com um tipo. Tudo vem do
+    // array "usuario" (pessoa juntada ao vinculo), e nao do Contexto: a sessao
+    // lembrada (restaurarSessaoLembrada) abre antes de o Contexto resolver a empresa.
+    $idVinculo = (int) ($usuario['id_vinculo'] ?? 0);
     $_SESSION['estabelecimento_id'] = (int) $usuario['id_estabelecimento'];
+    $_SESSION['vinculo_id']    = $idVinculo;
     $_SESSION['usuario_id']    = (int) $usuario['id_usuario'];
     $_SESSION['usuario_nome']  = $usuario['nome'];
     $_SESSION['usuario_email'] = $usuario['email'];
     $_SESSION['usuario_login'] = ($usuario['login'] ?? '') ?: $usuario['email'];
     $_SESSION['usuario_tipo']  = $usuario['tipo'];
-    $_SESSION['perfil_id']     = Usuario::idDoPerfil((int) $usuario['id_usuario'], $usuario['tipo']);
+    $_SESSION['perfil_id']     = $idVinculo > 0
+        ? Vinculo::idDoPerfil($idVinculo, $usuario['tipo'])
+        : Usuario::idDoPerfilEm((int) $usuario['id_estabelecimento'], (int) $usuario['id_usuario'], $usuario['tipo']);
 
     // Marca os instantes que controlam inatividade, duracao maxima e dispositivo.
     marcarInicioSessao();
 
-    Usuario::registrarAcesso((int) $usuario['id_usuario']);
+    if ($idVinculo > 0) {
+        Vinculo::registrarAcesso($idVinculo);
+    } else {
+        Usuario::registrarAcessoEm((int) $usuario['id_estabelecimento'], (int) $usuario['id_usuario']);
+    }
 }
 
 /**
@@ -410,7 +469,7 @@ function registrarSessaoMaster(array $master, bool $auditar = true): void
     // usuario_login precisa sair junto: na volta de uma simulacao ele ainda
     // guarda o login do administrador, e o topo do painel passaria a anunciar
     // a conta errada para quem ja voltou a ser master.
-    unset($_SESSION['usuario_id'], $_SESSION['estabelecimento_id'], $_SESSION['perfil_id'], $_SESSION['usuario_login'], $_SESSION['simulacao'], $_SESSION['segundo_fator'], $_SESSION['segundo_fator_master']);
+    unset($_SESSION['usuario_id'], $_SESSION['vinculo_id'], $_SESSION['estabelecimento_id'], $_SESSION['perfil_id'], $_SESSION['usuario_login'], $_SESSION['simulacao'], $_SESSION['segundo_fator'], $_SESSION['segundo_fator_master']);
     $_SESSION['master_id'] = (int) $master['id_master'];
     $_SESSION['usuario_nome'] = $master['nome'];
     $_SESSION['usuario_email'] = $master['email'];
@@ -461,6 +520,7 @@ function iniciarSimulacao(array $usuario, array $master, ?int $perfilId): void
 
     unset($_SESSION['master_id']);
     $_SESSION['estabelecimento_id'] = (int) $usuario['id_estabelecimento'];
+    $_SESSION['vinculo_id']    = (int) ($usuario['id_vinculo'] ?? 0);
     $_SESSION['usuario_id']    = (int) $usuario['id_usuario'];
     $_SESSION['usuario_nome']  = $usuario['nome'];
     $_SESSION['usuario_email'] = $usuario['email'];
@@ -618,10 +678,55 @@ function destinoAposLogin(): string
     return url(painelDe(perfil()));
 }
 
-/** Impede que um usuario ja logado veja login/cadastro. */
-function bloquearSeLogado(): void
+/**
+ * Descarta a identidade master da sessao, preservando o restante (token CSRF).
+ *
+ * Chamado pelo bootstrap nas paginas de entrada local (ENTRADA_LOCAL): quem abre
+ * o login de um estabelecimento quer uma sessao local, e as duas identidades sao
+ * excludentes. E o que permite ao master entrar no estabelecimento que acabou de
+ * criar sem que a conta global assuma um estabelecimento pela URL nas demais
+ * paginas. Sem sessao master, nao faz nada.
+ */
+function descartarIdentidadeMaster(): void
 {
-    if (estaLogado()) {
+    if (empty($_SESSION['master_id']) && ($_SESSION['usuario_tipo'] ?? null) !== 'master') {
+        return;
+    }
+
+    unset(
+        $_SESSION['master_id'],
+        $_SESSION['simulacao'],
+        $_SESSION['segundo_fator_master'],
+        $_SESSION['usuario_tipo'],
+        $_SESSION['usuario_nome'],
+        $_SESSION['usuario_email']
+    );
+}
+
+/**
+ * Ha uma sessao aberta na area indicada ('local' = estabelecimento, 'master')?
+ *
+ * As duas identidades sao excludentes: registrarSessao descarta a master e
+ * registrarSessaoMaster descarta a local. Por isso uma sessao master, sozinha,
+ * nao conta como "logado" para as telas do estabelecimento, e vice-versa.
+ */
+function sessaoAbertaEm(string $area): bool
+{
+    return $area === 'master'
+        ? !empty($_SESSION['master_id'])
+        : !empty($_SESSION['usuario_id']);
+}
+
+/**
+ * Impede que um usuario ja logado veja login/cadastro.
+ *
+ * So bloqueia quando ja existe sessao do MESMO tipo da tela. Sem isso, o master
+ * que acabava de criar um estabelecimento nao conseguia entrar nele no mesmo
+ * navegador: login.php o mandava de volta ao painel master.
+ */
+function bloquearSeLogado(string $area = 'local'): void
+{
+    if (sessaoAbertaEm($area)) {
         redirecionar(painelDe(perfil()));
     }
 }
@@ -637,8 +742,10 @@ function alterarSenhaUsuario(int $idUsuario, string $senhaAtual, string $novaSen
         $erros[] = 'A senha atual esta incorreta.';
     }
 
-    // O usuario comum segue a regra da especificacao; os demais perfis mantem o minimo antigo.
-    $usuario = Usuario::porId($idUsuario);
+    // O usuario comum segue a regra da especificacao; os demais perfis mantem o
+    // minimo antigo. A regra vem do vinculo aberto na sessao: a mesma pessoa
+    // pode ser cliente aqui e profissional ali.
+    $usuario = Usuario::porId($idUsuario, usuarioId() === $idUsuario ? perfil() : null);
     if (($usuario['tipo'] ?? '') === 'cliente') {
         if (!validarSenhaProjeto($novaSenha)) {
             $erros[] = 'A nova senha deve ter exatamente 8 caracteres alfabeticos.';
@@ -652,9 +759,156 @@ function alterarSenhaUsuario(int $idUsuario, string $senhaAtual, string $novaSen
 
     if ($erros === []) {
         Usuario::atualizarSenha($idUsuario, $novaSenha);
+        // Senha nova derruba os dispositivos lembrados: e o que se espera de quem
+        // troca a senha porque desconfia de um aparelho.
+        SessaoLembrada::apagarDoUsuario($idUsuario);
     }
 
     return $erros;
+}
+
+// ---------------------------------------------------------------------
+// Manter conectado (dispositivo lembrado)
+//
+// O cookie de sessao morre com o navegador e a sessao cai por inatividade.
+// Quem marca "manter conectado" recebe um segundo cookie, de 30 dias, que
+// reabre a sessao sozinho (restaurarSessaoLembrada, chamada pelo bootstrap).
+// O segredo vive so no cookie; o banco guarda o hash (models/SessaoLembrada.php).
+// ---------------------------------------------------------------------
+
+const LEMBRAR_COOKIE = 'AGENDEI_LEMBRAR';
+
+/** Mesmas regras do cookie de sessao (caminho, HttpOnly, SameSite, Secure), com validade propria. */
+function parametrosCookieLembrar(int $expira): array
+{
+    return [
+        'expires'  => $expira,
+        'path'     => BASE_URL === '' ? '/' : BASE_URL,
+        'httponly' => true,
+        'samesite' => 'Lax',
+        'secure'   => requisicaoSegura(),
+    ];
+}
+
+/** Guarda o pedido do formulario; e atendido quando a sessao abre, depois do 2FA se houver. */
+function pedirLembrarDispositivo(bool $pedido): void
+{
+    if ($pedido) {
+        $_SESSION['lembrar_dispositivo'] = true;
+    } else {
+        unset($_SESSION['lembrar_dispositivo']);
+    }
+}
+
+/** Cria o registro e o cookie quando o login pediu "manter conectado". Chamar logo apos registrarSessao(). */
+function lembrarSeSolicitado(array $usuario): void
+{
+    if (empty($_SESSION['lembrar_dispositivo'])) {
+        return;
+    }
+    unset($_SESSION['lembrar_dispositivo']);
+
+    try {
+        gravarCookieLembrar(SessaoLembrada::criar((int) $usuario['id_estabelecimento'], (int) $usuario['id_usuario'], (int) $usuario['id_vinculo']));
+    } catch (Throwable $erro) {
+        // Sem a tabela (banco anterior a migracao) o login segue normal, so nao lembra.
+        error_log('Nao foi possivel lembrar o dispositivo: ' . $erro->getMessage());
+    }
+}
+
+function gravarCookieLembrar(string $valor): void
+{
+    $_COOKIE[LEMBRAR_COOKIE] = $valor;
+    if (!headers_sent()) {
+        setcookie(LEMBRAR_COOKIE, $valor, parametrosCookieLembrar(time() + SessaoLembrada::DIAS * 86400));
+    }
+}
+
+function apagarCookieLembrar(): void
+{
+    unset($_COOKIE[LEMBRAR_COOKIE]);
+    if (!headers_sent()) {
+        setcookie(LEMBRAR_COOKIE, '', parametrosCookieLembrar(time() - 86400));
+    }
+}
+
+/** Sair da conta: apaga o registro deste cookie e o proprio cookie. */
+function esquecerDispositivo(): void
+{
+    $valor = (string) ($_COOKIE[LEMBRAR_COOKIE] ?? '');
+    if ($valor !== '') {
+        try {
+            $registro = SessaoLembrada::porCookie($valor);
+            if ($registro !== null) {
+                SessaoLembrada::apagar((int) $registro['id_sessao']);
+            }
+        } catch (Throwable $erro) {
+            error_log('Nao foi possivel esquecer o dispositivo: ' . $erro->getMessage());
+        }
+    }
+    apagarCookieLembrar();
+}
+
+/**
+ * Reabre a sessao a partir do cookie de "manter conectado".
+ *
+ * Roda no bootstrap, antes de o Contexto resolver a empresa: e a sessao
+ * restaurada que diz qual empresa e. So age sem sessao aberta e fora da area
+ * master e das tarefas. Num link de outra empresa nao faz nada, para que o
+ * cookie nao "sequestre" a pagina; conta ou empresa inativa apaga tudo. A cada
+ * uso o segredo do cookie e trocado, e a entrada vai para o log de autenticacao.
+ */
+function restaurarSessaoLembrada(): void
+{
+    if (estaLogado() || defined('AREA_MASTER') || defined('TAREFA_AGENDADA')) {
+        return;
+    }
+    $valor = (string) ($_COOKIE[LEMBRAR_COOKIE] ?? '');
+    if ($valor === '') {
+        return;
+    }
+
+    try {
+        $registro = SessaoLembrada::porCookie($valor);
+        if ($registro === null) {
+            apagarCookieLembrar();
+            return;
+        }
+
+        // O cookie lembra um vinculo: reabre exatamente ele, com pessoa,
+        // vinculo e empresa ainda ativos.
+        $q = bd()->prepare(
+            'SELECT u.*, v.id_vinculo, v.id_estabelecimento, v.tipo, v.login, v.ultimo_acesso,
+                    v.status AS status_vinculo, u.status AS status_pessoa,
+                    e.slug AS estabelecimento_slug, e.status AS estabelecimento_status,
+                    CASE WHEN u.status = \'ativo\' AND v.status = \'ativo\' THEN \'ativo\' ELSE \'inativo\' END AS status
+             FROM vinculos v
+             JOIN usuarios u ON u.id_usuario = v.id_usuario
+             JOIN estabelecimento e ON e.id_estabelecimento = v.id_estabelecimento
+             WHERE v.id_vinculo = ? AND v.id_usuario = ? AND v.id_estabelecimento = ? LIMIT 1'
+        );
+        $q->execute([(int) $registro['id_vinculo'], (int) $registro['id_usuario'], (int) $registro['id_estabelecimento']]);
+        $usuario = $q->fetch();
+
+        if (!$usuario || $usuario['status'] !== 'ativo' || $usuario['estabelecimento_status'] !== 'ativo') {
+            SessaoLembrada::apagar((int) $registro['id_sessao']);
+            apagarCookieLembrar();
+            return;
+        }
+
+        $slugUrl = get('estabelecimento');
+        if ($slugUrl !== '' && $slugUrl !== $usuario['estabelecimento_slug']) {
+            return;
+        }
+
+        gravarCookieLembrar(SessaoLembrada::renovar($registro));
+        registrarSessao($usuario);
+        registrarEventoSeguranca('sessao_lembrada', ['usuario' => (int) $usuario['id_usuario'], 'estabelecimento' => (int) $usuario['id_estabelecimento']]);
+        LogAutenticacao::registrarEm((int) $usuario['id_estabelecimento'], 'login_sucesso', (string) (($usuario['login'] ?? '') ?: $usuario['email']), $usuario);
+    } catch (Throwable $erro) {
+        // Banco sem a tabela ou fora do ar: a pagina segue sem sessao, como sem o cookie.
+        error_log('Nao foi possivel restaurar a sessao lembrada: ' . $erro->getMessage());
+    }
 }
 
 // ---------------------------------------------------------------------

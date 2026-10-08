@@ -4,7 +4,13 @@ if (PHP_SAPI !== 'cli') {
     http_response_code(404);
     exit;
 }
-require __DIR__ . '/../models/Estabelecimento.php';
+define('RAIZ', dirname(__DIR__));
+define('BASE_URL', '');
+define('AMBIENTE', 'desenvolvimento');
+require RAIZ . '/includes/funcoes.php';
+require RAIZ . '/models/Estabelecimento.php';
+require RAIZ . '/models/Usuario.php';
+require RAIZ . '/models/Vinculo.php';
 
 function bd(): PDO
 {
@@ -33,7 +39,14 @@ foreach ($criacao as $tabela) {
     bd()->exec($sql);
     if (str_contains($sql, 'REFERENCES estabelecimento ')) $tabelasLocais[] = $tabela[1];
 }
-verificar(count($tabelasLocais) === 19, 'Cobertura das tabelas locais mudou; atualize o teste.');
+// As colunas id_filial entram no esquema por ALTER TABLE, que o laco acima nao
+// executa. O SQLite aceita FK em coluna nova com padrao NULL, entao a ordem de
+// exclusao (filiais depois de profissionais e agendamentos) fica coberta.
+foreach (['profissionais', 'agendamentos'] as $alterada) {
+    bd()->exec('ALTER TABLE ' . $alterada . ' ADD COLUMN id_filial INTEGER DEFAULT NULL REFERENCES filiais (id_filial)');
+}
+// usuarios (a pessoa) deixou de apontar para estabelecimento; vinculos entrou no lugar dela.
+verificar(count($tabelasLocais) === 21, 'Cobertura das tabelas locais mudou; atualize o teste.');
 
 function inserir(string $tabela, array $dados): int
 {
@@ -46,18 +59,23 @@ $plano = inserir('planos', ['nome' => 'Compartilhado']);
 $master = inserir('administradores_master', ['nome' => 'Master', 'email' => 'master@teste.local', 'senha_hash' => 'fixture']);
 $empresas = [];
 foreach (['empresa-a', 'empresa-b'] as $slug) {
-    $id = Estabelecimento::contratar(['estabelecimento' => $slug, 'slug' => $slug, 'nome' => 'Responsavel', 'email' => 'admin@teste.local', 'senha' => 'SenhaTeste123!']);
+    $sufixo = substr($slug, -1);
+    $id = Estabelecimento::contratar(['estabelecimento' => $slug, 'slug' => $slug, 'nome' => 'Responsavel', 'email' => 'admin-' . $sufixo . '@teste.local', 'senha' => 'SenhaTeste123!']);
     $empresas[] = $id;
     $vinculo = ['id_estabelecimento' => $id];
-    $idClienteUsuario = inserir('usuarios', $vinculo + ['nome' => 'Cliente', 'email' => 'cliente@teste.local', 'senha_hash' => 'fixture', 'tipo' => 'cliente']);
-    $idProfUsuario = inserir('usuarios', $vinculo + ['nome' => 'Profissional', 'email' => 'prof@teste.local', 'senha_hash' => 'fixture', 'tipo' => 'profissional']);
-    $cliente = inserir('clientes', $vinculo + ['id_usuario' => $idClienteUsuario]);
-    $profissional = inserir('profissionais', $vinculo + ['id_usuario' => $idProfUsuario]);
+    inserir('assinaturas', $vinculo + ['status' => 'ativa']);
+    $idClienteUsuario = inserir('usuarios', ['nome' => 'Cliente', 'email' => 'cliente-' . $sufixo . '@teste.local', 'senha_hash' => 'fixture']);
+    $idProfUsuario = inserir('usuarios', ['nome' => 'Profissional', 'email' => 'prof-' . $sufixo . '@teste.local', 'senha_hash' => 'fixture']);
+    $vinculoCliente = inserir('vinculos', $vinculo + ['id_usuario' => $idClienteUsuario, 'tipo' => 'cliente']);
+    $vinculoProf = inserir('vinculos', $vinculo + ['id_usuario' => $idProfUsuario, 'tipo' => 'profissional']);
+    $filial = inserir('filiais', $vinculo + ['nome' => 'Matriz']);
+    $cliente = inserir('clientes', $vinculo + ['id_vinculo' => $vinculoCliente, 'id_usuario' => $idClienteUsuario]);
+    $profissional = inserir('profissionais', $vinculo + ['id_vinculo' => $vinculoProf, 'id_usuario' => $idProfUsuario, 'id_filial' => $filial]);
     $servico = inserir('servicos', $vinculo + ['nome' => 'Servico']);
     inserir('profissional_servico', $vinculo + ['id_profissional' => $profissional, 'id_servico' => $servico]);
     inserir('horarios_profissionais', $vinculo + ['id_profissional' => $profissional, 'dia_semana' => 1, 'hora_inicio' => '08:00', 'hora_fim' => '18:00']);
     inserir('bloqueios_agenda', $vinculo + ['id_profissional' => $profissional, 'data_bloqueio' => '2026-10-01', 'id_usuario_criou' => $idProfUsuario]);
-    $agendamento = inserir('agendamentos', $vinculo + ['id_cliente' => $cliente, 'id_profissional' => $profissional, 'id_servico' => $servico, 'data_agendamento' => '2026-10-02', 'hora_inicio' => '10:00', 'hora_fim' => '11:00', 'valor' => 100]);
+    $agendamento = inserir('agendamentos', $vinculo + ['id_cliente' => $cliente, 'id_profissional' => $profissional, 'id_servico' => $servico, 'id_filial' => $filial, 'data_agendamento' => '2026-10-02', 'hora_inicio' => '10:00', 'hora_fim' => '11:00', 'valor' => 100]);
     inserir('notificacoes', $vinculo + ['id_usuario' => $idClienteUsuario, 'id_agendamento' => $agendamento, 'tipo' => 'lembrete', 'mensagem' => 'Teste']);
     inserir('pagamentos', $vinculo + ['id_agendamento' => $agendamento, 'valor' => 20]);
     inserir('fidelidade_movimentos', $vinculo + ['id_cliente' => $cliente, 'id_agendamento' => $agendamento, 'pontos' => 10, 'descricao' => 'Teste']);
@@ -103,6 +121,8 @@ bd()->exec('DROP TRIGGER impedir_exclusao');
 verificar(Estabelecimento::excluirGlobal($alvo), 'Empresa nao foi excluida.');
 foreach (retrato($alvo) as $tabela => $linhas) verificar($linhas === [], 'Restaram dados em ' . $tabela);
 verificar(retrato($vizinha) === $outraAntes, 'Exclusao alterou a outra empresa.');
+// As pessoas que so existiam por causa da empresa excluida foram embora; as da vizinha ficaram.
+verificar((int) bd()->query('SELECT COUNT(*) FROM usuarios')->fetchColumn() === 3, 'Pessoas orfas da empresa excluida ficaram no banco, ou pessoas da vizinha sumiram.');
 verificar((int) bd()->query('SELECT COUNT(*) FROM logs_master')->fetchColumn() === 2, 'Auditoria foi apagada.');
 verificar((int) bd()->query('SELECT COUNT(*) FROM planos')->fetchColumn() === 1, 'Plano compartilhado foi apagado.');
 verificar((int) bd()->query('SELECT COUNT(*) FROM administradores_master')->fetchColumn() === 1, 'Conta master foi apagada.');

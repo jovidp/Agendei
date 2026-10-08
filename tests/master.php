@@ -68,6 +68,8 @@ if (!$ehPostgres) {
     require 'scripts/migrar.php';
 }
 require 'config/config.php';
+// O tratador do bootstrap sairia com codigo 0 e esconderia a falha.
+restore_exception_handler();
 ob_end_clean();
 
 $_SERVER['REMOTE_ADDR'] = '127.0.0.1';
@@ -150,6 +152,51 @@ verificar('administrador e lido pela empresa certa', is_array(Estabelecimento::a
 verificar('administrador nao e lido por outra empresa', Estabelecimento::administrador(1, $idAdmin), null);
 
 // -------------------------------------------------------------------------
+// Consulta global de contas: "este e-mail e de qual estabelecimento?"
+// -------------------------------------------------------------------------
+$vinculos = Usuario::vinculosPorEmail('ana@studio.test');
+verificar('o e-mail do responsavel aponta para a empresa contratada', count($vinculos), 1);
+verificar('o vinculo traz o id da empresa', (int) ($vinculos[0]['id_estabelecimento'] ?? 0), $idEmpresa);
+verificar('o vinculo traz o slug da empresa', $vinculos[0]['estabelecimento_slug'] ?? '', 'studio-teste');
+verificar('o vinculo traz o tipo da conta', $vinculos[0]['tipo'] ?? '', 'admin');
+verificar('e-mail desconhecido nao tem vinculo', Usuario::vinculosPorEmail('ninguem@studio.test'), []);
+
+// O e-mail identifica uma unica pessoa em toda a plataforma: o mesmo e-mail
+// em outra empresa nao cria outra conta, e sim um segundo vinculo de Ana,
+// administradora tambem da empresa nova, com a senha que ela ja tem.
+$idEmpresaDuplicada = Estabelecimento::contratar([
+    'estabelecimento' => 'Studio Duplicado',
+    'slug'            => 'studio-duplicado',
+    'nome'            => 'Ana Responsavel',
+    'email'           => 'ANA@studio.test ',
+    'senha'           => 'senha-ignorada',
+]);
+verificar('o segundo vinculo nao criou outra pessoa', (int) bd()->query("SELECT COUNT(*) FROM usuarios WHERE email = 'ana@studio.test'")->fetchColumn(), 1);
+verificar('a senha da pessoa nao mudou', autenticarGlobal('ana@studio.test', 'senha-ignorada'), []);
+verificar('a entrada geral lista os dois vinculos', count(autenticarGlobal('ana@studio.test', 'senha123')), 2);
+
+$idEmpresaB = Estabelecimento::contratar([
+    'estabelecimento' => 'Studio Dois',
+    'slug'            => 'studio-dois',
+    'nome'            => 'Carlos Responsavel',
+    'email'           => 'carlos@studio.test',
+    'senha'           => 'senha123',
+]);
+$vinculos = Usuario::vinculosPorEmail('ANA@studio.test ');
+verificar('o e-mail tem dois vinculos', count($vinculos), 2);
+verificar('um dos vinculos continua na empresa original', in_array($idEmpresa, array_map('intval', array_column($vinculos, 'id_estabelecimento')), true), true);
+
+verificar('busca global por parte do e-mail', Usuario::contarGlobal(['busca' => 'studio.test']), 3);
+verificar('busca global por parte do nome', Usuario::contarGlobal(['busca' => 'responsavel']), 3);
+verificar('busca global restrita a uma empresa', Usuario::contarGlobal(['busca' => 'carlos', 'estabelecimento' => $idEmpresaB]), 1);
+verificar('busca global filtra por tipo', Usuario::contarGlobal(['tipo' => 'cliente']), 0);
+verificar('tipo fora do catalogo e ignorado', Usuario::contarGlobal(['tipo' => 'master']), Usuario::contarGlobal());
+$linhas = Usuario::buscarGlobal(['estabelecimento' => $idEmpresaB]);
+verificar('a listagem global traz o nome da empresa', $linhas[0]['estabelecimento_nome'] ?? '', 'Studio Dois');
+verificar('a listagem global nao expoe o hash de senha', array_key_exists('senha_hash', $linhas[0] ?? []), false);
+verificar('a listagem global respeita o limite', count(Usuario::buscarGlobal(['limite' => 1])), 1);
+
+// -------------------------------------------------------------------------
 // A empresa nunca fica sem administrador ativo
 // -------------------------------------------------------------------------
 verificar('contagem de administradores ativos', Estabelecimento::administradoresAtivos($idEmpresa), 1);
@@ -163,6 +210,31 @@ $idAdmin2 = Estabelecimento::criarAdministrador($idEmpresa, [
 ]);
 verificar('com dois administradores, um pode ser desativado', Estabelecimento::alterarStatusAdministrador($idEmpresa, $idAdmin, 'inativo'), true);
 verificar('sobra um administrador ativo', Estabelecimento::administradoresAtivos($idEmpresa), 1);
+
+// Teto de administradores por estabelecimento: o terceiro e recusado e nada
+// fica para tras (a pessoa nova nao chega a ser criada).
+$tetoRecusado = false;
+try {
+    Estabelecimento::criarAdministrador($idEmpresa, ['nome' => 'Terceiro Admin', 'email' => 'terceiro@studio.test', 'senha' => 'senha123']);
+} catch (DomainException) {
+    $tetoRecusado = true;
+}
+verificar('o terceiro administrador e recusado', $tetoRecusado, true);
+verificar('a recusa nao deixou a pessoa criada', Usuario::pessoaPorEmail('terceiro@studio.test'), null);
+verificar('a empresa continua com dois administradores', count(Estabelecimento::administradores($idEmpresa)), 2);
+
+// E-mail conhecido: a pessoa que ja existe ganha o vinculo, sem senha nem nome novos.
+$idAnaVinculada = Estabelecimento::criarAdministrador($idEmpresaB, ['nome' => 'Nome Ignorado', 'email' => 'ana@studio.test', 'senha' => 'senha-ignorada']);
+verificar('a pessoa existente e vinculada sem duplicar', $idAnaVinculada, (int) Usuario::pessoaPorEmail('ana@studio.test')['id_usuario']);
+verificar('a pessoa vinculada mantem o nome', Usuario::pessoaPorEmail('ana@studio.test')['nome'], 'Ana Responsavel');
+verificar('a empresa B passa a ter dois administradores', count(Estabelecimento::administradores($idEmpresaB)), 2);
+$vinculoRepetido = false;
+try {
+    Estabelecimento::criarAdministrador($idEmpresaB, ['nome' => 'Ana Responsavel', 'email' => 'ana@studio.test', 'senha' => 'x']);
+} catch (DomainException) {
+    $vinculoRepetido = true;
+}
+verificar('a mesma pessoa nao vira administradora duas vezes da mesma empresa', $vinculoRepetido, true);
 
 // -------------------------------------------------------------------------
 // Redefinicao de senha pelo master

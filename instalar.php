@@ -82,10 +82,8 @@ if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
             'nome'            => 'Administrador do Sistema',
             'email'           => 'admin@agendei.com.br',
             'senha'           => $senhaPadrao,
-            'login'           => 'admini',
             'telefone'        => '11300000000',
             'telefone_fixo'   => '1133000000',
-            'tipo'            => 'admin',
             'sexo'            => 'O',
             'nome_materno'    => 'Helena Duarte do Sistema',
             'data_nascimento' => '1985-02-10',
@@ -97,8 +95,8 @@ if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
             'uf'              => 'SP',
         ]);
 
-        $consulta = bd()->prepare('INSERT INTO administradores (id_estabelecimento, id_usuario, nivel) VALUES (' . Contexto::id() . ', :id, \'super\')');
-        $consulta->execute([':id' => $idUsuarioAdmin]);
+        // O vinculo administrativo (e o login de 6 letras, que e do vinculo).
+        Estabelecimento::vincularAdministrador(Contexto::id(), $idUsuarioAdmin, ['login' => 'admini']);
         $mensagens[] = 'Administrador criado: admin@agendei.com.br';
 
         // ---------------------------------------------------------

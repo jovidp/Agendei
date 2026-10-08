@@ -63,6 +63,9 @@ $cssExtra        = $cssExtra ?? [];
                     <span class="usuario-topo-perfil"><?= e(perfilRotulo()) ?></span>
                 </div>
                 <span class="avatar"><?= e(iniciais(usuarioNome())) ?></span>
+                <?php if (!ehMaster() && !ehSimulacao() && podeTrocarVinculo()): ?>
+                    <a class="btn btn-contorno btn-pequeno" href="<?= url('trocar.php') ?>" title="Sua conta vale em mais de um lugar">Trocar</a>
+                <?php endif; ?>
                 <a class="btn btn-contorno btn-pequeno"
                    href="<?= url(ehMaster() ? 'master/logout.php' : 'logout.php') ?>">Sair</a>
             </div>

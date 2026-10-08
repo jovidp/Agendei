@@ -21,7 +21,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         definirFlash('erro', 'Cliente nao encontrado.');
     } elseif (post('acao') === 'status') {
         $novoStatus = post('status') === 'ativo' ? 'ativo' : 'inativo';
-        Usuario::alterarStatus((int) $cliente['id_usuario'], $novoStatus);
+        // Liga ou desliga o vinculo de cliente com esta empresa; a pessoa continua
+        // entrando nas outras empresas dela.
+        Vinculo::alterarStatus((int) $cliente['id_vinculo'], $novoStatus);
         definirFlash('sucesso', $novoStatus === 'ativo' ? 'Cliente ativado.' : 'Cliente desativado.');
     } elseif (post('acao') === 'observacoes') {
         Cliente::atualizar($idCliente, [
