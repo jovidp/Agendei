@@ -10,6 +10,7 @@ CREATE DATABASE IF NOT EXISTS `agendei` DEFAULT CHARACTER SET utf8mb4 COLLATE ut
 USE `agendei`;
 
 SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS `assinaturas`;
 DROP TABLE IF EXISTS `estabelecimento_plano`;
 DROP TABLE IF EXISTS `planos`;
 DROP TABLE IF EXISTS `avaliacoes`;
@@ -63,6 +64,20 @@ CREATE TABLE `estabelecimento` (
   `status` enum('ativo','inativo') NOT NULL DEFAULT 'ativo',
   PRIMARY KEY (`id_estabelecimento`),
   UNIQUE KEY `uk_estabelecimento_slug` (`slug`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Assinatura da plataforma. Empresas legadas podem nao ter linha: nesse caso
+-- permanecem ativas. Cadastros publicos recebem uma linha de demonstracao.
+CREATE TABLE `assinaturas` (
+  `id_estabelecimento` int(10) unsigned NOT NULL,
+  `status` enum('demo','pendente','ativa','bloqueada') NOT NULL DEFAULT 'ativa',
+  `data_inicio_demo` datetime DEFAULT NULL,
+  `data_fim_demo` datetime DEFAULT NULL,
+  `metodo_pagamento` enum('pix','boleto','cartao') DEFAULT NULL,
+  `data_solicitacao` datetime DEFAULT NULL,
+  `data_pagamento` datetime DEFAULT NULL,
+  PRIMARY KEY (`id_estabelecimento`),
+  CONSTRAINT `fk_assinaturas_estabelecimento` FOREIGN KEY (`id_estabelecimento`) REFERENCES `estabelecimento` (`id_estabelecimento`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ---------------------------------------------------------------------

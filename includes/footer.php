@@ -41,6 +41,7 @@ $jsExtra = $jsExtra ?? [];
                     <li><a href="<?= url('index.php#como-funciona') ?>">Como funciona</a></li>
                     <li><a href="<?= url('login.php') ?>">Entrar</a></li>
                     <li><a href="<?= url('cadastro.php') ?>">Criar conta</a></li>
+                    <li><a href="<?= url('cadastro_empresa.php') ?>">Cadastrar empresa</a></li>
                     <?php if (!estaLogado()): ?><li><a href="<?= url('master/login.php') ?>">Área master</a></li><?php endif; ?>
                 </ul>
             </div>

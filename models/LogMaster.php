@@ -35,6 +35,7 @@ class LogMaster
         'plano_criado'           => 'Plano criado',
         'plano_alterado'         => 'Plano alterado',
         'plano_atribuido'        => 'Plano do estabelecimento alterado',
+        'assinatura_confirmada'  => 'Pagamento de assinatura confirmado',
     ];
 
     /** Estado da tabela: null = ainda nao verificada, false = indisponivel. */

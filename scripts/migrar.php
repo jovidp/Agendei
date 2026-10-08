@@ -5,6 +5,7 @@ if (PHP_SAPI !== 'cli') {
     exit;
 }
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../models/Assinatura.php';
 
 // As migracoes aditivas existem para atualizar bancos MySQL nascidos em versoes
 // anteriores. No PostgreSQL esse caso nao existe: a instalacao parte de
@@ -112,6 +113,7 @@ require_once __DIR__ . '/migrar_diferenciais.php';
 migrarDiferenciais($db);
 require_once __DIR__ . '/migrar_requisitos.php';
 migrarRequisitos($db);
+Assinatura::garantirEstrutura();
 
 $masterCriado = false;
 if (!(int) $db->query('SELECT COUNT(*) FROM administradores_master')->fetchColumn()) {

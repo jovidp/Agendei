@@ -1,0 +1,21 @@
+.modelo-conteudo, .modelo-filtro, .modelo-regras { padding: 16px 20px; }
+.modelo-conteudo p { margin: 0 0 12px; }
+.modelo-filtro { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.modelo-filtro select { max-width: 100%; padding: 10px; color: var(--texto-principal); background: var(--branco); border: 1px solid var(--borda-forte); border-radius: 6px; }
+.modelo-diagrama { overflow-x: auto; padding: 12px; }
+.modelo-diagrama svg { display: block; width: 100%; min-width: 900px; height: auto; }
+.modelo-entidade { fill: var(--branco); stroke: var(--borda-forte); }
+.modelo-titulo { fill: var(--texto-principal); font: 700 16px sans-serif; }
+.modelo-campo { fill: var(--texto-secundario); font: 13px monospace; }
+.modelo-ligacao { fill: none; stroke: var(--cor-primaria); stroke-width: 2; }
+.modelo-cardinalidade { fill: var(--texto-principal); font: 700 14px sans-serif; text-anchor: middle; }
+.modelo-tabela { border-top: 1px solid var(--borda-forte); scroll-margin-top: 20px; }
+.modelo-tabela > summary { padding: 16px 20px; cursor: pointer; font-weight: 700; overflow-wrap: anywhere; }
+.modelo-tabela > summary span { font-weight: 400; color: var(--texto-secundario); }
+.modelo-sql { padding: 16px 20px; }
+.modelo-sql summary { cursor: pointer; }
+.modelo-sql pre { overflow-x: auto; padding: 16px 0; font-size: 12px; }
+.modelo-regras dt { font-weight: 700; margin-bottom: 6px; }
+.modelo-regras dd { margin: 0 0 18px; line-height: 1.6; }
+.tabela caption { text-align: left; padding: 12px 20px; font-weight: 600; }
+@media print { .modelo-filtro, .modelo-introducao .btn { display: none; } .modelo-diagrama svg { min-width: 0; } }

@@ -457,6 +457,8 @@ function badgeStatus(string $status): string
         'convertido' => 'Convertido',
         'pendente'   => 'Pendente',
         'pago'       => 'Pago',
+        'demo'       => 'Demonstracao',
+        'bloqueada'  => 'Bloqueada',
         'estornado'  => 'Estornado',
         'publicada'  => 'Publicada',
         'oculta'     => 'Oculta',

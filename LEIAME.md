@@ -27,6 +27,8 @@ e as chaves do banco impedem associações entre estabelecimentos diferentes.
    ```
    php scripts/migrar.php
    ```
+   Essa atualizacao tambem prepara a assinatura: empresas ja existentes seguem
+   ativas e novos cadastros de empresa ganham 7 dias de demonstracao.
 4. Acesse `http://localhost/agendei/instalar.php` e clique em **Executar instalacao**.
    Serao criados o administrador, tres profissionais com expediente configurado,
    um cliente de demonstracao e alguns agendamentos.

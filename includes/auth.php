@@ -574,6 +574,18 @@ function exigirLogin(array|string $tiposPermitidos = []): void
         definirFlash('erro', 'Voce nao tem permissao para acessar esta area.');
         redirecionar('erro.php?codigo=permissao');
     }
+
+    // O administrador continua entrando normalmente durante a demonstracao.
+    // Depois do prazo, apenas ele e levado para a assinatura; clientes e equipe
+    // nao recebem uma tela de cobranca que nao podem resolver, e o master ainda
+    // consegue prestar suporte por meio da simulacao.
+    if (perfil() === 'admin' && !ehSimulacao() && Assinatura::acessoBloqueado(Contexto::id())) {
+        if (ehRequisicaoAjax()) {
+            jsonResposta(['sucesso' => false, 'mensagem' => 'A demonstracao terminou. Regularize a assinatura para continuar.'], 402);
+        }
+        definirFlash('aviso', 'Sua demonstracao terminou. Escolha uma forma de pagamento para reativar o acesso.');
+        redirecionar('assinatura.php');
+    }
 }
 
 /**

@@ -148,6 +148,9 @@ $tituloPagina = 'Entrar | ' . $estabelecimento['nome'];
             <p class="autenticacao-rodape">
                 Ainda nao tem conta? <a href="<?= url('cadastro.php') ?>">Criar conta</a>
             </p>
+            <p class="autenticacao-rodape">
+                Sua empresa ainda nao usa o Agendei? <a href="<?= url('cadastro_empresa.php') ?>">Teste gratis por 7 dias</a>
+            </p>
         </div>
     </div>
 </div>

@@ -73,6 +73,9 @@ class Estabelecimento
             $q = $db->prepare('INSERT INTO administradores (id_estabelecimento, id_usuario, nivel) VALUES (?, ?, \'super\')');
             $q->execute([$id, $usuario]);
             $db->commit();
+            if (!empty($dados['iniciar_demo'])) {
+                Assinatura::iniciarDemo($id);
+            }
             return $id;
         } catch (Throwable $erro) {
             if ($db->inTransaction()) $db->rollBack();

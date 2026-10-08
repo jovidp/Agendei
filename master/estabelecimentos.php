@@ -95,6 +95,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 redirecionar('master/estabelecimentos.php');
             }
         }
+        if ($acao === 'confirmar_assinatura') {
+            $id = (int) post('id_estabelecimento');
+            $empresa = Estabelecimento::porIdGlobal($id);
+            if (!$empresa) {
+                $erros[] = 'Estabelecimento nao encontrado.';
+            } else {
+                Assinatura::confirmarPagamento($id);
+                LogMaster::registrar('assinatura_confirmada', [
+                    'estabelecimento'      => $id,
+                    'estabelecimento_nome' => $empresa['nome'],
+                    'alvo'                 => $empresa['slug'],
+                    'detalhe'              => 'mensalidade de R$ 149,00 confirmada',
+                ]);
+                definirFlash('sucesso', 'Pagamento confirmado e acesso da empresa liberado.');
+                redirecionar('master/estabelecimentos.php?acao=ver&id=' . $id);
+            }
+        }
         if ($acao === 'admin_status') {
             $id = (int) post('id_estabelecimento');
             $idUsuario = (int) post('id_usuario');
@@ -174,6 +191,13 @@ require RAIZ . '/includes/painel_header.php';
 <div class="cartao-corpo"><p><strong>Status:</strong> <?= badgeStatus($selecionado['status']) ?></p><p>Clientes, profissionais, serviços e agendamentos ficam vinculados ao ID <?= (int) $selecionado['id_estabelecimento'] ?>.</p>
     <p><strong>Login do estabelecimento:</strong> <a href="<?= e(BASE_URL . '/login.php?estabelecimento=' . rawurlencode($selecionado['slug'])) ?>"><?= e(BASE_URL . '/login.php?estabelecimento=' . rawurlencode($selecionado['slug'])) ?></a></p>
     <p class="ajuda-campo">Envie este link ao responsável. Ele deve entrar com o e-mail e a senha da conta administrativa cadastrada abaixo. Para testar no mesmo navegador, saia da conta master primeiro.</p>
+</div></div>
+<?php $assinaturaEmpresa = Assinatura::situacao((int) $selecionado['id_estabelecimento']); ?>
+<div class="cartao"><div class="cartao-cabecalho"><h3>Assinatura da plataforma</h3><?= badgeStatus($assinaturaEmpresa['status']) ?></div><div class="cartao-corpo">
+    <p><strong>Mensalidade:</strong> R$ 149,00</p>
+    <?php if (!empty($assinaturaEmpresa['data_fim_demo'])): ?><p><strong>Fim da demonstracao:</strong> <?= e(formatarData(substr((string) $assinaturaEmpresa['data_fim_demo'], 0, 10))) ?></p><?php endif; ?>
+    <p><strong>Forma escolhida:</strong> <?= e(Assinatura::rotuloMetodo($assinaturaEmpresa['metodo_pagamento'] ?? null)) ?></p>
+    <?php if ($assinaturaEmpresa['status'] !== 'ativa'): ?><form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="confirmar_assinatura"><input type="hidden" name="id_estabelecimento" value="<?= (int) $selecionado['id_estabelecimento'] ?>"><button class="btn" type="submit" data-confirmar="Confirmar o pagamento de R$ 149,00 e liberar o acesso?">Confirmar pagamento</button></form><?php endif; ?>
 </div></div>
 <div class="grade-painel grade-painel-igual">
 <div class="cartao"><div class="cartao-cabecalho"><h3>Contas administrativas</h3></div><div class="tabela-area"><table class="tabela"><thead><tr><th>Nome</th><th>Último acesso</th><th>Status</th><th class="coluna-acoes">Acesso</th></tr></thead><tbody>

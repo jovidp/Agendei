@@ -1,178 +1,139 @@
 <?php
-/**
- * Modelo do banco de dados.
- * Acessivel aos dois perfis. Mostra o diagrama entidade-relacionamento das
- * tabelas centrais do sistema.
- *
- * O diagrama e desenhado em SVG aqui mesmo, mas se existir o arquivo
- * assets/img/der.png (ou .svg / .jpg) ele tem prioridade, o que permite
- * publicar a imagem exportada da ferramenta de modelagem do grupo.
- */
-// Carrega as configurações, a sessão e as funções compartilhadas antes de processar a página.
+/** DER e dicionário derivados dos scripts usados na instalação. */
 require_once __DIR__ . '/config/config.php';
-
-// Tela interna: exige uma conta autenticada, de qualquer perfil.
 exigirLogin();
-
-// Procura uma imagem publicada pelo grupo antes de cair no diagrama embutido.
-$imagemPropria = '';
-foreach (['der.png', 'der.svg', 'der.jpg'] as $arquivo) {
-    if (is_file(RAIZ . '/assets/img/' . $arquivo)) {
-        $imagemPropria = 'assets/img/' . $arquivo;
-        break;
-    }
+$modelo = ModeloBanco::carregar(Database::driver());
+$tabelas = $modelo['tabelas'];
+$selecionada = is_string($_GET['tabela'] ?? null) ? $_GET['tabela'] : 'agendamentos';
+if (!isset($tabelas[$selecionada])) $selecionada = 'agendamentos';
+$desenho = array_values(array_filter(ModeloBanco::relacoes($modelo, true),
+    static fn(array $fk): bool => $fk['pai'] === $selecionada || $fk['filha'] === $selecionada));
+if (($_GET['formato'] ?? '') === 'mermaid') {
+    header('Content-Type: text/plain; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="agendei-der.mmd"');
+    echo ModeloBanco::mermaid($modelo);
+    exit;
 }
-
-// Entidades exibidas no diagrama: [x, y, titulo, [campos], destaque]
-$entidades = [
-    ['x' => 20,  'y' => 20,  'nome' => 'estabelecimento', 'campos' => ['id_estabelecimento (PK)', 'nome', 'slug', 'cores / logo'], 'tipo' => 'base'],
-    ['x' => 20,  'y' => 190, 'nome' => 'usuarios',        'campos' => ['id_usuario (PK)', 'id_estabelecimento (FK)', 'nome, email, senha_hash', 'login (6 letras)', 'nome_materno, data_nascimento', 'cep, logradouro, numero', 'bairro, cidade, uf', 'sexo, telefone, telefone_fixo', 'totp_segredo, totp_ativado_em', 'tipo, status'], 'tipo' => 'auth'],
-    ['x' => 330, 'y' => 20,  'nome' => 'clientes',        'campos' => ['id_cliente (PK)', 'id_usuario (FK)', 'cpf', 'data_nascimento', 'pontos_fidelidade'], 'tipo' => 'perfil'],
-    ['x' => 330, 'y' => 190, 'nome' => 'administradores', 'campos' => ['id_administrador (PK)', 'id_usuario (FK)', 'nivel'], 'tipo' => 'perfil'],
-    ['x' => 330, 'y' => 330, 'nome' => 'profissionais',   'campos' => ['id_profissional (PK)', 'id_usuario (FK)', 'especialidade'], 'tipo' => 'perfil'],
-    ['x' => 630, 'y' => 20,  'nome' => 'logs_autenticacao', 'campos' => ['id_log (PK)', 'id_usuario (sem FK)', 'nome, cpf (copia)', 'evento', 'fator_2fa', 'data_hora, ip'], 'tipo' => 'auth'],
-    ['x' => 630, 'y' => 230, 'nome' => 'agendamentos',    'campos' => ['id_agendamento (PK)', 'id_cliente (FK)', 'id_profissional (FK)', 'id_servico (FK)', 'data, hora, status'], 'tipo' => 'base'],
-    ['x' => 630, 'y' => 420, 'nome' => 'servicos',        'campos' => ['id_servico (PK)', 'nome, preco', 'duracao_minutos'], 'tipo' => 'base'],
-];
-
-// Ligacoes: [origem, destino, rotulo]
-$ligacoes = [
-    ['estabelecimento', 'usuarios', '1:N'],
-    ['usuarios', 'clientes', '1:1'],
-    ['usuarios', 'administradores', '1:1'],
-    ['usuarios', 'profissionais', '1:1'],
-    ['clientes', 'agendamentos', '1:N'],
-    ['servicos', 'agendamentos', 'N:1'],
-];
-
-/** Altura da caixa conforme a quantidade de campos listados. */
-function alturaEntidade(array $entidade): float
-{
-    return 34 + (count($entidade['campos']) * 16) + 8;
-}
-
-/** Localiza a entidade pelo nome para desenhar as ligacoes. */
-function acharEntidade(array $entidades, string $nome): ?array
-{
-    foreach ($entidades as $entidade) {
-        if ($entidade['nome'] === $nome) {
-            return $entidade;
-        }
-    }
-    return null;
-}
-
-// Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
-$tituloPagina  = 'Modelo do banco de dados';
-$subtituloTopo = 'Diagrama entidade-relacionamento das tabelas centrais';
-
-// Renderiza a estrutura comum do painel após preparar os dados desta tela.
+$tituloPagina = 'Modelo do banco de dados';
+$subtituloTopo = count($tabelas) . ' tabelas · DER, chaves e regras do sistema';
+$cssExtra = ['modelo_bd.css'];
 require_once RAIZ . '/includes/painel_header.php';
 ?>
-
-<div class="cartao">
-    <div class="cartao-cabecalho">
-        <h3>Diagrama entidade-relacionamento</h3>
+<div class="cartao modelo-introducao">
+    <div class="cartao-cabecalho"><h3>Diagrama entidade-relacionamento completo</h3></div>
+    <div class="modelo-conteudo">
+        <p>Explore as relações de cada tabela e consulte todos os campos no dicionário abaixo.
+            Fonte: <code><?= e($modelo['arquivo']) ?></code>, o esquema versionado do sistema.</p>
+        <p>O desenho usa as chaves estrangeiras declaradas no SQL. Relações mantidas pelo código,
+            como o crédito de pacote de um agendamento, estão explicadas nas regras de funcionamento.</p>
+        <a class="btn btn-contorno" href="<?= e(url('modelo_bd.php?formato=mermaid')) ?>">Baixar DER completo (Mermaid)</a>
     </div>
-
-    <div class="diagrama-area">
-        <?php if ($imagemPropria !== ''): ?>
-            <img src="<?= url($imagemPropria) ?>" alt="Diagrama entidade-relacionamento do banco de dados" class="diagrama-imagem">
-        <?php else: ?>
-            <?php /* Diagrama vetorial: acompanha o tema e continua legivel em qualquer zoom. */ ?>
-            <svg class="diagrama-svg" viewBox="0 0 900 560" role="img"
-                 aria-label="Diagrama entidade-relacionamento com as tabelas estabelecimento, usuarios, clientes, administradores, profissionais, logs de autenticacao, agendamentos e servicos.">
-                <defs>
-                    <marker id="seta" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
-                        <path d="M0,0 L8,4 L0,8 Z" fill="var(--borda-forte)"></path>
-                    </marker>
-                </defs>
-
-                <?php foreach ($ligacoes as [$origem, $destino, $rotulo]): ?>
-                    <?php
-                    $a = acharEntidade($entidades, $origem);
-                    $b = acharEntidade($entidades, $destino);
-                    if ($a === null || $b === null) {
-                        continue;
-                    }
-                    // Liga o centro vertical das duas caixas, saindo pela lateral mais proxima.
-                    $ax = $a['x'] < $b['x'] ? $a['x'] + 260 : $a['x'];
-                    $bx = $a['x'] < $b['x'] ? $b['x'] : $b['x'] + 260;
-                    $ay = $a['y'] + (alturaEntidade($a) / 2);
-                    $by = $b['y'] + (alturaEntidade($b) / 2);
-                    $meio = ($ax + $bx) / 2;
-                    ?>
-                    <path d="M<?= $ax ?>,<?= $ay ?> C<?= $meio ?>,<?= $ay ?> <?= $meio ?>,<?= $by ?> <?= $bx ?>,<?= $by ?>"
-                          fill="none" stroke="var(--borda-forte)" stroke-width="1.5" marker-end="url(#seta)"></path>
-                    <text x="<?= $meio ?>" y="<?= (($ay + $by) / 2) - 4 ?>" class="diagrama-cardinalidade"><?= e($rotulo) ?></text>
-                <?php endforeach; ?>
-
-                <?php foreach ($entidades as $entidade): ?>
-                    <?php $altura = alturaEntidade($entidade); ?>
-                    <g class="diagrama-entidade diagrama-<?= e($entidade['tipo']) ?>">
-                        <rect x="<?= $entidade['x'] ?>" y="<?= $entidade['y'] ?>" width="260" height="<?= $altura ?>" rx="6"></rect>
-                        <rect x="<?= $entidade['x'] ?>" y="<?= $entidade['y'] ?>" width="260" height="26" rx="6" class="diagrama-titulo-fundo"></rect>
-                        <text x="<?= $entidade['x'] + 12 ?>" y="<?= $entidade['y'] + 18 ?>" class="diagrama-titulo"><?= e($entidade['nome']) ?></text>
-
-                        <?php foreach ($entidade['campos'] as $indice => $campo): ?>
-                            <text x="<?= $entidade['x'] + 12 ?>" y="<?= $entidade['y'] + 44 + ($indice * 16) ?>" class="diagrama-campo"><?= e($campo) ?></text>
+</div>
+<div class="cartao">
+    <div class="cartao-cabecalho"><h3>Relações por tabela</h3></div>
+    <form class="modelo-filtro" method="get" action="<?= e(url('modelo_bd.php')) ?>">
+        <?php if (Contexto::slug() !== ''): ?>
+            <input type="hidden" name="estabelecimento" value="<?= e(Contexto::slug()) ?>">
+        <?php endif; ?>
+        <label for="tabela-modelo">Tabela</label>
+        <select id="tabela-modelo" name="tabela">
+            <?php foreach ($tabelas as $nome => $tabela): ?>
+                <option value="<?= e($nome) ?>" <?= $nome === $selecionada ? 'selected' : '' ?>><?= e($nome) ?></option>
+            <?php endforeach; ?>
+        </select>
+        <button class="btn btn-primario" type="submit">Exibir relações</button>
+        <a href="#tabela-<?= e($selecionada) ?>">Ver campos</a>
+    </form>
+    <div class="modelo-conteudo">
+        <p><strong>1</strong> = exatamente um; <strong>0..1</strong> = opcional, no máximo um;
+            <strong>0..N</strong> = zero ou vários. As cardinalidades indicam quantos registros de cada lado
+            podem corresponder a um registro do outro lado.</p>
+        <p>Quando duas FKs ligam os mesmos registros, a ligação composta aparece no desenho.
+            Todas as restrições, inclusive as simples, constam no dicionário.</p>
+    </div>
+    <?php if ($desenho): ?>
+        <div class="modelo-diagrama" tabindex="0" role="region" aria-label="Diagrama com rolagem horizontal">
+            <svg viewBox="0 0 1000 <?= count($desenho) * 116 ?>" role="img" aria-labelledby="titulo-der descricao-der">
+                <title id="titulo-der">Relacionamentos de <?= e($selecionada) ?></title>
+                <desc id="descricao-der">Cada linha mostra uma tabela referenciada à esquerda e a tabela que contém a chave estrangeira à direita. A tabela textual a seguir contém as mesmas relações.</desc>
+                <?php foreach ($desenho as $indice => $fk): $y = 12 + $indice * 116; ?>
+                    <g>
+                        <rect class="modelo-entidade" x="10" y="<?= $y ?>" width="370" height="84" rx="6" />
+                        <rect class="modelo-entidade" x="620" y="<?= $y ?>" width="370" height="84" rx="6" />
+                        <text class="modelo-titulo" x="24" y="<?= $y + 24 ?>"><?= e($fk['pai']) ?></text>
+                        <text class="modelo-titulo" x="634" y="<?= $y + 24 ?>"><?= e($fk['filha']) ?></text>
+                        <?php foreach ($fk['referencias'] as $i => $campo): ?>
+                            <text class="modelo-campo" x="24" y="<?= $y + 46 + $i * 17 ?>"><?= e($campo) ?></text>
                         <?php endforeach; ?>
+                        <?php foreach ($fk['campos'] as $i => $campo): ?>
+                            <text class="modelo-campo" x="634" y="<?= $y + 46 + $i * 17 ?>">FK <?= e($campo) ?></text>
+                        <?php endforeach; ?>
+                        <path class="modelo-ligacao" d="M380 <?= $y + 42 ?> H620" />
+                        <text class="modelo-cardinalidade" x="403" y="<?= $y + 31 ?>"><?= e($fk['por_filha']) ?></text>
+                        <text class="modelo-cardinalidade" x="578" y="<?= $y + 31 ?>"><?= e($fk['por_pai']) ?></text>
                     </g>
                 <?php endforeach; ?>
             </svg>
-        <?php endif; ?>
-    </div>
-
-    <div class="diagrama-legenda">
-        <span><span class="marcador marcador-auth"></span> Autenticacao e log</span>
-        <span><span class="marcador marcador-perfil"></span> Perfis de usuario</span>
-        <span><span class="marcador marcador-base"></span> Operacao do agendamento</span>
-    </div>
+        </div>
+        <div class="tabela-area">
+            <table class="tabela">
+                <caption>Chaves estrangeiras relacionadas a <?= e($selecionada) ?></caption>
+                <thead><tr><th>Tabela referenciada</th><th>Tabela com FK</th><th>Colunas da FK</th><th>Pais por registro filho</th><th>Filhos por registro pai</th></tr></thead>
+                <tbody>
+                    <?php foreach ($desenho as $fk): ?>
+                        <tr><td><?= e($fk['pai']) ?></td><td><?= e($fk['filha']) ?></td><td><code><?= e(implode(', ', $fk['campos'])) ?></code></td><td><?= e($fk['por_filha']) ?></td><td><?= e($fk['por_pai']) ?></td></tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php else: ?>
+        <p class="modelo-conteudo">Esta tabela não participa de relacionamentos por chave estrangeira no esquema.</p>
+    <?php endif; ?>
 </div>
-
 <div class="cartao">
-    <div class="cartao-cabecalho">
-        <h3>Como o modelo atende aos perfis</h3>
-    </div>
-
+    <div class="cartao-cabecalho"><h3>Referências da aplicação sem chave estrangeira</h3></div>
+    <p class="modelo-conteudo">Estes identificadores são usados pelo PHP, mas não têm integridade referencial
+        imposta por FK. Referências históricas podem permanecer após a exclusão da conta ou empresa.</p>
     <div class="tabela-area">
         <table class="tabela">
-            <thead>
-                <tr>
-                    <th>Decisao</th>
-                    <th>Onde fica</th>
-                    <th>Por que</th>
-                </tr>
-            </thead>
+            <thead><tr><th>Coluna</th><th>Referência lógica</th><th>Uso no sistema</th></tr></thead>
             <tbody>
-                <tr>
-                    <td class="celula-principal">Perfil do usuario</td>
-                    <td><code>usuarios.tipo</code></td>
-                    <td>O perfil master corresponde a <code>admin</code> e o comum a <code>cliente</code>. O controle de acesso le esse valor da sessao.</td>
-                </tr>
-                <tr>
-                    <td class="celula-principal">2FA por codigo</td>
-                    <td><code>usuarios.totp_segredo</code>, <code>totp_ativado_em</code>, <code>totp_ultimo_contador</code></td>
-                    <td>Caminho padrao do segundo fator. O segredo fica cifrado; a data so e preenchida depois que o usuario confirma um codigo, e o contador guarda a janela ja usada para impedir repetir o mesmo codigo. As tres colunas se repetem em <code>administradores_master</code>.</td>
-                </tr>
-                <tr>
-                    <td class="celula-principal">2FA por pergunta (reserva)</td>
-                    <td><code>usuarios.nome_materno</code>, <code>data_nascimento</code>, <code>cep</code></td>
-                    <td>Atende quem ainda nao cadastrou o aplicativo autenticador. Ficam na tabela comum a todos os perfis para que master e comum respondam as mesmas perguntas.</td>
-                </tr>
-                <tr>
-                    <td class="celula-principal">Login de 6 letras</td>
-                    <td><code>usuarios.login</code></td>
-                    <td>Unico por estabelecimento. Aceita nulo para nao invalidar as contas criadas antes do campo existir.</td>
-                </tr>
-                <tr>
-                    <td class="celula-principal">Historico de acesso</td>
-                    <td><code>logs_autenticacao</code></td>
-                    <td>Guarda copia do nome e do CPF e nao tem chave estrangeira para <code>usuarios</code>, entao o log sobrevive a exclusao feita pelo master.</td>
-                </tr>
+                <tr><td><code>agendamentos.id_cliente_pacote</code></td><td><code>cliente_pacotes</code></td><td>Zero ou uma compra por reserva; uma compra pode custear várias reservas.</td></tr>
+                <tr><td><code>logs_autenticacao.id_usuario</code></td><td><code>usuarios</code></td><td>Identificador opcional da conta; um usuário pode originar vários logs.</td></tr>
+                <tr><td><code>logs_master.id_master</code></td><td><code>administradores_master</code></td><td>Identificador opcional do autor; um master pode originar vários logs.</td></tr>
+                <tr><td><code>logs_master.id_estabelecimento</code></td><td><code>estabelecimento</code></td><td>Identificador opcional da empresa citada; uma empresa pode ser citada em vários logs.</td></tr>
             </tbody>
         </table>
     </div>
 </div>
-
+<div class="cartao">
+    <div class="cartao-cabecalho"><h3>Dicionário completo: <?= count($tabelas) ?> tabelas</h3></div>
+    <p class="modelo-conteudo">PK = chave primária; FK = chave estrangeira; UK = participa de uma chave única.
+        Em chaves compostas, a unicidade vale para o conjunto de colunas. Abra uma tabela para ver as definições completas.</p>
+    <?php foreach ($tabelas as $nome => $tabela): ?>
+        <details class="modelo-tabela" id="tabela-<?= e($nome) ?>" <?= $nome === $selecionada ? 'open' : '' ?>>
+            <summary><?= e($nome) ?> <span>(<?= count($tabela['colunas']) ?> campos)</span></summary>
+            <div class="tabela-area">
+                <table class="tabela">
+                    <caption>Campos de <?= e($nome) ?></caption>
+                    <thead><tr><th>Coluna</th><th>Tipo SQL</th><th>Aceita nulo</th><th>Chaves</th></tr></thead>
+                    <tbody>
+                        <?php foreach ($tabela['colunas'] as $coluna): ?>
+                            <tr><td><code><?= e($coluna['nome']) ?></code></td><td><code><?= e($coluna['tipo']) ?></code></td><td><?= $coluna['nulo'] ? 'Sim' : 'Não' ?></td><td><?= e(implode(', ', $coluna['chaves']) ?: '—') ?></td></tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+            <details class="modelo-sql"><summary>Definição SQL: valores padrão, chaves e restrições</summary><pre><code><?= e($tabela['ddl']) ?></code></pre></details>
+        </details>
+    <?php endforeach; ?>
+</div>
+<div class="cartao">
+    <div class="cartao-cabecalho"><h3>Como o modelo representa o funcionamento do sistema</h3></div>
+    <dl class="modelo-regras">
+        <?php foreach (ModeloBanco::regras() as $titulo => $descricao): ?>
+            <dt><?= e($titulo) ?></dt><dd><?= e($descricao) ?></dd>
+        <?php endforeach; ?>
+    </dl>
+</div>
 <?php require_once RAIZ . '/includes/painel_footer.php'; ?>

@@ -20,6 +20,7 @@
 -- LIMPEZA
 -- Ordem inversa das dependencias; CASCADE cobre o que sobrar.
 -- ---------------------------------------------------------------------
+DROP TABLE IF EXISTS assinaturas CASCADE;
 DROP TABLE IF EXISTS avaliacoes CASCADE;
 DROP TABLE IF EXISTS cliente_pacotes CASCADE;
 DROP TABLE IF EXISTS pacotes CASCADE;
@@ -77,6 +78,21 @@ CREATE TABLE estabelecimento (
   CONSTRAINT pk_estabelecimento PRIMARY KEY (id_estabelecimento),
   CONSTRAINT uk_estabelecimento_slug UNIQUE (slug),
   CONSTRAINT ck_estabelecimento_status CHECK (status IN ('ativo','inativo'))
+);
+
+-- Assinatura da plataforma. Empresas antigas sem registro permanecem ativas.
+CREATE TABLE assinaturas (
+  id_estabelecimento INTEGER NOT NULL,
+  status VARCHAR(12) NOT NULL DEFAULT 'ativa',
+  data_inicio_demo TIMESTAMP DEFAULT NULL,
+  data_fim_demo TIMESTAMP DEFAULT NULL,
+  metodo_pagamento VARCHAR(12) DEFAULT NULL,
+  data_solicitacao TIMESTAMP DEFAULT NULL,
+  data_pagamento TIMESTAMP DEFAULT NULL,
+  CONSTRAINT pk_assinaturas PRIMARY KEY (id_estabelecimento),
+  CONSTRAINT ck_assinaturas_status CHECK (status IN ('demo','pendente','ativa','bloqueada')),
+  CONSTRAINT ck_assinaturas_metodo CHECK (metodo_pagamento IS NULL OR metodo_pagamento IN ('pix','boleto','cartao')),
+  CONSTRAINT fk_assinaturas_estabelecimento FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento (id_estabelecimento) ON DELETE CASCADE
 );
 
 -- ---------------------------------------------------------------------

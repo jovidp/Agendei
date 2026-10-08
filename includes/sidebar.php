@@ -40,6 +40,7 @@ $menus = [
         ['separador' => 'Gestao'],
         ['rotulo' => 'Relatorios',    'arquivo' => 'admin/relatorios.php',    'icone' => 'relatorios'],
         ['rotulo' => 'Diferenciais',  'arquivo' => 'admin/diferenciais.php',  'icone' => 'novo'],
+        ['rotulo' => 'Assinatura',    'arquivo' => 'assinatura.php',          'icone' => 'configuracoes'],
         ['rotulo' => 'Aparência', 'arquivo' => 'admin/aparencia.php', 'icone' => 'configuracoes'],
         ['rotulo' => 'Configuracoes', 'arquivo' => 'admin/configuracoes.php', 'icone' => 'configuracoes'],
         ['rotulo' => 'Verificacao em 2 etapas', 'arquivo' => 'autenticador.php', 'icone' => 'bloqueio'],
