@@ -17,5 +17,9 @@ banco_hospedagem.sql
 # Testes e ferramentas de desenvolvimento nao entram no servidor.
 tests
 scripts
+!scripts/
+scripts/*
+!scripts/.htaccess
+!scripts/preparar_runtime.php
 *.log
 *.md

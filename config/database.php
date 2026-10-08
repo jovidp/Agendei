@@ -155,6 +155,16 @@ class Database
                 PDO::ATTR_EMULATE_PREPARES   => self::emularPrepares(),
                 PDO::ATTR_STRINGIFY_FETCHES  => false,
             ];
+            // PQexecParams envia os parametros em uma unica viagem ao servidor,
+            // mantendo o bind nativo sem PREPARE/EXECUTE/DEALLOCATE separados.
+            if (self::ehPostgres() && !self::emularPrepares()) {
+                $opcoes[PDO::PGSQL_ATTR_DISABLE_PREPARES] = true;
+            }
+            // Cada processo HTTP reutiliza sua propria conexao. Scripts de
+            // migracao e testes CLI continuam com conexoes descartaveis.
+            $persistente = self::ehPostgres() && PHP_SAPI !== 'cli'
+                && getenv('AGENDEI_DB_PERSISTENTE') === '1';
+            if ($persistente) $opcoes[PDO::ATTR_PERSISTENT] = true;
 
             try {
                 self::$conexao = new PDO(
@@ -163,6 +173,18 @@ class Database
                     self::valor('senha', self::SENHA),
                     $opcoes
                 );
+                if ($persistente) {
+                    if (self::$conexao->inTransaction()) self::$conexao->rollBack();
+                    register_shutdown_function(static function (): void {
+                        try {
+                            if (self::$conexao !== null && self::$conexao->inTransaction()) {
+                                self::$conexao->rollBack();
+                            }
+                        } catch (Throwable $erro) {
+                            error_log('Falha ao encerrar transacao: ' . $erro->getMessage());
+                        }
+                    });
+                }
 
                 // O PostgreSQL (Supabase) roda em UTC por padrao, mas o app assume
                 // America/Sao_Paulo (config/config.php). Sem alinhar o fuso da sessao,
@@ -173,6 +195,11 @@ class Database
                     self::$conexao->exec("SET TIME ZONE 'America/Sao_Paulo'");
                 }
             } catch (PDOException $erro) {
+                if (PHP_SAPI === 'cli') {
+                    fwrite(STDERR, 'Falha na conexao com o banco: ' . $erro->getMessage() . "\n");
+                    exit(1);
+                }
+                http_response_code(503);
                 if (defined('AMBIENTE') && AMBIENTE === 'desenvolvimento') {
                     exit('Erro de conexao com o banco de dados: ' . $erro->getMessage());
                 }

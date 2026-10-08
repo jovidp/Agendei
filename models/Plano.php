@@ -340,6 +340,7 @@ class Plano
     /** Indica se as tabelas de plano respondem; cria-as na primeira chamada. */
     public static function disponivel(): bool
     {
+        if (PHP_SAPI !== 'cli' && getenv('AGENDEI_ESTRUTURA_PRONTA') === '1') return true;
         if (self::$tabelasProntas !== null) {
             return self::$tabelasProntas;
         }

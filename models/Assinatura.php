@@ -17,6 +17,10 @@ class Assinatura
     public static function garantirEstrutura(): void
     {
         if (self::$estruturaConferida) return;
+        if (PHP_SAPI !== 'cli' && getenv('AGENDEI_ESTRUTURA_PRONTA') === '1') {
+            self::$estruturaConferida = true;
+            return;
+        }
 
         $sql = Database::ehPostgres()
             ? 'CREATE TABLE IF NOT EXISTS assinaturas (

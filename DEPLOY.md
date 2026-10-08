@@ -1,5 +1,26 @@
 # Publicar o Agendei online (PHP no Render + banco no Supabase)
 
+## Desempenho no container
+
+O Apache reutiliza conexoes PostgreSQL por processo com
+`AGENDEI_DB_PERSISTENTE=1`; para desativar, defina `0`. O limite de oito
+processos Apache tambem limita as conexoes persistentes ao pooler. Uma
+transacao ainda aberta no fim da requisicao e desfeita antes da reutilizacao.
+Consultas parametrizadas na porta 5432 usam o bind nativo em uma unica viagem
+ao servidor; a porta 6543 continua usando a emulacao exigida pelo pooler.
+
+Quando `AGENDEI_DB_HOST` esta definido, o entrypoint executa
+`scripts/preparar_runtime.php` antes de iniciar o Apache. A preparacao cria
+apenas as tabelas auxiliares que faltam, preservando os registros. Somente
+apos o sucesso ele exporta `AGENDEI_ESTRUTURA_PRONTA=1`, para que as paginas
+nao repitam os comandos de criacao de tabelas e indices. Nao configure esse
+sinalizador manualmente; as migracoes de versao continuam sendo aplicadas
+separadamente. Fora do container, a preparacao automatica antiga permanece.
+
+Servidor e banco em regioes diferentes ainda pagam a latencia de rede em
+cada consulta. Reutilizar conexoes reduz esse custo, mas nao remove a
+distancia entre as duas hospedagens.
+
 Depois disto o sistema tem **URL publica** e fica **sempre no ar** — qualquer
 pessoa acessa pelo link, sem instalar nada (nem XAMPP). Quem precisa do XAMPP
 e so a sua maquina de desenvolvimento; o servidor publico e o Render.

@@ -167,6 +167,7 @@ class Solicitacao
     /** Indica se a tabela responde; cria-a na primeira chamada. */
     public static function disponivel(): bool
     {
+        if (PHP_SAPI !== 'cli' && getenv('AGENDEI_ESTRUTURA_PRONTA') === '1') return true;
         if (self::$tabelaPronta !== null) {
             return self::$tabelaPronta;
         }

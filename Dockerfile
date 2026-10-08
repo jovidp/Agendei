@@ -18,6 +18,11 @@ ENV AGENDEI_AMBIENTE=producao
 # frente, deixe a variavel desligada para nao confiar num cabecalho forjavel.
 ENV AGENDEI_PROXY_CONFIAVEL=1
 
+# Reutiliza conexoes PostgreSQL no Apache. O teto de processos limita tambem
+# as conexoes persistentes ao pooler e o consumo de memoria no plano de 512 MB.
+ENV AGENDEI_DB_PERSISTENTE=1
+RUN printf '<IfModule mpm_prefork_module>\nStartServers 2\nMinSpareServers 2\nMaxSpareServers 4\nServerLimit 8\nMaxRequestWorkers 8\nMaxConnectionsPerChild 500\n</IfModule>\n' > /etc/apache2/conf-enabled/agendei-workers.conf
+
 # As pastas sensiveis se protegem por .htaccess (Require all denied). O Apache so
 # respeita esses arquivos com AllowOverride liberado. Um bloco proprio do docroot
 # evita mexer no <Directory /> raiz e vence por ser mais especifico.

@@ -261,6 +261,7 @@ class Tentativa
         if (self::$tabelaPronta !== null) {
             return self::$tabelaPronta;
         }
+        if (PHP_SAPI !== 'cli' && getenv('AGENDEI_ESTRUTURA_PRONTA') === '1') return true;
 
         try {
             foreach (self::ddl() as $comando) {

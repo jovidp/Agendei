@@ -202,6 +202,7 @@ class LogMaster
      */
     private static function tabelaDisponivel(): bool
     {
+        if (PHP_SAPI !== 'cli' && getenv('AGENDEI_ESTRUTURA_PRONTA') === '1') return true;
         if (self::$tabelaPronta !== null) {
             return self::$tabelaPronta;
         }
