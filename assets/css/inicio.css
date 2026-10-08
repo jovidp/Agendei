@@ -277,9 +277,88 @@
 }
 
 /* ---------------------------------------------------------------------
-   Rodape do produto
+   Carrosseis da pagina inicial
    --------------------------------------------------------------------- */
 
+/* Trilhos nativos: toque, trackpad e teclado, mesmo sem JavaScript. */
+.carrossel-inicio { min-width: 0; }
+.pagina-produto .carrossel-trilho {
+  display: grid;
+  grid-template-columns: none;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - 36px) / 3);
+  gap: 18px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: #5faf8b #e9f0f2;
+  padding: 8px 0 18px;
+  margin: -8px 0 0;
+}
+.carrossel-trilho > * {
+  scroll-snap-align: start;
+  min-width: 0;
+}
+.carrossel-trilho .passo,
+.carrossel-trilho .recurso { padding: 26px; }
+.carrossel-trilho .passo-numero {
+  width: 42px;
+  height: 42px;
+  font-size: 18px;
+  margin-bottom: 24px;
+}
+.carrossel-trilho .recurso {
+  min-height: 180px;
+  justify-content: center;
+  gap: 12px;
+  border-left-width: 4px;
+}
+.carrossel-trilho .recurso strong { font-size: 18px; line-height: 1.35; }
+.carrossel-trilho .recurso span { font-size: 14px; }
+.carrossel-controles {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 14px;
+}
+.carrossel-controles[hidden] { display: none; }
+.carrossel-posicao { font-size: 13px; color: var(--texto-secundario); }
+.carrossel-setas { display: flex; gap: 10px; }
+.carrossel-setas button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 1px solid #1f4e5f;
+  border-radius: 50%;
+  background: #1f4e5f;
+  color: #ffffff;
+  cursor: pointer;
+}
+.carrossel-setas button:hover { background: #173b48; }
+.carrossel-setas button[aria-disabled="true"] {
+  background: transparent;
+  border-color: var(--borda);
+  color: var(--texto-secundario);
+  cursor: default;
+}
+.carrossel-icone { width: 20px; height: 20px; }
+.carrossel-trilho:focus-visible,
+.carrossel-setas button:focus-visible { outline: 3px solid #5faf8b; outline-offset: 3px; }
+@media (max-width: 980px) {
+  .pagina-produto .carrossel-trilho { grid-auto-columns: calc((100% - 18px) / 2); }
+}
+@media (max-width: 600px) {
+  .pagina-produto .carrossel-trilho { grid-auto-columns: 86%; gap: 14px; }
+  .carrossel-trilho .passo,
+  .carrossel-trilho .recurso { padding: 22px; }
+}
+
+/* Rodape do produto. */
 .rodape-produto {
   background-color: #1f4e5f;
 }

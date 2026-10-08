@@ -17,6 +17,7 @@ if (trim((string) ($_GET['estabelecimento'] ?? '')) === '') {
     define('PAGINA_PRODUTO', true);
 }
 require_once __DIR__ . '/config/config.php';
+require_once __DIR__ . '/includes/icones.php';
 
 if (estaLogado()) {
     redirecionar(painelDe(perfil()));
@@ -136,10 +137,11 @@ $recursos = [
 <section class="secao" id="como-funciona">
     <div class="container">
         <div class="secao-titulo">
-            <h2>Como funciona</h2>
+            <h2 id="titulo-como-funciona">Como funciona</h2>
             <p>Da configuração ao primeiro horário confirmado no mesmo dia.</p>
         </div>
-        <div class="grade-passos">
+        <div class="carrossel-inicio" data-carrossel role="region" aria-roledescription="carrossel" aria-labelledby="titulo-como-funciona">
+        <div class="grade-passos carrossel-trilho" id="carrossel-passos" tabindex="0" role="group" aria-label="Etapas do agendamento">
             <div class="passo">
                 <span class="passo-numero">1</span>
                 <h3>A empresa monta a agenda</h3>
@@ -160,6 +162,14 @@ $recursos = [
                 <h3>Todo mundo acompanha</h3>
                 <p>Cliente, profissional e administrador veem a mesma agenda, cada um no seu painel.</p>
             </div>
+        </div>
+        <div class="carrossel-controles" hidden>
+            <span class="carrossel-posicao" aria-live="polite" aria-atomic="true"></span>
+            <div class="carrossel-setas">
+                <button type="button" data-anterior aria-label="Etapa anterior" aria-controls="carrossel-passos"><?= icone('voltar', 'carrossel-icone') ?></button>
+                <button type="button" data-proximo aria-label="Próxima etapa" aria-controls="carrossel-passos"><?= icone('avancar', 'carrossel-icone') ?></button>
+            </div>
+        </div>
         </div>
     </div>
 </section>
@@ -195,10 +205,11 @@ $recursos = [
 <section class="secao" id="recursos">
     <div class="container">
         <div class="secao-titulo">
-            <h2>Recursos que entram quando fizer sentido</h2>
+            <h2 id="titulo-recursos">Recursos que entram quando fizer sentido</h2>
             <p>Cada empresa liga o que precisa. O que não está ligado não aparece para o cliente.</p>
         </div>
-        <ul class="grade-recursos">
+        <div class="carrossel-inicio" data-carrossel role="region" aria-roledescription="carrossel" aria-labelledby="titulo-recursos">
+        <ul class="grade-recursos carrossel-trilho" id="carrossel-recursos" tabindex="0" aria-label="Recursos disponíveis">
             <?php foreach ($recursos as [$nome, $descricao]): ?>
                 <li class="recurso">
                     <strong><?= e($nome) ?></strong>
@@ -206,6 +217,14 @@ $recursos = [
                 </li>
             <?php endforeach; ?>
         </ul>
+        <div class="carrossel-controles" hidden>
+            <span class="carrossel-posicao" aria-live="polite" aria-atomic="true"></span>
+            <div class="carrossel-setas">
+                <button type="button" data-anterior aria-label="Recurso anterior" aria-controls="carrossel-recursos"><?= icone('voltar', 'carrossel-icone') ?></button>
+                <button type="button" data-proximo aria-label="Próximo recurso" aria-controls="carrossel-recursos"><?= icone('avancar', 'carrossel-icone') ?></button>
+            </div>
+        </div>
+        </div>
 
         <div class="chamada-final margem-topo">
             <div>
