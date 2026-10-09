@@ -338,3 +338,114 @@
   height: 18px;
   flex-shrink: 0;
 }
+
+/* ---------------------------------------------------------------------
+   Escolha do cadastro (criar_conta.php)
+   Dois cartoes com as mesmas perguntas, para comparar linha a linha
+   o cadastro de cliente e o de estabelecimento.
+   --------------------------------------------------------------------- */
+.escolha-cadastro {
+  width: 100%;
+  max-width: 980px;
+}
+
+.escolha-cabecalho {
+  text-align: center;
+  margin-bottom: 26px;
+}
+
+.escolha-cabecalho .marca-sistema {
+  display: inline-flex;
+  margin-bottom: 14px;
+}
+
+.escolha-cabecalho h1 {
+  font-size: 26px;
+  margin-bottom: 6px;
+}
+
+.escolha-grade {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.cartao-cadastro {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--branco);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  box-shadow: var(--sombra-media);
+  padding: 26px 24px;
+}
+
+.cartao-cadastro-etiqueta {
+  align-self: flex-start;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background-color: var(--fundo);
+  color: var(--cor-primaria);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cartao-cadastro h2 {
+  font-size: 20px;
+  margin: 10px 0 16px;
+}
+
+.cartao-cadastro-dados {
+  margin: 0 0 20px;
+  display: grid;
+  gap: 12px;
+}
+
+.cartao-cadastro-dados div {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--borda);
+}
+
+.cartao-cadastro-dados dt {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--texto-secundario);
+  margin-bottom: 2px;
+}
+
+.cartao-cadastro-dados dd {
+  margin: 0;
+  font-size: 14.5px;
+}
+
+/* A acao fica no pe do cartao, alinhada entre os dois. */
+.cartao-cadastro-acao {
+  margin-top: auto;
+}
+
+.cartao-cadastro-acao .ajuda-campo {
+  display: block;
+}
+
+/* Aviso, no topo de cada cadastro, de qual dos dois a pessoa esta preenchendo. */
+.aviso-tipo-cadastro {
+  margin-bottom: 18px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--cor-primaria);
+  border-radius: var(--raio-pequeno);
+  background-color: var(--fundo);
+  font-size: 13.5px;
+  color: var(--texto-secundario);
+}
+
+.aviso-tipo-cadastro strong {
+  color: var(--texto-principal);
+}
+
+@media (max-width: 820px) {
+  .escolha-grade {
+    grid-template-columns: 1fr;
+  }
+}

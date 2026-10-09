@@ -106,6 +106,7 @@ funcionando, mas ficam fora do escopo avaliado.
 | Principal           | `index.php`              | Master e comum  |
 | Cadastro de usuario | `cadastro.php`           | Visitante       |
 | Cadastro de empresa | `cadastro_empresa.php`   | Visitante       |
+| Escolha do cadastro | `criar_conta.php`        | Visitante       |
 | Login               | `login.php`              | Visitante       |
 | Erro                | `erro.php`               | Master e comum  |
 | 2FA                 | `dois_fatores.php`       | Master e comum  |
@@ -233,6 +234,7 @@ modo de alto contraste.
   index.php        Pagina inicial do produto (sem link de empresa) ou entrada da empresa
   entrar.php       Entrada geral: e-mail e senha, sem saber o link da empresa
   cadastro_empresa.php  Cadastro de empresa pela pagina inicial, aprovado pelo master
+  criar_conta.php  Compara o cadastro de cliente e o de estabelecimento e leva ao certo
   login.php / cadastro.php / logout.php / recuperar_senha.php / redefinir_senha.php
 ```
 
@@ -291,6 +293,31 @@ registra uma solicitacao (`models/Solicitacao.php`, tabela
 conta; a solicitacao fica como historico. As tres acoes (pedido, aprovacao e
 recusa) entram na auditoria master. O envio e limitado por origem
 (`cadastro_empresa_ip`) para nao encher a fila com pedidos automatizados.
+
+### Cliente ou estabelecimento
+
+A pagina inicial tem a secao **Dois cadastros, dois objetivos** e o botao
+**Criar conta**, que abrem `criar_conta.php`. A tela compara os dois cadastros
+nas mesmas linhas: para quem e, o que cria, o que pede, quando libera e o que
+vem depois.
+
+- **Cliente** marca horarios. A conta e criada dentro de uma empresa, entao a
+  pessoa informa o link ou o endereco dela e segue para `cadastro.php` daquela
+  empresa. Libera na hora.
+- **Estabelecimento** recebe agendamentos. Segue para `cadastro_empresa.php` e
+  libera depois da aprovacao do master.
+
+Cada um dos dois formularios abre com um aviso de qual cadastro e, com link
+para o outro.
+
+### Volta para a pagina inicial
+
+Toda tela de entrada tem, no rodape, o link **Pagina inicial**, e a tela de
+saida tem o botao **Ir para a pagina inicial**. Esses links usam `urlInicio()`
+e nao `url('index.php')`: este leva o link da empresa, e a pagina inicial com
+empresa devolve a pessoa ao login dela. Link de empresa inexistente ou ainda
+em aprovacao mostra uma tela com os mesmos dois caminhos, em vez de uma linha
+de texto solta.
 
 ## E-mail
 

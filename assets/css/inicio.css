@@ -479,3 +479,28 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Dois cadastros (cliente e estabelecimento) com a acao no pe de cada cartao. */
+.grade-cadastros .argumento {
+  display: flex;
+  flex-direction: column;
+}
+
+.grade-cadastros .argumento p {
+  margin-bottom: 18px;
+}
+
+.grade-cadastros .argumento .btn {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
+.cadastros-detalhe {
+  margin: 18px 0 0;
+  text-align: center;
+  font-size: 14.5px;
+}
+
+.cadastros-detalhe a {
+  font-weight: 600;
+}

@@ -153,6 +153,13 @@ $tituloPagina = 'Cadastrar empresa | ' . NOME_SISTEMA;
                 <h1>Cadastrar minha empresa</h1>
                 <p class="subtitulo">Comece agora com 7 dias gratis. Depois, R$ 149 por mes.</p>
 
+                <?php /* Os dois cadastros do Agendei se confundem; este diz qual e e aponta o outro. */ ?>
+                <p class="aviso-tipo-cadastro">
+                    <strong>Cadastro de estabelecimento.</strong>
+                    Cria a empresa e a sua conta de administrador, liberadas depois da aprovação.
+                    Quer só marcar um horário? <a href="<?= url('criar_conta.php#cliente') ?>">Crie uma conta de cliente</a>.
+                </p>
+
                 <?php exibirFlash(); ?>
 
                 <?php if ($erros !== []): ?>

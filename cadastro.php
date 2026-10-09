@@ -204,6 +204,13 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
             <h1>Criar conta</h1>
             <p class="subtitulo">Preencha seus dados para começar.</p>
 
+            <?php /* Os dois cadastros do Agendei se confundem; este diz qual e e aponta o outro. */ ?>
+            <p class="aviso-tipo-cadastro">
+                <strong>Cadastro de cliente de <?= e($estabelecimento['nome']) ?>.</strong>
+                Serve para marcar horários aqui. Tem um negócio e quer receber agendamentos?
+                <a href="<?= e(BASE_URL . '/criar_conta.php#estabelecimento') ?>">Veja a diferença</a>.
+            </p>
+
             <?php exibirFlash(); ?>
 
             <?php if ($erros !== []): ?>

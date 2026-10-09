@@ -64,10 +64,12 @@ $recursos = [
             <a href="#para-quem-atende">Para quem atende</a>
             <a href="#como-funciona">Como funciona</a>
             <a href="#para-quem-marca">Para quem marca</a>
+            <a href="#cadastros">Cadastros</a>
             <a href="#recursos">Recursos</a>
         </nav>
 
         <div class="acoes-cabecalho">
+            <a href="<?= url('criar_conta.php') ?>" class="btn btn-contorno btn-pequeno">Criar conta</a>
             <a href="<?= url('entrar.php') ?>" class="btn btn-pequeno">Entrar</a>
             <button type="button" class="botao-menu" aria-label="Abrir menu"><span></span></button>
         </div>
@@ -201,6 +203,31 @@ $recursos = [
     </div>
 </section>
 
+<?php /* Os dois cadastros lado a lado: quem marca e quem atende se cadastram por caminhos diferentes. */ ?>
+<section class="secao" id="cadastros">
+    <div class="container">
+        <div class="secao-titulo">
+            <h2>Dois cadastros, dois objetivos</h2>
+            <p>Quem marca horário e quem atende entram por caminhos diferentes.</p>
+        </div>
+        <div class="grade-argumentos grade-cadastros">
+            <article class="argumento">
+                <span class="argumento-marca" aria-hidden="true"></span>
+                <h3>Cliente: quero marcar horários</h3>
+                <p>Conta pessoal, criada pelo link da empresa onde você vai ser atendido. Libera na hora e serve em qualquer empresa que use o Agendei.</p>
+                <a href="<?= url('criar_conta.php#cliente') ?>" class="btn btn-contorno margem-topo">Criar conta de cliente</a>
+            </article>
+            <article class="argumento">
+                <span class="argumento-marca" aria-hidden="true"></span>
+                <h3>Estabelecimento: quero receber agendamentos</h3>
+                <p>Cria a empresa e a conta do responsável, que administra serviços, equipe e horários. Libera depois que a equipe do Agendei confere.</p>
+                <a href="<?= url('cadastro_empresa.php') ?>" class="btn margem-topo">Cadastrar minha empresa</a>
+            </article>
+        </div>
+        <p class="cadastros-detalhe"><a href="<?= url('criar_conta.php') ?>">Ver a diferença em detalhes</a></p>
+    </div>
+</section>
+
 <?php /* Recursos opcionais, para mostrar ate onde o sistema vai. */ ?>
 <section class="secao" id="recursos">
     <div class="container">
@@ -253,6 +280,7 @@ $recursos = [
             <div>
                 <h4>Acesso</h4>
                 <ul class="rodape-lista">
+                    <li><a href="<?= url('criar_conta.php#cliente') ?>">Criar conta de cliente</a></li>
                     <li><a href="<?= url('cadastro_empresa.php') ?>">Cadastrar empresa</a></li>
                     <li><a href="<?= url('entrar.php') ?>">Entrar</a></li>
                 </ul>
@@ -263,6 +291,7 @@ $recursos = [
                     <li><a href="#para-quem-atende">Para quem atende</a></li>
                     <li><a href="#como-funciona">Como funciona</a></li>
                     <li><a href="#para-quem-marca">Para quem marca</a></li>
+                    <li><a href="#cadastros">Cadastros</a></li>
                     <li><a href="#recursos">Recursos</a></li>
                 </ul>
             </div>
