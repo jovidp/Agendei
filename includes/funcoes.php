@@ -34,6 +34,61 @@ function url(string $caminho = ''): string
     return $endereco;
 }
 
+/**
+ * Endereco da pagina inicial do produto, sem o link de nenhuma empresa.
+ *
+ * url('index.php') leva o slug da empresa atendida, e a pagina inicial com
+ * slug devolve a pessoa para o login daquela empresa: o "voltar ao inicio"
+ * parecia nao fazer nada. Os links de volta para a home usam este endereco.
+ */
+function urlInicio(): string
+{
+    return BASE_URL . '/index.php';
+}
+
+/**
+ * Tela de aviso completa, com caminho de volta para a pagina inicial.
+ *
+ * Serve aos bloqueios que acontecem antes de existir empresa resolvida
+ * (link invalido, empresa aguardando aprovacao, sessao de outra empresa):
+ * ali a tela de erro comum nao abre, porque ela mesma depende da empresa.
+ * Veste a marca do produto, como a tela de saida (logout.php).
+ */
+function exibirTelaAviso(int $status, string $titulo, string $mensagem): never
+{
+    http_response_code($status);
+    $base = e(BASE_URL);
+    echo '<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>' . e($titulo) . ' | ' . e(NOME_SISTEMA) . '</title>
+    <link rel="stylesheet" href="' . $base . '/assets/css/style.css">
+    <link rel="stylesheet" href="' . $base . '/assets/css/login.css">
+    <link rel="stylesheet" href="' . $base . '/assets/css/projeto.css">
+    ' . faviconSistema() . '
+</head>
+<body class="pagina-autenticacao">
+<div class="autenticacao-area">
+    <div class="autenticacao-caixa caixa-simples">
+        <div class="autenticacao-formulario">
+            ' . marcaSistema(34) . '
+            <h1 class="titulo-apos-marca">' . e($titulo) . '</h1>
+            <p class="subtitulo">' . e($mensagem) . '</p>
+            <div class="acoes-empilhadas">
+                <a class="btn btn-bloco btn-grande" href="' . e(urlInicio()) . '">Ir para a página inicial</a>
+                <a class="btn btn-contorno btn-bloco btn-grande" href="' . $base . '/entrar.php">Entrar na minha conta</a>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>';
+    exit;
+}
+
 /** Redireciona e encerra a execucao. */
 function redirecionar(string $caminho): void
 {

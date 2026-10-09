@@ -22,6 +22,24 @@
   color: var(--texto-secundario);
 }
 
+/* Botoes um sobre o outro nos cartoes estreitos (saida e avisos sem empresa). */
+.acoes-empilhadas {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.assinatura-sistema a {
+  color: var(--texto-secundario);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.assinatura-sistema a:hover {
+  color: var(--cor-primaria);
+}
+
 /* Centraliza o formulário na área disponível da janela. */
 .autenticacao-area {
   flex: 1;

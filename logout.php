@@ -53,6 +53,7 @@ encerrarSessao();
     <title>Sessão encerrada | <?= e(NOME_SISTEMA) ?></title>
     <link rel="stylesheet" href="<?= e(BASE_URL . '/assets/css/style.css') ?>">
     <link rel="stylesheet" href="<?= e(BASE_URL . '/assets/css/login.css') ?>">
+    <link rel="stylesheet" href="<?= e(BASE_URL . '/assets/css/projeto.css') ?>">
     <?= faviconSistema() ?>
 </head>
 <body class="pagina-autenticacao">
@@ -62,7 +63,10 @@ encerrarSessao();
             <?= marcaSistema(34) ?>
             <h1 class="titulo-apos-marca">Sessão encerrada</h1>
             <p class="subtitulo">Você saiu da sua conta com segurança.</p>
-            <a class="btn btn-bloco btn-grande" href="<?= e($urlEntrar) ?>">Entrar novamente</a>
+            <div class="acoes-empilhadas">
+                <a class="btn btn-bloco btn-grande" href="<?= e($urlEntrar) ?>">Entrar novamente</a>
+                <a class="btn btn-contorno btn-bloco btn-grande" href="<?= e(urlInicio()) ?>">Ir para a página inicial</a>
+            </div>
         </div>
     </div>
 </div>

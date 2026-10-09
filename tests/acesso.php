@@ -63,6 +63,11 @@ foreach (['empresa-a', 'empresa-b'] as $slug) {
     verificar($usuario['tipo'] === 'admin', 'Cadastro nao criou administrador local.');
     verificar(autenticar($email, 'senha-errada') === null, 'Senha invalida aceita.');
 
+    // As paginas levam a empresa no link, mas o caminho de volta para a home nao:
+    // index.php com a empresa devolve ao login dela, e o botao parecia nao funcionar.
+    verificar(str_contains(url('index.php'), 'estabelecimento=' . rawurlencode($slug)), 'Paginas deixaram de levar a empresa.');
+    verificar(urlInicio() === BASE_URL . '/index.php', 'Link da pagina inicial levou a empresa junto.');
+
     // Fora da entrada geral (tests/entrada_global.php), a requisicao nunca troca de empresa.
     try {
         Contexto::assumir($id);

@@ -208,7 +208,7 @@ $tituloPagina = 'Entrar | ' . $plataforma['nome'];
                     </ul>
                 </form>
             <?php else: ?>
-                <a href="<?= url('index.php') ?>" class="voltar-site">&larr; Voltar ao site</a>
+                <a href="<?= e(urlInicio()) ?>" class="voltar-site">&larr; Voltar ao site</a>
 
                 <h1>Entrar</h1>
                 <p class="subtitulo">Informe o e-mail e a senha da sua conta.</p>

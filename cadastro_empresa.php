@@ -148,7 +148,7 @@ $tituloPagina = 'Cadastrar empresa | ' . NOME_SISTEMA;
 
         <div class="autenticacao-formulario">
 
-                <a href="<?= url('index.php') ?>" class="voltar-site">&larr; Voltar ao início</a>
+                <a href="<?= e(urlInicio()) ?>" class="voltar-site">&larr; Voltar ao início</a>
 
                 <h1>Cadastrar minha empresa</h1>
                 <p class="subtitulo">Comece agora com 7 dias gratis. Depois, R$ 149 por mes.</p>

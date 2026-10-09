@@ -109,7 +109,7 @@ $tituloPagina = 'Entrar | ' . $estabelecimento['nome'];
         </div>
 
         <div class="autenticacao-formulario">
-            <a href="<?= url('index.php') ?>" class="voltar-site">&larr; Voltar ao site</a>
+            <a href="<?= e(urlInicio()) ?>" class="voltar-site">&larr; Voltar ao site</a>
 
             <h1>Entrar</h1>
             <p class="subtitulo">Informe seus dados de acesso.</p>

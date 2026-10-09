@@ -199,7 +199,7 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
         </div>
 
         <div class="autenticacao-formulario">
-            <a href="<?= url('index.php') ?>" class="voltar-site">&larr; Voltar ao site</a>
+            <a href="<?= e(urlInicio()) ?>" class="voltar-site">&larr; Voltar ao site</a>
 
             <h1>Criar conta</h1>
             <p class="subtitulo">Preencha seus dados para começar.</p>

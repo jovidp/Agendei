@@ -86,7 +86,7 @@ $tituloPagina = $erro['titulo'] . ' | ' . $estabelecimento['nome'];
                 <?php else: ?>
                     <a class="btn btn-bloco btn-grande" href="<?= url('login.php') ?>">Ir para o login</a>
                 <?php endif; ?>
-                <a class="btn btn-contorno btn-bloco btn-grande" href="<?= url('index.php') ?>">Pagina inicial</a>
+                <a class="btn btn-contorno btn-bloco btn-grande" href="<?= e(urlInicio()) ?>">Página inicial</a>
             </div>
         </div>
     </div>

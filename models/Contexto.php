@@ -52,7 +52,7 @@ class Contexto
         if (!$registro && $slug !== '' && Solicitacao::pendentePorSlug($slug)) {
             self::falhar(403, 'Este estabelecimento ainda aguarda a aprovação do cadastro. O responsável será avisado quando o acesso for liberado.');
         }
-        if (!$registro) self::falhar(404, 'Estabelecimento não encontrado.');
+        if (!$registro) self::falhar(404, 'O link aberto não corresponde a nenhuma empresa ativa. Confira o endereço com quem o enviou.');
         if ($idSessao > 0 && $slug !== '' && $slug !== $registro['slug']) {
             self::falhar(403, 'Sua sessão pertence a outro estabelecimento. Saia da conta antes de acessar outro link.');
         }
@@ -153,10 +153,20 @@ class Contexto
         self::$atual = $q->fetch();
     }
 
+    /**
+     * Encerra a requisicao sem empresa resolvida. Chamadas de API recebem JSON;
+     * as paginas recebem uma tela completa com o caminho de volta para a home,
+     * e nao uma linha de texto solta sem nenhum botao.
+     */
     private static function falhar(int $status, string $mensagem): void
     {
         http_response_code($status);
         if (ehRequisicaoAjax()) jsonResposta(['sucesso' => false, 'mensagem' => $mensagem], $status);
-        exit(e($mensagem));
+        $titulos = [
+            401 => 'Sessão encerrada',
+            403 => 'Acesso indisponível',
+            404 => 'Estabelecimento não encontrado',
+        ];
+        exibirTelaAviso($status, $titulos[$status] ?? 'Acesso indisponível', $mensagem);
     }
 }
