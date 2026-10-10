@@ -1,0 +1,27 @@
+erDiagram
+    direction TB
+    planos {
+        integer id_plano PK
+        varchar nome UK
+        integer limite_profissionais
+        varchar status
+    }
+    estabelecimento_plano {
+        integer id_estabelecimento PK,FK
+        integer id_plano FK
+    }
+    assinaturas {
+        integer id_estabelecimento PK,FK
+        varchar status
+        timestamp data_inicio_demo
+        timestamp data_fim_demo
+    }
+    estabelecimento {
+        integer id_estabelecimento PK
+        varchar nome
+        varchar email
+        varchar status
+    }
+    estabelecimento ||--o| assinaturas : "id_estabelecimento"
+    estabelecimento ||--o| estabelecimento_plano : "id_estabelecimento"
+    planos ||..o{ estabelecimento_plano : "id_plano"

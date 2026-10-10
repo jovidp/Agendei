@@ -1,0 +1,67 @@
+erDiagram
+    direction TB
+    estabelecimento {
+        integer id_estabelecimento PK
+        varchar nome
+        varchar email
+        varchar status
+    }
+    usuarios {
+        integer id_usuario PK
+        varchar nome
+        varchar email UK
+        varchar status
+    }
+    vinculos {
+        integer id_vinculo PK,UK
+        integer id_estabelecimento FK,UK
+        integer id_usuario FK,UK
+        varchar tipo UK
+        varchar status
+        varchar login UK
+    }
+    clientes {
+        integer id_cliente PK,UK
+        integer id_vinculo FK,UK
+        integer id_usuario FK
+        integer id_estabelecimento FK,UK
+    }
+    profissionais {
+        integer id_profissional PK,UK
+        integer id_vinculo FK,UK
+        integer id_usuario FK
+        integer id_estabelecimento FK,UK
+        integer id_filial FK
+    }
+    administradores {
+        integer id_administrador PK,UK
+        integer id_vinculo FK,UK
+        integer id_usuario FK
+        integer id_estabelecimento FK,UK
+    }
+    filiais {
+        integer id_filial PK,UK
+        integer id_estabelecimento FK,UK
+        varchar nome
+        varchar status
+    }
+    configuracoes {
+        integer id_configuracao PK,UK
+        varchar chave UK
+        varchar valor
+        integer id_estabelecimento FK,UK
+    }
+    estabelecimento ||..o{ vinculos : "id_estabelecimento"
+    usuarios ||..o{ vinculos : "id_usuario"
+    estabelecimento ||..o{ clientes : "id_estabelecimento"
+    usuarios ||..o{ clientes : "id_usuario"
+    vinculos ||..o| clientes : "id_estabelecimento + id_vinculo"
+    estabelecimento ||..o{ profissionais : "id_estabelecimento"
+    usuarios ||..o{ profissionais : "id_usuario"
+    vinculos ||..o| profissionais : "id_estabelecimento + id_vinculo"
+    filiais |o..o{ profissionais : "id_filial"
+    estabelecimento ||..o{ administradores : "id_estabelecimento"
+    usuarios ||..o{ administradores : "id_usuario"
+    vinculos ||..o| administradores : "id_estabelecimento + id_vinculo"
+    estabelecimento ||..o{ configuracoes : "id_estabelecimento"
+    estabelecimento ||..o{ filiais : "id_estabelecimento"

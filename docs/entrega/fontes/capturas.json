@@ -1,0 +1,64 @@
+{
+  "telas": [
+    {
+      "tela": "inicio",
+      "modo": "desktop",
+      "status": 200,
+      "viewport": 1366,
+      "conteudo": 1366
+    },
+    {
+      "tela": "inicio",
+      "modo": "celular",
+      "status": 200,
+      "viewport": 390,
+      "conteudo": 390
+    },
+    {
+      "tela": "entrada",
+      "modo": "desktop",
+      "status": 200,
+      "viewport": 1366,
+      "conteudo": 1366
+    },
+    {
+      "tela": "entrada",
+      "modo": "celular",
+      "status": 200,
+      "viewport": 390,
+      "conteudo": 390
+    },
+    {
+      "tela": "cadastro",
+      "modo": "desktop",
+      "status": 200,
+      "viewport": 1366,
+      "conteudo": 1366
+    },
+    {
+      "tela": "cadastro",
+      "modo": "celular",
+      "status": 200,
+      "viewport": 390,
+      "conteudo": 390
+    },
+    {
+      "tela": "cadastro_empresa",
+      "modo": "desktop",
+      "status": 200,
+      "viewport": 1366,
+      "conteudo": 1366
+    },
+    {
+      "tela": "cadastro_empresa",
+      "modo": "celular",
+      "status": 200,
+      "viewport": 390,
+      "conteudo": 390
+    }
+  ],
+  "validacao": {
+    "envio_impedido": true,
+    "campos_invalidos": 17
+  }
+}

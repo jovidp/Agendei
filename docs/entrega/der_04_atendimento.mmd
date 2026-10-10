@@ -1,0 +1,94 @@
+erDiagram
+    direction TB
+    lista_espera {
+        integer id_lista PK
+        integer id_estabelecimento FK,UK
+        integer id_cliente FK,UK
+        integer id_servico FK,UK
+        integer id_profissional FK,UK
+        varchar status
+    }
+    notificacoes {
+        integer id_notificacao PK
+        integer id_estabelecimento FK,UK
+        integer id_usuario FK
+        integer id_agendamento FK,UK
+        varchar tipo UK
+        varchar status
+    }
+    avaliacoes {
+        integer id_avaliacao PK
+        integer id_estabelecimento FK,UK
+        integer id_agendamento FK,UK
+        integer id_cliente FK
+        integer id_profissional FK
+        varchar status
+    }
+    agendamentos {
+        integer id_agendamento PK,UK
+        integer id_cliente FK
+        integer id_profissional FK
+        integer id_servico FK
+        date data_agendamento
+        time hora_inicio
+        time hora_fim
+        numeric valor
+        varchar status
+        integer id_usuario_cancelou FK
+        integer id_estabelecimento FK,UK
+        integer id_filial FK
+    }
+    clientes {
+        integer id_cliente PK,UK
+        integer id_vinculo FK,UK
+        integer id_usuario FK
+        integer id_estabelecimento FK,UK
+    }
+    profissionais {
+        integer id_profissional PK,UK
+        integer id_vinculo FK,UK
+        integer id_usuario FK
+        integer id_estabelecimento FK,UK
+        integer id_filial FK
+    }
+    servicos {
+        integer id_servico PK,UK
+        varchar nome
+        numeric preco
+        smallint duracao_minutos
+        varchar status
+        integer id_estabelecimento FK,UK
+    }
+    usuarios {
+        integer id_usuario PK
+        varchar nome
+        varchar email UK
+        varchar status
+    }
+    estabelecimento {
+        integer id_estabelecimento PK
+        varchar nome
+        varchar email
+        varchar status
+    }
+    estabelecimento ||..o{ clientes : "id_estabelecimento"
+    usuarios ||..o{ clientes : "id_usuario"
+    estabelecimento ||..o{ profissionais : "id_estabelecimento"
+    usuarios ||..o{ profissionais : "id_usuario"
+    estabelecimento ||..o{ servicos : "id_estabelecimento"
+    usuarios |o..o{ agendamentos : "id_usuario_cancelou"
+    estabelecimento ||..o{ agendamentos : "id_estabelecimento"
+    clientes ||..o{ agendamentos : "id_estabelecimento + id_cliente"
+    profissionais ||..o{ agendamentos : "id_estabelecimento + id_profissional"
+    servicos ||..o{ agendamentos : "id_estabelecimento + id_servico"
+    estabelecimento ||..o{ lista_espera : "id_estabelecimento"
+    clientes ||..o{ lista_espera : "id_estabelecimento + id_cliente"
+    servicos ||..o{ lista_espera : "id_estabelecimento + id_servico"
+    profissionais |o..o{ lista_espera : "id_estabelecimento + id_profissional"
+    estabelecimento ||..o{ notificacoes : "id_estabelecimento"
+    usuarios |o..o{ notificacoes : "id_usuario"
+    agendamentos |o..o{ notificacoes : "id_estabelecimento + id_agendamento"
+    estabelecimento ||..o{ avaliacoes : "id_estabelecimento"
+    agendamentos ||..o| avaliacoes : "id_estabelecimento + id_agendamento"
+    clientes ||..o{ avaliacoes : "id_estabelecimento + id_cliente"
+    profissionais ||..o{ avaliacoes : "id_estabelecimento + id_profissional"

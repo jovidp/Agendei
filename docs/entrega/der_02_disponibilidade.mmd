@@ -1,0 +1,63 @@
+erDiagram
+    direction TB
+    servicos {
+        integer id_servico PK,UK
+        varchar nome
+        numeric preco
+        smallint duracao_minutos
+        varchar status
+        integer id_estabelecimento FK,UK
+    }
+    profissional_servico {
+        integer id_profissional PK,FK
+        integer id_servico PK,FK
+        integer id_estabelecimento FK
+    }
+    horarios_profissionais {
+        integer id_horario PK,UK
+        integer id_profissional FK,UK
+        smallint dia_semana UK
+        time hora_inicio UK
+        time hora_fim UK
+        varchar status
+        integer id_estabelecimento FK,UK
+    }
+    bloqueios_agenda {
+        integer id_bloqueio PK,UK
+        integer id_profissional FK
+        date data_bloqueio
+        time hora_inicio
+        time hora_fim
+        integer id_usuario_criou FK
+        integer id_estabelecimento FK,UK
+    }
+    profissionais {
+        integer id_profissional PK,UK
+        integer id_vinculo FK,UK
+        integer id_usuario FK
+        integer id_estabelecimento FK,UK
+        integer id_filial FK
+    }
+    usuarios {
+        integer id_usuario PK
+        varchar nome
+        varchar email UK
+        varchar status
+    }
+    estabelecimento {
+        integer id_estabelecimento PK
+        varchar nome
+        varchar email
+        varchar status
+    }
+    estabelecimento ||..o{ profissionais : "id_estabelecimento"
+    usuarios ||..o{ profissionais : "id_usuario"
+    estabelecimento ||..o{ servicos : "id_estabelecimento"
+    estabelecimento ||..o{ profissional_servico : "id_estabelecimento"
+    profissionais ||..o{ profissional_servico : "id_estabelecimento + id_profissional"
+    servicos ||..o{ profissional_servico : "id_estabelecimento + id_servico"
+    estabelecimento ||..o{ horarios_profissionais : "id_estabelecimento"
+    profissionais ||..o{ horarios_profissionais : "id_estabelecimento + id_profissional"
+    estabelecimento ||..o{ bloqueios_agenda : "id_estabelecimento"
+    usuarios |o..o{ bloqueios_agenda : "id_usuario_criou"
+    profissionais ||..o{ bloqueios_agenda : "id_estabelecimento + id_profissional"

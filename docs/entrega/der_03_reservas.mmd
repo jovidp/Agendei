@@ -1,0 +1,68 @@
+erDiagram
+    direction TB
+    agendamentos {
+        integer id_agendamento PK,UK
+        integer id_cliente FK
+        integer id_profissional FK
+        integer id_servico FK
+        date data_agendamento
+        time hora_inicio
+        time hora_fim
+        numeric valor
+        varchar status
+        integer id_usuario_cancelou FK
+        integer id_estabelecimento FK,UK
+        integer id_filial FK
+    }
+    clientes {
+        integer id_cliente PK,UK
+        integer id_vinculo FK,UK
+        integer id_usuario FK
+        integer id_estabelecimento FK,UK
+    }
+    profissionais {
+        integer id_profissional PK,UK
+        integer id_vinculo FK,UK
+        integer id_usuario FK
+        integer id_estabelecimento FK,UK
+        integer id_filial FK
+    }
+    servicos {
+        integer id_servico PK,UK
+        varchar nome
+        numeric preco
+        smallint duracao_minutos
+        varchar status
+        integer id_estabelecimento FK,UK
+    }
+    usuarios {
+        integer id_usuario PK
+        varchar nome
+        varchar email UK
+        varchar status
+    }
+    estabelecimento {
+        integer id_estabelecimento PK
+        varchar nome
+        varchar email
+        varchar status
+    }
+    filiais {
+        integer id_filial PK,UK
+        integer id_estabelecimento FK,UK
+        varchar nome
+        varchar status
+    }
+    estabelecimento ||..o{ clientes : "id_estabelecimento"
+    usuarios ||..o{ clientes : "id_usuario"
+    estabelecimento ||..o{ profissionais : "id_estabelecimento"
+    usuarios ||..o{ profissionais : "id_usuario"
+    filiais |o..o{ profissionais : "id_filial"
+    estabelecimento ||..o{ servicos : "id_estabelecimento"
+    usuarios |o..o{ agendamentos : "id_usuario_cancelou"
+    estabelecimento ||..o{ agendamentos : "id_estabelecimento"
+    clientes ||..o{ agendamentos : "id_estabelecimento + id_cliente"
+    profissionais ||..o{ agendamentos : "id_estabelecimento + id_profissional"
+    servicos ||..o{ agendamentos : "id_estabelecimento + id_servico"
+    filiais |o..o{ agendamentos : "id_filial"
+    estabelecimento ||..o{ filiais : "id_estabelecimento"

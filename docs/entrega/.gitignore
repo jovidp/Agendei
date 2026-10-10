@@ -1,0 +1,5 @@
+# Arquivos locais de conferência e dependência baixada para renderização.
+fontes/conferencia_*.png
+fontes/mermaid.min.js
+**/__pycache__/
+~$*

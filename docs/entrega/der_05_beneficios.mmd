@@ -1,0 +1,81 @@
+erDiagram
+    direction TB
+    pacotes {
+        integer id_pacote PK,UK
+        integer id_estabelecimento FK,UK
+        integer id_servico FK
+        varchar nome
+        numeric preco
+        varchar status
+    }
+    cliente_pacotes {
+        integer id_cliente_pacote PK,UK
+        integer id_estabelecimento FK,UK
+        integer id_cliente FK
+        integer id_pacote FK
+        smallint creditos_restantes
+    }
+    pagamentos {
+        integer id_pagamento PK
+        integer id_estabelecimento FK,UK
+        integer id_agendamento FK,UK
+        varchar tipo UK
+        numeric valor
+        varchar status
+    }
+    fidelidade_movimentos {
+        integer id_movimento PK
+        integer id_estabelecimento FK,UK
+        integer id_cliente FK
+        integer id_agendamento FK,UK
+        integer pontos
+    }
+    clientes {
+        integer id_cliente PK,UK
+        integer id_vinculo FK,UK
+        integer id_usuario FK
+        integer id_estabelecimento FK,UK
+    }
+    servicos {
+        integer id_servico PK,UK
+        varchar nome
+        numeric preco
+        smallint duracao_minutos
+        varchar status
+        integer id_estabelecimento FK,UK
+    }
+    agendamentos {
+        integer id_agendamento PK,UK
+        integer id_cliente FK
+        integer id_profissional FK
+        integer id_servico FK
+        date data_agendamento
+        time hora_inicio
+        time hora_fim
+        numeric valor
+        varchar status
+        integer id_usuario_cancelou FK
+        integer id_estabelecimento FK,UK
+        integer id_filial FK
+    }
+    estabelecimento {
+        integer id_estabelecimento PK
+        varchar nome
+        varchar email
+        varchar status
+    }
+    estabelecimento ||..o{ clientes : "id_estabelecimento"
+    estabelecimento ||..o{ servicos : "id_estabelecimento"
+    estabelecimento ||..o{ agendamentos : "id_estabelecimento"
+    clientes ||..o{ agendamentos : "id_estabelecimento + id_cliente"
+    servicos ||..o{ agendamentos : "id_estabelecimento + id_servico"
+    estabelecimento ||..o{ pagamentos : "id_estabelecimento"
+    agendamentos ||..o{ pagamentos : "id_estabelecimento + id_agendamento"
+    estabelecimento ||..o{ fidelidade_movimentos : "id_estabelecimento"
+    clientes ||..o{ fidelidade_movimentos : "id_estabelecimento + id_cliente"
+    agendamentos |o..o| fidelidade_movimentos : "id_estabelecimento + id_agendamento"
+    estabelecimento ||..o{ pacotes : "id_estabelecimento"
+    servicos ||..o{ pacotes : "id_estabelecimento + id_servico"
+    estabelecimento ||..o{ cliente_pacotes : "id_estabelecimento"
+    clientes ||..o{ cliente_pacotes : "id_estabelecimento + id_cliente"
+    pacotes ||..o{ cliente_pacotes : "id_estabelecimento + id_pacote"

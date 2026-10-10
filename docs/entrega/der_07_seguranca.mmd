@@ -1,0 +1,55 @@
+erDiagram
+    direction TB
+    administradores_master {
+        integer id_master PK
+        varchar nome
+        varchar email UK
+        varchar status
+    }
+    logs_master {
+        bigint id_log_master PK
+        varchar acao
+        timestamp data_hora
+    }
+    tentativas_acesso {
+        bigint id_tentativa PK
+        char chave
+        timestamp data_hora
+    }
+    logs_autenticacao {
+        integer id_log PK
+        integer id_estabelecimento FK
+        varchar nome
+        varchar evento
+        timestamp data_hora
+    }
+    sessoes_lembradas {
+        integer id_sessao PK
+        integer id_usuario FK
+        integer id_vinculo FK
+    }
+    usuarios {
+        integer id_usuario PK
+        varchar nome
+        varchar email UK
+        varchar status
+    }
+    vinculos {
+        integer id_vinculo PK,UK
+        integer id_estabelecimento FK,UK
+        integer id_usuario FK,UK
+        varchar tipo UK
+        varchar status
+        varchar login UK
+    }
+    estabelecimento {
+        integer id_estabelecimento PK
+        varchar nome
+        varchar email
+        varchar status
+    }
+    estabelecimento ||..o{ vinculos : "id_estabelecimento"
+    usuarios ||..o{ vinculos : "id_usuario"
+    estabelecimento ||..o{ logs_autenticacao : "id_estabelecimento"
+    usuarios ||..o{ sessoes_lembradas : "id_usuario"
+    vinculos ||..o{ sessoes_lembradas : "id_vinculo"
