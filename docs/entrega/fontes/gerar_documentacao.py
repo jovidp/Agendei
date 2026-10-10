@@ -13,11 +13,12 @@ from docx.enum.section import WD_SECTION_START, WD_ORIENT
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from PIL import Image
+from relatos_ampliados import RELATOS
 
 ROOT = Path(__file__).resolve().parents[1]
 REPO = ROOT.parents[1]
 DOWNLOADS = Path.home() / 'Downloads'
-BASE = 'GRUPO XX - 2024-2 - João Vitor Duarte Peçanha Rosa'
+BASE = 'AGENDEI - DOCUMENTAÇÃO DO PROJETO'
 MODELS = json.loads((ROOT/'fontes/modelos.json').read_text(encoding='utf-8'))
 MODEL = MODELS['pgsql']
 
@@ -117,7 +118,6 @@ doc.add_paragraph('AGENDEI',style='Title')
 doc.add_paragraph('Sistema de agendamento de serviços',style='Subtitle')
 doc.add_paragraph('Documentação consolidada do projeto',style='Subtitle')
 para(doc,'Front-end • Back-end • Requisitos • MER e DER • Registros do grupo')
-para(doc,'Grupo XX — número a preencher')
 para(doc,'Integrantes:')
 names=['João Vitor Duarte Peçanha Rosa','Gabriel Lima Maciel','Thayrine de Lira Maciel','Carlos Eduardo Correa Machado','Fabiano Gonçalves']
 for n in names:para(doc,n)
@@ -137,7 +137,7 @@ table(doc,['Critério de avaliação','Localização'],[
  ('Reuniões, decisões e atividades por componente','Capítulo 6: cronologia e contribuições individuais registradas.'),
  ('Front-end, PHP e criação do banco','Capítulo 7 e pacote ZIP: código da aplicação e scripts SQL.'),
 ])
-para(doc,'A nomenclatura 2024-2 do arquivo foi mantida conforme o enunciado fornecido. Os registros de reuniões dos documentos de origem são de 2026. O número do grupo não foi informado e permanece indicado por XX.')
+para(doc,'Os registros de desenvolvimento e reuniões fornecidos pela equipe se referem ao período de agosto a outubro de 2026. A identificação da entrega utiliza o nome do projeto e a relação dos integrantes.')
 
 doc.add_heading('2 Análise de requisitos',1)
 doc.add_heading('2.1 Atores',2)
@@ -274,6 +274,15 @@ table(doc,['Relacionamento','Cardinalidade e interpretação'],[
  ('filiais → profissionais/agendamentos','A filial é opcional no registro operacional; uma filial pode possuir zero ou vários registros.'),
  ('estabelecimento → estabelecimento_plano/assinaturas','Cada empresa possui zero ou um registro em cada tabela; id_estabelecimento também é a PK dessas tabelas.'),
 ])
+para(doc,'O MER conceitual é apresentado nos três diagramas seguintes. Retângulos representam entidades do negócio; losangos representam relacionamentos; formas arredondadas apresentam atributos descritivos selecionados. Os números nas ligações indicam cardinalidades mínimas e máximas: 1 significa exatamente um, 0..1 indica participação opcional de até um e 0..N indica zero ou vários. Os tipos SQL e as chaves físicas são detalhados posteriormente no DER e no dicionário de dados.')
+para(doc,'O Vínculo representa a participação de uma pessoa em uma empresa, com perfil e situação próprios. A habilitação entre Profissional e Serviço aparece no MER como uma relação N:N e é implementada no modelo físico pela associação profissional_servico. Aquisição de Pacote representa uma compra específica, com saldo e validade, permitindo que o cliente adquira o mesmo pacote mais de uma vez. As entidades de auditoria e proteção de acesso complementam a infraestrutura e estão detalhadas no DER de segurança.')
+mer_modules=[('mer_01_pessoas_empresas','Pessoas, empresas e perfis'),('mer_02_agendamento','Serviços, agenda e atendimento'),('mer_03_comercial','Pacotes, pagamentos e planos')]
+for i,(name,title) in enumerate(mer_modules,1):
+    landscape(doc)
+    doc.add_heading(f'5.1.{i} MER conceitual — {title}',3)
+    image(doc,ROOT/'imagens'/f'{name}.png',maxw=39,maxh=23)
+    para(doc,'Modelo conceitual do Agendei: entidades, relacionamentos, atributos descritivos e cardinalidades. Fonte: requisitos e modelo de dados do projeto.',style='Caption')
+portrait(doc)
 doc.add_heading('5.2 Modelo físico e legenda',2)
 para(doc,'Os DERs revisados foram gerados por código a partir do esquema PostgreSQL versionado, incluindo colunas e FKs adicionadas por ALTER TABLE. Não representam inspeção de uma base instalada. Os dois scripts possuem 28 tabelas, 290 colunas e 63 FKs declaradas; algumas FKs simples reforçadas por compostas aparecem agrupadas apenas no desenho.')
 para(doc,'PK = chave primária; FK = participação em chave estrangeira física; UK = participação em restrição de unicidade, que pode ser composta. A marca UK em uma coluna não significa que essa coluna seja única isoladamente. || = exatamente um; círculo e barra = zero ou um; círculo e pé de galinha = zero ou vários. Linhas contínuas representam relações identificadoras; tracejadas representam relações não identificadoras. Ambas correspondem a FKs físicas.')
@@ -310,16 +319,18 @@ meeting=Document(source());paras=[p.text for p in meeting.paragraphs if p.text.s
 records=[]
 for i,text in enumerate(paras):
     match=re.match(r'\d+\. Reunião — (\d{2}/\d{2}/\d{4})',text)
-    if match:records.append((match.group(1),'17h',paras[i+1]))
+    if match:records.append((match.group(1),paras[i+1]))
 first=next(i for i,t in enumerate(paras) if t.startswith('PRIMEIRA REUNIÃO'))
 second=next(i for i,t in enumerate(paras) if t.startswith('SEGUNDA REUNIÃO'))
 end=next(i for i,t in enumerate(paras) if t.startswith('RELATÓRIO DE REUNIÕES'))
-records.extend([('27/08/2026','Não informado',' '.join(paras[first+1:second])),('03/09/2026','Não informado',' '.join(paras[second+1:end]))])
+records.extend([('27/08/2026',' '.join(paras[first+1:second])),('03/09/2026',' '.join(paras[second+1:end]))])
 records.sort(key=lambda x:tuple(reversed(x[0].split('/'))))
-para(doc,'Os documentos de origem continham uma lista semanal e dois relatos datados de 27/08 e 03/09, chamados de primeira e segunda reunião. A consolidação ordena todos os registros pela data e remove essa numeração conflitante. Mantém 17h somente nas reuniões em que esse horário foi informado.')
-for date,time,text in records:
-    doc.add_heading(f'{date} — {time}',3)
+para(doc,'As reuniões acompanharam o planejamento, a distribuição das tarefas, o desenvolvimento das telas e das regras de negócio, a integração com o banco e a preparação da apresentação acadêmica. Os relatos foram organizados em ordem cronológica e reúnem as atividades descritas pela equipe, com explicações sobre sua finalidade e sua relação com os módulos do sistema.')
+for date,text in records:
+    doc.add_heading(date,3)
     para(doc,text)
+    for development in RELATOS[date]:
+        para(doc,development)
 para(doc,'O relato de 27/08 informa a formalização da inclusão de Fabiano, enquanto a lista semanal já o cita em atividades anteriores. Ambos foram preservados como registros de origem; esta revisão não determina a data efetiva de ingresso. O intervalo declarado no relatório vai até 07/10, mas a última reunião datada fornecida é 03/10; não foi acrescentada reunião em 07/10.')
 doc.add_heading('6.3 Cronograma de referência',2)
 chron=Document(source(3))
@@ -334,7 +345,7 @@ table(doc,['Componente','Arquivos incluídos no pacote'],[
  ('Back-end','PHP da raiz; admin/; api/; cliente/; profissional/; master/; models/; includes/; config/.'),
  ('Criação do banco','banco.sql (MySQL/MariaDB) e banco_postgres.sql (PostgreSQL).'),
  ('Atualização de instalações existentes','scripts/migrar*.php e migrations/.'),
- ('Modelo','DER completo .mmd e .svg; sete diagramas por módulo; dicionário PostgreSQL.'),
+ ('Modelo','MER conceitual em três diagramas .mmd, .svg e PNG; DER completo .mmd e .svg; sete DERs por módulo; dicionário PostgreSQL.'),
  ('Documentação','Este documento em .docx, .doc e PDF; LEIAME.md e guias do repositório.'),
 ])
 para(doc,'Para uma instalação nova: preparar PHP e a extensão PDO do banco escolhido; importar somente o SQL correspondente; configurar AGENDEI_DB_DRIVER e as demais variáveis de conexão ou o arquivo local; iniciar o servidor web; executar a configuração demonstrativa apenas em ambiente de teste. O esquema PostgreSQL deve ser importado em um banco previamente criado, pois não contém CREATE DATABASE nem USE.')

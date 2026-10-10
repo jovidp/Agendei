@@ -1,6 +1,6 @@
 {
   "arquivos_codigo": 200,
-  "arquivos_documentacao": 52,
+  "arquivos_documentacao": 63,
   "conteudo": [
     {
       "arquivo": "Agendei/.dockerignore",
@@ -803,12 +803,24 @@
       "sha256": "78a166343ac0ce3e036ba793ae3b83fe7e18aded4757c39b62675282b8445761"
     },
     {
+      "arquivo": "Documentacao/AGENDEI - DOCUMENTAÇÃO DO PROJETO.doc",
+      "sha256": "3d580b4bafac69221083c2ab76f30bc01197bfaacd56d67ca640a3a3269b4509"
+    },
+    {
+      "arquivo": "Documentacao/AGENDEI - DOCUMENTAÇÃO DO PROJETO.docx",
+      "sha256": "0b771edaf38a791c84ac5f68c479226fd3ec87d45cccdcbe922b03027ba81964"
+    },
+    {
+      "arquivo": "Documentacao/AGENDEI - DOCUMENTAÇÃO DO PROJETO.pdf",
+      "sha256": "f10f8254f7cbea58ba8b92a899b06f7d316f6f6a4ff135f8d798558f3ce4e248"
+    },
+    {
       "arquivo": "Documentacao/ANEXO - Dicionário de dados PostgreSQL.docx",
-      "sha256": "e85b1d24cf1b0fa918a45f753e34e5561696c28de76e967b09b79f6273e34969"
+      "sha256": "47ab2d6e3bcb5c9a1320cff19a0091a7133172b6d28a20ff4c5423c1949f7dba"
     },
     {
       "arquivo": "Documentacao/ANEXO - Dicionário de dados PostgreSQL.pdf",
-      "sha256": "8aa93e7a8668803a11f3a09b14c2e5afe5f7583e9677158107375c4679e905b9"
+      "sha256": "693acf7312a43c27da127ccecc48bb075f2fa4f0210a3e99eea6c0265f8f5aa8"
     },
     {
       "arquivo": "Documentacao/der_01_nucleo.mmd",
@@ -880,23 +892,35 @@
     },
     {
       "arquivo": "Documentacao/DOCUMENTACAO_REVISADA.md",
-      "sha256": "e36dd84585dca0c08df54df1c9149d330be1a731120facb71f427540ee64c682"
-    },
-    {
-      "arquivo": "Documentacao/GRUPO XX - 2024-2 - João Vitor Duarte Peçanha Rosa.doc",
-      "sha256": "f460473acce3df810b6677dd15afc01937dc724d970a5bb7f8945b7f7ca0eee7"
-    },
-    {
-      "arquivo": "Documentacao/GRUPO XX - 2024-2 - João Vitor Duarte Peçanha Rosa.docx",
-      "sha256": "f0d710306b1fc78818d5a0b2e9ec97adeffd4c6a1ac6eaaba2545af301c94edf"
-    },
-    {
-      "arquivo": "Documentacao/GRUPO XX - 2024-2 - João Vitor Duarte Peçanha Rosa.pdf",
-      "sha256": "6940a06df2fea2fdd3e4bb2b90db20a06280efba549b1f470e52c14ba8ab4162"
+      "sha256": "0b2fac69cbb7b3862015e64b641895c4a6045f16205cd4c5b8907619e9594657"
     },
     {
       "arquivo": "Documentacao/LEIA_PRIMEIRO.md",
-      "sha256": "8ce5da92350ddc5ed9a0a9b51dfaae6cc36de330429a1b1a3fcc4c57fefb2a37"
+      "sha256": "2664155f358903cdbd733016090f5a6e75f8a8566f0dc926752b7ac0e744297a"
+    },
+    {
+      "arquivo": "Documentacao/mer_01_pessoas_empresas.mmd",
+      "sha256": "373c55e5650a0c6648bb9d644ed7f8af3d93bd13dd787d0cf5976e9fd39c906b"
+    },
+    {
+      "arquivo": "Documentacao/mer_01_pessoas_empresas.svg",
+      "sha256": "7b31149b22d9d9c5e94172be9b61cb6a89a88bd2425579497c0fe9f8c9f134d8"
+    },
+    {
+      "arquivo": "Documentacao/mer_02_agendamento.mmd",
+      "sha256": "902b3f029ee8a18036b9f9beca401907c75e6f086ea840f881a4c2ff77486677"
+    },
+    {
+      "arquivo": "Documentacao/mer_02_agendamento.svg",
+      "sha256": "b2d6d29758fa4b3028e64bf201fb3612fb148904f8a57bc9da9faa8724b5efda"
+    },
+    {
+      "arquivo": "Documentacao/mer_03_comercial.mmd",
+      "sha256": "553aa5de6513120fc18132397e661e2d32a43f3dc4660e8d97bf0d4c1d48c8ba"
+    },
+    {
+      "arquivo": "Documentacao/mer_03_comercial.svg",
+      "sha256": "1098d89c10afdddeb71a79aa78bfb23d82d4ca766ca73cbb991f63ce4fa86718"
     },
     {
       "arquivo": "Documentacao/fontes/capturas.json",
@@ -904,7 +928,7 @@
     },
     {
       "arquivo": "Documentacao/fontes/empacotar.py",
-      "sha256": "41fe468d6339c3d8b55c27a1133f17fda34cb4a1a8db2a4804164ab500a8f9cc"
+      "sha256": "c1abe0dc962e1b2111e3bb76d929f2ce78b8a4c17b5077f42b8bf19335e72907"
     },
     {
       "arquivo": "Documentacao/fontes/exportar_modelo.php",
@@ -912,11 +936,15 @@
     },
     {
       "arquivo": "Documentacao/fontes/exportar_word.ps1",
-      "sha256": "70de6897d44447beee6ec14ba0ad3fd6250ddd26aa20d03b50b160b1175881c7"
+      "sha256": "70031cec7a2463d11663f82d788129e4dc074ab6c060bf1caccca809a85971d6"
     },
     {
       "arquivo": "Documentacao/fontes/gerar_documentacao.py",
-      "sha256": "895639a7b377c95d191b31f8e88c4c339307f3d80842aca0ed077fb70960a603"
+      "sha256": "0f10cc96aba89cbd4535f3fce95e58db0803855ba0186dcc3775cbecf2be89e6"
+    },
+    {
+      "arquivo": "Documentacao/fontes/gerar_mer.py",
+      "sha256": "f1381789ca67f6e689cb433b9a85863c4d318f5f0b7f3276622e0ae27b336c42"
     },
     {
       "arquivo": "Documentacao/fontes/modelos.json",
@@ -925,6 +953,10 @@
     {
       "arquivo": "Documentacao/fontes/preparar_visuais.py",
       "sha256": "95571e1f88b4932b7cb9be2048428c0f5691def288db5169fafdd8a53d97a6bf"
+    },
+    {
+      "arquivo": "Documentacao/fontes/relatos_ampliados.py",
+      "sha256": "82ba620ba211b5aa204cdf1dca16e44f1d8feeae84683eaf8e616f47a92f976b"
     },
     {
       "arquivo": "Documentacao/imagens/cadastro_celular_recorte.png",
@@ -1009,6 +1041,18 @@
     {
       "arquivo": "Documentacao/imagens/inicio_desktop_recorte.png",
       "sha256": "8d80fa1a5c4f1d3936de9da072192fe036ddea543804bdc8ec0c65567aa8fcd3"
+    },
+    {
+      "arquivo": "Documentacao/imagens/mer_01_pessoas_empresas.png",
+      "sha256": "40c5288c25d90ff2e24c6ab6ba0e4a90f92ec698a61715609c22d5ca989ee22f"
+    },
+    {
+      "arquivo": "Documentacao/imagens/mer_02_agendamento.png",
+      "sha256": "75717a642ccbd5fe105ab958b416bacb0ec7eb0f3b77df931db35f18a1b98439"
+    },
+    {
+      "arquivo": "Documentacao/imagens/mer_03_comercial.png",
+      "sha256": "95009c03b9a29830603946878cd3e71406ab4ac4bb7094663e3ddfca0893ae9c"
     }
   ]
 }

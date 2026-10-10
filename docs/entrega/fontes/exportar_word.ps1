@@ -15,7 +15,7 @@ try {
             $pdfEntrega = [System.IO.Path]::ChangeExtension($arquivoEntrega.FullName, '.pdf')
             $documentoEntrega.ExportAsFixedFormat($pdfEntrega, 17)
             Write-Output ($arquivoEntrega.Name + ': ' + $documentoEntrega.ComputeStatistics(2) + ' paginas')
-            if ($arquivoEntrega.Name.StartsWith('GRUPO ')) {
+            if ($arquivoEntrega.Name.StartsWith('AGENDEI - ')) {
                 $docEntrega = [System.IO.Path]::ChangeExtension($arquivoEntrega.FullName, '.doc')
                 $documentoEntrega.SaveAs2($docEntrega, 0)
                 Write-Output 'Arquivo .doc binario do Word exportado.'

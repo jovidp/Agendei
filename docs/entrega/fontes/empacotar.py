@@ -29,7 +29,7 @@ with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED,compresslevel=6) as z:
         name='Documentacao/'+path.relative_to(ROOT).as_posix()
         z.write(path,name)
         manifest['conteudo'].append({'arquivo':name,'sha256':hashlib.sha256(path.read_bytes()).hexdigest()})
-    z.writestr('LEIA_PRIMEIRO.txt','Entrega Agendei: Documentacao contém Word/PDF, MER/DER e registros do grupo. Agendei contém o código e os dois scripts SQL. Abra Documentacao/LEIA_PRIMEIRO.md para orientação e pontos a conferir. O número do grupo permanece XX.\n')
+    z.writestr('LEIA_PRIMEIRO.txt','Entrega Agendei: Documentacao contém Word/PDF, MER conceitual, DER e registros da equipe. Agendei contém o código e os dois scripts SQL. Abra Documentacao/LEIA_PRIMEIRO.md para orientação e pontos a conferir.\n')
     z.writestr('manifesto.json',json.dumps(manifest,ensure_ascii=False,indent=2))
 assert 'Agendei/banco.sql' in [x['arquivo'] for x in manifest['conteudo']]
 assert 'Agendei/banco_postgres.sql' in [x['arquivo'] for x in manifest['conteudo']]
