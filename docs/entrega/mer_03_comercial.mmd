@@ -1,0 +1,41 @@
+flowchart TB
+    C["CLIENTE"]
+    S["SERVIÇO"]
+    P["PACOTE"]
+    Q["AQUISIÇÃO DE PACOTE"]
+    A["AGENDAMENTO"]
+    G["PAGAMENTO"]
+    F["MOVIMENTO DE FIDELIDADE"]
+    E["ESTABELECIMENTO"]
+    L["PLANO"]
+    D["ADESÃO AO PLANO"]
+    T["ASSINATURA DA EMPRESA"]
+    S ---|1| R1{"Compõe"}
+    R1 ---|0..N| P
+    C ---|1| R2{"Adquire"}
+    R2 ---|0..N| Q
+    P ---|1| R3{"É comprado em"}
+    R3 ---|0..N| Q
+    A ---|1| R4{"Recebe"}
+    R4 ---|0..N| G
+    C ---|1| R5{"Acumula"}
+    R5 ---|0..N| F
+    A ---|0..1| R6{"Origina"}
+    R6 ---|0..1| F
+    E ---|1| R7{"Possui adesão atual"}
+    R7 ---|0..1| D
+    L ---|1| R8{"É escolhido na"}
+    R8 ---|0..N| D
+    E ---|1| R9{"Possui estado comercial"}
+    R9 ---|0..1| T
+    Q --- AQ(["Créditos • validade • pagamento"])
+    G --- AG(["Tipo • método • valor • situação"])
+    F --- AF(["Pontos • descrição"])
+    L --- AL(["Nome • limites de utilização"])
+    class C,S,P,Q,A,G,F,E,L,D,T entity
+    class R1,R2,R3,R4,R5,R6,R7,R8,R9 relationship
+    class AQ,AG,AF,AL attribute
+
+    classDef entity fill:#e9f3fa,stroke:#27617f,stroke-width:2px,color:#153b50;
+    classDef relationship fill:#fff3d6,stroke:#ad8031,stroke-width:1.5px,color:#533b12;
+    classDef attribute fill:#f5f5f5,stroke:#82949d,color:#334b59;

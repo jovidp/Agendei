@@ -1,0 +1,41 @@
+flowchart TB
+    C["CLIENTE"]
+    P["PROFISSIONAL"]
+    S["SERVIÇO"]
+    A["AGENDAMENTO"]
+    H["EXPEDIENTE"]
+    B["BLOQUEIO DE AGENDA"]
+    W["PREFERÊNCIA NA LISTA DE ESPERA"]
+    N["NOTIFICAÇÃO"]
+    V["AVALIAÇÃO"]
+    C ---|1| R1{"Solicita"}
+    R1 ---|0..N| A
+    P ---|1| R2{"Atende"}
+    R2 ---|0..N| A
+    S ---|1| R3{"É reservado em"}
+    R3 ---|0..N| A
+    P ---|0..N| R4{"Está habilitado para"}
+    R4 ---|0..N| S
+    P ---|1| R5{"Trabalha conforme"}
+    R5 ---|0..N| H
+    P ---|1| R6{"Possui"}
+    R6 ---|0..N| B
+    C ---|1| R7{"Registra interesse"}
+    R7 ---|0..N| W
+    S ---|1| R8{"É desejado em"}
+    R8 ---|0..N| W
+    A ---|0..1| R9{"É referenciado por"}
+    R9 ---|0..N| N
+    A ---|1| R10{"Recebe"}
+    R10 ---|0..1| V
+    A --- AA(["Data • intervalo • valor • situação"])
+    S --- AS(["Nome • duração • preço"])
+    H --- AH(["Dia da semana • faixa de horário"])
+    B --- AB(["Data • intervalo • motivo"])
+    class C,P,S,A,H,B,W,N,V entity
+    class R1,R2,R3,R4,R5,R6,R7,R8,R9,R10 relationship
+    class AA,AS,AH,AB attribute
+
+    classDef entity fill:#e9f3fa,stroke:#27617f,stroke-width:2px,color:#153b50;
+    classDef relationship fill:#fff3d6,stroke:#ad8031,stroke-width:1.5px,color:#533b12;
+    classDef attribute fill:#f5f5f5,stroke:#82949d,color:#334b59;
