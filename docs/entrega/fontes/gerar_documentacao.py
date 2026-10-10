@@ -398,5 +398,5 @@ for el in doc.element.body:
             md.append('| '+' | '.join(['---']*len(rows[0]))+' |')
             md.extend('| '+' | '.join(r)+' |' for r in rows[1:])
     md.append('')
-(ROOT/'DOCUMENTACAO_REVISADA.md').write_text('\n'.join(md),encoding='utf-8')
+(ROOT/'DOCUMENTACAO_REVISADA.md').write_text('\n'.join(md).rstrip()+'\n',encoding='utf-8')
 print('DOCUMENTOS GERADOS:',BASE,flush=True)
