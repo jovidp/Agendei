@@ -23,3 +23,5 @@ scripts/*
 !scripts/preparar_runtime.php
 *.log
 *.md
+# Prints da documentacao nao precisam ir para o servidor.
+docs

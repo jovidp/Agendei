@@ -695,6 +695,55 @@ As cores escolhidas pelo estabelecimento são aplicadas por variáveis CSS
 geradas a partir do banco, o que permite personalizar a aparência sem alterar o
 código.
 
+### 23.1 Telas exigidas pela especificação
+
+As capturas abaixo foram feitas com os dados de demonstração do instalador. A
+galeria completa, com as telas de todos os perfis e a versão para celular,
+está em [TELAS.md](TELAS.md).
+
+**Login** — o mesmo campo aceita o login de 6 letras ou o e-mail.
+
+![Tela de login](docs/prints/02-login.png)
+
+**Cadastro de usuário** — as regras são conferidas no navegador e de novo no
+servidor; os campos fora da regra ficam destacados com a mensagem do erro.
+
+![Cadastro com erros de validação](docs/prints/04-cadastro-usuario-validacao.png)
+
+**Verificação em duas etapas** — a pergunta muda a cada acesso e há no máximo
+três tentativas.
+
+![Segundo fator](docs/prints/10-dois-fatores.png)
+
+**Tela principal do usuário master** (administrador do estabelecimento).
+
+![Dashboard do administrador](docs/prints/20-admin-painel.png)
+
+**Novo agendamento** — horários livres calculados pelo expediente, pela
+duração do serviço, pelos bloqueios e pelas reservas existentes.
+
+![Escolha do horário](docs/prints/12b-cliente-agendar-horarios.png)
+
+**Consulta de usuários** — exclusiva do master, com pesquisa por parte do nome.
+
+![Consulta de usuários](docs/prints/23-admin-consulta-usuarios.png)
+
+**Log de autenticação** — exclusiva do master.
+
+![Log de autenticação](docs/prints/24-admin-log.png)
+
+**Alteração de senha** — exclusiva do usuário comum.
+
+![Perfil e alteração de senha](docs/prints/15-cliente-perfil-senha.png)
+
+**Erro**
+
+![Tela de erro](docs/prints/07-erro.png)
+
+**Modelo do banco de dados**
+
+![Modelo do banco de dados](docs/prints/34-modelo-bd.png)
+
 ## 24. Benefícios para o Cliente
 
 - agendamento pela internet, a qualquer hora;
