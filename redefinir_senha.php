@@ -22,10 +22,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $usuario !== null) {
     $confirmacao = post('confirmar_senha');
 
     if (!validarSenha($senha)) {
-        $erros[] = 'A nova senha deve ter no minimo 6 caracteres.';
+        $erros[] = 'A nova senha deve ter no mínimo 6 caracteres.';
     }
     if ($senha !== $confirmacao) {
-        $erros[] = 'As senhas nao conferem.';
+        $erros[] = 'As senhas não conferem.';
     }
 
     if ($erros === []) {
@@ -35,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $usuario !== null) {
         // Consome o token após a troca de senha para que o link não possa ser usado novamente.
         Usuario::limparTokenRecuperacao((int) $usuario['id_usuario']);
 
-        definirFlash('sucesso', 'Senha redefinida com sucesso. Faca login com a nova senha.');
+        definirFlash('sucesso', 'Senha redefinida com sucesso. Faça login com a nova senha.');
         redirecionar('login.php');
     }
 }
@@ -63,9 +63,9 @@ $estabelecimento = Estabelecimento::dados();
             <h1>Redefinir senha</h1>
 
             <?php if ($usuario === null): ?>
-                <p class="subtitulo">O link utilizado e invalido ou expirou.</p>
+                <p class="subtitulo">O link utilizado e inválido ou expirou.</p>
                 <div class="alerta alerta-erro">
-                    <span class="alerta-texto">Solicite um novo link de recuperacao para continuar.</span>
+                    <span class="alerta-texto">Solicite um novo link de recuperação para continuar.</span>
                 </div>
                 <a href="<?= url('recuperar_senha.php') ?>" class="btn btn-bloco">Solicitar novo link</a>
             <?php else: ?>

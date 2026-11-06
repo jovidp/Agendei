@@ -61,5 +61,5 @@ if ($ehPostgres) {
 $db->query('SELECT id_sessao, seletor, validador_hash, expira_em FROM sessoes_lembradas LIMIT 1')->fetch();
 
 echo $existia
-    ? "Manter conectado: a tabela sessoes_lembradas ja existia.\n"
+    ? "Manter conectado: a tabela sessoes_lembradas já existia.\n"
     : "Manter conectado: tabela sessoes_lembradas criada.\n";

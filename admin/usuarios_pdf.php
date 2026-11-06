@@ -17,7 +17,7 @@ $lista = Cliente::listar($filtros);
 
 $estabelecimento = Estabelecimento::dados();
 
-$pdf = new PdfSimples('Usuarios cadastrados - ' . $estabelecimento['nome']);
+$pdf = new PdfSimples('Usuários cadastrados - ' . $estabelecimento['nome']);
 $pdf->subtitulo(
     'Gerado em ' . date('d/m/Y \a\s H:i')
     . ' | ' . count($lista) . ' registro(s)'
@@ -38,7 +38,7 @@ foreach ($lista as $usuario) {
 }
 
 if ($linhas === []) {
-    $linhas[] = ['Nenhum usuario encontrado.', '', '', '', '', ''];
+    $linhas[] = ['Nenhum usuário encontrado.', '', '', '', '', ''];
 }
 
 // As larguras somam 502 pt e cabem na area util da folha (515 pt).

@@ -67,7 +67,7 @@ class QrCode
      * fixo: leitor de QR precisa de contraste alto, entao o tema escuro do
      * sistema nao deve inverter este desenho.
      */
-    public static function svg(string $texto, string $descricao = 'Codigo QR'): string
+    public static function svg(string $texto, string $descricao = 'Código QR'): string
     {
         $matriz = self::matriz($texto);
         $lado = count($matriz);

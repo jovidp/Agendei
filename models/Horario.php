@@ -142,33 +142,48 @@ class Horario
         return (bool) $consulta->fetch();
     }
 
-    /** Copia as faixas de um dia para outros dias da semana. */
+    /**
+     * Deixa os dias de destino com os mesmos horarios do dia de origem.
+     * Os horarios que o destino tinha saem: antes eles barravam a copia por
+     * sobreposicao e nada era copiado para um dia que ja tivesse expediente.
+     */
     public static function replicarDia(int $idProfissional, int $diaOrigem, array $diasDestino): int
     {
-        $faixas = self::faixasAtivas($idProfissional, $diaOrigem);
+        $faixas  = self::agrupadoPorDia($idProfissional)[$diaOrigem] ?? [];
         $criadas = 0;
+        $db      = bd();
 
-        foreach ($diasDestino as $dia) {
-            $dia = (int) $dia;
-            if ($dia < 0 || $dia > 6 || $dia === $diaOrigem) {
-                continue;
-            }
+        $db->beginTransaction();
+        try {
+            $apagar = $db->prepare(
+                'DELETE FROM horarios_profissionais
+                 WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :id AND dia_semana = :dia'
+            );
 
-            foreach ($faixas as $faixa) {
-                if (self::existeSobreposicao($idProfissional, $dia, $faixa['hora_inicio'], $faixa['hora_fim'])) {
+            foreach (array_unique(array_map('intval', $diasDestino)) as $dia) {
+                if ($dia < 0 || $dia > 6 || $dia === $diaOrigem) {
                     continue;
                 }
 
-                self::criar([
-                    'id_profissional'   => $idProfissional,
-                    'dia_semana'        => $dia,
-                    'hora_inicio'       => $faixa['hora_inicio'],
-                    'hora_fim'          => $faixa['hora_fim'],
-                    'intervalo_minutos' => $faixa['intervalo_minutos'],
-                    'status'            => 'ativo',
-                ]);
-                $criadas++;
+                $apagar->execute([':id' => $idProfissional, ':dia' => $dia]);
+
+                foreach ($faixas as $faixa) {
+                    self::criar([
+                        'id_profissional'   => $idProfissional,
+                        'dia_semana'        => $dia,
+                        'hora_inicio'       => $faixa['hora_inicio'],
+                        'hora_fim'          => $faixa['hora_fim'],
+                        'intervalo_minutos' => $faixa['intervalo_minutos'],
+                        'status'            => $faixa['status'],
+                    ]);
+                    $criadas++;
+                }
             }
+
+            $db->commit();
+        } catch (Throwable $erro) {
+            $db->rollBack();
+            throw $erro;
         }
 
         return $criadas;

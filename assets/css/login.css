@@ -449,3 +449,7 @@
     grid-template-columns: 1fr;
   }
 }
+/* Abaixo do formulario de cadastro, o aviso precisa de folga dos botoes. */
+form + .aviso-tipo-cadastro {
+  margin-top: 20px;
+}

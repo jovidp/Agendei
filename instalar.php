@@ -49,7 +49,7 @@ try {
     // Detecta usuários existentes para evitar repetir a carga inicial de demonstração.
     $jaInstalado = (bool) bd()->query('SELECT 1 FROM usuarios LIMIT 1')->fetch();
 } catch (Throwable $falha) {
-    $erro = 'As tabelas nao foram encontradas. Importe o arquivo banco.sql antes de continuar.'
+    $erro = 'As tabelas não foram encontradas. Importe o arquivo banco.sql antes de continuar.'
         . (AMBIENTE === 'desenvolvimento' ? ' Detalhe: ' . $falha->getMessage() : '');
 }
 
@@ -91,7 +91,7 @@ if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
             'logradouro'      => 'Rua das Acacias',
             'numero'          => '120',
             'bairro'          => 'Centro',
-            'cidade'          => 'Sao Paulo',
+            'cidade'          => 'São Paulo',
             'uf'              => 'SP',
         ]);
 
@@ -122,7 +122,7 @@ if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
                 'email'         => 'juliana@agendei.com.br',
                 'telefone'      => '11990000002',
                 'especialidade' => 'Cabeleireira',
-                'servicos'      => ['Corte de cabelo feminino', 'Coloracao', 'Hidratacao capilar'],
+                'servicos'      => ['Corte de cabelo feminino', 'Coloração', 'Hidratação capilar'],
             ],
             [
                 'nome'          => 'Camila Souza',
@@ -204,7 +204,7 @@ if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
             'numero'          => '1000',
             'complemento'     => 'Apto 52',
             'bairro'          => 'Bela Vista',
-            'cidade'          => 'Sao Paulo',
+            'cidade'          => 'São Paulo',
             'uf'              => 'SP',
         ]);
         $mensagens[] = 'Cliente criado: cliente@agendei.com.br';
@@ -234,7 +234,7 @@ if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
                     'id_servico'      => $servicosProfissional[0],
                     'data'            => $data,
                     'hora_inicio'     => $horariosExemplo[$indice % count($horariosExemplo)],
-                    'observacao'      => 'Agendamento de demonstracao.',
+                    'observacao'      => 'Agendamento de demonstração.',
                     'origem'          => 'admin',
                 ], ['ignorar_antecedencia' => true]);
 
@@ -245,7 +245,7 @@ if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
         }
 
         $mensagens[] = $criados . ' agendamento(s) de exemplo criado(s).';
-        $mensagens[] = 'Senha padrao de todos os usuarios: ' . $senhaPadrao;
+        $mensagens[] = 'Senha padrão de todos os usuários: ' . $senhaPadrao;
         $mensagens[] = 'Logins de 6 letras: admini (master) e anabea (comum).';
         $mensagens[] = 'Respostas do 2FA do master: mae "Helena Duarte do Sistema", nascimento 10/02/1985, CEP 01000-000.';
         $mensagens[] = 'Respostas do 2FA do comum: mae "Marcia Lima Souza", nascimento 18/04/1995, CEP 01310-100.';
@@ -253,7 +253,7 @@ if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
         $executado   = true;
         $jaInstalado = true;
     } catch (Throwable $falha) {
-        $erro = 'Falha na instalacao: ' . $falha->getMessage();
+        $erro = 'Falha na instalação: ' . $falha->getMessage();
     }
 }
 ?>
@@ -262,7 +262,7 @@ if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Instalacao | <?= e(NOME_SISTEMA) ?></title>
+    <title>Instalação | <?= e(NOME_SISTEMA) ?></title>
     <link rel="stylesheet" href="<?= url('assets/css/style.css') ?>">
     <link rel="stylesheet" href="<?= url('assets/css/login.css') ?>">
     <?php require RAIZ . '/includes/tema.php'; ?>
@@ -273,8 +273,8 @@ if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
     <div class="autenticacao-caixa caixa-simples">
         <div class="autenticacao-formulario">
             <?= marcaSistema(36) ?>
-            <h1 class="titulo-apos-marca">Instalacao do sistema</h1>
-            <p class="subtitulo">Criacao dos usuarios iniciais e dos dados de demonstracao.</p>
+            <h1 class="titulo-apos-marca">Instalação do sistema</h1>
+            <p class="subtitulo">Criação dos usuários iniciais e dos dados de demonstração.</p>
 
             <?php if ($erro !== null): ?>
                 <div class="alerta alerta-erro"><span class="alerta-texto"><?= e($erro) ?></span></div>
@@ -287,20 +287,20 @@ if ($erro === null && $_SERVER['REQUEST_METHOD'] === 'POST' && !$jaInstalado) {
             <?php if ($erro === null && !$jaInstalado): ?>
                 <div class="alerta alerta-info">
                     <span class="alerta-texto">
-                        Sera criado um administrador, tres profissionais com expediente configurado,
+                        Será criado um administrador, três profissionais com expediente configurado,
                         um cliente e alguns agendamentos de exemplo.
                     </span>
                 </div>
 
                 <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post">
-                    <button type="submit" class="btn btn-bloco btn-grande">Executar instalacao</button>
+                    <button type="submit" class="btn btn-bloco btn-grande">Executar instalação</button>
                 </form>
             <?php elseif ($erro === null): ?>
                 <div class="alerta alerta-aviso">
                     <span class="alerta-texto">
                         <?= $executado
-                            ? 'Instalacao concluida. Apague o arquivo instalar.php.'
-                            : 'O sistema ja possui usuarios cadastrados. Nada foi alterado.' ?>
+                            ? 'Instalação concluída. Apague o arquivo instalar.php.'
+                            : 'O sistema já possui usuários cadastrados. Nada foi alterado.' ?>
                     </span>
                 </div>
 

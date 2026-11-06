@@ -10,28 +10,28 @@ require_once __DIR__ . '/config/config.php';
 $catalogo = [
     'autenticacao' => [
         'status'    => 401,
-        'titulo'    => 'Falha na autenticacao',
-        'descricao' => 'Nao foi possivel confirmar sua identidade. Verifique o login e a senha e tente novamente.',
+        'titulo'    => 'Falha na autenticação',
+        'descricao' => 'Não foi possível confirmar sua identidade. Verifique o login e a senha e tente novamente.',
     ],
     'sessao' => [
         'status'    => 440,
-        'titulo'    => 'Sessao expirada',
-        'descricao' => 'Sua sessao ficou muito tempo aberta e foi encerrada por seguranca. Faca login novamente.',
+        'titulo'    => 'Sessão expirada',
+        'descricao' => 'Sua sessão ficou muito tempo aberta e foi encerrada por segurança. Faça login novamente.',
     ],
     'permissao' => [
         'status'    => 403,
-        'titulo'    => 'Acesso nao permitido',
-        'descricao' => 'Seu perfil nao tem permissao para abrir esta tela.',
+        'titulo'    => 'Acesso não permitido',
+        'descricao' => 'Seu perfil não tem permissão para abrir esta tela.',
     ],
     'nao_encontrado' => [
         'status'    => 404,
-        'titulo'    => 'Pagina nao encontrada',
-        'descricao' => 'O endereco acessado nao existe ou foi movido.',
+        'titulo'    => 'Página não encontrada',
+        'descricao' => 'O endereço acessado não existe ou foi movido.',
     ],
     'inesperado' => [
         'status'    => 500,
         'titulo'    => 'Algo inesperado aconteceu',
-        'descricao' => 'O sistema encontrou um erro ao processar sua solicitacao. A equipe tecnica foi avisada pelo log.',
+        'descricao' => 'O sistema encontrou um erro ao processar sua solicitação. A equipe técnica foi avisada pelo log.',
     ],
 ];
 

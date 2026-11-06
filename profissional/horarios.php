@@ -25,8 +25,8 @@ foreach ($horariosPorDia as $faixas) {
 }
 
 // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
-$tituloPagina  = 'Meus horarios';
-$subtituloTopo = 'Expediente cadastrado e servicos executados';
+$tituloPagina  = 'Meus horários';
+$subtituloTopo = 'Expediente cadastrado e serviços executados';
 
 // Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
@@ -39,7 +39,7 @@ require_once RAIZ . '/includes/painel_header.php';
         <span class="indicador-nota">Somando as faixas ativas</span>
     </div>
     <div class="indicador">
-        <span class="indicador-rotulo">Servicos executados</span>
+        <span class="indicador-rotulo">Serviços executados</span>
         <span class="indicador-valor"><?= count($servicos) ?></span>
         <span class="indicador-nota">Vinculados ao seu perfil</span>
     </div>
@@ -53,7 +53,7 @@ require_once RAIZ . '/includes/painel_header.php';
 <div class="cartao">
     <div class="cartao-cabecalho">
         <h3>Expediente semanal</h3>
-        <span class="texto-pequeno texto-secundario">Alteracoes devem ser solicitadas ao administrador</span>
+        <span class="texto-pequeno texto-secundario">Alterações devem ser solicitadas ao administrador</span>
     </div>
     <div class="cartao-corpo">
         <div class="grade-dias">
@@ -69,7 +69,7 @@ require_once RAIZ . '/includes/painel_header.php';
                             <?php foreach ($horariosPorDia[$dia] as $faixa): ?>
                                 <div class="faixa-horario <?= $faixa['status'] === 'inativo' ? 'inativa' : '' ?>">
                                     <div class="faixa-info">
-                                        <strong><?= formatarHora($faixa['hora_inicio']) ?> as <?= formatarHora($faixa['hora_fim']) ?></strong>
+                                        <strong><?= formatarHora($faixa['hora_inicio']) ?> às <?= formatarHora($faixa['hora_fim']) ?></strong>
                                         <span>Intervalos de <?= (int) $faixa['intervalo_minutos'] ?> min</span>
                                     </div>
                                     <?= badgeStatus($faixa['status']) ?>
@@ -84,18 +84,18 @@ require_once RAIZ . '/includes/painel_header.php';
 </div>
 
 <div class="cartao">
-    <div class="cartao-cabecalho"><h3>Servicos que voce executa</h3></div>
+    <div class="cartao-cabecalho"><h3>Serviços que você executa</h3></div>
 
     <?php if ($servicos === []): ?>
         <div class="estado-vazio">
-            <strong>Nenhum servico vinculado</strong>
-            <p>Solicite ao administrador o vinculo dos servicos que voce executa.</p>
+            <strong>Nenhum serviço vinculado</strong>
+            <p>Solicite ao administrador o vínculo dos serviços que você executa.</p>
         </div>
     <?php else: ?>
         <div class="tabela-area">
             <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela">
                 <thead>
-                    <tr><th>Servico</th><th>Duracao</th><th>Preco</th><th class="coluna-acoes">Status</th></tr>
+                    <tr><th>Serviço</th><th>Duração</th><th>Preço</th><th class="coluna-acoes">Status</th></tr>
                 </thead>
                 <tbody>
                     <?php foreach ($servicos as $servico): ?>

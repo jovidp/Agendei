@@ -22,14 +22,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Impede que uma alteração enviada por ID alcance a agenda de outro profissional.
     if (!$agendamento || (int) $agendamento['id_profissional'] !== $idProfissional) {
-        definirFlash('erro', 'Agendamento nao encontrado na sua agenda.');
+        definirFlash('erro', 'Agendamento não encontrado na sua agenda.');
     } elseif (!in_array($novoStatus, ['confirmado', 'concluido'], true)) {
-        definirFlash('erro', 'Acao invalida.');
+        definirFlash('erro', 'Acao inválida.');
     } elseif ($novoStatus === 'concluido' && !Agendamento::jaComecou($agendamento)) {
-        definirFlash('erro', 'O atendimento so pode ser concluido a partir do horario de inicio.');
+        definirFlash('erro', 'O atendimento só pode ser concluído a partir do horário de início.');
     } else {
         Agendamento::alterarStatus($idAgendamento, $novoStatus);
-        definirFlash('sucesso', $novoStatus === 'confirmado' ? 'Atendimento confirmado.' : 'Atendimento concluido.');
+        definirFlash('sucesso', $novoStatus === 'confirmado' ? 'Atendimento confirmado.' : 'Atendimento concluído.');
     }
 
     redirecionar('profissional/dashboard.php');
@@ -77,7 +77,7 @@ require_once RAIZ . '/includes/painel_header.php';
 
 <div class="cabecalho-pagina">
     <div>
-        <h2>Ola, <?= e(explode(' ', usuarioNome())[0]) ?></h2>
+        <h2>Olá, <?= e(explode(' ', usuarioNome())[0]) ?></h2>
         <p>Acompanhe os atendimentos do dia e confirme sua agenda.</p>
     </div>
 </div>
@@ -94,12 +94,12 @@ require_once RAIZ . '/includes/painel_header.php';
         <span class="indicador-nota">Segunda a domingo</span>
     </div>
     <div class="indicador indicador-positivo">
-        <span class="indicador-rotulo">Concluidos no mes</span>
+        <span class="indicador-rotulo">Concluídos no mês</span>
         <span class="indicador-valor"><?= (int) $indicadores['concluidos'] ?></span>
-        <span class="indicador-nota">Servicos realizados</span>
+        <span class="indicador-nota">Serviços realizados</span>
     </div>
     <div class="indicador">
-        <span class="indicador-rotulo">Ocupacao de hoje</span>
+        <span class="indicador-rotulo">Ocupação de hoje</span>
         <span class="indicador-valor"><?= (int) $ocupacao['percentual'] ?>%</span>
         <span class="indicador-nota">
             <?= e(duracaoTexto($ocupacao['minutos_agendados'])) ?> de <?= e(duracaoTexto($ocupacao['minutos_expediente'])) ?>
@@ -117,16 +117,16 @@ require_once RAIZ . '/includes/painel_header.php';
         <?php if ($doDia === []): ?>
             <div class="estado-vazio">
                 <strong>Nenhum atendimento hoje</strong>
-                <p>Aproveite para revisar seus horarios de atendimento.</p>
+                <p>Aproveite para revisar seus horários de atendimento.</p>
             </div>
         <?php else: ?>
             <div class="tabela-area">
                 <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela">
                     <thead>
                         <tr>
-                            <th>Horario</th>
+                            <th>Horário</th>
                             <th>Cliente</th>
-                            <th>Servico</th>
+                            <th>Serviço</th>
                             <th>Status</th>
                             <th class="coluna-acoes">Acoes</th>
                         </tr>
@@ -136,7 +136,7 @@ require_once RAIZ . '/includes/painel_header.php';
                             <tr>
                                 <td>
                                     <span class="celula-principal"><?= formatarHora($agendamento['hora_inicio']) ?></span>
-                                    <span class="celula-secundaria">ate <?= formatarHora($agendamento['hora_fim']) ?></span>
+                                    <span class="celula-secundaria">até <?= formatarHora($agendamento['hora_fim']) ?></span>
                                 </td>
                                 <td>
                                     <?= e($agendamento['nome_cliente']) ?>
@@ -182,14 +182,14 @@ require_once RAIZ . '/includes/painel_header.php';
         <?php if ($proximos === []): ?>
             <div class="estado-vazio">
                 <strong>Sem atendimentos futuros</strong>
-                <p>Seus proximos agendamentos aparecerao aqui.</p>
+                <p>Seus próximos agendamentos aparecerão aqui.</p>
             </div>
         <?php else: ?>
             <ul class="lista-simples">
                 <?php foreach ($proximos as $agendamento): ?>
                     <li>
                         <div class="conteudo">
-                            <strong><?= formatarData($agendamento['data_agendamento']) ?> as <?= formatarHora($agendamento['hora_inicio']) ?></strong>
+                            <strong><?= formatarData($agendamento['data_agendamento']) ?> às <?= formatarHora($agendamento['hora_inicio']) ?></strong>
                             <span><?= e($agendamento['nome_cliente']) ?> &middot; <?= e($agendamento['nome_servico']) ?></span>
                         </div>
                         <span class="valor"><?= badgeStatus($agendamento['status']) ?></span>

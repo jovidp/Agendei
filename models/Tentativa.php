@@ -236,10 +236,10 @@ class Tentativa
         return match ($escopo) {
             'login_conta'   => 'Login (por conta)',
             'login_ip'      => 'Login (por origem)',
-            'master_ip'     => 'Area master',
+            'master_ip'     => 'Área master',
             'fator_ip'      => 'Segundo fator',
-            'recuperar_ip'  => 'Recuperacao de senha',
-            'cadastro_ip'   => 'Cadastro publico',
+            'recuperar_ip'  => 'Recuperação de senha',
+            'cadastro_ip'   => 'Cadastro público',
             'instalador_ip' => 'Chave do instalador',
             'tarefas_ip'    => 'Chave das tarefas agendadas',
             default         => $escopo,
@@ -269,7 +269,7 @@ class Tentativa
             }
             self::$tabelaPronta = true;
         } catch (Throwable $erro) {
-            error_log('Tabela de tentativas indisponivel, usando arquivo: ' . $erro->getMessage());
+            error_log('Tabela de tentativas indisponível, usando arquivo: ' . $erro->getMessage());
             self::$tabelaPronta = false;
         }
 
@@ -318,7 +318,7 @@ class Tentativa
             $consulta = bd()->prepare('DELETE FROM tentativas_acesso WHERE data_hora < :limite');
             $consulta->execute([':limite' => date('Y-m-d H:i:s', time() - self::RETENCAO_SEGUNDOS)]);
         } catch (Throwable $erro) {
-            error_log('Limpeza periodica de tentativas falhou: ' . $erro->getMessage());
+            error_log('Limpeza periódica de tentativas falhou: ' . $erro->getMessage());
         }
     }
 

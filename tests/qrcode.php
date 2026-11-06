@@ -397,10 +397,10 @@ for ($i = 8; $i < $lado - 8; $i++) {
         $temporizacaoOk = false;
     }
 }
-verificar('linhas de temporizacao alternam', $temporizacaoOk, true);
+verificar('linhas de temporização alternam', $temporizacaoOk, true);
 
 // Modulo sempre escuro.
-verificar('modulo escuro obrigatorio esta presente', $matriz[$lado - 8][8], true);
+verificar('modulo escuro obrigatório esta presente', $matriz[$lado - 8][8], true);
 
 // ---------------------------------------------------------------------
 // Informacao de formato
@@ -408,8 +408,8 @@ verificar('modulo escuro obrigatorio esta presente', $matriz[$lado - 8][8], true
 [$texto, $sindromesOk, $mascara, $nivel, $modo, $distancia, $versao] = decodificar($matriz);
 
 verificar('formato lido sem erro de bit', $distancia, 0);
-verificar('nivel de correcao gravado e M', $nivel, 0);
-verificar('mascara fica na faixa valida', $mascara >= 0 && $mascara <= 7, true);
+verificar('nível de correção gravado e M', $nivel, 0);
+verificar('mascara fica na faixa válida', $mascara >= 0 && $mascara <= 7, true);
 verificar('modo declarado e byte', $modo, 4);
 
 // As duas copias do formato precisam dizer a mesma coisa.
@@ -439,7 +439,7 @@ verificar('as duas copias do formato coincidem', $copiasIguais, true);
 // Caminho de volta: o texto sai igual ao que entrou
 // ---------------------------------------------------------------------
 verificar('texto simples volta igual', $texto, 'HELLO WORLD');
-verificar('correcao de erro valida (sindromes zeradas)', $sindromesOk, true);
+verificar('correção de erro válida (sindromes zeradas)', $sindromesOk, true);
 
 $amostras = [
     'a',
@@ -462,7 +462,7 @@ foreach ($amostras as $amostra) {
     [$lido, $ecOk, , , $modoLido, $distanciaLida, $versaoLida] = decodificar(QrCode::matriz($amostra));
 
     verificar("texto de {$rotulo} volta igual", $lido, $amostra);
-    verificar("correcao de erro valida em {$rotulo}", $ecOk, true);
+    verificar("correção de erro válida em {$rotulo}", $ecOk, true);
     verificar("formato sem erro em {$rotulo}", $distanciaLida, 0);
     verificar("modo byte em {$rotulo}", $modoLido, 4);
 }
@@ -473,7 +473,7 @@ foreach ($amostras as $amostra) {
 $limites = [14 => 1, 15 => 2, 26 => 2, 27 => 3, 106 => 6, 107 => 7, 152 => 8, 180 => 9, 213 => 10];
 foreach ($limites as $tamanho => $versaoEsperada) {
     verificar(
-        "{$tamanho} caracteres cabem na versao {$versaoEsperada}",
+        "{$tamanho} caracteres cabem na versão {$versaoEsperada}",
         intdiv(count(QrCode::matriz(str_repeat('A', $tamanho))) - 17, 4),
         $versaoEsperada
     );
@@ -492,7 +492,7 @@ verificar('texto grande demais e recusado', $reclamou, true);
 // Mascara escolhida e mesmo a de menor penalidade
 // ---------------------------------------------------------------------
 // Gerar duas vezes o mesmo texto tem de dar exatamente a mesma matriz.
-verificar('geracao e deterministica', QrCode::matriz('Agendei') === QrCode::matriz('Agendei'), true);
+verificar('geração e deterministica', QrCode::matriz('Agendei') === QrCode::matriz('Agendei'), true);
 
 // ---------------------------------------------------------------------
 // Saida SVG

@@ -79,7 +79,7 @@ $edicao   = null;
 if ($acaoTela === 'editar') {
     $edicao = Filial::porId((int) get('id'));
     if (!$edicao) {
-        definirFlash('erro', 'Filial nao encontrada.');
+        definirFlash('erro', 'Filial não encontrada.');
         redirecionar('admin/filiais.php');
     }
 }
@@ -122,7 +122,7 @@ foreach ($consulta->fetchAll() as $linha) {
 
 // Define o titulo e os demais dados de apresentacao utilizados pelo cabecalho.
 $tituloPagina  = 'Filiais';
-$subtituloTopo = 'Unidades do estabelecimento: endereco, contato e foto';
+$subtituloTopo = 'Unidades do estabelecimento: endereço, contato e foto';
 $acoesTopo     = $formularioAberto
     ? '<a href="' . url('admin/filiais.php') . '" class="btn btn-contorno btn-pequeno">Voltar para a lista</a>'
     : '<a href="' . url('admin/filiais.php?acao=novo') . '" class="btn btn-pequeno">Nova filial</a>';
@@ -195,7 +195,7 @@ require_once RAIZ . '/includes/painel_header.php';
                     </div>
 
                     <div class="campo">
-                        <label for="numero">Numero</label>
+                        <label for="numero">Número</label>
                         <input type="text" id="numero" name="numero" maxlength="20" value="<?= e($valores['numero']) ?>">
                     </div>
                 </div>
@@ -233,7 +233,7 @@ require_once RAIZ . '/includes/painel_header.php';
                     <div class="campo">
                         <label for="ordem">Ordem</label>
                         <input type="number" id="ordem" name="ordem" min="0" max="999" value="<?= (int) $valores['ordem'] ?>">
-                        <span class="ajuda-campo">O menor numero aparece primeiro nas listas e na escolha do cliente.</span>
+                        <span class="ajuda-campo">O menor número aparece primeiro nas listas e na escolha do cliente.</span>
                     </div>
 
                     <div class="campo">
@@ -263,7 +263,7 @@ require_once RAIZ . '/includes/painel_header.php';
                 <?php endif; ?>
 
                 <div class="grupo-botoes">
-                    <button type="submit" class="btn"><?= $edicao ? 'Salvar alteracoes' : 'Cadastrar filial' ?></button>
+                    <button type="submit" class="btn"><?= $edicao ? 'Salvar alterações' : 'Cadastrar filial' ?></button>
                     <a href="<?= url('admin/filiais.php') ?>" class="btn btn-contorno">Cancelar</a>
                 </div>
             </form>
@@ -307,7 +307,7 @@ require_once RAIZ . '/includes/painel_header.php';
                     <tr>
                         <th>Foto</th>
                         <th>Filial</th>
-                        <th>Endereco</th>
+                        <th>Endereço</th>
                         <th>Telefone</th>
                         <th>Profissionais</th>
                         <th>Status</th>

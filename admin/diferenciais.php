@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // A liberacao vem depois do lembrete, com folga para o cliente responder.
             $liberarHoras = max(0, min(72, (int) post('liberar_sem_confirmacao_horas')));
             $liberarHoras = min($liberarHoras, max(0, $lembreteHoras - Confirmacao::REACAO_MINIMA_HORAS));
-            Configuracao::definir('liberar_sem_confirmacao_horas', (string) $liberarHoras, 'Libera horarios sem confirmacao N horas antes (0 = nunca)');
+            Configuracao::definir('liberar_sem_confirmacao_horas', (string) $liberarHoras, 'Libera horários sem confirmação N horas antes (0 = nunca)');
             definirFlash('sucesso', 'Configurações dos diferenciais atualizadas.');
             redirecionar('admin/diferenciais.php');
         }
@@ -71,9 +71,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $url = trim(post('whatsapp_url'));
             if ($url !== '' && !filter_var($url, FILTER_VALIDATE_URL)) {
-                throw new InvalidArgumentException('A URL da Evolution API precisa comecar com http:// ou https://.');
+                throw new InvalidArgumentException('A URL da Evolution API precisa começar com http:// ou https://.');
             }
-            Configuracao::definir('whatsapp_provedor', $provedor, 'Provedor do envio automatico de WhatsApp');
+            Configuracao::definir('whatsapp_provedor', $provedor, 'Provedor do envio automático de WhatsApp');
             Configuracao::definir('whatsapp_url', mb_substr($url, 0, 255));
             Configuracao::definir('whatsapp_instancia', mb_substr(trim(post('whatsapp_instancia')), 0, 100));
             Configuracao::definir('whatsapp_telefone_id', mb_substr(apenasNumeros(post('whatsapp_telefone_id')), 0, 40));
@@ -85,8 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Configuracao::definir('whatsapp_token', '');
             }
             definirFlash('sucesso', WhatsApp::ativo()
-                ? 'Envio automatico ligado. Mande uma mensagem de teste para conferir.'
-                : 'Configuracao salva. ' . WhatsApp::pendencia());
+                ? 'Envio automático ligado. Mande uma mensagem de teste para conferir.'
+                : 'Configuração salva. ' . WhatsApp::pendencia());
             redirecionar('admin/diferenciais.php#mensagens');
         }
 
@@ -159,18 +159,18 @@ require RAIZ . '/includes/painel_header.php';
 <div class="cartao" id="mensagens"><div class="cartao-cabecalho"><h3>Lembretes por WhatsApp</h3><form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="lembretes"><button class="btn btn-pequeno" type="submit"><?= $whatsappAtivo ? 'Enviar agora' : 'Atualizar fila' ?></button></form></div>
 <div class="cartao-corpo">
 <?php if ($whatsappAtivo): ?>
-<p><strong>Envio automatico ligado</strong> por <?= e(WhatsApp::PROVEDORES[$whatsapp['provedor']]) ?><?= $whatsapp['origem'] === 'plataforma' ? ', com o numero da plataforma' : ', com o seu numero' ?>.
-Os lembretes saem sozinhos ate <?= Configuracao::obterInteiro('lembrete_horas', 24) ?> h antes do atendimento<?= $ultimoEnvio !== '' ? '; ultimo envio automatico em ' . e(formatarData(substr($ultimoEnvio, 0, 10))) . ' as ' . e(substr($ultimoEnvio, 11, 5)) : '; a tarefa periodica ainda nao rodou' ?>.</p>
+<p><strong>Envio automático ligado</strong> por <?= e(WhatsApp::PROVEDORES[$whatsapp['provedor']]) ?><?= $whatsapp['origem'] === 'plataforma' ? ', com o número da plataforma' : ', com o seu número' ?>.
+Os lembretes saem sozinhos até <?= Configuracao::obterInteiro('lembrete_horas', 24) ?> h antes do atendimento<?= $ultimoEnvio !== '' ? '; último envio automático em ' . e(formatarData(substr($ultimoEnvio, 0, 10))) . ' as ' . e(substr($ultimoEnvio, 11, 5)) : '; a tarefa periódica ainda não rodou' ?>.</p>
 <?php else: ?>
-<p><strong>Envio manual.</strong> A fila abaixo monta a mensagem e voce a envia pelo link "Abrir WhatsApp". <?= e($whatsappPendencia) ?></p>
+<p><strong>Envio manual.</strong> A fila abaixo monta a mensagem e você a envia pelo link "Abrir WhatsApp". <?= e($whatsappPendencia) ?></p>
 <?php endif; ?>
 <?php $liberarHoras = Configuracao::obterInteiro('liberar_sem_confirmacao_horas', 0); ?>
-<p>Cada lembrete leva um link para o cliente confirmar a presenca ou avisar que nao vai.<?= $liberarHoras > 0 ? ' Quem nao responde perde o horario ' . $liberarHoras . ' h antes do atendimento, e a lista de espera e avisada.' : ' A liberacao automatica dos horarios sem resposta esta desligada (veja "Automação e fidelidade").' ?></p>
+<p>Cada lembrete leva um link para o cliente confirmar a presença ou avisar que não vai.<?= $liberarHoras > 0 ? ' Quem não responde perde o horário ' . $liberarHoras . ' h antes do atendimento, e a lista de espera e avisada.' : ' A liberação automática dos horários sem resposta está desligada (veja "Automação e fidelidade").' ?></p>
 <form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="whatsapp">
-<div class="campo"><label for="whatsapp_provedor">Provedor de envio</label><select id="whatsapp_provedor" name="whatsapp_provedor"><?php foreach (WhatsApp::PROVEDORES as $chave => $rotulo): ?><option value="<?= e($chave) ?>" <?= $whatsappEscolha === $chave ? 'selected' : '' ?>><?= e($rotulo) ?></option><?php endforeach; ?></select><span class="ajuda-campo">"Padrao da plataforma" usa o numero de quem hospeda o sistema, quando ele existe. Os demais usam as credenciais abaixo.</span></div>
+<div class="campo"><label for="whatsapp_provedor">Provedor de envio</label><select id="whatsapp_provedor" name="whatsapp_provedor"><?php foreach (WhatsApp::PROVEDORES as $chave => $rotulo): ?><option value="<?= e($chave) ?>" <?= $whatsappEscolha === $chave ? 'selected' : '' ?>><?= e($rotulo) ?></option><?php endforeach; ?></select><span class="ajuda-campo">"Padrão da plataforma" usa o número de quem hospeda o sistema, quando ele existe. Os demais usam as credenciais abaixo.</span></div>
 <div class="linha-campos"><div class="campo"><label for="whatsapp_url">Evolution API: URL</label><input id="whatsapp_url" name="whatsapp_url" maxlength="255" placeholder="https://evolution.seudominio.com.br" value="<?= e(Configuracao::obter('whatsapp_url')) ?>"></div><div class="campo"><label for="whatsapp_instancia">Evolution API: instancia</label><input id="whatsapp_instancia" name="whatsapp_instancia" maxlength="100" value="<?= e(Configuracao::obter('whatsapp_instancia')) ?>"></div></div>
-<div class="linha-campos"><div class="campo"><label for="whatsapp_telefone_id">Meta: ID do numero (phone number id)</label><input id="whatsapp_telefone_id" name="whatsapp_telefone_id" maxlength="40" inputmode="numeric" value="<?= e(Configuracao::obter('whatsapp_telefone_id')) ?>"></div><div class="campo"><label for="whatsapp_modelo">Meta: nome do modelo aprovado</label><input id="whatsapp_modelo" name="whatsapp_modelo" maxlength="100" placeholder="lembrete_agendamento" value="<?= e(Configuracao::obter('whatsapp_modelo')) ?>"><span class="ajuda-campo">Modelo em pt_BR com 4 variaveis, nesta ordem: nome, servico, data e hora.</span></div></div>
-<div class="campo"><label for="whatsapp_token">Chave de acesso (apikey da Evolution ou token da Meta)</label><input type="password" id="whatsapp_token" name="whatsapp_token" maxlength="255" autocomplete="new-password" placeholder="<?= Configuracao::obter('whatsapp_token') !== '' ? 'Chave guardada. Preencha so para trocar.' : '' ?>"><span class="ajuda-campo">A chave nunca volta para a tela. Deixe em branco para manter a atual.</span></div>
+<div class="linha-campos"><div class="campo"><label for="whatsapp_telefone_id">Meta: ID do número (phone number id)</label><input id="whatsapp_telefone_id" name="whatsapp_telefone_id" maxlength="40" inputmode="numeric" value="<?= e(Configuracao::obter('whatsapp_telefone_id')) ?>"></div><div class="campo"><label for="whatsapp_modelo">Meta: nome do modelo aprovado</label><input id="whatsapp_modelo" name="whatsapp_modelo" maxlength="100" placeholder="lembrete_agendamento" value="<?= e(Configuracao::obter('whatsapp_modelo')) ?>"><span class="ajuda-campo">Modelo em pt_BR com 4 variáveis, nesta ordem: nome, serviço, data e hora.</span></div></div>
+<div class="campo"><label for="whatsapp_token">Chave de acesso (apikey da Evolution ou token da Meta)</label><input type="password" id="whatsapp_token" name="whatsapp_token" maxlength="255" autocomplete="new-password" placeholder="<?= Configuracao::obter('whatsapp_token') !== '' ? 'Chave guardada. Preencha só para trocar.' : '' ?>"><span class="ajuda-campo">A chave nunca volta para a tela. Deixe em branco para manter a atual.</span></div>
 <button class="btn" type="submit">Salvar provedor</button>
 </form>
 <?php if ($whatsappAtivo): ?>
@@ -180,7 +180,7 @@ Os lembretes saem sozinhos ate <?= Configuracao::obterInteiro('lembrete_horas', 
 </form>
 <?php endif; ?>
 </div>
-<?php if (!$notificacoes): ?><div class="estado-vazio"><strong>Fila vazia</strong><p><?= $whatsappAtivo ? 'Os lembretes entram aqui e saem sozinhos quando chega a hora.' : 'Atualize a fila quando desejar preparar os próximos lembretes.' ?></p></div><?php else: ?><div class="tabela-area"><table class="tabela"><thead><tr><th>Destino</th><th>Mensagem</th><th>Situação</th><th>Ação</th></tr></thead><tbody><?php foreach ($notificacoes as $n): $tentativas = (int) ($n['tentativas'] ?? 0); ?><tr><td><?= e(formatarTelefone($n['destinatario'])) ?></td><td><?= e($n['mensagem']) ?></td><td><?php if ($tentativas > 0): ?><span class="badge badge-cancelado"><?= $tentativas ?> falha(s)</span><br><small><?= e((string) ($n['erro'] ?? '')) ?><?= $tentativas >= Lembrete::MAX_TENTATIVAS ? ' O envio automatico desistiu; envie pelo link.' : '' ?></small><?php elseif ($whatsappAtivo): ?><small>Aguardando envio automatico</small><?php else: ?><small>Envio manual</small><?php endif; ?></td><td><form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="notificacao"><input type="hidden" name="id_notificacao" value="<?= (int)$n['id_notificacao'] ?>"><a class="btn btn-pequeno" target="_blank" rel="noopener" href="<?= e(Diferencial::linkWhatsapp($n)) ?>">Abrir WhatsApp</a><button class="btn btn-contorno btn-pequeno" type="submit">Marcar enviada</button></form></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?>
+<?php if (!$notificacoes): ?><div class="estado-vazio"><strong>Fila vazia</strong><p><?= $whatsappAtivo ? 'Os lembretes entram aqui e saem sozinhos quando chega a hora.' : 'Atualize a fila quando desejar preparar os próximos lembretes.' ?></p></div><?php else: ?><div class="tabela-area"><table class="tabela"><thead><tr><th>Destino</th><th>Mensagem</th><th>Situação</th><th>Ação</th></tr></thead><tbody><?php foreach ($notificacoes as $n): $tentativas = (int) ($n['tentativas'] ?? 0); ?><tr><td><?= e(formatarTelefone($n['destinatario'])) ?></td><td><?= e($n['mensagem']) ?></td><td><?php if ($tentativas > 0): ?><span class="badge badge-cancelado"><?= $tentativas ?> falha(s)</span><br><small><?= e((string) ($n['erro'] ?? '')) ?><?= $tentativas >= Lembrete::MAX_TENTATIVAS ? ' O envio automático desistiu; envie pelo link.' : '' ?></small><?php elseif ($whatsappAtivo): ?><small>Aguardando envio automático</small><?php else: ?><small>Envio manual</small><?php endif; ?></td><td><form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="notificacao"><input type="hidden" name="id_notificacao" value="<?= (int)$n['id_notificacao'] ?>"><a class="btn btn-pequeno" target="_blank" rel="noopener" href="<?= e(Diferencial::linkWhatsapp($n)) ?>">Abrir WhatsApp</a><button class="btn btn-contorno btn-pequeno" type="submit">Marcar enviada</button></form></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?>
 <?php if ($recentes): ?><div class="cartao-cabecalho"><h3>Ultimas mensagens</h3></div><div class="tabela-area"><table class="tabela"><thead><tr><th>Destino</th><th>Mensagem</th><th>Situação</th><th>Quando</th></tr></thead><tbody><?php foreach ($recentes as $n): ?><tr><td><?= e(formatarTelefone($n['destinatario'])) ?></td><td><?= e(limitarTexto($n['mensagem'], 90)) ?></td><td><?= badgeStatus($n['status'] === 'enviada' ? 'concluido' : 'cancelado') ?><?= !empty($n['erro']) ? '<br><small>' . e($n['erro']) . '</small>' : '' ?></td><td><?php $quando = $n['data_envio'] ?: $n['data_criacao']; ?><?= e(formatarData(substr((string) $quando, 0, 10))) ?> <?= e(substr((string) $quando, 11, 5)) ?></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?>
 </div></div>
 

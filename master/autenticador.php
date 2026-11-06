@@ -16,7 +16,7 @@ $idMaster = (int) ($_SESSION['master_id'] ?? 0);
 $master   = Master::porId($idMaster);
 
 if ($master === null) {
-    definirFlash('erro', 'Conta master nao encontrada.');
+    definirFlash('erro', 'Conta master não encontrada.');
     redirecionar('master/dashboard.php');
 }
 
@@ -45,17 +45,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($bloqueio !== '') {
             $erros[] = $bloqueio;
         } elseif ($emUso === '') {
-            $erros[] = 'Gere um novo codigo de configuracao antes de confirmar.';
+            $erros[] = 'Gere um novo código de configuração antes de confirmar.';
         } elseif (!Totp::confere($emUso, $codigo, $contadorUsado)) {
             anotarFalha('master_ip', ipCliente());
             atrasarResposta();
-            $erros[] = 'Codigo incorreto. Confira a hora do celular e tente o codigo atual.';
+            $erros[] = 'Código incorreto. Confira a hora do celular e tente o código atual.';
         } else {
             Master::totpAtivar($idMaster, (int) $contadorUsado);
             limparFalhas('master_ip', ipCliente());
             registrarEventoSeguranca('master_totp_ativado', ['master' => $idMaster]);
 
-            definirFlash('sucesso', 'Aplicativo autenticador ativado. O proximo login master vai pedir o codigo.');
+            definirFlash('sucesso', 'Aplicativo autenticador ativado. O próximo login master vai pedir o código.');
             redirecionar('master/autenticador.php');
         }
 
@@ -87,8 +87,8 @@ if (!$ativo) {
 
 $uri = $segredo !== '' ? Totp::uri($segredo, (string) $master['email'], 'Agendei Master') : '';
 
-$tituloPagina  = 'Verificacao em duas etapas';
-$subtituloTopo = 'Codigo de uso unico para a administracao da plataforma';
+$tituloPagina  = 'Verificação em duas etapas';
+$subtituloTopo = 'Código de uso único para a administração da plataforma';
 
 require_once RAIZ . '/includes/painel_header.php';
 ?>
@@ -112,8 +112,8 @@ require_once RAIZ . '/includes/painel_header.php';
         <div class="cartao-cabecalho"><h3>Aplicativo autenticador ativo</h3></div>
         <div class="cartao-corpo">
             <p>
-                Desde <?= e(formatarData($master['totp_ativado_em'])) ?>, entrar na administracao
-                master exige o codigo de seis digitos do seu aplicativo depois da senha.
+                Desde <?= e(formatarData($master['totp_ativado_em'])) ?>, entrar na administração
+                master exige o código de seis dígitos do seu aplicativo depois da senha.
             </p>
 
             <div class="grupo-botoes">
@@ -127,10 +127,10 @@ require_once RAIZ . '/includes/painel_header.php';
     </div>
 
     <div class="cartao">
-        <div class="cartao-cabecalho"><h3>Desligar a verificacao</h3></div>
+        <div class="cartao-cabecalho"><h3>Desligar a verificação</h3></div>
         <div class="cartao-corpo">
             <p class="ajuda-campo">
-                Sem o codigo, a administracao master volta a depender somente da senha —
+                Sem o código, a administração master volta a depender somente da senha —
                 e ela comanda todos os estabelecimentos da plataforma.
             </p>
 
@@ -145,7 +145,7 @@ require_once RAIZ . '/includes/painel_header.php';
                     <span class="mensagem-campo"></span>
                 </div>
 
-                <button type="submit" class="btn btn-perigo">Desligar verificacao em duas etapas</button>
+                <button type="submit" class="btn btn-perigo">Desligar verificação em duas etapas</button>
             </form>
         </div>
     </div>
@@ -157,23 +157,23 @@ require_once RAIZ . '/includes/painel_header.php';
         <div class="cartao-corpo">
             <p>
                 Esta conta gerencia todos os estabelecimentos da plataforma. Um aplicativo
-                autenticador acrescenta um codigo que muda a cada 30 segundos e existe
+                autenticador acrescenta um código que muda a cada 30 segundos e existe
                 somente no seu celular.
             </p>
 
             <div class="alerta alerta-aviso">
                 <span class="alerta-texto">
-                    Antes de ativar, saiba disto: a conta master nao tem pergunta cadastral de
-                    reserva. Se voce perder o celular, so sera possivel liberar o acesso rodando
+                    Antes de ativar, saiba disto: a conta master não tem pergunta cadastral de
+                    reserva. Se você perder o celular, só será possível liberar o acesso rodando
                     <strong>php scripts/liberar_2fa.php</strong> no servidor. Ative apenas se
-                    tiver esse acesso, ou guarde a chave de configuracao em local seguro.
+                    tiver esse acesso, ou guarde a chave de configuração em local seguro.
                 </span>
             </div>
 
             <?php /* Gera o segredo apenas quando o master decide comecar. */ ?><form method="post">
                 <?= campoCsrf() ?>
                 <input type="hidden" name="acao" value="preparar">
-                <button type="submit" class="btn">Comecar configuracao</button>
+                <button type="submit" class="btn">Começar configuração</button>
             </form>
         </div>
     </div>
@@ -185,11 +185,11 @@ require_once RAIZ . '/includes/painel_header.php';
         <div class="cartao-corpo">
             <div class="autenticador-configuracao">
                 <div class="autenticador-qr">
-                    <?= QrCode::svg($uri, 'Codigo QR para cadastrar o aplicativo autenticador') ?>
+                    <?= QrCode::svg($uri, 'Código QR para cadastrar o aplicativo autenticador') ?>
                 </div>
 
                 <div class="autenticador-chave">
-                    <p><strong>Aponte a camera do aplicativo para o codigo acima.</strong></p>
+                    <p><strong>Aponte a camera do aplicativo para o código acima.</strong></p>
 
                     <p class="ajuda-campo">
                         Se preferir digitar, escolha <em>inserir chave manualmente</em> no
@@ -199,7 +199,7 @@ require_once RAIZ . '/includes/painel_header.php';
                     <p class="autenticador-segredo"><code><?= e(Totp::formatarSegredo($segredo)) ?></code></p>
 
                     <p class="ajuda-campo">
-                        Guarde esta chave num gerenciador de senhas: com ela e possivel
+                        Guarde esta chave num gerenciador de senhas: com ela é possível
                         cadastrar o aplicativo de novo se o celular for perdido.
                     </p>
                 </div>
@@ -208,10 +208,10 @@ require_once RAIZ . '/includes/painel_header.php';
     </div>
 
     <div class="cartao">
-        <div class="cartao-cabecalho"><h3>Passo 2 — confirme o codigo</h3></div>
+        <div class="cartao-cabecalho"><h3>Passo 2 — confirme o código</h3></div>
         <div class="cartao-corpo">
             <p class="ajuda-campo">
-                A verificacao so passa a valer depois desta confirmacao. Enquanto isso, o
+                A verificação só passa a valer depois desta confirmação. Enquanto isso, o
                 login master continua funcionando apenas com a senha.
             </p>
 
@@ -220,16 +220,16 @@ require_once RAIZ . '/includes/painel_header.php';
                 <input type="hidden" name="acao" value="ativar">
 
                 <div class="campo">
-                    <label for="codigo">Codigo mostrado pelo aplicativo</label>
+                    <label for="codigo">Código mostrado pelo aplicativo</label>
                     <input type="text" id="codigo" name="codigo" class="campo-codigo"
                            inputmode="numeric" pattern="[0-9 ]*" maxlength="7" placeholder="000000"
                            autocomplete="one-time-code" required autofocus>
                     <span class="mensagem-campo"></span>
-                    <span class="ajuda-campo">Seis digitos. Se o codigo virar enquanto digita, use o novo.</span>
+                    <span class="ajuda-campo">Seis dígitos. Se o código virar enquanto digita, use o novo.</span>
                 </div>
 
                 <div class="grupo-botoes">
-                    <button type="submit" class="btn">Ativar verificacao</button>
+                    <button type="submit" class="btn">Ativar verificação</button>
                 </div>
             </form>
 

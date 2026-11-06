@@ -105,9 +105,29 @@ require_once RAIZ . '/includes/painel_header.php';
                 <dt>Status</dt>
                 <dd><?= badgeStatus($agendamentoConfirmado['status']) ?></dd>
             </div>
+            <?php $sinal = Diferencial::sinalDoAgendamento((int) $agendamentoConfirmado['id_agendamento']); ?>
+            <?php if ($sinal !== null): ?>
+                <div>
+                    <dt>Sinal</dt>
+                    <dd>
+                        <?= formatarMoeda($sinal['valor']) ?> <?= badgeStatus($sinal['status']) ?>
+                        <?php if (str_starts_with((string) $sinal['referencia'], Diferencial::PREFIXO_CREDITO)): ?>
+                            <span class="celula-secundaria">Pago com o crédito de um cancelamento anterior.</span>
+                        <?php endif; ?>
+                    </dd>
+                </div>
+            <?php endif; ?>
         </dl>
 
         <div class="grupo-botoes" style="justify-content:center">
+            <?php if ($sinal !== null && $sinal['status'] === 'pendente'): ?>
+                <form method="post" action="<?= url('cliente/agendamentos.php') ?>" class="formulario-inline">
+                    <?= campoCsrf() ?>
+                    <input type="hidden" name="acao" value="pagar_sinal">
+                    <input type="hidden" name="id_agendamento" value="<?= (int) $agendamentoConfirmado['id_agendamento'] ?>">
+                    <button type="submit" class="btn btn-secundario">Pagar sinal (simulação)</button>
+                </form>
+            <?php endif; ?>
             <a href="<?= url('cliente/agendamentos.php') ?>" class="btn">Ver meus agendamentos</a>
             <a href="<?= url('cliente/agendar.php') ?>" class="btn btn-contorno">Fazer novo agendamento</a>
         </div>

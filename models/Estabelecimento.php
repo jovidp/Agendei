@@ -115,7 +115,7 @@ class Estabelecimento
     public static function vincularAdministrador(int $idEstabelecimento, int $idUsuario, array $dados = []): int
     {
         if (Vinculo::contarNaEmpresa($idEstabelecimento, 'admin') >= self::MAXIMO_ADMINISTRADORES) {
-            throw new DomainException('Este estabelecimento ja tem o maximo de ' . self::MAXIMO_ADMINISTRADORES . ' contas administrativas.');
+            throw new DomainException('Este estabelecimento já tem o máximo de ' . self::MAXIMO_ADMINISTRADORES . ' contas administrativas.');
         }
         $idVinculo = Vinculo::criar($idEstabelecimento, $idUsuario, 'admin', $dados);
         $q = bd()->prepare('INSERT INTO administradores (id_estabelecimento, id_vinculo, id_usuario, nivel) VALUES (?, ?, ?, \'super\')');

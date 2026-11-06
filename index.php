@@ -256,7 +256,7 @@ $recursos = [
         <div class="chamada-final margem-topo">
             <div>
                 <h2><?= e(MARCA_SLOGAN) ?></h2>
-                <p>Cadastre sua empresa e comece agora com 7 dias gratis. Depois, R$ 149 por mes.</p>
+                <p>Cadastre sua empresa e comece agora com 7 dias grátis. Depois, R$ 149 por mês.</p>
             </div>
             <div class="chamada-acoes">
                 <a href="<?= url('cadastro_empresa.php') ?>" class="btn btn-grande">Cadastrar minha empresa</a>

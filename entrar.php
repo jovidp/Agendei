@@ -53,7 +53,7 @@ function concluirEntrada(array $conta, string $email): never
     // Recarrega o vinculo completo ja dentro da empresa: o 2FA e a sessao leem daqui.
     $usuario = Usuario::porVinculo((int) $conta['id_vinculo']);
     if ($usuario === null || $usuario['status'] !== 'ativo') {
-        definirFlash('erro', 'Esta conta nao esta mais disponivel.');
+        definirFlash('erro', 'Esta conta não está mais disponível.');
         redirecionar('entrar.php');
     }
 

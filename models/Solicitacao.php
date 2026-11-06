@@ -17,7 +17,7 @@
 class Solicitacao
 {
     public const STATUS = [
-        'pendente' => 'Aguardando aprovacao',
+        'pendente' => 'Aguardando aprovação',
         'aprovada' => 'Aprovada',
         'recusada' => 'Recusada',
     ];
@@ -178,7 +178,7 @@ class Solicitacao
             }
             self::$tabelaPronta = true;
         } catch (Throwable $erro) {
-            error_log('Tabela de solicitacoes indisponivel: ' . $erro->getMessage());
+            error_log('Tabela de solicitações indisponível: ' . $erro->getMessage());
             self::$tabelaPronta = false;
         }
 
@@ -188,7 +188,7 @@ class Solicitacao
     private static function exigirTabela(): void
     {
         if (!self::disponivel()) {
-            throw new RuntimeException('A tabela de solicitacoes nao esta disponivel neste banco.');
+            throw new RuntimeException('A tabela de solicitações não está disponível neste banco.');
         }
     }
 

@@ -127,12 +127,12 @@ class Email
         self::$ultimoErro = '';
 
         if (!self::configurado()) {
-            self::$ultimoErro = 'Envio de e-mail nao configurado.';
+            self::$ultimoErro = 'Envio de e-mail não configurado.';
             error_log('[email] nao enviado para ' . $para . ': ' . self::$ultimoErro);
             return false;
         }
         if (!validarEmail($para)) {
-            self::$ultimoErro = 'Destinatario invalido.';
+            self::$ultimoErro = 'Destinatário inválido.';
             return false;
         }
 
@@ -259,7 +259,7 @@ class Email
             if ($resposta === false) {
                 $erro = curl_error($curl);
                 curl_close($curl);
-                throw new RuntimeException('Nao foi possivel falar com a API de e-mail (' . $erro . ').');
+                throw new RuntimeException('Não foi possível falar com a API de e-mail (' . $erro . ').');
             }
             $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
             curl_close($curl);
@@ -275,7 +275,7 @@ class Email
         ]]);
         $resposta = @file_get_contents($url, false, $contexto);
         if ($resposta === false) {
-            throw new RuntimeException('Nao foi possivel falar com a API de e-mail.');
+            throw new RuntimeException('Não foi possível falar com a API de e-mail.');
         }
         $status = 0;
         foreach ($http_response_header ?? [] as $linha) {
@@ -296,7 +296,7 @@ class Email
         $contexto = stream_context_create(['ssl' => ['verify_peer' => true, 'verify_peer_name' => true, 'SNI_enabled' => true]]);
         $conexao = @stream_socket_client($esquema . $config['host'] . ':' . $config['porta'], $codigo, $erro, self::TEMPO_LIMITE, STREAM_CLIENT_CONNECT, $contexto);
         if ($conexao === false) {
-            throw new RuntimeException('Nao foi possivel conectar em ' . $config['host'] . ':' . $config['porta'] . ' (' . $erro . ').');
+            throw new RuntimeException('Não foi possível conectar em ' . $config['host'] . ':' . $config['porta'] . ' (' . $erro . ').');
         }
         stream_set_timeout($conexao, self::TEMPO_LIMITE);
 
@@ -308,7 +308,7 @@ class Email
             if ($config['seguranca'] === 'tls') {
                 self::comando($conexao, 'STARTTLS', [220]);
                 if (!@stream_socket_enable_crypto($conexao, true, STREAM_CRYPTO_METHOD_TLS_CLIENT)) {
-                    throw new RuntimeException('O servidor nao aceitou a conexao segura (STARTTLS).');
+                    throw new RuntimeException('O servidor não aceitou a conexão segura (STARTTLS).');
                 }
                 self::comando($conexao, 'EHLO ' . $meuNome, [250]);
             }
@@ -352,7 +352,7 @@ class Email
             $linha = fgets($conexao, 1024);
             if ($linha === false) {
                 $meta = stream_get_meta_data($conexao);
-                throw new RuntimeException(($meta['timed_out'] ?? false) ? 'O servidor demorou para responder.' : 'O servidor encerrou a conexao.');
+                throw new RuntimeException(($meta['timed_out'] ?? false) ? 'O servidor demorou para responder.' : 'O servidor encerrou a conexão.');
             }
             $resposta .= $linha;
         } while (isset($linha[3]) && $linha[3] === '-');

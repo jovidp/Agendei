@@ -25,7 +25,7 @@ $ehPostgres = Database::ehPostgres();
 if (($argv[1] ?? '') !== '--worker') {
     $nomeTeste = 'agendei_test_' . bin2hex(random_bytes(6));
     if (!preg_match('/^agendei_test_[a-f0-9]{12}$/D', $nomeTeste)) {
-        throw new RuntimeException('Nome de banco de teste invalido.');
+        throw new RuntimeException('Nome de banco de teste inválido.');
     }
 
     $db = bd();
@@ -142,7 +142,7 @@ function agendar(int $cliente, int $profissional, int $servico, string $data, st
         ['ignorar_antecedencia' => true]
     );
     if (empty($r['sucesso'])) {
-        throw new RuntimeException('Nao agendou: ' . implode(' ', $r['erros']));
+        throw new RuntimeException('Não agendou: ' . implode(' ', $r['erros']));
     }
     return (int) $r['id_agendamento'];
 }
@@ -155,27 +155,27 @@ $agC = agendar($idClienteC, $idProfissional, $idServico, $data, '13:00');
 // -------------------------------------------------------------------------
 // 2. Sem provedor: a fila e gerada, nada e enviado
 // -------------------------------------------------------------------------
-verificar('sem configuracao o provedor e manual', WhatsApp::provedor(), 'manual');
-verificar('sem provedor o envio automatico esta desligado', WhatsApp::ativo(), false);
+verificar('sem configuração o provedor e manual', WhatsApp::provedor(), 'manual');
+verificar('sem provedor o envio automático está desligado', WhatsApp::ativo(), false);
 
 $r = Lembrete::processar();
 verificar('processar sem provedor gera a fila', $r['geradas'], 4);
-verificar('processar sem provedor nao envia', $r['enviadas'], 0);
+verificar('processar sem provedor não envia', $r['enviadas'], 0);
 verificar('lembrete gerado fica pendente', notificacaoDe($agA)['status'], 'pendente');
 verificar('lembrete nasce sem tentativas', (int) notificacaoDe($agA)['tentativas'], 0);
-verificar('mensagem cita o servico', str_contains(notificacaoDe($agA)['mensagem'], 'Corte'), true);
+verificar('mensagem cita o serviço', str_contains(notificacaoDe($agA)['mensagem'], 'Corte'), true);
 verificar('mensagem cita a empresa', str_contains(notificacaoDe($agA)['mensagem'], 'Studio Lembrete'), true);
 verificar('mensagem cita o profissional', str_contains(notificacaoDe($agA)['mensagem'], 'Marcos'), true);
-verificar('processar de novo nao duplica a fila', Lembrete::processar()['geradas'], 0);
+verificar('processar de novo não duplica a fila', Lembrete::processar()['geradas'], 0);
 
 // -------------------------------------------------------------------------
 // 3. Numeros
 // -------------------------------------------------------------------------
 verificar('celular com mascara ganha o DDI', WhatsApp::normalizarNumero('(11) 99111-1111'), '5511991111111');
 verificar('fixo com DDD ganha o DDI', WhatsApp::normalizarNumero('1133334444'), '551133334444');
-verificar('numero ja com DDI fica como esta', WhatsApp::normalizarNumero('5511991111111'), '5511991111111');
-verificar('numero curto e rejeitado', WhatsApp::normalizarNumero('123'), null);
-verificar('numero vazio e rejeitado', WhatsApp::normalizarNumero(null), null);
+verificar('número já com DDI fica como esta', WhatsApp::normalizarNumero('5511991111111'), '5511991111111');
+verificar('número curto e rejeitado', WhatsApp::normalizarNumero('123'), null);
+verificar('número vazio e rejeitado', WhatsApp::normalizarNumero(null), null);
 
 // -------------------------------------------------------------------------
 // 4. Evolution API: envio, falha e desistencia
@@ -194,13 +194,13 @@ verificar('sem pendencia quando ativo', WhatsApp::pendencia(), '');
 // Cancelar a reserva antes do envio tira o lembrete da fila.
 Agendamento::cancelar($agCancelado, null, 'Cliente desistiu');
 verificar('cancelar o agendamento cancela o lembrete', notificacaoDe($agCancelado)['status'], 'cancelada');
-verificar('cancelamento guarda a razao', notificacaoDe($agCancelado)['erro'], 'Agendamento cancelado antes do envio.');
+verificar('cancelamento guarda a razão', notificacaoDe($agCancelado)['erro'], 'Agendamento cancelado antes do envio.');
 
 $envios = [];
 WhatsApp::simular(static function (array $chamada) use (&$envios): array {
     $envios[] = $chamada;
     if (($chamada['corpo']['number'] ?? '') === '5511992222222') {
-        throw new RuntimeException('Provedor: numero nao esta no WhatsApp');
+        throw new RuntimeException('Provedor: número não está no WhatsApp');
     }
     return ['key' => ['id' => 'ABC']];
 });
@@ -209,39 +209,39 @@ $r = Lembrete::processar();
 verificar('processar informa o provedor', $r['provedor'], 'evolution');
 verificar('um lembrete enviado', $r['enviadas'], 1);
 verificar('um lembrete falhou', $r['falhas'], 1);
-verificar('lembrete sem telefone valido e cancelado', $r['canceladas'], 1);
-verificar('o cancelado nao foi tentado', count($envios), 2);
+verificar('lembrete sem telefone válido e cancelado', $r['canceladas'], 1);
+verificar('o cancelado não foi tentado', count($envios), 2);
 
 $nA = notificacaoDe($agA);
 verificar('lembrete enviado muda o status', $nA['status'], 'enviada');
 verificar('lembrete enviado registra a data', $nA['data_envio'] !== null, true);
 verificar('chamada foi para a rota da Evolution', $envios[0]['url'], 'https://evo.teste/message/sendText/agendei');
 verificar('chamada levou a apikey', in_array('apikey: chave-secreta', $envios[0]['cabecalhos'], true), true);
-verificar('chamada levou o numero normalizado', $envios[0]['corpo']['number'], '5511991111111');
+verificar('chamada levou o número normalizado', $envios[0]['corpo']['number'], '5511991111111');
 verificar('chamada levou o texto do lembrete', $envios[0]['corpo']['text'], $nA['mensagem']);
 
 $nB = notificacaoDe($agB);
 verificar('falha mantem o lembrete pendente', $nB['status'], 'pendente');
 verificar('falha conta uma tentativa', (int) $nB['tentativas'], 1);
-verificar('falha guarda a razao', $nB['erro'], 'Provedor: numero nao esta no WhatsApp');
+verificar('falha guarda a razão', $nB['erro'], 'Provedor: número não está no WhatsApp');
 
 $nC = notificacaoDe($agC);
-verificar('telefone invalido cancela a notificacao', $nC['status'], 'cancelada');
-verificar('telefone invalido explica a razao', $nC['erro'], 'Telefone do cliente incompleto ou invalido.');
+verificar('telefone inválido cancela a notificação', $nC['status'], 'cancelada');
+verificar('telefone inválido explica a razão', $nC['erro'], 'Telefone do cliente incompleto ou inválido.');
 
-verificar('ultima execucao registrada', Configuracao::obter('whatsapp_ultima_execucao') !== '', true);
+verificar('última execução registrada', Configuracao::obter('whatsapp_ultima_execucao') !== '', true);
 
 // Depois de MAX_TENTATIVAS a tarefa desiste, e a mensagem segue na fila manual.
 Lembrete::processar();
 Lembrete::processar();
-verificar('tentativas chegam ao maximo', (int) notificacaoDe($agB)['tentativas'], Lembrete::MAX_TENTATIVAS);
+verificar('tentativas chegam ao máximo', (int) notificacaoDe($agB)['tentativas'], Lembrete::MAX_TENTATIVAS);
 $antes = count($envios);
 $r = Lembrete::processar();
-verificar('depois do maximo nao ha nova tentativa', count($envios), $antes);
-verificar('depois do maximo nao conta falha', $r['falhas'], 0);
+verificar('depois do máximo não ha nova tentativa', count($envios), $antes);
+verificar('depois do máximo não conta falha', $r['falhas'], 0);
 verificar('mensagem esgotada continua na fila manual', notificacaoDe($agB)['status'], 'pendente');
 verificar('fila manual do painel ainda a lista', count(Diferencial::notificacoesPendentes()), 1);
-verificar('historico do painel lista enviadas e canceladas', count(Diferencial::notificacoesRecentes()), 3);
+verificar('histórico do painel lista enviadas e canceladas', count(Diferencial::notificacoesRecentes()), 3);
 
 // Concluir o atendimento tambem tira o lembrete da fila.
 Agendamento::alterarStatus($agB, 'concluido');
@@ -249,8 +249,8 @@ verificar('concluir o agendamento cancela o lembrete', notificacaoDe($agB)['stat
 
 // Mensagem de teste.
 $antes = count($envios);
-verificar('teste com numero invalido e recusado', mensagemErro(fn() => Lembrete::enviarTeste('12')), 'Informe um numero com DDD (10 ou 11 digitos).');
-verificar('teste com numero valido envia', mensagemErro(fn() => Lembrete::enviarTeste('(11) 99111-1111')), null);
+verificar('teste com número inválido e recusado', mensagemErro(fn() => Lembrete::enviarTeste('12')), 'Informe um número com DDD (10 ou 11 dígitos).');
+verificar('teste com número válido envia', mensagemErro(fn() => Lembrete::enviarTeste('(11) 99111-1111')), null);
 verificar('teste passou pelo provedor', count($envios), $antes + 1);
 verificar('teste cita a empresa', str_contains($envios[$antes]['corpo']['text'], 'Studio Lembrete'), true);
 
@@ -275,12 +275,12 @@ $r = Lembrete::processar();
 verificar('meta envia o lembrete novo', $r['enviadas'], 1);
 verificar('meta deixa o aviso de vaga para a fila manual', count($envios), 1);
 verificar('chamada foi para o Graph API', str_starts_with($envios[0]['url'], 'https://graph.facebook.com/'), true);
-verificar('chamada usa o numero configurado', str_contains($envios[0]['url'], '/123456789/messages'), true);
+verificar('chamada usa o número configurado', str_contains($envios[0]['url'], '/123456789/messages'), true);
 verificar('chamada leva o token Bearer', in_array('Authorization: Bearer chave-secreta', $envios[0]['cabecalhos'], true), true);
 verificar('chamada e do tipo modelo', $envios[0]['corpo']['type'], 'template');
 verificar('modelo e o configurado', $envios[0]['corpo']['template']['name'], 'lembrete_agendamento');
 $parametros = array_column($envios[0]['corpo']['template']['components'][0]['parameters'], 'text');
-verificar('modelo recebe nome, servico, data e hora', $parametros, ['Ana', 'Corte', formatarData($data), '14:00']);
+verificar('modelo recebe nome, serviço, data e hora', $parametros, ['Ana', 'Corte', formatarData($data), '14:00']);
 verificar('texto livre e recusado na meta', mensagemErro(fn() => WhatsApp::enviarTexto('5511991111111', 'oi')) !== null, true);
 
 // -------------------------------------------------------------------------
@@ -295,7 +295,7 @@ verificar('resumo cobre a empresa ativa', isset($resumo[$idEmpresa]), true);
 verificar('resumo ignora a empresa inativa', isset($resumo[$idInativa]), false);
 verificar('resumo traz o nome da empresa', $resumo[$idEmpresa]['nome'], 'Studio Lembrete');
 verificar('resumo traz o provedor', $resumo[$idEmpresa]['provedor'], 'meta');
-verificar('resumo em texto e legivel', str_starts_with(Lembrete::resumoTexto($idEmpresa, $resumo[$idEmpresa]), "[{$idEmpresa}] Studio Lembrete (meta)"), true);
+verificar('resumo em texto e legível', str_starts_with(Lembrete::resumoTexto($idEmpresa, $resumo[$idEmpresa]), "[{$idEmpresa}] Studio Lembrete (meta)"), true);
 
 // -------------------------------------------------------------------------
 // 7. Confirmacao de presenca pelo link e liberacao do horario sem resposta
@@ -311,26 +311,26 @@ verificar('token tem 32 hexadecimais', preg_match('/^[a-f0-9]{32}$/D', $token), 
 verificar('token e o mesmo a cada chamada', Confirmacao::token($a), $token);
 verificar('token muda se a hora mudar', Confirmacao::token(['hora_inicio' => '15:30:00'] + $a) !== $token, true);
 verificar('token aceita hora com ou sem segundos', Confirmacao::token(['hora_inicio' => '15:00'] + $a), $token);
-verificar('token errado nao abre nada', Confirmacao::porLink($agLink, str_repeat('0', 32)), null);
-verificar('token malformado nao abre nada', Confirmacao::porLink($agLink, 'abc'), null);
+verificar('token errado não abre nada', Confirmacao::porLink($agLink, str_repeat('0', 32)), null);
+verificar('token malformado não abre nada', Confirmacao::porLink($agLink, 'abc'), null);
 verificar('token certo abre o agendamento', (int) (Confirmacao::porLink($agLink, $token)['id_agendamento'] ?? 0), $agLink);
-verificar('link completo com numero, assinatura e empresa', Confirmacao::link($a), 'https://agendei.test/confirmar.php?a=' . $agLink . '&t=' . $token . '&estabelecimento=studio-lembrete');
+verificar('link completo com número, assinatura e empresa', Confirmacao::link($a), 'https://agendei.test/confirmar.php?a=' . $agLink . '&t=' . $token . '&estabelecimento=studio-lembrete');
 
 $envios = [];
 $r = Lembrete::processar();
 verificar('lembrete novo entra na fila', $r['geradas'], 1);
-verificar('lembrete leva o link de confirmacao', str_contains(notificacaoDe($agLink)['mensagem'], Confirmacao::link($a)), true);
+verificar('lembrete leva o link de confirmação', str_contains(notificacaoDe($agLink)['mensagem'], Confirmacao::link($a)), true);
 verificar('lembrete recem-enviado nao libera nada', $r['liberadas'], 0);
 
-verificar('reserva nova esta aberta', Confirmacao::situacao($a), 'aberto');
+verificar('reserva nova está aberta', Confirmacao::situacao($a), 'aberto');
 verificar('cliente confirma pelo link', Confirmacao::confirmar($a), true);
 $a = Agendamento::porId($agLink);
-verificar('confirmacao muda o status', $a['status'], 'confirmado');
-verificar('situacao passa a confirmada', Confirmacao::situacao($a), 'confirmado');
-verificar('confirmar de novo nao altera', Confirmacao::confirmar($a), false);
+verificar('confirmação muda o status', $a['status'], 'confirmado');
+verificar('situação passa a confirmada', Confirmacao::situacao($a), 'confirmado');
+verificar('confirmar de novo não altera', Confirmacao::confirmar($a), false);
 
 Diferencial::entrarLista($idClienteD, $idServico, null, $data, 'tarde');
-verificar('cliente avisa que nao vai', Confirmacao::recusar($a), true);
+verificar('cliente avisa que não vai', Confirmacao::recusar($a), true);
 $a = Agendamento::porId($agLink);
 verificar('recusa cancela a reserva', $a['status'], 'cancelado');
 verificar('recusa registra o motivo', str_contains((string) $a['motivo_cancelamento'], 'link'), true);
@@ -338,10 +338,10 @@ $vagas = array_values(array_filter(
     Diferencial::notificacoesPendentes(),
     fn(array $n): bool => str_starts_with((string) $n['tipo'], 'vaga_lista_') && (int) $n['id_agendamento'] === $agLink
 ));
-verificar('recusa avisa quem esta na lista de espera', count($vagas), 1);
+verificar('recusa avisa quem está na lista de espera', count($vagas), 1);
 verificar('aviso vai para o telefone de quem espera', $vagas[0]['destinatario'] ?? null, '11994444444');
-verificar('recusar de novo nao altera', Confirmacao::recusar($a), false);
-verificar('situacao passa a cancelada', Confirmacao::situacao($a), 'cancelado');
+verificar('recusar de novo não altera', Confirmacao::recusar($a), false);
+verificar('situação passa a cancelada', Confirmacao::situacao($a), 'cancelado');
 
 // O aviso de vaga fala de uma reserva cancelada: a tarefa precisa envia-lo
 // mesmo assim (antes, o cancelamento da reserva derrubava o aviso junto).
@@ -351,7 +351,7 @@ $textos = array_map(fn(array $e): string => (string) ($e['corpo']['text'] ?? '')
 verificar('aviso de vaga sai apesar da reserva cancelada', count(array_filter($textos, fn(string $t): bool => str_contains($t, 'Surgiu uma vaga em'))), 1);
 
 // Liberacao: so quem recebeu o lembrete ha pelo menos uma hora e nao respondeu.
-verificar('liberacao desligada por padrao', Confirmacao::liberarSemConfirmacao(), 0);
+verificar('liberação desligada por padrão', Confirmacao::liberarSemConfirmacao(), 0);
 Configuracao::definir('liberar_sem_confirmacao_horas', '46');
 $agSemResposta = agendar($idClienteA, $idProfissional, $idServico, $data, '16:00');
 $agConfirmado  = agendar($idClienteA, $idProfissional, $idServico, $data, '16:30');
@@ -361,7 +361,7 @@ Configuracao::definir('sinal_percentual', '50');
 $agComSinal = agendar($idClienteA, $idProfissional, $idServico, $data, '17:30');
 Configuracao::definir('sinal_percentual', '0');
 $pagamentoSinal = array_values(array_filter(Diferencial::pagamentos(), fn(array $p): bool => (int) $p['id_agendamento'] === $agComSinal));
-verificar('reserva com sinal gera a cobranca', count($pagamentoSinal), 1);
+verificar('reserva com sinal gera a cobrança', count($pagamentoSinal), 1);
 Diferencial::atualizarPagamento((int) $pagamentoSinal[0]['id_pagamento'], 'pago');
 
 $envios = [];
@@ -377,24 +377,24 @@ bd()->prepare('UPDATE notificacoes SET status = \'pendente\', data_envio = NULL 
 bd()->prepare('UPDATE notificacoes SET data_envio = ? WHERE id_estabelecimento = ? AND status = \'enviada\' AND tipo LIKE \'lembrete_%\' AND id_agendamento IN (?, ?, ?)')
     ->execute([date('Y-m-d H:i:s', time() - 7200), Contexto::id(), $agSemResposta, $agConfirmado, $agComSinal]);
 
-verificar('libera so quem foi avisado e nao respondeu', Confirmacao::liberarSemConfirmacao(), 1);
+verificar('libera só quem foi avisado e não respondeu', Confirmacao::liberarSemConfirmacao(), 1);
 verificar('reserva sem resposta e cancelada', Agendamento::porId($agSemResposta)['status'], 'cancelado');
-verificar('cancelamento explica a liberacao', str_contains((string) Agendamento::porId($agSemResposta)['motivo_cancelamento'], 'sem confirmacao'), true);
+verificar('cancelamento explica a liberação', str_contains((string) Agendamento::porId($agSemResposta)['motivo_cancelamento'], 'sem confirmação'), true);
 verificar('reserva confirmada fica', Agendamento::porId($agConfirmado)['status'], 'confirmado');
 verificar('reserva sem lembrete enviado fica', Agendamento::porId($agSemLembrete)['status'], 'agendado');
 verificar('reserva com sinal pago fica', Agendamento::porId($agComSinal)['status'], 'agendado');
 $q = bd()->prepare('SELECT * FROM notificacoes WHERE id_estabelecimento = ? AND id_agendamento = ? AND tipo = ?');
 $q->execute([Contexto::id(), $agSemResposta, Confirmacao::TIPO_LIBERACAO]);
 $avisoLiberacao = $q->fetch() ?: [];
-verificar('cliente recebe o aviso da liberacao na fila', $avisoLiberacao['status'] ?? null, 'pendente');
-verificar('aviso cita o horario liberado', str_contains((string) ($avisoLiberacao['mensagem'] ?? ''), '16:00'), true);
-verificar('liberar de novo nao repete', Confirmacao::liberarSemConfirmacao(), 0);
+verificar('cliente recebe o aviso da liberação na fila', $avisoLiberacao['status'] ?? null, 'pendente');
+verificar('aviso cita o horário liberado', str_contains((string) ($avisoLiberacao['mensagem'] ?? ''), '16:00'), true);
+verificar('liberar de novo não repete', Confirmacao::liberarSemConfirmacao(), 0);
 
 $envios = [];
 Lembrete::processar();
 $textos = array_map(fn(array $e): string => (string) ($e['corpo']['text'] ?? ''), $envios);
-verificar('aviso de liberacao sai apesar da reserva cancelada', count(array_filter($textos, fn(string $t): bool => str_contains($t, 'foi liberado'))), 1);
-verificar('resumo em texto conta as liberacoes', str_contains(Lembrete::resumoTexto($idEmpresa, ['nome' => 'X', 'provedor' => 'evolution', 'liberadas' => 1]), '1 liberado(s)'), true);
+verificar('aviso de liberação sai apesar da reserva cancelada', count(array_filter($textos, fn(string $t): bool => str_contains($t, 'foi liberado'))), 1);
+verificar('resumo em texto conta as liberações', str_contains(Lembrete::resumoTexto($idEmpresa, ['nome' => 'X', 'provedor' => 'evolution', 'liberadas' => 1]), '1 liberado(s)'), true);
 
 // -------------------------------------------------------------------------
 // 8. Migracao repetida nao falha nem duplica
@@ -402,11 +402,11 @@ verificar('resumo em texto conta as liberacoes', str_contains(Lembrete::resumoTe
 ob_start();
 require 'scripts/migrar_lembretes.php';
 ob_end_clean();
-verificar('migracao repetida preserva a fila', notificacaoDe($agA)['status'], 'enviada');
+verificar('migração repetida preserva a fila', notificacaoDe($agA)['status'], 'enviada');
 
 WhatsApp::simular(null);
 
 // -------------------------------------------------------------------------
-echo "OK: {$total} verificacoes dos lembretes";
+echo "OK: {$total} verificações dos lembretes";
 echo $falhas === 0 ? ".\n" : ", {$falhas} FALHA(S).\n";
 exit($falhas === 0 ? 0 : 1);

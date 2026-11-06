@@ -45,7 +45,7 @@ require_once RAIZ . '/includes/painel_header.php';
 
 <div class="cabecalho-pagina">
     <div>
-        <h2>Ola, <?= e(explode(' ', usuarioNome())[0]) ?></h2>
+        <h2>Olá, <?= e(explode(' ', usuarioNome())[0]) ?></h2>
         <p>Acompanhe seus agendamentos e marque novos atendimentos.</p>
     </div>
 </div>
@@ -60,7 +60,7 @@ require_once RAIZ . '/includes/painel_header.php';
             <strong><?= e($proximo['nome_servico']) ?></strong>
             <span>
                 <?= e($proximo['nome_profissional']) ?> &middot;
-                <?= formatarHora($proximo['hora_inicio']) ?> as <?= formatarHora($proximo['hora_fim']) ?> &middot;
+                <?= formatarHora($proximo['hora_inicio']) ?> às <?= formatarHora($proximo['hora_fim']) ?> &middot;
                 <?= formatarMoeda($proximo['valor']) ?>
             </span>
         </div>
@@ -74,8 +74,8 @@ require_once RAIZ . '/includes/painel_header.php';
 <?php else: ?>
     <div class="cartao">
         <div class="estado-vazio">
-            <strong>Voce nao tem agendamentos futuros</strong>
-            <p>Escolha um servico e marque seu proximo atendimento.</p>
+            <strong>Você não tem agendamentos futuros</strong>
+            <p>Escolha um serviço e marque seu próximo atendimento.</p>
             <a href="<?= url('cliente/agendar.php') ?>" class="btn margem-topo">Agendar agora</a>
         </div>
     </div>
@@ -93,9 +93,9 @@ require_once RAIZ . '/includes/painel_header.php';
         <span class="indicador-nota">Desde o cadastro</span>
     </div>
     <div class="indicador indicador-positivo">
-        <span class="indicador-rotulo">Atendimentos concluidos</span>
+        <span class="indicador-rotulo">Atendimentos concluídos</span>
         <span class="indicador-valor"><?= (int) $totais['concluidos'] ?></span>
-        <span class="indicador-nota">Servicos ja realizados</span>
+        <span class="indicador-nota">Serviços já realizados</span>
     </div>
     <div class="indicador">
         <span class="indicador-rotulo">Cancelamentos</span>
@@ -114,7 +114,7 @@ require_once RAIZ . '/includes/painel_header.php';
         <?php if ($proximos === []): ?>
             <div class="estado-vazio">
                 <strong>Nenhum agendamento futuro</strong>
-                <p>Seus proximos atendimentos aparecerao aqui.</p>
+                <p>Seus próximos atendimentos aparecerão aqui.</p>
             </div>
         <?php else: ?>
             <div class="tabela-area">
@@ -122,7 +122,7 @@ require_once RAIZ . '/includes/painel_header.php';
                     <thead>
                         <tr>
                             <th>Data</th>
-                            <th>Servico</th>
+                            <th>Serviço</th>
                             <th>Profissional</th>
                             <th>Status</th>
                             <th class="coluna-acoes">Valor</th>
@@ -149,14 +149,14 @@ require_once RAIZ . '/includes/painel_header.php';
 
     <div class="cartao">
         <div class="cartao-cabecalho">
-            <h3>Ultimos atendimentos</h3>
-            <a href="<?= url('cliente/historico.php') ?>" class="btn-texto">Historico</a>
+            <h3>Últimos atendimentos</h3>
+            <a href="<?= url('cliente/historico.php') ?>" class="btn-texto">Histórico</a>
         </div>
 
         <?php if ($ultimos === []): ?>
             <div class="estado-vazio">
                 <strong>Nenhum atendimento anterior</strong>
-                <p>Seu historico comeca apos o primeiro atendimento.</p>
+                <p>Seu histórico começa após o primeiro atendimento.</p>
             </div>
         <?php else: ?>
             <ul class="lista-simples">

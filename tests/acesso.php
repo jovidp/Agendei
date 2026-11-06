@@ -47,12 +47,12 @@ function verificar(bool $condicao, string $mensagem): void
 
 session_save_path(sys_get_temp_dir());
 iniciarSessao();
-verificar(session_status() === PHP_SESSION_ACTIVE, 'Sessao de teste nao iniciou.');
+verificar(session_status() === PHP_SESSION_ACTIVE, 'Sessão de teste não iniciou.');
 foreach (['empresa-a', 'empresa-b'] as $slug) {
     // O e-mail e unico em toda a plataforma: cada empresa tem o seu responsavel.
     $email = 'admin-' . substr($slug, -1) . '@teste.local';
     $id = Estabelecimento::contratar([
-        'estabelecimento' => $slug, 'slug' => $slug, 'nome' => 'Responsavel Teste',
+        'estabelecimento' => $slug, 'slug' => $slug, 'nome' => 'Responsável Teste',
         'email' => $email, 'senha' => 'Teste12345!',
     ]);
     $_SESSION = [];
@@ -60,20 +60,20 @@ foreach (['empresa-a', 'empresa-b'] as $slug) {
     Contexto::iniciar();
     $usuario = autenticar($email, 'Teste12345!');
     verificar($usuario !== null && (int) $usuario['id_estabelecimento'] === $id, 'Login selecionou outra empresa.');
-    verificar($usuario['tipo'] === 'admin', 'Cadastro nao criou administrador local.');
-    verificar(autenticar($email, 'senha-errada') === null, 'Senha invalida aceita.');
+    verificar($usuario['tipo'] === 'admin', 'Cadastro não criou administrador local.');
+    verificar(autenticar($email, 'senha-errada') === null, 'Senha inválida aceita.');
 
     // As paginas levam a empresa no link, mas o caminho de volta para a home nao:
     // index.php com a empresa devolve ao login dela, e o botao parecia nao funcionar.
     verificar(str_contains(url('index.php'), 'estabelecimento=' . rawurlencode($slug)), 'Paginas deixaram de levar a empresa.');
-    verificar(urlInicio() === BASE_URL . '/index.php', 'Link da pagina inicial levou a empresa junto.');
+    verificar(urlInicio() === BASE_URL . '/index.php', 'Link da página inicial levou a empresa junto.');
 
     // Fora da entrada geral (tests/entrada_global.php), a requisicao nunca troca de empresa.
     try {
         Contexto::assumir($id);
         verificar(false, 'Contexto::assumir aceito fora da entrada geral.');
     } catch (LogicException) {
-        verificar(Contexto::id() === $id, 'Contexto mudou apos a recusa do assumir.');
+        verificar(Contexto::id() === $id, 'Contexto mudou após a recusa do assumir.');
     }
 
     // A conta master e global e nunca assume um estabelecimento pela URL (o
@@ -83,10 +83,10 @@ foreach (['empresa-a', 'empresa-b'] as $slug) {
     // acabou de criar.
     $_SESSION = ['master_id' => 99, 'usuario_tipo' => 'master'];
     descartarIdentidadeMaster();
-    verificar(!sessaoAbertaEm('master') && perfil() === null, 'Identidade master nao foi descartada.');
+    verificar(!sessaoAbertaEm('master') && perfil() === null, 'Identidade master não foi descartada.');
     Contexto::iniciar();
-    verificar(Contexto::id() === $id, 'Sem a identidade master, o slug nao resolveu o estabelecimento.');
-    verificar(autenticar($email, 'Teste12345!') !== null, 'Login local falhou apos descartar a identidade master.');
+    verificar(Contexto::id() === $id, 'Sem a identidade master, o slug não resolveu o estabelecimento.');
+    verificar(autenticar($email, 'Teste12345!') !== null, 'Login local falhou após descartar a identidade master.');
     $_SESSION = [];
     Contexto::iniciar();
 
@@ -96,17 +96,17 @@ foreach (['empresa-a', 'empresa-b'] as $slug) {
     $_SESSION['segundo_fator_master'] = ['master_id' => 99];
     $_SESSION['redirecionar_apos_login'] = BASE_URL . '/master/dashboard.php';
     // A tela de login local precisa continuar acessivel com a sessao master aberta.
-    verificar(!sessaoAbertaEm('local') && sessaoAbertaEm('master'), 'Sessao master bloqueou a tela de login local.');
+    verificar(!sessaoAbertaEm('local') && sessaoAbertaEm('master'), 'Sessão master bloqueou a tela de login local.');
     registrarSessao($usuario);
     verificar(ehAdmin() && !ehMaster() && !ehSimulacao() && !isset($_SESSION['master_id']), 'Login manteve identidade master.');
-    verificar(sessaoAbertaEm('local') && !sessaoAbertaEm('master'), 'Login local nao encerrou a sessao master.');
+    verificar(sessaoAbertaEm('local') && !sessaoAbertaEm('master'), 'Login local não encerrou a sessão master.');
     verificar(segundoFatorMasterPendente() === null, 'Login manteve desafio master.');
     verificar(perfilId() !== null, 'Login perdeu o perfil administrativo.');
     verificar(perfilRotulo() === 'Administrador do estabelecimento', 'Rotulo confunde admin com master.');
     verificar(destinoAposLogin() === url('admin/dashboard.php'), 'Login local encaminhou ao master.');
-    verificar(!isset($_SESSION['redirecionar_apos_login']), 'Destino antigo continuou na sessao.');
+    verificar(!isset($_SESSION['redirecionar_apos_login']), 'Destino antigo continuou na sessão.');
     Contexto::iniciar();
-    verificar(Contexto::id() === $id, 'Sessao perdeu o estabelecimento depois do login.');
+    verificar(Contexto::id() === $id, 'Sessão perdeu o estabelecimento depois do login.');
 }
 
 foreach (['admin', 'cliente', 'profissional', 'master'] as $perfil) {
@@ -133,7 +133,7 @@ foreach (['admin', 'cliente', 'profissional', 'master'] as $perfil) {
 $_SESSION['usuario_tipo'] = 'admin';
 $agenda = url('admin/agenda.php?data=2026-09-21');
 $_SESSION['redirecionar_apos_login'] = $agenda;
-verificar(destinoAposLogin() === $agenda, 'Destino valido perdeu filtros ou estabelecimento.');
+verificar(destinoAposLogin() === $agenda, 'Destino válido perdeu filtros ou estabelecimento.');
 $_SESSION['usuario_tipo'] = 'cliente';
 $_GET['destino'] = 'agendar';
 verificar(destinoAposLogin() === url('cliente/agendar.php'), 'Atalho para agendamento foi perdido.');
@@ -144,4 +144,4 @@ verificar(!isset($_SESSION['estabelecimento_id']), 'Master permaneceu vinculado 
 verificar(painelDe(perfil()) === 'master/dashboard.php', 'Master perdeu seu painel global.');
 
 session_destroy();
-echo "OK: {$checagens} verificacoes de acesso (base: " . (BASE_URL ?: '/') . ").\n";
+echo "OK: {$checagens} verificações de acesso (base: " . (BASE_URL ?: '/') . ").\n";

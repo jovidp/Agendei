@@ -59,7 +59,7 @@ $origem = 'teste-' . bin2hex(random_bytes(4));
 // ---------------------------------------------------------------------
 limparFalhas('login_conta', $origem);
 
-verificar('conta nova comeca sem bloqueio', tempoBloqueado('login_conta', $origem), 0);
+verificar('conta nova começa sem bloqueio', tempoBloqueado('login_conta', $origem), 0);
 
 // A politica tolera 8 falhas por conta em 15 minutos.
 for ($i = 0; $i < 7; $i++) {
@@ -79,7 +79,7 @@ verificar(
 
 // Login bem-sucedido zera o historico da conta.
 limparFalhas('login_conta', $origem);
-verificar('acesso valido libera a conta', tempoBloqueado('login_conta', $origem), 0);
+verificar('acesso válido libera a conta', tempoBloqueado('login_conta', $origem), 0);
 
 // ---------------------------------------------------------------------
 // Isolamento entre escopos e entre chaves
@@ -90,21 +90,21 @@ limparFalhas('login_conta', $outra);
 for ($i = 0; $i < 9; $i++) {
     anotarFalha('login_conta', $origem);
 }
-verificar('bloqueio de uma conta nao atinge outra', tempoBloqueado('login_conta', $outra), 0);
-verificar('bloqueio de conta nao atinge o escopo de IP', tempoBloqueado('login_ip', $origem), 0);
+verificar('bloqueio de uma conta não atinge outra', tempoBloqueado('login_conta', $outra), 0);
+verificar('bloqueio de conta não atinge o escopo de IP', tempoBloqueado('login_ip', $origem), 0);
 
 limparFalhas('login_conta', $origem);
 limparFalhas('login_conta', $outra);
 
 // Escopo inexistente nunca bloqueia, em vez de derrubar a pagina.
-verificar('escopo desconhecido nao bloqueia', tempoBloqueado('inexistente', $origem), 0);
+verificar('escopo desconhecido não bloqueia', tempoBloqueado('inexistente', $origem), 0);
 
 // ---------------------------------------------------------------------
 // Chave gravada
 // ---------------------------------------------------------------------
 verificar('chave tem tamanho fixo de hash', strlen(Tentativa::chave('login_conta', 'a@b.com')), 64);
 verificar(
-    'chave nao guarda o valor em texto claro',
+    'chave não guarda o valor em texto claro',
     str_contains(Tentativa::chave('login_conta', 'a@b.com'), 'a@b.com'),
     false
 );
@@ -126,21 +126,21 @@ $_SERVER['REMOTE_ADDR'] = '10.0.0.5';
 $_SERVER['HTTP_X_FORWARDED_FOR'] = '203.0.113.9, 198.51.100.7';
 
 putenv('AGENDEI_PROXY_CONFIAVEL');
-verificar('sem proxy confiavel o cabecalho e ignorado', ipCliente(), '10.0.0.5');
+verificar('sem proxy confiável o cabeçalho e ignorado', ipCliente(), '10.0.0.5');
 
 putenv('AGENDEI_PROXY_CONFIAVEL=1');
-verificar('com proxy confiavel vale a ultima entrada', ipCliente(), '198.51.100.7');
+verificar('com proxy confiável vale a última entrada', ipCliente(), '198.51.100.7');
 
 $_SERVER['HTTP_X_FORWARDED_FOR'] = 'nao-e-um-ip';
-verificar('cabecalho invalido volta para o endereco direto', ipCliente(), '10.0.0.5');
+verificar('cabeçalho inválido volta para o endereço direto', ipCliente(), '10.0.0.5');
 
 unset($_SERVER['HTTP_X_FORWARDED_FOR']);
-verificar('sem cabecalho vale o endereco direto', ipCliente(), '10.0.0.5');
+verificar('sem cabeçalho vale o endereço direto', ipCliente(), '10.0.0.5');
 putenv('AGENDEI_PROXY_CONFIAVEL');
 
 // O log nunca deve guardar o endereco inteiro.
-verificar('ipv4 mascarado no ultimo octeto', mascararIp('203.0.113.42'), '203.0.113.x');
-verificar('ipv6 mascarado apos o terceiro bloco', mascararIp('2001:db8:85a3:0:0:8a2e:370:7334'), '2001:db8:85a3:...');
+verificar('ipv4 mascarado no último octeto', mascararIp('203.0.113.42'), '203.0.113.x');
+verificar('ipv6 mascarado após o terceiro bloco', mascararIp('2001:db8:85a3:0:0:8a2e:370:7334'), '2001:db8:85a3:...');
 
 // ---------------------------------------------------------------------
 // Limites de sessao
@@ -148,7 +148,7 @@ verificar('ipv6 mascarado apos o terceiro bloco', mascararIp('2001:db8:85a3:0:0:
 verificar('admin tem a janela mais curta', limiteInatividade('admin'), 20);
 verificar('master tem a janela mais curta', limiteInatividade('master'), 20);
 verificar('cliente tem a janela mais longa', limiteInatividade('cliente'), 45);
-verificar('perfil desconhecido cai no padrao', limiteInatividade(null), 45);
+verificar('perfil desconhecido cai no padrão', limiteInatividade(null), 45);
 
 // ---------------------------------------------------------------------
 // Mensagem apresentada ao usuario
@@ -156,7 +156,7 @@ verificar('perfil desconhecido cai no padrao', limiteInatividade(null), 45);
 verificar('mensagem no singular', mensagemBloqueio(30), 'Muitas tentativas seguidas. Aguarde um minuto antes de tentar novamente.');
 verificar('mensagem no plural', mensagemBloqueio(600), 'Muitas tentativas seguidas. Aguarde 10 minutos antes de tentar novamente.');
 verificar(
-    'mensagem nao revela se a conta existe',
+    'mensagem não revela se a conta existe',
     str_contains(mb_strtolower(mensagemBloqueio(600)), 'conta') || str_contains(mb_strtolower(mensagemBloqueio(600)), 'senha'),
     false
 );
@@ -168,7 +168,7 @@ $_SERVER['HTTP_HOST'] = 'agendei.exemplo.br';
 $_SERVER['HTTPS'] = 'on';
 
 $_SERVER['HTTP_ORIGIN'] = 'https://agendei.exemplo.br';
-verificar('origem propria e aceita', origemConfere(), true);
+verificar('origem própria e aceita', origemConfere(), true);
 
 $_SERVER['HTTP_ORIGIN'] = 'https://site-falso.example';
 verificar('origem externa e recusada', origemConfere(), false);
@@ -179,14 +179,14 @@ verificar('dominio parecido e recusado', origemConfere(), false);
 
 unset($_SERVER['HTTP_ORIGIN']);
 $_SERVER['HTTP_REFERER'] = 'https://agendei.exemplo.br/admin/dashboard.php';
-verificar('sem Origin, o Referer proprio vale', origemConfere(), true);
+verificar('sem Origin, o Referer próprio vale', origemConfere(), true);
 
 $_SERVER['HTTP_REFERER'] = 'https://outro.example/pagina.php';
 verificar('sem Origin, o Referer externo e recusado', origemConfere(), false);
 
 // Cliente que nao envia nenhum dos dois continua protegido pelo token.
 unset($_SERVER['HTTP_REFERER']);
-verificar('sem Origin nem Referer a verificacao se abstem', origemConfere(), true);
+verificar('sem Origin nem Referer a verificação se abstem', origemConfere(), true);
 
 // ---------------------------------------------------------------------
 // Politica de conteudo
@@ -201,7 +201,7 @@ foreach (politicaLimites() as $escopo => $regra) {
 
 // Todo escopo citado no codigo das telas precisa existir na politica.
 foreach (['login_conta', 'login_ip', 'master_ip', 'fator_ip', 'recuperar_ip', 'cadastro_ip', 'instalador_ip', 'tarefas_ip'] as $esperado) {
-    verificar("escopo {$esperado} esta na politica", in_array($esperado, $politica, true), true);
+    verificar("escopo {$esperado} está na politica", in_array($esperado, $politica, true), true);
 }
 
 // ---------------------------------------------------------------------

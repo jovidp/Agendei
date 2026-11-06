@@ -26,14 +26,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // A chave vem da propria listagem; conferir formato e escopo conhecido
         // impede que um POST forjado vire um DELETE com valores arbitrarios.
         if (!isset(politicaLimites()[$escopo]) || !preg_match('/^[a-f0-9]{64}$/D', $chave)) {
-            $erros[] = 'Bloqueio invalido.';
+            $erros[] = 'Bloqueio inválido.';
         } else {
             Tentativa::limpar($escopo, $chave);
             LogMaster::registrar('bloqueio_liberado', [
                 'alvo'    => Tentativa::escopoTexto($escopo),
                 'detalhe' => 'chave ' . substr($chave, 0, 12),
             ]);
-            definirFlash('sucesso', 'Bloqueio liberado. A proxima tentativa dessa origem sera aceita.');
+            definirFlash('sucesso', 'Bloqueio liberado. A próxima tentativa dessa origem será aceita.');
             redirecionar('master/seguranca.php');
         }
     }
@@ -75,8 +75,8 @@ $tempoTexto = static function (int $segundos): string {
     return $minutos <= 1 ? 'menos de 1 min' : $minutos . ' min';
 };
 
-$tituloPagina  = 'Seguranca';
-$subtituloTopo = 'Acessos e bloqueios de todos os estabelecimentos nas ultimas 24 horas';
+$tituloPagina  = 'Segurança';
+$subtituloTopo = 'Acessos e bloqueios de todos os estabelecimentos nas últimas 24 horas';
 require RAIZ . '/includes/painel_header.php';
 ?>
 <?php if ($erros): ?>
@@ -87,7 +87,7 @@ require RAIZ . '/includes/painel_header.php';
     <div class="indicador indicador-destaque">
         <span class="indicador-rotulo">Bloqueios ativos</span>
         <strong class="indicador-valor"><?= count($bloqueios) ?></strong>
-        <span class="indicador-nota">Contas ou origens aguardando liberacao</span>
+        <span class="indicador-nota">Contas ou origens aguardando liberação</span>
     </div>
     <div class="indicador">
         <span class="indicador-rotulo">Falhas de login (24h)</span>
@@ -111,12 +111,12 @@ require RAIZ . '/includes/painel_header.php';
     <?php if ($bloqueios === []): ?>
         <div class="estado-vazio">
             <strong>Nenhum bloqueio ativo.</strong>
-            <p>Contas e origens que errarem a senha varias vezes seguidas aparecem aqui ate o prazo vencer.</p>
+            <p>Contas e origens que errarem a senha varias vezes seguidas aparecem aqui até o prazo vencer.</p>
         </div>
     <?php else: ?>
         <div class="cartao-corpo">
             <p class="ajuda-campo">
-                A chave e guardada como hash: o sistema conta as falhas sem manter a lista de e-mails e enderecos que erraram.
+                A chave e guardada como hash: o sistema conta as falhas sem manter a lista de e-mails e endereços que erraram.
                 Para atender um chamado, basta liberar a linha correspondente.
             </p>
         </div>
@@ -153,7 +153,7 @@ require RAIZ . '/includes/painel_header.php';
 
 <div class="cartao">
     <div class="cartao-cabecalho">
-        <h3>Autenticacao em todos os estabelecimentos</h3>
+        <h3>Autenticação em todos os estabelecimentos</h3>
         <small><?= (int) $total ?> registro(s)</small>
     </div>
 
@@ -175,10 +175,10 @@ require RAIZ . '/includes/painel_header.php';
             <select id="evento" name="evento" data-envia-ao-mudar>
                 <option value="">Todos os eventos</option>
                 <option value="login_sucesso" <?= $evento === 'login_sucesso' ? 'selected' : '' ?>>Login validado</option>
-                <option value="2fa_sucesso" <?= $evento === '2fa_sucesso' ? 'selected' : '' ?>>Entrada concluida</option>
+                <option value="2fa_sucesso" <?= $evento === '2fa_sucesso' ? 'selected' : '' ?>>Entrada concluída</option>
                 <option value="login_falha" <?= $evento === 'login_falha' ? 'selected' : '' ?>>Falha no login</option>
                 <option value="2fa_falha" <?= $evento === '2fa_falha' ? 'selected' : '' ?>>Resposta 2FA incorreta</option>
-                <option value="2fa_bloqueio" <?= $evento === '2fa_bloqueio' ? 'selected' : '' ?>>Bloqueio apos 3 tentativas</option>
+                <option value="2fa_bloqueio" <?= $evento === '2fa_bloqueio' ? 'selected' : '' ?>>Bloqueio após 3 tentativas</option>
                 <option value="logout" <?= $evento === 'logout' ? 'selected' : '' ?>>Saida do sistema</option>
             </select>
         </div>
@@ -198,13 +198,13 @@ require RAIZ . '/includes/painel_header.php';
     <?php if ($lista === []): ?>
         <div class="estado-vazio">
             <strong>Nenhum registro encontrado.</strong>
-            <p>As entradas aparecem conforme os usuarios acessam qualquer estabelecimento da plataforma.</p>
+            <p>As entradas aparecem conforme os usuários acessam qualquer estabelecimento da plataforma.</p>
         </div>
     <?php else: ?>
         <div class="tabela-area">
             <table class="tabela">
                 <thead>
-                    <tr><th>Dia e hora</th><th>Estabelecimento</th><th>Usuario</th><th>Login informado</th><th>Evento</th><th>Perfil</th><th>Origem</th></tr>
+                    <tr><th>Dia e hora</th><th>Estabelecimento</th><th>Usuário</th><th>Login informado</th><th>Evento</th><th>Perfil</th><th>Origem</th></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($lista as $registro): ?>

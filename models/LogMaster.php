@@ -17,8 +17,8 @@ class LogMaster
 {
     /** Acoes registradas, com o rotulo exibido na tela de auditoria. */
     public const ACOES = [
-        'login'                  => 'Entrada na area master',
-        'logout'                 => 'Saida da area master',
+        'login'                  => 'Entrada na área master',
+        'logout'                 => 'Saida da área master',
         'estabelecimento_criado' => 'Estabelecimento criado',
         'estabelecimento_status' => 'Acesso do estabelecimento alterado',
         'estabelecimento_excluido' => 'Estabelecimento excluído',
@@ -213,7 +213,7 @@ class LogMaster
             }
             self::$tabelaPronta = true;
         } catch (Throwable $erro) {
-            error_log('Tabela de auditoria master indisponivel: ' . $erro->getMessage());
+            error_log('Tabela de auditoria master indisponível: ' . $erro->getMessage());
             self::$tabelaPronta = false;
         }
 

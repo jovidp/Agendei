@@ -60,7 +60,7 @@ function verificar(bool $condicao, string $mensagem): void
 
 session_save_path(sys_get_temp_dir());
 iniciarSessao();
-verificar(session_status() === PHP_SESSION_ACTIVE, 'Sessao de teste nao iniciou.');
+verificar(session_status() === PHP_SESSION_ACTIVE, 'Sessão de teste não iniciou.');
 
 // Quatro empresas com responsaveis diferentes. O e-mail e uma identidade
 // global e nao pode mais aparecer em duas contas.
@@ -78,11 +78,11 @@ bd()->exec("UPDATE estabelecimento SET status = 'inativo' WHERE slug = 'empresa-
 // segundo vinculo (administradora tambem da empresa nova) e a senha dela fica.
 $ids['empresa-e'] = Estabelecimento::contratar([
     'estabelecimento' => 'empresa-e', 'slug' => 'empresa-e',
-    'nome' => 'Responsavel duplicado', 'email' => 'PESSOA-A@teste.local ', 'senha' => 'outra-senha-ignorada',
+    'nome' => 'Responsável duplicado', 'email' => 'PESSOA-A@teste.local ', 'senha' => 'outra-senha-ignorada',
 ]);
 $idPessoaA = (int) bd()->query("SELECT id_usuario FROM usuarios WHERE email = 'pessoa-a@teste.local'")->fetchColumn();
-verificar((int) bd()->query("SELECT COUNT(*) FROM usuarios WHERE email = 'pessoa-a@teste.local'")->fetchColumn() === 1, 'O segundo vinculo criou outra pessoa.');
-verificar(count(Vinculo::daPessoa($idPessoaA)) === 2, 'A pessoa nao ficou com dois vinculos.');
+verificar((int) bd()->query("SELECT COUNT(*) FROM usuarios WHERE email = 'pessoa-a@teste.local'")->fetchColumn() === 1, 'O segundo vínculo criou outra pessoa.');
+verificar(count(Vinculo::daPessoa($idPessoaA)) === 2, 'A pessoa não ficou com dois vínculos.');
 $vinculoRepetido = false;
 try {
     Estabelecimento::vincularAdministrador($ids['empresa-e'], $idPessoaA);
@@ -98,7 +98,7 @@ $_SESSION = [];
 $_GET = ['estabelecimento' => 'empresa-c'];
 Contexto::iniciar();
 verificar(Contexto::id() === 0 && Contexto::slug() === '', 'A entrada geral assumiu uma empresa pela URL.');
-verificar(Contexto::dados()['nome'] === 'Agendei', 'A entrada geral nao usou a aparencia da plataforma.');
+verificar(Contexto::dados()['nome'] === 'Agendei', 'A entrada geral não usou a aparência da plataforma.');
 verificar(!str_contains(url('entrar.php'), 'estabelecimento='), 'A URL da entrada geral carregou slug de empresa.');
 
 // -------------------------------------------------------------------------
@@ -107,17 +107,17 @@ verificar(!str_contains(url('entrar.php'), 'estabelecimento='), 'A URL da entrad
 $contas = autenticarGlobal('pessoa-a@teste.local', 'Senha-AB-1');
 $empresas = array_map('intval', array_column($contas, 'id_estabelecimento'));
 sort($empresas);
-verificar($empresas === [$ids['empresa-a'], $ids['empresa-e']], 'A entrada geral nao listou os dois vinculos da pessoa.');
+verificar($empresas === [$ids['empresa-a'], $ids['empresa-e']], 'A entrada geral não listou os dois vínculos da pessoa.');
 verificar(!isset($contas[0]['senha_hash']), 'autenticarGlobal expos o hash de senha.');
-verificar($contas[0]['estabelecimento_slug'] === 'empresa-a' && (int) $contas[0]['id_vinculo'] > 0, 'A conta veio sem o slug da empresa ou sem o vinculo.');
+verificar($contas[0]['estabelecimento_slug'] === 'empresa-a' && (int) $contas[0]['id_vinculo'] > 0, 'A conta veio sem o slug da empresa ou sem o vínculo.');
 verificar($contas[0]['tipo'] === 'admin', 'A conta veio sem o tipo.');
-verificar(autenticarGlobal('pessoa-a@teste.local', 'outra-senha-ignorada') === [], 'O segundo vinculo trocou a senha da pessoa.');
+verificar(autenticarGlobal('pessoa-a@teste.local', 'outra-senha-ignorada') === [], 'O segundo vínculo trocou a senha da pessoa.');
 
-verificar(autenticarGlobal('pessoa-c@teste.local', 'Senha-C-99') !== [] && count(autenticarGlobal('pessoa-c@teste.local', 'Senha-C-99')) === 1, 'A senha exclusiva da empresa c nao achou a conta.');
+verificar(autenticarGlobal('pessoa-c@teste.local', 'Senha-C-99') !== [] && count(autenticarGlobal('pessoa-c@teste.local', 'Senha-C-99')) === 1, 'A senha exclusiva da empresa c não achou a conta.');
 verificar(autenticarGlobal('pessoa-a@teste.local', 'senha-errada') === [], 'Senha errada devolveu contas.');
-verificar(autenticarGlobal('PESSOA-A@teste.local ', 'Senha-AB-1') !== [], 'O e-mail nao foi normalizado.');
+verificar(autenticarGlobal('PESSOA-A@teste.local ', 'Senha-AB-1') !== [], 'O e-mail não foi normalizado.');
 verificar(autenticarGlobal('ninguem@teste.local', 'Senha-AB-1') === [], 'E-mail desconhecido devolveu contas.');
-verificar(autenticarGlobal('nao-e-email', 'Senha-AB-1') === [], 'Identificador que nao e e-mail foi aceito.');
+verificar(autenticarGlobal('nao-e-email', 'Senha-AB-1') === [], 'Identificador que não é e-mail foi aceito.');
 verificar(autenticarGlobal('pessoa-a@teste.local', '') === [], 'Senha vazia foi aceita.');
 
 // Vinculo desligado some da escolha, mesmo com a senha certa.
@@ -133,7 +133,7 @@ Usuario::alterarStatusPessoa($idPessoaA, 'ativo');
 
 // A consulta sem segredos, usada pelas telas, ve todos os vinculos (inclusive os inativos).
 $vinculos = Usuario::vinculosPorEmail('pessoa-a@teste.local');
-verificar(count($vinculos) === 2, 'vinculosPorEmail nao listou os dois vinculos da pessoa.');
+verificar(count($vinculos) === 2, 'vinculosPorEmail não listou os dois vínculos da pessoa.');
 verificar(!isset($vinculos[0]['senha_hash']), 'vinculosPorEmail expos o hash de senha.');
 
 // -------------------------------------------------------------------------
@@ -147,12 +147,12 @@ try {
 }
 
 Contexto::assumir($ids['empresa-b']);
-verificar(Contexto::id() === $ids['empresa-b'] && Contexto::slug() === 'empresa-b', 'assumir nao trocou para a empresa escolhida.');
-verificar(str_contains(url('dois_fatores.php'), 'estabelecimento=empresa-b'), 'Depois de assumir, a URL nao carrega o slug da empresa.');
+verificar(Contexto::id() === $ids['empresa-b'] && Contexto::slug() === 'empresa-b', 'assumir não trocou para a empresa escolhida.');
+verificar(str_contains(url('dois_fatores.php'), 'estabelecimento=empresa-b'), 'Depois de assumir, a URL não carrega o slug da empresa.');
 
 $escolhida = autenticarGlobal('pessoa-b@teste.local', 'Senha-AB-1')[0];
 $usuario = Usuario::porId((int) $escolhida['id_usuario']);
-verificar($usuario !== null && (int) $usuario['id_estabelecimento'] === $ids['empresa-b'], 'A conta escolhida nao foi lida dentro da empresa.');
+verificar($usuario !== null && (int) $usuario['id_estabelecimento'] === $ids['empresa-b'], 'A conta escolhida não foi lida dentro da empresa.');
 Contexto::assumir($ids['empresa-a']);
 $idUsuarioA = (int) autenticarGlobal('pessoa-a@teste.local', 'Senha-AB-1')[0]['id_usuario'];
 Contexto::assumir($ids['empresa-b']);
@@ -162,18 +162,18 @@ LogAutenticacao::registrar('login_sucesso', 'pessoa-b@teste.local', $usuario);
 LogAutenticacao::registrarEm($ids['empresa-a'], 'login_falha', 'pessoa-a@teste.local', $vinculos[0]);
 LogAutenticacao::registrarEm(0, 'login_falha', 'pessoa-a@teste.local', null);
 $logs = bd()->query('SELECT id_estabelecimento, evento FROM logs_autenticacao ORDER BY rowid')->fetchAll();
-verificar(count($logs) === 2, 'Log sem empresa foi gravado, ou o log por empresa nao foi.');
-verificar((int) $logs[0]['id_estabelecimento'] === $ids['empresa-b'] && $logs[0]['evento'] === 'login_sucesso', 'O log de sucesso nao ficou na empresa assumida.');
-verificar((int) $logs[1]['id_estabelecimento'] === $ids['empresa-a'] && $logs[1]['evento'] === 'login_falha', 'O log de falha nao ficou na empresa indicada.');
+verificar(count($logs) === 2, 'Log sem empresa foi gravado, ou o log por empresa não foi.');
+verificar((int) $logs[0]['id_estabelecimento'] === $ids['empresa-b'] && $logs[0]['evento'] === 'login_sucesso', 'O log de sucesso não ficou na empresa assumida.');
+verificar((int) $logs[1]['id_estabelecimento'] === $ids['empresa-a'] && $logs[1]['evento'] === 'login_falha', 'O log de falha não ficou na empresa indicada.');
 
 registrarSessao($usuario);
-verificar(ehAdmin() && (int) $_SESSION['estabelecimento_id'] === $ids['empresa-b'], 'A sessao nao nasceu na empresa escolhida.');
-verificar(destinoAposLogin() === url('admin/dashboard.php') && str_contains(destinoAposLogin(), 'estabelecimento=empresa-b'), 'O destino apos a entrada geral perdeu a empresa.');
+verificar(ehAdmin() && (int) $_SESSION['estabelecimento_id'] === $ids['empresa-b'], 'A sessão não nasceu na empresa escolhida.');
+verificar(destinoAposLogin() === url('admin/dashboard.php') && str_contains(destinoAposLogin(), 'estabelecimento=empresa-b'), 'O destino após a entrada geral perdeu a empresa.');
 
 // Com a sessao aberta, a entrada geral deixa de ser neutra: o Contexto segue a sessao.
 $_GET = [];
 Contexto::iniciar();
-verificar(Contexto::id() === $ids['empresa-b'], 'Com sessao aberta, a entrada geral voltou ao contexto neutro.');
+verificar(Contexto::id() === $ids['empresa-b'], 'Com sessão aberta, a entrada geral voltou ao contexto neutro.');
 
 session_destroy();
-echo "OK: {$checagens} verificacoes da entrada geral (base: " . (BASE_URL ?: '/') . ").\n";
+echo "OK: {$checagens} verificações da entrada geral (base: " . (BASE_URL ?: '/') . ").\n";

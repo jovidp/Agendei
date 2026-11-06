@@ -15,7 +15,7 @@ $paginaAtiva     = $paginaAtiva ?? '';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="<?= e($estabelecimento['slogan'] ?? 'Agendamento de servicos online') ?>">
+    <meta name="description" content="<?= e($estabelecimento['slogan'] ?? 'Agendamento de serviços online') ?>">
     <title><?= e($tituloPagina) ?></title>
     <link rel="stylesheet" href="<?= url('assets/css/style.css') ?>">
     <?php foreach ($cssExtra as $arquivo): ?>
@@ -33,8 +33,8 @@ $paginaAtiva     = $paginaAtiva ?? '';
         </a>
 
         <nav class="menu-site" aria-label="Menu principal">
-            <a href="<?= url('index.php') ?>" class="<?= $paginaAtiva === 'inicio' ? 'ativo' : '' ?>">Inicio</a>
-            <a href="<?= url('index.php#servicos') ?>">Servicos</a>
+            <a href="<?= url('index.php') ?>" class="<?= $paginaAtiva === 'inicio' ? 'ativo' : '' ?>">Início</a>
+            <a href="<?= url('index.php#servicos') ?>">Serviços</a>
             <a href="<?= url('index.php#como-funciona') ?>">Como funciona</a>
             <a href="<?= url('index.php#profissionais') ?>">Profissionais</a>
             <a href="<?= url('index.php#contato') ?>">Contato</a>

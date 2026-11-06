@@ -265,11 +265,11 @@ function diaSemanaNome(int $dia, bool $abreviado = false): string
     $nomes = [
         0 => ['Domingo', 'Dom'],
         1 => ['Segunda-feira', 'Seg'],
-        2 => ['Terca-feira', 'Ter'],
+        2 => ['Terça-feira', 'Ter'],
         3 => ['Quarta-feira', 'Qua'],
         4 => ['Quinta-feira', 'Qui'],
         5 => ['Sexta-feira', 'Sex'],
-        6 => ['Sabado', 'Sab'],
+        6 => ['Sábado', 'Sáb'],
     ];
     if (!isset($nomes[$dia])) {
         return '';
@@ -530,7 +530,7 @@ function badgeStatus(string $status): string
     $rotulos = [
         'agendado'   => 'Agendado',
         'confirmado' => 'Confirmado',
-        'concluido'  => 'Concluido',
+        'concluido'  => 'Concluído',
         'cancelado'  => 'Cancelado',
         'ativo'      => 'Ativo',
         'inativo'    => 'Inativo',
@@ -539,9 +539,11 @@ function badgeStatus(string $status): string
         'convertido' => 'Convertido',
         'pendente'   => 'Pendente',
         'pago'       => 'Pago',
-        'demo'       => 'Demonstracao',
+        'demo'       => 'Demonstração',
         'bloqueada'  => 'Bloqueada',
         'estornado'  => 'Estornado',
+        'credito'    => 'Crédito',
+        'retido'     => 'Retido',
         'publicada'  => 'Publicada',
         'oculta'     => 'Oculta',
     ];
@@ -577,7 +579,7 @@ function renderizarPaginacao(int $total, int $pagina, int $porPagina, array $par
 
         if ($pagina > 1) {
             $parametros['pagina'] = $pagina - 1;
-            $html .= '<a href="?' . e(http_build_query($parametros)) . '" aria-label="Pagina anterior">&lsaquo;</a>';
+            $html .= '<a href="?' . e(http_build_query($parametros)) . '" aria-label="Página anterior">&lsaquo;</a>';
         }
 
         for ($numero = $inicio; $numero <= $fim; $numero++) {
@@ -589,7 +591,7 @@ function renderizarPaginacao(int $total, int $pagina, int $porPagina, array $par
 
         if ($pagina < $totalPaginas) {
             $parametros['pagina'] = $pagina + 1;
-            $html .= '<a href="?' . e(http_build_query($parametros)) . '" aria-label="Proxima pagina">&rsaquo;</a>';
+            $html .= '<a href="?' . e(http_build_query($parametros)) . '" aria-label="Próxima página">&rsaquo;</a>';
         }
 
         $html .= '</span>';

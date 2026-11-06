@@ -24,7 +24,7 @@ $ehPostgres = Database::ehPostgres();
 if (($argv[1] ?? '') !== '--worker') {
     $nomeTeste = 'agendei_test_' . bin2hex(random_bytes(6));
     if (!preg_match('/^agendei_test_[a-f0-9]{12}$/D', $nomeTeste)) {
-        throw new RuntimeException('Nome de banco de teste invalido.');
+        throw new RuntimeException('Nome de banco de teste inválido.');
     }
 
     $db = bd();
@@ -60,7 +60,7 @@ if (!preg_match('/^agendei_test_[a-f0-9]{12}$/D', getenv('AGENDEI_DB_NAME') ?: '
 // o banco ja existe e ja estamos conectados a ele.
 $arquivoEsquema = $ehPostgres ? 'banco_postgres.sql' : 'banco.sql';
 if (!is_file($arquivoEsquema)) {
-    throw new RuntimeException("Esquema {$arquivoEsquema} nao encontrado.");
+    throw new RuntimeException("Esquema {$arquivoEsquema} não encontrado.");
 }
 $esquema = preg_replace('/^(CREATE DATABASE|USE)\b[^;]*;\r?\n/mi', '', file_get_contents($arquivoEsquema));
 bd()->exec($esquema);
@@ -122,7 +122,7 @@ $idCliente = Cliente::criar([
     'numero'          => '1000',
     'complemento'     => 'Apto 52',
     'bairro'          => 'Bela Vista',
-    'cidade'          => 'Sao Paulo',
+    'cidade'          => 'São Paulo',
     'uf'              => 'SP',
 ]);
 
@@ -133,18 +133,18 @@ verificar('cliente gravado com o login', $cliente['login'], 'anabea');
 verificar('cliente gravado com o sexo', $cliente['sexo'], 'F');
 verificar('cliente gravado com o telefone fixo', $cliente['telefone_fixo'], '1133111111');
 verificar('cliente gravado com o CEP', $cliente['cep'], '01310100');
-verificar('cliente gravado com a cidade', $cliente['cidade'], 'Sao Paulo');
+verificar('cliente gravado com a cidade', $cliente['cidade'], 'São Paulo');
 
 $usuarioBanco = Usuario::porId((int) $cliente['id_usuario']);
-verificar('nome materno vai para usuarios', $usuarioBanco['nome_materno'], 'Márcia Lima Souza');
-verificar('data de nascimento replicada em usuarios', $usuarioBanco['data_nascimento'], '1995-04-18');
+verificar('nome materno vai para usuários', $usuarioBanco['nome_materno'], 'Márcia Lima Souza');
+verificar('data de nascimento replicada em usuários', $usuarioBanco['data_nascimento'], '1995-04-18');
 
 // -------------------------------------------------------------------------
 // Unicidade do login e do e-mail
 // -------------------------------------------------------------------------
 verificar('login existente e detectado', Usuario::loginEmUso('anabea'), true);
-verificar('login livre nao acusa uso', Usuario::loginEmUso('zzzzzz'), false);
-verificar('login em branco nao acusa uso', Usuario::loginEmUso(''), false);
+verificar('login livre não acusa uso', Usuario::loginEmUso('zzzzzz'), false);
+verificar('login em branco não acusa uso', Usuario::loginEmUso(''), false);
 verificar('e-mail existente e detectado', Usuario::emailEmUso('ana@exemplo.com.br'), true);
 
 // -------------------------------------------------------------------------
@@ -158,25 +158,25 @@ $autenticado = autenticar('anabea', 'agendeis');
 verificar('autentica pelo login', $autenticado !== null, true);
 verificar('log registrou o sucesso do login', contarEvento('login_sucesso'), 1);
 
-verificar('senha errada nao autentica', autenticar('anabea', 'erradaaa'), null);
+verificar('senha errada não autentica', autenticar('anabea', 'erradaaa'), null);
 verificar('log registrou a falha', contarEvento('login_falha'), 1);
 
-verificar('login inexistente nao autentica', autenticar('naoexiste', 'agendeis'), null);
+verificar('login inexistente não autentica', autenticar('naoexiste', 'agendeis'), null);
 verificar('log registrou a falha do login inexistente', contarEvento('login_falha'), 2);
 
 // -------------------------------------------------------------------------
 // Segundo fator
 // -------------------------------------------------------------------------
-verificar('usuario comum exige segundo fator', exigeSegundoFator($autenticado), true);
+verificar('usuário comum exige segundo fator', exigeSegundoFator($autenticado), true);
 
 iniciarSegundoFator($autenticado, 'anabea');
 $pendente = segundoFatorPendente();
-verificar('desafio pendente guarda o usuario', (int) $pendente['usuario_id'], (int) $autenticado['id_usuario']);
-verificar('pergunta sorteada esta entre as tres', in_array($pendente['fator'], ['nome_materno', 'data_nascimento', 'cep'], true), true);
-verificar('comeca com 3 tentativas', tentativasRestantesSegundoFator(), 3);
+verificar('desafio pendente guarda o usuário', (int) $pendente['usuario_id'], (int) $autenticado['id_usuario']);
+verificar('pergunta sorteada esta entre as três', in_array($pendente['fator'], ['nome_materno', 'data_nascimento', 'cep'], true), true);
+verificar('começa com 3 tentativas', tentativasRestantesSegundoFator(), 3);
 
 // A conta so entra na sessao depois do acerto: aqui ainda nao ha login.
-verificar('desafio pendente nao autentica a sessao', estaLogado(), false);
+verificar('desafio pendente não autentica a sessão', estaLogado(), false);
 
 // Respostas certas para cada uma das perguntas possiveis.
 verificar('acerta o nome da mae', respostaSegundoFatorConfere('nome_materno', 'marcia lima souza', $autenticado), true);
@@ -195,14 +195,14 @@ LogAutenticacao::registrar('2fa_bloqueio', 'anabea', $autenticado, $pendente['fa
 verificar('log registrou o bloqueio', contarEvento('2fa_bloqueio'), 1);
 
 cancelarSegundoFator();
-verificar('desafio cancelado some da sessao', segundoFatorPendente(), null);
+verificar('desafio cancelado some da sessão', segundoFatorPendente(), null);
 
 // Entrada concluida.
 LogAutenticacao::registrar('2fa_sucesso', 'anabea', $autenticado, 'cep', $cliente['cpf']);
 registrarSessao($autenticado);
-verificar('sessao aberta apos o segundo fator', estaLogado(), true);
+verificar('sessão aberta após o segundo fator', estaLogado(), true);
 verificar('login exibido no topo', usuarioLogin(), 'anabea');
-verificar('rotulo do perfil comum', perfilRotulo(), 'Usuario comum');
+verificar('rotulo do perfil comum', perfilRotulo(), 'Usuário comum');
 
 // -------------------------------------------------------------------------
 // Tela de log: filtros por nome, CPF e todos
@@ -241,17 +241,17 @@ verificar('contagem acompanha o filtro', Cliente::contar(['busca' => 'Beatriz'])
 // Exclusao pelo master: o log precisa sobreviver
 // -------------------------------------------------------------------------
 $idUsuarioExcluido = (int) $cliente['id_usuario'];
-verificar('exclusao do usuario', Usuario::excluir($idUsuarioExcluido), true);
-verificar('usuario sumiu da consulta', Cliente::porId($idCliente), null);
-verificar('lista de usuarios ficou vazia', Cliente::listar([]), []);
+verificar('exclusão do usuário', Usuario::excluir($idUsuarioExcluido), true);
+verificar('usuário sumiu da consulta', Cliente::porId($idCliente), null);
+verificar('lista de usuários ficou vazia', Cliente::listar([]), []);
 
-verificar('log continua completo apos a exclusao', LogAutenticacao::contar([]), $totalAntesDaExclusao);
+verificar('log continua completo após a exclusão', LogAutenticacao::contar([]), $totalAntesDaExclusao);
 $logDepois = LogAutenticacao::listar(['campo' => 'nome', 'busca' => 'Beatriz']);
-verificar('log ainda encontra o usuario pelo nome', count($logDepois) > 0, true);
-verificar('log preservou o nome do usuario excluido', $logDepois[0]['nome'], 'Ana Beatriz Lima Souza');
-verificar('log preservou o CPF do usuario excluido', $logDepois[0]['cpf'], '52998224725');
+verificar('log ainda encontra o usuário pelo nome', count($logDepois) > 0, true);
+verificar('log preservou o nome do usuário excluído', $logDepois[0]['nome'], 'Ana Beatriz Lima Souza');
+verificar('log preservou o CPF do usuário excluído', $logDepois[0]['cpf'], '52998224725');
 
 // -------------------------------------------------------------------------
-echo "OK: {$total} verificacoes do fluxo do projeto";
+echo "OK: {$total} verificações do fluxo do projeto";
 echo $falhas === 0 ? ".\n" : ", {$falhas} FALHA(S).\n";
 exit($falhas === 0 ? 0 : 1);

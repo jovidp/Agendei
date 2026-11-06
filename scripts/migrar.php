@@ -13,7 +13,7 @@ require_once __DIR__ . '/../models/Assinatura.php';
 if (Database::ehPostgres()) {
     fwrite(STDERR, "Este script atualiza apenas bancos MySQL/MariaDB.
 "
-        . "No PostgreSQL, importe banco_postgres.sql: ele ja traz o esquema completo.
+        . "No PostgreSQL, importe banco_postgres.sql: ele já traz o esquema completo.
 ");
     exit(1);
 }
@@ -146,5 +146,10 @@ require __DIR__ . '/migrar_lembrar.php';
 require_once __DIR__ . '/migrar_vinculos.php';
 $feitoVinculos = migrarVinculos($db);
 echo $feitoVinculos === []
-    ? "Pessoa e vinculo: o esquema ja estava pronto.\n"
-    : "Pessoa e vinculo separados:\n  - " . implode("\n  - ", $feitoVinculos) . "\n";
+    ? "Pessoa e vínculo: o esquema já estava pronto.\n"
+    : "Pessoa e vínculo separados:\n  - " . implode("\n  - ", $feitoVinculos) . "\n";
+
+// Sinal do cliente: status de credito (guardado para o proximo agendamento) e retido.
+require_once __DIR__ . '/../models/Diferencial.php';
+Diferencial::garantirStatusSinal();
+echo "Sinal: status de crédito e retido disponíveis.\n";

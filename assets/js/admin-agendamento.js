@@ -34,7 +34,7 @@
       headers: { "X-Requested-With": "XMLHttpRequest" },
     }).then(function (resposta) {
       if (!resposta.ok) {
-        throw new Error("Falha na comunicacao com o servidor.");
+        throw new Error("Falha na comunicação com o servidor.");
       }
       return resposta.json();
     });
@@ -56,7 +56,7 @@
     }
 
     if (!campoServico.value) {
-      limparSelect(campoProfissional, "Selecione o servico primeiro");
+      limparSelect(campoProfissional, "Selecione o serviço primeiro");
       return;
     }
 
@@ -79,7 +79,7 @@
         if ((dados.profissionais || []).length === 0) {
           limparSelect(
             campoProfissional,
-            "Nenhum profissional executa este servico",
+            "Nenhum profissional executa este serviço",
           );
         }
       })
@@ -94,11 +94,11 @@
       profissionalFixo || (campoProfissional ? campoProfissional.value : "");
 
     if (!campoServico.value || !idProfissional || !campoData.value) {
-      limparSelect(campoHora, "Selecione servico, profissional e data");
+      limparSelect(campoHora, "Selecione serviço, profissional e data");
       return;
     }
 
-    limparSelect(campoHora, "Carregando horarios...");
+    limparSelect(campoHora, "Carregando horários...");
 
     buscarJson(
       "api/horarios.php?id_profissional=" +
@@ -112,17 +112,17 @@
         var horarios = dados.horarios || [];
 
         if (horarios.length === 0) {
-          limparSelect(campoHora, "Nenhum horario livre nesta data");
+          limparSelect(campoHora, "Nenhum horário livre nesta data");
           if (avisoHorarios) {
             avisoHorarios.textContent =
-              "O profissional nao possui horarios livres nesta data. Verifique o expediente e os bloqueios.";
+              "O profissional não possui horários livres nesta data. Verifique o expediente e os bloqueios.";
             avisoHorarios.classList.remove("oculto");
             avisoHorarios.classList.add("visivel");
           }
           return;
         }
 
-        limparSelect(campoHora, "Selecione o horario");
+        limparSelect(campoHora, "Selecione o horário");
 
         horarios.forEach(function (horario) {
           var opcao = document.createElement("option");
@@ -137,14 +137,14 @@
         }
       })
       .catch(function () {
-        limparSelect(campoHora, "Erro ao carregar horarios");
+        limparSelect(campoHora, "Erro ao carregar horários");
       });
   }
 
   // Ao mudar o serviço, recarrega os profissionais e descarta opções de horário dependentes.
   campoServico.addEventListener("change", function () {
     carregarProfissionais();
-    limparSelect(campoHora, "Selecione servico, profissional e data");
+    limparSelect(campoHora, "Selecione serviço, profissional e data");
   });
 
   if (campoProfissional) {

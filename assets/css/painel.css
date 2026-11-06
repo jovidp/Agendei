@@ -904,3 +904,23 @@
     align-items: center;
   }
 }
+
+/* Logo e nome do estabelecimento na barra de cima de todos os paineis. */
+.topo-marca {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding-right: 14px;
+  border-right: 1px solid var(--borda);
+  font-size: 15px;
+  color: var(--texto-principal);
+}
+.topo-marca .marca-logo { height: 32px; max-width: 80px; }
+@media (max-width: 620px) {
+  .topo-marca strong { display: none; }
+  .topo-marca { padding-right: 8px; }
+  /* O titulo encolhe e corta com reticencias: logo, acoes e Sair cabem na largura do celular. */
+  .topo-painel > div:not([class]) { flex: 1 1 auto; min-width: 0; }
+  .topo-painel h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}

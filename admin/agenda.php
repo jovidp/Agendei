@@ -138,7 +138,7 @@ $rotuloPeriodo = $visao === 'semana'
 
 // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Agenda';
-$subtituloTopo = count($agendamentos) . ' agendamento(s) no periodo';
+$subtituloTopo = count($agendamentos) . ' agendamento(s) no período';
 $acoesTopo     = '<a href="' . url('admin/agendamentos.php?acao=novo') . '" class="btn btn-pequeno">Novo agendamento</a>';
 
 // Renderiza a estrutura comum do painel após preparar os dados desta tela.
@@ -149,11 +149,11 @@ require_once RAIZ . '/includes/painel_header.php';
     <div class="agenda-barra">
         <div class="agenda-navegacao">
             <a href="?<?= e(http_build_query($parametrosBase + ['data' => $dataAnterior])) ?>"
-                class="btn btn-contorno btn-pequeno" aria-label="Periodo anterior">&lsaquo;</a>
+                class="btn btn-contorno btn-pequeno" aria-label="Período anterior">&lsaquo;</a>
             <a href="?<?= e(http_build_query($parametrosBase + ['data' => date('Y-m-d')])) ?>"
                 class="btn btn-contorno btn-pequeno">Hoje</a>
             <a href="?<?= e(http_build_query($parametrosBase + ['data' => $dataProxima])) ?>"
-                class="btn btn-contorno btn-pequeno" aria-label="Proximo periodo">&rsaquo;</a>
+                class="btn btn-contorno btn-pequeno" aria-label="Próximo período">&rsaquo;</a>
             <span class="agenda-data-atual"><?= e($rotuloPeriodo) ?></span>
         </div>
 
@@ -192,7 +192,7 @@ require_once RAIZ . '/includes/painel_header.php';
             <table class="agenda-tabela">
                 <thead>
                     <tr>
-                        <th class="agenda-hora">Horario</th>
+                        <th class="agenda-hora">Horário</th>
                         <?php foreach ($colunas as $coluna): ?>
                             <th>
                                 <?= e($coluna['titulo']) ?>
@@ -226,7 +226,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                             data-campo-horario="<?= formatarHora($agendamento['hora_inicio']) ?> as <?= formatarHora($agendamento['hora_fim']) ?>"
                                             data-campo-valor="<?= formatarMoeda($agendamento['valor']) ?>"
                                             data-campo-status="<?= e(ucfirst($agendamento['status'])) ?>"
-                                            data-campo-observacao="<?= e($agendamento['observacao'] ?: 'Sem observacoes.') ?>">
+                                            data-campo-observacao="<?= e($agendamento['observacao'] ?: 'Sem observações.') ?>">
                                             <strong><?= formatarHora($agendamento['hora_inicio']) ?> <?= e(limitarTexto($agendamento['nome_cliente'], 18)) ?></strong>
                                             <span><?= e(limitarTexto($agendamento['nome_servico'], 22)) ?></span>
                                             <?php if ($visao === 'semana' && $idProfissional === 0): ?>
@@ -245,7 +245,7 @@ require_once RAIZ . '/includes/painel_header.php';
         <div class="agenda-legenda">
             <span><i class="legenda-agendado"></i> Agendado</span>
             <span><i class="legenda-confirmado"></i> Confirmado</span>
-            <span><i class="legenda-concluido"></i> Concluido</span>
+            <span><i class="legenda-concluido"></i> Concluído</span>
             <span><i class="legenda-cancelado"></i> Cancelado</span>
             <span>Clique em um atendimento para ver os detalhes</span>
         </div>
@@ -269,7 +269,7 @@ require_once RAIZ . '/includes/painel_header.php';
                     <dd data-preenche="contato">-</dd>
                 </div>
                 <div>
-                    <dt>Servico</dt>
+                    <dt>Serviço</dt>
                     <dd data-preenche="servico">-</dd>
                 </div>
                 <div>
@@ -281,7 +281,7 @@ require_once RAIZ . '/includes/painel_header.php';
                     <dd data-preenche="data">-</dd>
                 </div>
                 <div>
-                    <dt>Horario</dt>
+                    <dt>Horário</dt>
                     <dd data-preenche="horario">-</dd>
                 </div>
                 <div>
@@ -293,7 +293,7 @@ require_once RAIZ . '/includes/painel_header.php';
                     <dd data-preenche="status">-</dd>
                 </div>
                 <div>
-                    <dt>Observacao</dt>
+                    <dt>Observação</dt>
                     <dd data-preenche="observacao">-</dd>
                 </div>
             </dl>

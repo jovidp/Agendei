@@ -134,35 +134,35 @@
           formulario,
           "cpf",
           Agendei.validarCpf(cpf),
-          "Informe um CPF valido.",
+          "Informe um CPF válido.",
         ) && valido;
       valido =
         verificar(
           formulario,
           "telefone",
           telefone.length === 10 || telefone.length === 11,
-          "Informe um telefone valido com DDD.",
+          "Informe um telefone válido com DDD.",
         ) && valido;
       valido =
         verificar(
           formulario,
           "email",
           Agendei.validarEmail(email),
-          "Informe um e-mail valido.",
+          "Informe um e-mail válido.",
         ) && valido;
       valido =
         verificar(
           formulario,
           "senha",
           senha.length >= 6,
-          "A senha deve ter no minimo 6 caracteres.",
+          "A senha deve ter no mínimo 6 caracteres.",
         ) && valido;
       valido =
         verificar(
           formulario,
           "confirmar_senha",
           confirmacao === senha && confirmacao !== "",
-          "As senhas nao conferem.",
+          "As senhas não conferem.",
         ) && valido;
 
       if (nascimento !== "") {
@@ -177,7 +177,7 @@
             formulario,
             "data_nascimento",
             idadeValida,
-            "Informe uma data de nascimento valida.",
+            "Informe uma data de nascimento válida.",
           ) && valido;
       }
 
@@ -221,14 +221,14 @@
           regraProjeto ? /^[A-Za-z]{8}$/.test(nova) : nova.length >= 6,
           regraProjeto
             ? "A nova senha deve ter exatamente 8 letras."
-            : "A nova senha deve ter no minimo 6 caracteres.",
+            : "A nova senha deve ter no mínimo 6 caracteres.",
         ) && valido;
       valido =
         verificar(
           formulario,
           "confirmar_senha",
           valor(formulario, "confirmar_senha") === nova && nova !== "",
-          "As senhas nao conferem.",
+          "As senhas não conferem.",
         ) && valido;
 
       if (!valido) {
@@ -267,7 +267,7 @@
           formulario,
           "email",
           Agendei.validarEmail(valor(formulario, "email")),
-          "Informe um e-mail valido.",
+          "Informe um e-mail válido.",
         ) && valido;
 
       if (campo(formulario, "telefone")) {
@@ -276,7 +276,7 @@
             formulario,
             "telefone",
             telefone.length === 10 || telefone.length === 11,
-            "Informe um telefone valido com DDD.",
+            "Informe um telefone válido com DDD.",
           ) && valido;
       }
 
@@ -286,7 +286,7 @@
             formulario,
             "cpf",
             Agendei.validarCpf(valor(formulario, "cpf")),
-            "Informe um CPF valido.",
+            "Informe um CPF válido.",
           ) && valido;
       }
 

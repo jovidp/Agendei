@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $erros[] = 'Informe o nome do estabelecimento.';
         }
         if ($email !== '' && !validarEmail($email)) {
-            $erros[] = 'Informe um e-mail valido.';
+            $erros[] = 'Informe um e-mail válido.';
         }
 
         if ($erros === []) {
@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $regras = [
             'antecedencia_minima_horas' => max(0, min(72, (int) post('antecedencia_minima_horas'))),
             'antecedencia_maxima_dias'  => max(1, min(365, (int) post('antecedencia_maxima_dias'))),
-            'cancelamento_limite_horas' => max(0, min(72, (int) post('cancelamento_limite_horas'))),
+            'cancelamento_limite_minutos' => max(0, min(1440, (int) post('cancelamento_limite_minutos'))),
             'intervalo_slots_minutos'   => max(5, min(120, (int) post('intervalo_slots_minutos'))),
         ];
 
@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $estabelecimento = Estabelecimento::dados();
 
 // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
-$tituloPagina  = 'Configuracoes';
+$tituloPagina  = 'Configurações';
 $subtituloTopo = 'Dados do estabelecimento e regras de agendamento';
 
 // Renderiza a estrutura comum do painel após preparar os dados desta tela.
@@ -119,9 +119,9 @@ require_once RAIZ . '/includes/painel_header.php';
             </div>
 
             <div class="campo">
-                <label for="descricao">Descricao</label>
+                <label for="descricao">Descrição</label>
                 <textarea id="descricao" name="descricao" maxlength="600"><?= e($estabelecimento['descricao'] ?? '') ?></textarea>
-                <span class="ajuda-campo">Texto exibido na pagina inicial.</span>
+                <span class="ajuda-campo">Texto exibido na página inicial.</span>
             </div>
 
             <div class="linha-campos-3">
@@ -143,7 +143,7 @@ require_once RAIZ . '/includes/painel_header.php';
 
             <div class="linha-campos">
                 <div class="campo">
-                    <label for="endereco">Endereco</label>
+                    <label for="endereco">Endereço</label>
                     <input type="text" id="endereco" name="endereco" maxlength="180" value="<?= e($estabelecimento['endereco'] ?? '') ?>">
                 </div>
 
@@ -172,9 +172,9 @@ require_once RAIZ . '/includes/painel_header.php';
             </div>
 
             <div class="campo">
-                <label for="horario_funcionamento">Horario de funcionamento</label>
+                <label for="horario_funcionamento">Horário de funcionamento</label>
                 <textarea id="horario_funcionamento" name="horario_funcionamento" maxlength="400"><?= e($estabelecimento['horario_funcionamento'] ?? '') ?></textarea>
-                <span class="ajuda-campo">Uma linha por periodo. Ex.: "Segunda a sexta: 08:00 as 19:00".</span>
+                <span class="ajuda-campo">Uma linha por período. Ex.: "Segunda a sexta: 08:00 às 19:00".</span>
             </div>
 
             <div class="linha-campos">
@@ -205,30 +205,30 @@ require_once RAIZ . '/includes/painel_header.php';
 
             <div class="linha-campos">
                 <div class="campo">
-                    <label for="antecedencia_minima_horas">Antecedencia minima (horas)</label>
+                    <label for="antecedencia_minima_horas">Antecedência mínima (horas)</label>
                     <input type="number" id="antecedencia_minima_horas" name="antecedencia_minima_horas"
                         min="0" max="72" value="<?= Configuracao::obterInteiro('antecedencia_minima_horas', 2) ?>">
-                    <span class="ajuda-campo">Tempo minimo entre o momento do agendamento e o atendimento.</span>
+                    <span class="ajuda-campo">Tempo mínimo entre o momento do agendamento e o atendimento.</span>
                 </div>
 
                 <div class="campo">
-                    <label for="antecedencia_maxima_dias">Antecedencia maxima (dias)</label>
+                    <label for="antecedencia_maxima_dias">Antecedência máxima (dias)</label>
                     <input type="number" id="antecedencia_maxima_dias" name="antecedencia_maxima_dias"
                         min="1" max="365" value="<?= Configuracao::obterInteiro('antecedencia_maxima_dias', 60) ?>">
-                    <span class="ajuda-campo">Ate quantos dias no futuro o cliente pode agendar.</span>
+                    <span class="ajuda-campo">Até quantos dias no futuro o cliente pode agendar.</span>
                 </div>
             </div>
 
             <div class="linha-campos">
                 <div class="campo">
-                    <label for="cancelamento_limite_horas">Limite para cancelamento (horas)</label>
-                    <input type="number" id="cancelamento_limite_horas" name="cancelamento_limite_horas"
-                        min="0" max="72" value="<?= Configuracao::obterInteiro('cancelamento_limite_horas', 4) ?>">
-                    <span class="ajuda-campo">Ate quantas horas antes o cliente pode cancelar sozinho.</span>
+                    <label for="cancelamento_limite_minutos">Cancelamento sem perder o sinal (minutos antes)</label>
+                    <input type="number" id="cancelamento_limite_minutos" name="cancelamento_limite_minutos"
+                        min="0" max="1440" value="<?= Agendamento::minutosSemPerda() ?>">
+                    <span class="ajuda-campo">O cliente cancela até o horário começar. Até este prazo, o sinal pago vira crédito para o próximo agendamento; depois dele, ou no segundo cancelamento seguido, o sinal fica com o estabelecimento.</span>
                 </div>
 
                 <div class="campo">
-                    <label for="intervalo_slots_minutos">Intervalo padrao entre horarios (minutos)</label>
+                    <label for="intervalo_slots_minutos">Intervalo padrão entre horários (minutos)</label>
                     <input type="number" id="intervalo_slots_minutos" name="intervalo_slots_minutos"
                         min="5" max="120" step="5" value="<?= Configuracao::obterInteiro('intervalo_slots_minutos', 30) ?>">
                     <span class="ajuda-campo">Valor sugerido ao cadastrar novas faixas de expediente.</span>
@@ -238,7 +238,7 @@ require_once RAIZ . '/includes/painel_header.php';
             <div class="campo-checkbox">
                 <input type="checkbox" id="permitir_bloqueio_profissional" name="permitir_bloqueio_profissional" value="1"
                     <?= Configuracao::ativa('permitir_bloqueio_profissional', true) ? 'checked' : '' ?>>
-                <label for="permitir_bloqueio_profissional">Permitir que profissionais bloqueiem a propria agenda</label>
+                <label for="permitir_bloqueio_profissional">Permitir que profissionais bloqueiem a própria agenda</label>
             </div>
 
             <div class="campo-checkbox">

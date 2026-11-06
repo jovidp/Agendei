@@ -16,7 +16,7 @@ exigirLogin();
 $idServico = (int) get('id_servico');
 
 if ($idServico <= 0 || !Servico::estaAtivo($idServico)) {
-    jsonResposta(['sucesso' => false, 'mensagem' => 'Servico invalido ou indisponivel.', 'filiais' => []], 400);
+    jsonResposta(['sucesso' => false, 'mensagem' => 'Serviço inválido ou indisponível.', 'filiais' => []], 400);
 }
 
 $lista = [];

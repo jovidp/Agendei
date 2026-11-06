@@ -22,7 +22,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $retorno        = 'admin/horarios.php?id_profissional=' . $idProfissional;
 
     if (!$profissional) {
-        definirFlash('erro', 'Profissional nao encontrado.');
+        definirFlash('erro', 'Profissional não encontrado.');
         redirecionar('admin/horarios.php');
     }
 
@@ -34,15 +34,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $intervalo  = (int) post('intervalo_minutos', '30');
 
         if ($diaSemana < 0 || $diaSemana > 6) {
-            definirFlash('erro', 'Dia da semana invalido.');
+            definirFlash('erro', 'Dia da semana inválido.');
         } elseif (!validarHora($horaInicio) || !validarHora($horaFim)) {
-            definirFlash('erro', 'Informe horarios validos.');
+            definirFlash('erro', 'Informe horários válidos.');
         } elseif (horaParaMinutos($horaFim) <= horaParaMinutos($horaInicio)) {
-            definirFlash('erro', 'O horario final deve ser maior que o inicial.');
+            definirFlash('erro', 'O horário final deve ser maior que o inicial.');
         } elseif ($intervalo < 5 || $intervalo > 240) {
             definirFlash('erro', 'O intervalo deve estar entre 5 e 240 minutos.');
         } elseif (Horario::existeSobreposicao($idProfissional, $diaSemana, $horaInicio, $horaFim)) {
-            definirFlash('erro', 'Ja existe uma faixa de expediente sobrepondo este horario.');
+            definirFlash('erro', 'Já existe uma faixa de expediente sobrepondo este horário.');
         } else {
             Horario::criar([
                 'id_profissional'   => $idProfissional,
@@ -64,71 +64,52 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirecionar($retorno);
     }
 
-    // Remove a faixa de expediente selecionada.
-    if ($acao === 'excluir_horario') {
-        Horario::excluir((int) post('id_horario'));
-        definirFlash('sucesso', 'Faixa removida.');
+    // Corrige o inicio, o fim ou o intervalo de um horario ja cadastrado.
+    if ($acao === 'editar_horario') {
+        $faixa      = Horario::porId((int) post('id_horario'));
+        $horaInicio = post('hora_inicio');
+        $horaFim    = post('hora_fim');
+        $intervalo  = (int) post('intervalo_minutos', '30');
+
+        if (!$faixa || (int) $faixa['id_profissional'] !== $idProfissional) {
+            definirFlash('erro', 'Horário não encontrado.');
+        } elseif (!validarHora($horaInicio) || !validarHora($horaFim)) {
+            definirFlash('erro', 'Informe horários válidos.');
+        } elseif (horaParaMinutos($horaFim) <= horaParaMinutos($horaInicio)) {
+            definirFlash('erro', 'O horário final deve ser maior que o inicial.');
+        } elseif ($intervalo < 5 || $intervalo > 240) {
+            definirFlash('erro', 'O intervalo deve estar entre 5 e 240 minutos.');
+        } elseif (Horario::existeSobreposicao($idProfissional, (int) $faixa['dia_semana'], $horaInicio, $horaFim, (int) $faixa['id_horario'])) {
+            definirFlash('erro', 'Já existe outro horário neste dia sobrepondo este intervalo.');
+        } else {
+            Horario::atualizar((int) $faixa['id_horario'], [
+                'dia_semana'        => (int) $faixa['dia_semana'],
+                'hora_inicio'       => $horaInicio,
+                'hora_fim'          => $horaFim,
+                'intervalo_minutos' => $intervalo,
+                'status'            => $faixa['status'],
+            ]);
+            definirFlash('sucesso', 'Horário atualizado.');
+        }
+
         redirecionar($retorno);
     }
 
-    // Replica o expediente do dia de origem para os dias selecionados.
+    // Copia os horarios do dia de origem para os dias escolhidos, no lugar dos que eles tinham.
     if ($acao === 'replicar') {
         $diaOrigem   = (int) post('dia_origem');
         $diasDestino = array_map('intval', (array) ($_POST['dias_destino'] ?? []));
+        $diasDestino = array_values(array_diff($diasDestino, [$diaOrigem]));
 
         if ($diasDestino === []) {
-            definirFlash('erro', 'Selecione ao menos um dia de destino.');
+            definirFlash('erro', 'Selecione ao menos um dia diferente do dia de origem.');
+        } elseif ((Horario::agrupadoPorDia($idProfissional)[$diaOrigem] ?? []) === []) {
+            definirFlash('erro', 'O dia de origem não tem horários para copiar.');
         } else {
-            $criadas = Horario::replicarDia($idProfissional, $diaOrigem, $diasDestino);
-            definirFlash(
-                $criadas > 0 ? 'sucesso' : 'aviso',
-                $criadas > 0
-                    ? $criadas . ' faixa(s) copiada(s) com sucesso.'
-                    : 'Nenhuma faixa foi copiada. Verifique se os dias de destino ja possuem esses horarios.'
-            );
+            Horario::replicarDia($idProfissional, $diaOrigem, $diasDestino);
+            definirFlash('sucesso', 'Horários copiados para ' . count($diasDestino) . ' dia(s).');
         }
 
-        redirecionar($retorno);
-    }
-
-    // Valida a indisponibilidade e verifica os atendimentos afetados pelo intervalo.
-    if ($acao === 'criar_bloqueio') {
-        $data       = post('data_bloqueio');
-        $horaInicio = post('hora_inicio') ?: '00:00';
-        $horaFim    = post('hora_fim') ?: '23:59';
-
-        if (!validarData($data)) {
-            definirFlash('erro', 'Informe uma data valida.');
-        } elseif (!validarHora($horaInicio) || !validarHora($horaFim)) {
-            definirFlash('erro', 'Informe horarios validos.');
-        } elseif (horaParaMinutos($horaFim) <= horaParaMinutos($horaInicio)) {
-            definirFlash('erro', 'O horario final deve ser maior que o inicial.');
-        } else {
-            $conflitos = Bloqueio::agendamentosNoIntervalo($idProfissional, $data, $horaInicio, $horaFim);
-
-            Bloqueio::criar([
-                'id_profissional'  => $idProfissional,
-                'data_bloqueio'    => $data,
-                'hora_inicio'      => $horaInicio,
-                'hora_fim'         => $horaFim,
-                'motivo'           => post('motivo'),
-                'id_usuario_criou' => usuarioId(),
-            ]);
-
-            definirFlash('sucesso', 'Bloqueio cadastrado. O horario deixa de aparecer para os clientes.');
-
-            if ($conflitos !== []) {
-                definirFlash('aviso', count($conflitos) . ' agendamento(s) ja existente(s) permanecem neste intervalo. Cancele-os se necessario.');
-            }
-        }
-
-        redirecionar($retorno);
-    }
-
-    // Remove a indisponibilidade selecionada da agenda.
-    if ($acao === 'excluir_bloqueio') {
-        Bloqueio::excluir((int) post('id_bloqueio'));
-        definirFlash('sucesso', 'Bloqueio removido.');
         redirecionar($retorno);
     }
 
@@ -139,8 +120,8 @@ $profissionais = Profissional::listar();
 $profissional  = $idProfissional > 0 ? Profissional::porId($idProfissional) : null;
 
 // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
-$tituloPagina  = 'Horarios';
-$subtituloTopo = $profissional ? $profissional['nome'] : 'Expediente e bloqueios da equipe';
+$tituloPagina  = 'Horários';
+$subtituloTopo = $profissional ? $profissional['nome'] : 'Expediente da equipe';
 
 // Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
@@ -166,7 +147,7 @@ require_once RAIZ . '/includes/painel_header.php';
     <?php if ($profissionais === []): ?>
         <div class="estado-vazio">
             <strong>Nenhum profissional cadastrado.</strong>
-            <p>Cadastre a equipe antes de configurar os horarios.</p>
+            <p>Cadastre a equipe antes de configurar os horários.</p>
             <a href="<?= url('admin/profissionais.php?acao=novo') ?>" class="btn margem-topo">Novo profissional</a>
         </div>
     <?php elseif (!$profissional): ?>
@@ -186,7 +167,7 @@ require_once RAIZ . '/includes/painel_header.php';
     <div class="cartao">
         <div class="cartao-cabecalho">
             <h3>Expediente semanal</h3>
-            <button type="button" class="btn btn-pequeno" data-modal="modalHorario">Adicionar faixa</button>
+            <button type="button" class="btn btn-pequeno" data-modal="modalHorario">Adicionar horário</button>
         </div>
 
         <div class="cartao-corpo">
@@ -195,7 +176,7 @@ require_once RAIZ . '/includes/painel_header.php';
                     <div class="cartao-dia">
                         <div class="cartao-dia-topo">
                             <span><?= e(diaSemanaNome($dia)) ?></span>
-                            <span class="texto-pequeno texto-secundario"><?= count($horariosPorDia[$dia]) ?> faixa(s)</span>
+                            <span class="texto-pequeno texto-secundario"><?= count($horariosPorDia[$dia]) ?> horário(s)</span>
                         </div>
                         <div class="cartao-dia-corpo">
                             <?php if ($horariosPorDia[$dia] === []): ?>
@@ -204,7 +185,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                 <?php foreach ($horariosPorDia[$dia] as $faixa): ?>
                                     <div class="faixa-horario <?= $faixa['status'] === 'inativo' ? 'inativa' : '' ?>">
                                         <div class="faixa-info">
-                                            <strong><?= formatarHora($faixa['hora_inicio']) ?> as <?= formatarHora($faixa['hora_fim']) ?></strong>
+                                            <strong><?= formatarHora($faixa['hora_inicio']) ?> às <?= formatarHora($faixa['hora_fim']) ?></strong>
                                             <span>Intervalos de <?= (int) $faixa['intervalo_minutos'] ?> min</span>
                                         </div>
                                         <div class="grupo-botoes">
@@ -219,18 +200,14 @@ require_once RAIZ . '/includes/painel_header.php';
                                                 </button>
                                             </form>
 
-                                            <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
-                                                <?= campoCsrf() ?>
-                                                <input type="hidden" name="acao" value="excluir_horario">
-                                                <input type="hidden" name="id_profissional" value="<?= $idProfissional ?>">
-                                                <input type="hidden" name="id_horario" value="<?= (int) $faixa['id_horario'] ?>">
-                                                <button type="submit" class="btn btn-perigo btn-pequeno"
-                                                    data-confirmar="Remover a faixa de <?= formatarHora($faixa['hora_inicio']) ?> as <?= formatarHora($faixa['hora_fim']) ?>?"
-                                                    data-confirmar-titulo="Remover faixa"
-                                                    data-confirmar-rotulo="Remover">
-                                                    Remover
-                                                </button>
-                                            </form>
+                                            <button type="button" class="btn btn-contorno btn-pequeno" data-modal="modalEditarHorario"
+                                                data-campo-id_horario="<?= (int) $faixa['id_horario'] ?>"
+                                                data-campo-dia="<?= e(diaSemanaNome($dia)) ?>"
+                                                data-campo-hora_inicio="<?= e(substr($faixa['hora_inicio'], 0, 5)) ?>"
+                                                data-campo-hora_fim="<?= e(substr($faixa['hora_fim'], 0, 5)) ?>"
+                                                data-campo-intervalo_minutos="<?= (int) $faixa['intervalo_minutos'] ?>">
+                                                Editar
+                                            </button>
                                         </div>
                                     </div>
                                 <?php endforeach; ?>
@@ -248,7 +225,7 @@ require_once RAIZ . '/includes/painel_header.php';
                 <input type="hidden" name="id_profissional" value="<?= $idProfissional ?>">
 
                 <div class="campo">
-                    <label for="dia_origem">Copiar o expediente de</label>
+                    <label for="dia_origem">Copiar os horários de</label>
                     <select id="dia_origem" name="dia_origem">
                         <?php for ($dia = 0; $dia <= 6; $dia++): ?>
                             <option value="<?= $dia ?>" <?= $dia === 1 ? 'selected' : '' ?>><?= e(diaSemanaNome($dia)) ?></option>
@@ -269,60 +246,13 @@ require_once RAIZ . '/includes/painel_header.php';
                 </div>
 
                 <div class="campo">
-                    <button type="submit" class="btn btn-contorno">Copiar faixas</button>
+                    <button type="submit" class="btn btn-contorno"
+                        data-confirmar="Os dias marcados ficam com os mesmos horários do dia de origem. Os horários que eles tinham são substituídos."
+                        data-confirmar-titulo="Copiar horários"
+                        data-confirmar-rotulo="Copiar">Copiar horários</button>
                 </div>
             </form>
         </div>
-    </div>
-
-    <div class="cartao">
-        <div class="cartao-cabecalho">
-            <h3>Bloqueios de agenda</h3>
-            <button type="button" class="btn btn-pequeno" data-modal="modalBloqueio">Novo bloqueio</button>
-        </div>
-
-        <?php if ($bloqueios === []): ?>
-            <div class="estado-vazio">
-                <strong>Nenhum bloqueio cadastrado.</strong>
-                <p>Use os bloqueios para folgas, ferias e compromissos pontuais.</p>
-            </div>
-        <?php else: ?>
-            <div class="tabela-area">
-                <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela">
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Horario</th>
-                            <th>Motivo</th>
-                            <th class="coluna-acoes">Acoes</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($bloqueios as $bloqueio): ?>
-                            <tr>
-                                <td class="celula-principal"><?= formatarData($bloqueio['data_bloqueio']) ?></td>
-                                <td><?= formatarHora($bloqueio['hora_inicio']) ?> as <?= formatarHora($bloqueio['hora_fim']) ?></td>
-                                <td><?= e($bloqueio['motivo'] ?: '-') ?></td>
-                                <td class="coluna-acoes">
-                                    <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
-                                        <?= campoCsrf() ?>
-                                        <input type="hidden" name="acao" value="excluir_bloqueio">
-                                        <input type="hidden" name="id_profissional" value="<?= $idProfissional ?>">
-                                        <input type="hidden" name="id_bloqueio" value="<?= (int) $bloqueio['id_bloqueio'] ?>">
-                                        <button type="submit" class="btn btn-perigo btn-pequeno"
-                                            data-confirmar="Remover o bloqueio do dia <?= formatarData($bloqueio['data_bloqueio']) ?>?"
-                                            data-confirmar-titulo="Remover bloqueio"
-                                            data-confirmar-rotulo="Remover">
-                                            Remover
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        <?php endif; ?>
     </div>
 
     <!-- Modal: nova faixa de expediente -->
@@ -333,7 +263,7 @@ require_once RAIZ . '/includes/painel_header.php';
             <input type="hidden" name="id_profissional" value="<?= $idProfissional ?>">
 
             <div class="modal-cabecalho">
-                <h3>Nova faixa de expediente</h3>
+                <h3>Novo horário de atendimento</h3>
                 <button type="button" class="modal-fechar" data-fechar-modal aria-label="Fechar">&times;</button>
             </div>
 
@@ -349,7 +279,7 @@ require_once RAIZ . '/includes/painel_header.php';
 
                 <div class="linha-campos">
                     <div class="campo">
-                        <label for="hora_inicio">Inicio</label>
+                        <label for="hora_inicio">Início</label>
                         <input type="time" id="hora_inicio" name="hora_inicio" value="09:00" required>
                     </div>
                     <div class="campo">
@@ -359,57 +289,53 @@ require_once RAIZ . '/includes/painel_header.php';
                 </div>
 
                 <div class="campo">
-                    <label for="intervalo_minutos">Intervalo entre horarios (minutos)</label>
+                    <label for="intervalo_minutos">Intervalo entre horários (minutos)</label>
                     <input type="number" id="intervalo_minutos" name="intervalo_minutos" value="30" min="5" max="240" step="5" required>
-                    <span class="ajuda-campo">Define de quanto em quanto tempo os horarios sao oferecidos ao cliente.</span>
+                    <span class="ajuda-campo">Define de quanto em quanto tempo os horários são oferecidos ao cliente.</span>
                 </div>
             </div>
 
             <div class="modal-rodape">
                 <button type="button" class="btn btn-contorno" data-fechar-modal>Cancelar</button>
-                <button type="submit" class="btn">Adicionar faixa</button>
+                <button type="submit" class="btn">Adicionar horário</button>
             </div>
         </form>
     </div>
 
-    <!-- Modal: novo bloqueio -->
-    <?php /* Janela controlada pelo JavaScript para detalhes ou ações da página. */ ?><div class="modal" id="modalBloqueio">
-        <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" class="modal-caixa">
+    <!-- Modal: editar horario -->
+    <div class="modal" id="modalEditarHorario">
+        <form method="post" class="modal-caixa">
             <?= campoCsrf() ?>
-            <input type="hidden" name="acao" value="criar_bloqueio">
+            <input type="hidden" name="acao" value="editar_horario">
             <input type="hidden" name="id_profissional" value="<?= $idProfissional ?>">
+            <input type="hidden" name="id_horario" value="">
 
             <div class="modal-cabecalho">
-                <h3>Novo bloqueio de agenda</h3>
+                <h3>Editar horário de <span data-preenche="dia"></span></h3>
                 <button type="button" class="modal-fechar" data-fechar-modal aria-label="Fechar">&times;</button>
             </div>
 
             <div class="modal-corpo">
-                <div class="campo">
-                    <label for="data_bloqueio">Data</label>
-                    <input type="date" id="data_bloqueio" name="data_bloqueio" value="<?= date('Y-m-d') ?>" required>
-                </div>
-
                 <div class="linha-campos">
                     <div class="campo">
-                        <label for="bloqueio_inicio">Das</label>
-                        <input type="time" id="bloqueio_inicio" name="hora_inicio" value="08:00" required>
+                        <label for="editar_inicio">Início</label>
+                        <input type="time" id="editar_inicio" name="hora_inicio" required>
                     </div>
                     <div class="campo">
-                        <label for="bloqueio_fim">Ate</label>
-                        <input type="time" id="bloqueio_fim" name="hora_fim" value="18:00" required>
+                        <label for="editar_fim">Fim</label>
+                        <input type="time" id="editar_fim" name="hora_fim" required>
                     </div>
                 </div>
 
                 <div class="campo">
-                    <label for="motivo">Motivo</label>
-                    <input type="text" id="motivo" name="motivo" maxlength="255" placeholder="Ex.: folga, consulta medica">
+                    <label for="editar_intervalo">Intervalo entre horários (minutos)</label>
+                    <input type="number" id="editar_intervalo" name="intervalo_minutos" min="5" max="240" step="5" required>
                 </div>
             </div>
 
             <div class="modal-rodape">
                 <button type="button" class="btn btn-contorno" data-fechar-modal>Cancelar</button>
-                <button type="submit" class="btn">Criar bloqueio</button>
+                <button type="submit" class="btn">Salvar</button>
             </div>
         </form>
     </div>

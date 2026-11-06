@@ -16,7 +16,7 @@ $modo    = (string) ($argv[3] ?? 'ok');
 
 $servidor = stream_socket_server('tcp://127.0.0.1:' . $porta, $codigo, $erro);
 if ($servidor === false) {
-    fwrite(STDERR, "Nao foi possivel escutar: {$erro}\n");
+    fwrite(STDERR, "Não foi possível escutar: {$erro}\n");
     exit(1);
 }
 

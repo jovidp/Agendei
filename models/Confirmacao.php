@@ -106,7 +106,8 @@ class Confirmacao
         return Agendamento::cancelar(
             (int) $agendamento['id_agendamento'],
             null,
-            'O cliente avisou pelo link do lembrete que nao podera comparecer.'
+            'O cliente avisou pelo link do lembrete que não poderá comparecer.',
+            true
         );
     }
 
@@ -158,7 +159,7 @@ class Confirmacao
             $cancelado = Agendamento::cancelar(
                 (int) $item['id_agendamento'],
                 null,
-                'Horario liberado: sem confirmacao ate ' . $horas . ' h antes do atendimento.'
+                'Horário liberado: sem confirmação até ' . $horas . ' h antes do atendimento.'
             );
             if (!$cancelado) {
                 continue;

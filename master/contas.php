@@ -28,10 +28,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $email = mb_strtolower(post('email'));
             $senha = post('senha');
 
-            if (mb_strlen($nome) < 3) $erros[] = 'Informe o nome da pessoa responsavel pela conta.';
-            if (!validarEmail($email)) $erros[] = 'Informe um e-mail valido.';
+            if (mb_strlen($nome) < 3) $erros[] = 'Informe o nome da pessoa responsável pela conta.';
+            if (!validarEmail($email)) $erros[] = 'Informe um e-mail válido.';
             if (!validarSenha($senha)) $erros[] = 'A senha deve ter pelo menos 6 caracteres.';
-            if (Master::emailEmUso($email)) $erros[] = 'Este e-mail ja pertence a outra conta master.';
+            if (Master::emailEmUso($email)) $erros[] = 'Este e-mail já pertence a outra conta master.';
 
             if (!$erros) {
                 $novo = Master::criar(['nome' => $nome, 'email' => $email, 'senha' => $senha]);
@@ -47,9 +47,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $nome  = post('nome');
             $email = mb_strtolower(post('email'));
 
-            if (!$conta) $erros[] = 'Conta master nao encontrada.';
-            if (mb_strlen($nome) < 3 || !validarEmail($email)) $erros[] = 'Informe um nome e um e-mail validos.';
-            if (Master::emailEmUso($email, $id)) $erros[] = 'Este e-mail ja pertence a outra conta master.';
+            if (!$conta) $erros[] = 'Conta master não encontrada.';
+            if (mb_strlen($nome) < 3 || !validarEmail($email)) $erros[] = 'Informe um nome e um e-mail válidos.';
+            if (Master::emailEmUso($email, $id)) $erros[] = 'Este e-mail já pertence a outra conta master.';
 
             if (!$erros) {
                 Master::atualizarPerfil($id, $nome, $email);
@@ -75,19 +75,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $conta = Master::porId($id);
             $nova  = post('nova_senha');
 
-            if (!$conta) $erros[] = 'Conta master nao encontrada.';
+            if (!$conta) $erros[] = 'Conta master não encontrada.';
             // Redefinir a senha de outra conta global e uma acao de alto
             // impacto: confirmar a propria senha impede que uma sessao deixada
             // aberta vire acesso permanente para quem passar pela maquina.
             if (!Master::senhaConfere($idSessao, post('senha_atual'))) $erros[] = 'Confirme a sua senha atual para redefinir.';
             if (!validarSenha($nova)) $erros[] = 'A nova senha deve ter pelo menos 6 caracteres.';
-            if ($nova !== post('confirmar_senha')) $erros[] = 'As novas senhas nao conferem.';
+            if ($nova !== post('confirmar_senha')) $erros[] = 'As novas senhas não conferem.';
 
             if (!$erros) {
                 Master::atualizarSenha($id, $nova);
                 LogMaster::registrar('master_senha', [
                     'alvo'    => $conta['email'],
-                    'detalhe' => $id === $idSessao ? 'propria conta' : 'senha temporaria definida pelo master',
+                    'detalhe' => $id === $idSessao ? 'própria conta' : 'senha temporária definida pelo master',
                 ]);
                 definirFlash('sucesso', 'Senha da conta master redefinida.');
                 redirecionar('master/contas.php?acao=ver&id=' . $id);
@@ -100,11 +100,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $status = post('status') === 'ativo' ? 'ativo' : 'inativo';
 
             if (!$conta) {
-                $erros[] = 'Conta master nao encontrada.';
+                $erros[] = 'Conta master não encontrada.';
             } elseif ($id === $idSessao && $status === 'inativo') {
-                $erros[] = 'Voce nao pode desativar a conta que esta usando agora.';
+                $erros[] = 'Você não pode desativar a conta que está usando agora.';
             } elseif (!Master::alterarStatus($id, $status)) {
-                $erros[] = 'Esta e a ultima conta master ativa. Crie ou ative outra antes de desativa-la.';
+                $erros[] = 'Esta e a última conta master ativa. Crie ou ative outra antes de desativa-la.';
             } else {
                 LogMaster::registrar('master_status', [
                     'alvo'    => $conta['email'],
@@ -116,8 +116,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } catch (PDOException $erro) {
         $erros[] = $erro->getCode() === '23000'
-            ? 'Este e-mail ja pertence a outra conta master.'
-            : 'Nao foi possivel concluir a operacao.';
+            ? 'Este e-mail já pertence a outra conta master.'
+            : 'Não foi possível concluir a operação.';
         if ($erro->getCode() !== '23000') error_log($erro->getMessage());
     }
 }
@@ -139,7 +139,7 @@ require RAIZ . '/includes/painel_header.php';
 
 <?php if ($ativas < 2): ?>
     <div class="alerta alerta-aviso" role="status">
-        Existe apenas uma conta master ativa. Perder essa senha deixa a plataforma sem administracao: crie uma segunda conta.
+        Existe apenas uma conta master ativa. Perder essa senha deixa a plataforma sem administração: crie uma segunda conta.
     </div>
 <?php endif; ?>
 
@@ -155,7 +155,7 @@ require RAIZ . '/includes/painel_header.php';
                     <div class="campo"><label for="email">E-mail</label><input type="email" id="email" name="email" maxlength="150" required></div>
                 </div>
                 <div class="campo">
-                    <label for="senha">Senha temporaria</label>
+                    <label for="senha">Senha temporária</label>
                     <input type="password" id="senha" name="senha" minlength="6" autocomplete="new-password" required>
                     <span class="ajuda-campo">A pessoa deve troca-la no primeiro acesso, em Meu perfil.</span>
                 </div>
@@ -176,7 +176,7 @@ require RAIZ . '/includes/painel_header.php';
         <div class="cartao-corpo">
             <p><strong>Status:</strong> <?= badgeStatus($selecionada['status']) ?></p>
             <p>
-                <strong>Ultimo acesso:</strong>
+                <strong>Último acesso:</strong>
                 <?= $selecionada['ultimo_acesso']
                     ? e(formatarData(substr((string) $selecionada['ultimo_acesso'], 0, 10)) . ' as ' . substr((string) $selecionada['ultimo_acesso'], 11, 5))
                     : 'nunca entrou' ?>
@@ -209,7 +209,7 @@ require RAIZ . '/includes/painel_header.php';
                     <div class="campo">
                         <label for="senha_atual">Sua senha atual</label>
                         <input type="password" id="senha_atual" name="senha_atual" autocomplete="current-password" required>
-                        <span class="ajuda-campo">Confirma que e voce quem esta no teclado.</span>
+                        <span class="ajuda-campo">Confirma que é você quem está no teclado.</span>
                     </div>
                     <div class="campo"><label for="nova_senha">Nova senha</label><input type="password" id="nova_senha" name="nova_senha" minlength="6" autocomplete="new-password" required></div>
                     <div class="campo"><label for="confirmar_senha">Confirmar nova senha</label><input type="password" id="confirmar_senha" name="confirmar_senha" minlength="6" autocomplete="new-password" required></div>
@@ -224,7 +224,7 @@ require RAIZ . '/includes/painel_header.php';
         <div class="tabela-area">
             <table class="tabela">
                 <thead>
-                    <tr><th>Conta</th><th>Ultimo acesso</th><th>Criada em</th><th>Status</th><th>Acoes</th></tr>
+                    <tr><th>Conta</th><th>Último acesso</th><th>Criada em</th><th>Status</th><th>Acoes</th></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($contas as $conta): ?>

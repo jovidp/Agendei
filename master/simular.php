@@ -43,7 +43,7 @@ if ($acao === 'sair') {
         'estabelecimento'      => $idEmpresaSimulada,
         'estabelecimento_nome' => (string) ($empresa['nome'] ?? ''),
         'alvo'                 => (string) ($_SESSION['usuario_email'] ?? ''),
-        'detalhe'              => 'simulacao de ' . duracaoTexto((int) ceil((time() - (int) $simulacao['inicio']) / 60)),
+        'detalhe'              => 'simulação de ' . duracaoTexto((int) ceil((time() - (int) $simulacao['inicio']) / 60)),
     ];
 
     if (encerrarSimulacao() === null) {
@@ -51,12 +51,12 @@ if ($acao === 'sair') {
         // voltar, e manter a sessao do administrador aberta seria pior.
         encerrarSessao();
         iniciarSessao();
-        definirFlash('aviso', 'A conta master que abriu esta simulacao nao esta mais ativa. Entre novamente.');
+        definirFlash('aviso', 'A conta master que abriu esta simulação não está mais ativa. Entre novamente.');
         redirecionar('master/login.php');
     }
 
     LogMaster::registrar('simulacao_fim', $contexto);
-    definirFlash('sucesso', 'Voce voltou para a administracao master.');
+    definirFlash('sucesso', 'Você voltou para a administração master.');
     redirecionar('master/estabelecimentos.php');
 }
 
@@ -80,7 +80,7 @@ if (!$master || !Master::senhaConfere((int) $master['id_master'], post('senha_ma
 }
 
 if (!$empresa || !$usuario) {
-    definirFlash('erro', 'Conta administrativa nao encontrada neste estabelecimento.');
+    definirFlash('erro', 'Conta administrativa não encontrada neste estabelecimento.');
     redirecionar('master/estabelecimentos.php');
 }
 
@@ -101,5 +101,5 @@ LogMaster::registrar('simulacao_inicio', [
 
 iniciarSimulacao($usuario, $master, Estabelecimento::idAdministrador($idEmpresa, $idUsuario));
 
-definirFlash('aviso', 'Voce esta no painel de ' . $empresa['nome'] . ' como ' . $usuario['nome'] . '.');
+definirFlash('aviso', 'Você está no painel de ' . $empresa['nome'] . ' como ' . $usuario['nome'] . '.');
 redirecionar('admin/dashboard.php');

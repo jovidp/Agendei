@@ -113,7 +113,7 @@ class Assinatura
     public static function rotuloMetodo(?string $metodo): string
     {
         return match ($metodo) {
-            'pix' => 'Pix', 'boleto' => 'Boleto', 'cartao' => 'Cartao', default => 'Nao escolhido',
+            'pix' => 'Pix', 'boleto' => 'Boleto', 'cartao' => 'Cartão', default => 'Não escolhido',
         };
     }
 }

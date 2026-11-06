@@ -111,7 +111,7 @@
       "</div>" +
       '<div class="grupo-acessibilidade">' +
       '<button type="button" data-acessibilidade-contraste aria-pressed="false">Alto contraste</button>' +
-      '<button type="button" data-acessibilidade-restaurar aria-label="Restaurar a apresentacao padrao">Restaurar</button>' +
+      '<button type="button" data-acessibilidade-restaurar aria-label="Restaurar a apresentação padrão">Restaurar</button>' +
       "</div>";
 
     document.body.insertBefore(barra, document.body.firstChild);

@@ -29,22 +29,74 @@ class Disponibilidade
             return [];
         }
 
-        $duracao   = (int) $servico['duracao_minutos'];
-        $diaSemana = (int) date('w', strtotime($data));
         // Combina o expediente do dia com os agendamentos ocupados e os bloqueios existentes.
-        $faixas    = Horario::faixasAtivas($idProfissional, $diaSemana);
+        $faixas = Horario::faixasAtivas($idProfissional, (int) date('w', strtotime($data)));
 
         if ($faixas === []) {
             return [];
         }
 
-        $ocupados  = Agendamento::ocupacoesDoDia($idProfissional, $data, $opcoes['ignorar_agendamento'] ?? null);
-        $bloqueios = Bloqueio::porData($idProfissional, $data);
+        return self::calcular(
+            $data,
+            (int) $servico['duracao_minutos'],
+            $faixas,
+            Agendamento::ocupacoesDoDia($idProfissional, $data, $opcoes['ignorar_agendamento'] ?? null),
+            Bloqueio::porData($idProfissional, $data),
+            self::limiteMinimo($opcoes)
+        );
+    }
 
-        $limiteMinimo = empty($opcoes['ignorar_antecedencia'])
+    /**
+     * Dias de um intervalo com pelo menos um horario livre. Faz as mesmas contas
+     * de slots(), mas com poucas consultas para o periodo inteiro: chamar slots()
+     * dia a dia custava umas 7 idas ao banco por dia e deixava o calendario lento.
+     * @return string[] datas no formato Y-m-d
+     */
+    public static function diasComVagas(int $idProfissional, int $idServico, string $inicio, string $fim, array $opcoes = []): array
+    {
+        $servico = Servico::porId($idServico);
+
+        if (!$servico || $servico['status'] !== 'ativo' || !validarData($inicio) || !validarData($fim)) {
+            return [];
+        }
+        if (!Profissional::estaAtivo($idProfissional) || !Profissional::executaServico($idProfissional, $idServico)) {
+            return [];
+        }
+
+        $faixasPorDia = array_fill(0, 7, []);
+        foreach (Horario::porProfissional($idProfissional) as $faixa) {
+            if ($faixa['status'] === 'ativo') {
+                $faixasPorDia[(int) $faixa['dia_semana']][] = $faixa;
+            }
+        }
+
+        $ocupados  = Agendamento::ocupacoesDoPeriodo($idProfissional, $inicio, $fim);
+        $bloqueios = Bloqueio::porPeriodo($idProfissional, $inicio, $fim);
+        $limite    = self::limiteMinimo($opcoes);
+        $duracao   = (int) $servico['duracao_minutos'];
+        $dias      = [];
+
+        for ($dia = $inicio; $dia <= $fim; $dia = date('Y-m-d', strtotime($dia . ' +1 day'))) {
+            $faixas = $faixasPorDia[(int) date('w', strtotime($dia))];
+            if ($faixas !== [] && self::calcular($dia, $duracao, $faixas, $ocupados[$dia] ?? [], $bloqueios[$dia] ?? [], $limite) !== []) {
+                $dias[] = $dia;
+            }
+        }
+
+        return $dias;
+    }
+
+    /** Momento antes do qual nenhum horario e oferecido (0 = sem limite). */
+    private static function limiteMinimo(array $opcoes): int
+    {
+        return empty($opcoes['ignorar_antecedencia'])
             ? time() + (Configuracao::obterInteiro('antecedencia_minima_horas', 2) * 3600)
             : 0;
+    }
 
+    /** Horarios livres de uma data a partir do expediente, das ocupacoes e dos bloqueios ja carregados. */
+    private static function calcular(string $data, int $duracao, array $faixas, array $ocupados, array $bloqueios, int $limiteMinimo): array
+    {
         $slots = [];
 
         foreach ($faixas as $faixa) {
@@ -100,29 +152,29 @@ class Disponibilidade
         }
 
         if (!validarData($data)) {
-            return ['Data invalida.'];
+            return ['Data inválida.'];
         }
         if (!validarHora($horaInicio)) {
-            return ['Horario invalido.'];
+            return ['Horário inválido.'];
         }
 
         $servico = Servico::porId($idServico);
         if (!$servico) {
-            return ['Servico nao encontrado.'];
+            return ['Serviço não encontrado.'];
         }
         if ($servico['status'] !== 'ativo') {
-            $erros[] = 'Este servico nao esta disponivel para agendamento.';
+            $erros[] = 'Este serviço não está disponível para agendamento.';
         }
 
         $profissional = Profissional::porId($idProfissional);
         if (!$profissional) {
-            return ['Profissional nao encontrado.'];
+            return ['Profissional não encontrado.'];
         }
         if ($profissional['status'] !== 'ativo') {
-            $erros[] = 'Este profissional nao esta disponivel para agendamento.';
+            $erros[] = 'Este profissional não está disponível para agendamento.';
         }
         if (!Profissional::executaServico($idProfissional, $idServico)) {
-            $erros[] = 'Este profissional nao executa o servico selecionado.';
+            $erros[] = 'Este profissional não executa o serviço selecionado.';
         }
 
         if ($erros !== []) {
@@ -134,7 +186,7 @@ class Disponibilidade
 
         // O atendimento nao pode atravessar a virada do dia.
         if (horaParaMinutos($horaFim) <= horaParaMinutos($horaInicio)) {
-            return ['O horario selecionado ultrapassa o fim do dia.'];
+            return ['O horário selecionado ultrapassa o fim do dia.'];
         }
 
         // Antecedencia minima e maxima.
@@ -144,25 +196,25 @@ class Disponibilidade
             $antecedenciaMinima = Configuracao::obterInteiro('antecedencia_minima_horas', 2);
             if ($inicioTimestamp < time() + ($antecedenciaMinima * 3600)) {
                 $erros[] = $antecedenciaMinima > 0
-                    ? "Agendamentos precisam de no minimo {$antecedenciaMinima}h de antecedencia."
-                    : 'Nao e possivel agendar em um horario que ja passou.';
+                    ? "Agendamentos precisam de no mínimo {$antecedenciaMinima}h de antecedência."
+                    : 'Não é possível agendar em um horário que já passou.';
             }
 
             $antecedenciaMaxima = Configuracao::obterInteiro('antecedencia_maxima_dias', 60);
             if ($antecedenciaMaxima > 0 && $inicioTimestamp > strtotime("+{$antecedenciaMaxima} days")) {
-                $erros[] = "So e possivel agendar com ate {$antecedenciaMaxima} dias de antecedencia.";
+                $erros[] = "Só é possível agendar com até {$antecedenciaMaxima} dias de antecedência.";
             }
         } elseif ($inicioTimestamp < strtotime('today')) {
-            $erros[] = 'Nao e possivel agendar em datas passadas.';
+            $erros[] = 'Não é possível agendar em datas passadas.';
         }
 
         // Precisa caber inteiro dentro de uma faixa de expediente.
         if (!self::dentroDoExpediente($idProfissional, $data, $horaInicio, $horaFim)) {
-            $erros[] = 'O horario selecionado esta fora do expediente do profissional.';
+            $erros[] = 'O horário selecionado está fora do expediente do profissional.';
         }
 
         if (Bloqueio::conflita($idProfissional, $data, $horaInicio, $horaFim)) {
-            $erros[] = 'O profissional possui um bloqueio de agenda neste horario.';
+            $erros[] = 'O profissional possui um bloqueio de agenda neste horário.';
         }
 
         if (Agendamento::existeConflito(
@@ -173,7 +225,7 @@ class Disponibilidade
             $opcoes['ignorar_agendamento'] ?? null,
             !empty($opcoes['bloquear_linhas'])
         )) {
-            $erros[] = 'Este horario nao esta mais disponivel. Escolha outro horario.';
+            $erros[] = 'Este horário não está mais disponível. Escolha outro horário.';
         }
 
         return $erros;
@@ -193,31 +245,6 @@ class Disponibilidade
         }
 
         return false;
-    }
-
-    /**
-     * Datas com pelo menos um horario livre dentro de um intervalo.
-     * Usado para destacar os dias disponiveis no calendario.
-     * @return string[] datas no formato Y-m-d
-     */
-    public static function datasComVagas(int $idProfissional, int $idServico, string $dataInicial, int $dias = 30): array
-    {
-        $disponiveis = [];
-        $data = date_create($dataInicial);
-
-        if (!$data) {
-            return [];
-        }
-
-        for ($contador = 0; $contador < $dias; $contador++) {
-            $dia = $data->format('Y-m-d');
-            if (self::slots($idProfissional, $idServico, $dia) !== []) {
-                $disponiveis[] = $dia;
-            }
-            $data->modify('+1 day');
-        }
-
-        return $disponiveis;
     }
 
     /** @param array<int, array{hora_inicio: string, hora_fim: string}> $intervalos */

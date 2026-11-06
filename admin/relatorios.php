@@ -49,8 +49,8 @@ $taxaCancelamento = $totalPeriodo > 0
     : 0;
 
 // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
-$tituloPagina  = 'Relatorios';
-$subtituloTopo = 'Periodo de ' . formatarData($dataInicial) . ' a ' . formatarData($dataFinal);
+$tituloPagina  = 'Relatórios';
+$subtituloTopo = 'Período de ' . formatarData($dataInicial) . ' a ' . formatarData($dataFinal);
 
 // Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
@@ -65,12 +65,12 @@ require_once RAIZ . '/includes/painel_header.php';
         </div>
 
         <div class="campo">
-            <label for="data_final">Ate</label>
+            <label for="data_final">Até</label>
             <input type="date" id="data_final" name="data_final" value="<?= e($dataFinal) ?>">
         </div>
 
         <div class="campo">
-            <button type="submit" class="btn">Aplicar periodo</button>
+            <button type="submit" class="btn">Aplicar período</button>
         </div>
 
         <div class="campo">
@@ -92,7 +92,7 @@ require_once RAIZ . '/includes/painel_header.php';
         <span class="indicador-nota">Todos os status</span>
     </div>
     <div class="indicador indicador-positivo">
-        <span class="indicador-rotulo">Concluidos</span>
+        <span class="indicador-rotulo">Concluídos</span>
         <span class="indicador-valor"><?= (int) $resumo['concluido']['total'] ?></span>
         <span class="indicador-nota"><?= formatarMoeda($realizado) ?> faturados</span>
     </div>
@@ -104,18 +104,18 @@ require_once RAIZ . '/includes/painel_header.php';
     <div class="indicador indicador-negativo">
         <span class="indicador-rotulo">Cancelamentos</span>
         <span class="indicador-valor"><?= (int) $resumo['cancelado']['total'] ?></span>
-        <span class="indicador-nota"><?= (int) $taxaCancelamento ?>% do periodo</span>
+        <span class="indicador-nota"><?= (int) $taxaCancelamento ?>% do período</span>
     </div>
 </div>
 
 <div class="grade-painel-igual">
     <div class="cartao">
         <div class="cartao-cabecalho">
-            <h3>Servicos mais realizados</h3>
+            <h3>Serviços mais realizados</h3>
         </div>
 
         <?php if ($servicos === []): ?>
-            <div class="estado-vazio"><strong>Sem dados no periodo</strong>
+            <div class="estado-vazio"><strong>Sem dados no período</strong>
                 <p>Nenhum agendamento registrado.</p>
             </div>
         <?php else: ?>
@@ -123,7 +123,7 @@ require_once RAIZ . '/includes/painel_header.php';
                 <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela" style="min-width:auto">
                     <thead>
                         <tr>
-                            <th>Servico</th>
+                            <th>Serviço</th>
                             <th>Agendamentos</th>
                             <th class="coluna-acoes">Valor</th>
                         </tr>
@@ -148,7 +148,7 @@ require_once RAIZ . '/includes/painel_header.php';
         </div>
 
         <?php if ($profissionais === []): ?>
-            <div class="estado-vazio"><strong>Sem dados no periodo</strong>
+            <div class="estado-vazio"><strong>Sem dados no período</strong>
                 <p>Nenhum atendimento registrado.</p>
             </div>
         <?php else: ?>
@@ -158,7 +158,7 @@ require_once RAIZ . '/includes/painel_header.php';
                         <tr>
                             <th>Profissional</th>
                             <th>Total</th>
-                            <th>Concluidos</th>
+                            <th>Concluídos</th>
                             <th class="coluna-acoes">Valor</th>
                         </tr>
                     </thead>
@@ -185,7 +185,7 @@ require_once RAIZ . '/includes/painel_header.php';
         </div>
 
         <?php if ($clientes === []): ?>
-            <div class="estado-vazio"><strong>Sem dados no periodo</strong>
+            <div class="estado-vazio"><strong>Sem dados no período</strong>
                 <p>Nenhum cliente atendido.</p>
             </div>
         <?php else: ?>
@@ -195,7 +195,7 @@ require_once RAIZ . '/includes/painel_header.php';
                         <tr>
                             <th>Cliente</th>
                             <th>Atendimentos</th>
-                            <th>Ultimo</th>
+                            <th>Último</th>
                             <th class="coluna-acoes">Valor</th>
                         </tr>
                     </thead>
@@ -223,7 +223,7 @@ require_once RAIZ . '/includes/painel_header.php';
         </div>
 
         <?php if ($movimento === []): ?>
-            <div class="estado-vazio"><strong>Sem dados no periodo</strong>
+            <div class="estado-vazio"><strong>Sem dados no período</strong>
                 <p>Nenhum agendamento no intervalo.</p>
             </div>
         <?php else: ?>
@@ -269,7 +269,7 @@ require_once RAIZ . '/includes/painel_header.php';
                     <tr>
                         <th>Unidade</th>
                         <th>Atendimentos</th>
-                        <th>Concluidos</th>
+                        <th>Concluídos</th>
                         <th class="coluna-acoes">Faturamento</th>
                     </tr>
                 </thead>

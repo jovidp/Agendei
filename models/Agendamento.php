@@ -198,6 +198,24 @@ class Agendamento
         return $consulta->fetchAll();
     }
 
+    /** Ocupacoes do profissional entre duas datas, agrupadas por data (Y-m-d). */
+    public static function ocupacoesDoPeriodo(int $idProfissional, string $inicio, string $fim): array
+    {
+        $consulta = bd()->prepare(
+            'SELECT data_agendamento, hora_inicio, hora_fim FROM agendamentos
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :profissional
+               AND data_agendamento BETWEEN :inicio AND :fim
+               AND status IN (\'agendado\',\'confirmado\',\'concluido\')'
+        );
+        $consulta->execute([':profissional' => $idProfissional, ':inicio' => $inicio, ':fim' => $fim]);
+
+        $porData = [];
+        foreach ($consulta->fetchAll() as $linha) {
+            $porData[substr((string) $linha['data_agendamento'], 0, 10)][] = $linha;
+        }
+        return $porData;
+    }
+
     /**
      * Existe agendamento ativo do profissional sobrepondo o intervalo?
      * Com $bloquearLinhas = true a leitura trava as linhas ate o fim da transacao,
@@ -306,10 +324,10 @@ class Agendamento
 
         $cliente = Cliente::porId($idCliente);
         if (!$cliente) {
-            return ['sucesso' => false, 'erros' => ['Cliente nao encontrado.']];
+            return ['sucesso' => false, 'erros' => ['Cliente não encontrado.']];
         }
         if ($cliente['status'] !== 'ativo') {
-            return ['sucesso' => false, 'erros' => ['Este cliente esta inativo e nao pode agendar.']];
+            return ['sucesso' => false, 'erros' => ['Este cliente está inativo e não pode agendar.']];
         }
 
         $conexao = bd();
@@ -343,7 +361,7 @@ class Agendamento
 
             if (self::clientePossuiConflito($idCliente, $data, $horaInicio, $horaFim)) {
                 $conexao->rollBack();
-                return ['sucesso' => false, 'erros' => ['Voce ja possui outro agendamento neste horario.']];
+                return ['sucesso' => false, 'erros' => ['Você já possui outro agendamento neste horário.']];
             }
 
             $status = $dados['status'] ?? (Configuracao::ativa('confirmar_automaticamente') ? 'confirmado' : 'agendado');
@@ -402,7 +420,7 @@ class Agendamento
                 $conexao->rollBack();
             }
             error_log('Falha ao criar agendamento: ' . $erro->getMessage());
-            return ['sucesso' => false, 'erros' => ['Nao foi possivel concluir o agendamento. Tente novamente.']];
+            return ['sucesso' => false, 'erros' => ['Não foi possível concluir o agendamento. Tente novamente.']];
         }
     }
 
@@ -435,17 +453,20 @@ class Agendamento
             try {
                 Lembrete::cancelarDoAgendamento(
                     $idAgendamento,
-                    $status === 'cancelado' ? 'Agendamento cancelado antes do envio.' : 'Atendimento ja concluido.'
+                    $status === 'cancelado' ? 'Agendamento cancelado antes do envio.' : 'Atendimento já concluído.'
                 );
             } catch (Throwable $erroRecurso) {
-                error_log('Status alterado, mas a fila de lembretes nao foi atualizada: ' . $erroRecurso->getMessage());
+                error_log('Status alterado, mas a fila de lembretes não foi atualizada: ' . $erroRecurso->getMessage());
             }
         }
         return $alterado;
     }
 
-    /** Registra o cancelamento junto ao motivo e ao usuário responsável pela ação. */
-    public static function cancelar(int $idAgendamento, ?int $idUsuario, ?string $motivo = null): bool
+    /**
+     * Registra o cancelamento junto ao motivo e ao usuário responsável pela ação.
+     * $peloCliente decide o destino do sinal pago (Diferencial::cancelarFinanceiro).
+     */
+    public static function cancelar(int $idAgendamento, ?int $idUsuario, ?string $motivo = null, bool $peloCliente = false): bool
     {
         if ($idUsuario !== null && !Usuario::porId($idUsuario)) return false;
         $agendamento = self::porId($idAgendamento);
@@ -464,7 +485,7 @@ class Agendamento
         if ($cancelado && $consulta->rowCount()) {
             try {
                 Lembrete::cancelarDoAgendamento($idAgendamento, 'Agendamento cancelado antes do envio.');
-                Diferencial::cancelarFinanceiro($agendamento);
+                Diferencial::cancelarFinanceiro($agendamento, $peloCliente);
                 Diferencial::avisarListaEspera($agendamento);
             } catch (Throwable $erroRecurso) {
                 error_log('Cancelamento concluído, mas o aviso de encaixe falhou: ' . $erroRecurso->getMessage());
@@ -480,17 +501,25 @@ class Agendamento
         return $consulta->execute([':observacao' => $observacao ?: null, ':id' => $idAgendamento]);
     }
 
-    /** Regra de cancelamento pelo cliente: respeita o limite de horas configurado. */
+    /**
+     * O cliente cancela pelo painel até o horário começar. Depois do prazo sem
+     * perda (prazoSemPerda) ele ainda cancela, mas o sinal pago fica com a empresa.
+     */
     public static function clientePodeCancelar(array $agendamento): bool
     {
-        if (!in_array($agendamento['status'], ['agendado', 'confirmado'], true)) {
-            return false;
-        }
+        return in_array($agendamento['status'], ['agendado', 'confirmado'], true) && !self::jaComecou($agendamento);
+    }
 
-        $limiteHoras = Configuracao::obterInteiro('cancelamento_limite_horas', 4);
-        $inicio      = strtotime($agendamento['data_agendamento'] . ' ' . $agendamento['hora_inicio']);
+    /** Minutos antes do atendimento até quando o cliente cancela sem perder o sinal. */
+    public static function minutosSemPerda(): int
+    {
+        return max(0, Configuracao::obterInteiro('cancelamento_limite_minutos', 30));
+    }
 
-        return $inicio - ($limiteHoras * 3600) > time();
+    /** Momento (timestamp) até o qual o cancelamento pelo cliente não custa o sinal. */
+    public static function prazoSemPerda(array $agendamento): int
+    {
+        return strtotime($agendamento['data_agendamento'] . ' ' . $agendamento['hora_inicio']) - self::minutosSemPerda() * 60;
     }
 
     /** Ja passou do horario de inicio? Usado para liberar "concluir atendimento". */

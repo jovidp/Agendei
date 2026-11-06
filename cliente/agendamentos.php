@@ -22,20 +22,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Recusa tentativas de alterar agendamentos de outro cliente, mesmo com um ID válido.
     if (!$agendamento || (int) $agendamento['id_cliente'] !== $idCliente) {
-        definirFlash('erro', 'Agendamento nao encontrado.');
+        definirFlash('erro', 'Agendamento não encontrado.');
     } elseif ($acao === 'confirmar') {
-        // O mesmo gesto do link do lembrete, para quem ja esta na conta.
+        // O mesmo gesto do link do lembrete, para quem já está na conta.
         if (Confirmacao::confirmar($agendamento)) {
-            definirFlash('sucesso', 'Presenca confirmada. Ate la!');
+            definirFlash('sucesso', 'Presença confirmada. Até lá!');
         } else {
-            definirFlash('erro', 'Este agendamento nao pode mais ser confirmado.');
+            definirFlash('erro', 'Este agendamento não pode mais ser confirmado.');
+        }
+    } elseif ($acao === 'pagar_sinal') {
+        // Simulação: não há cobrança real; o sinal pendente passa direto a pago.
+        if (Diferencial::pagarSinalSimulado($idAgendamento)) {
+            definirFlash('sucesso', 'Pagamento do sinal simulado com sucesso.');
+        } else {
+            definirFlash('erro', 'Este agendamento não tem sinal pendente.');
         }
     } elseif (!Agendamento::clientePodeCancelar($agendamento)) {
-        $limite = Configuracao::obterInteiro('cancelamento_limite_horas', 4);
-        definirFlash('erro', "Este agendamento nao pode mais ser cancelado pelo painel (limite de {$limite}h antes do atendimento). Entre em contato com o estabelecimento.");
+        definirFlash('erro', 'Este agendamento não pode mais ser cancelado pelo painel. Entre em contato com o estabelecimento.');
     } else {
-        Agendamento::cancelar($idAgendamento, usuarioId(), limitarTexto(post('motivo'), 200));
-        definirFlash('sucesso', 'Agendamento cancelado.');
+        Agendamento::cancelar($idAgendamento, usuarioId(), limitarTexto(post('motivo'), 200), true);
+        $sinal = Diferencial::sinalDoAgendamento($idAgendamento);
+        $destino = [
+            'credito' => ' O sinal de ' . formatarMoeda($sinal['valor'] ?? 0) . ' ficou como crédito para o seu próximo agendamento.',
+            'retido'  => ' O sinal de ' . formatarMoeda($sinal['valor'] ?? 0) . ' ficou com o estabelecimento.',
+        ];
+        definirFlash('sucesso', 'Agendamento cancelado.' . ($destino[$sinal['status'] ?? ''] ?? ''));
     }
 
     redirecionar('cliente/agendamentos.php');
@@ -62,7 +73,15 @@ $agendamentos = Agendamento::listar($filtros + [
     'deslocamento' => ($pagina - 1) * $porPagina,
 ]);
 
-$limiteCancelamento = Configuracao::obterInteiro('cancelamento_limite_horas', 4);
+$minutosSemPerda = Agendamento::minutosSemPerda();
+$creditoSinal    = Diferencial::creditoSinal($idCliente);
+// Sinal de cada reserva da página, para o botão de pagar e o relógio do prazo.
+$sinais = [];
+foreach (Diferencial::pagamentos($idCliente) as $pagamento) {
+    if ($pagamento['tipo'] === 'sinal') {
+        $sinais[(int) $pagamento['id_agendamento']] = $pagamento;
+    }
+}
 
 // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Meus agendamentos';
@@ -73,13 +92,19 @@ $acoesTopo     = '<a href="' . url('cliente/agendar.php') . '" class="btn btn-pe
 require_once RAIZ . '/includes/painel_header.php';
 ?>
 
+<?php if ($creditoSinal > 0): ?>
+    <div class="alerta alerta-info">
+        <span class="alerta-texto">Você tem <strong><?= formatarMoeda($creditoSinal) ?></strong> de sinal guardado como crédito. Ele paga o sinal do seu próximo agendamento.</span>
+    </div>
+<?php endif; ?>
+
 <div class="cartao">
     <div class="barra-filtros">
         <?php /* Filtros enviados na URL para permitir atualizar e compartilhar a consulta. */ ?><form method="get" class="barra-filtros" style="padding:0;border:0;background:none;flex:1">
         <input type="hidden" name="estabelecimento" value="<?= e(Contexto::slug()) ?>">
             <div class="campo campo-busca">
                 <label for="busca">Buscar</label>
-                <input type="search" id="busca" placeholder="Servico ou profissional"
+                <input type="search" id="busca" placeholder="Serviço ou profissional"
                        data-busca-tabela="#tabelaAgendamentos" data-busca-vazio="#semResultado">
             </div>
 
@@ -100,7 +125,7 @@ require_once RAIZ . '/includes/painel_header.php';
     <?php if ($agendamentos === []): ?>
         <div class="estado-vazio">
             <strong>Nenhum agendamento encontrado</strong>
-            <p><?= $status !== '' ? 'Nenhum agendamento com este status.' : 'Voce ainda nao possui agendamentos.' ?></p>
+            <p><?= $status !== '' ? 'Nenhum agendamento com este status.' : 'Você ainda não possui agendamentos.' ?></p>
             <a href="<?= url('cliente/agendar.php') ?>" class="btn margem-topo">Agendar agora</a>
         </div>
     <?php else: ?>
@@ -109,9 +134,9 @@ require_once RAIZ . '/includes/painel_header.php';
                 <thead>
                     <tr>
                         <th>Data</th>
-                        <th>Servico</th>
+                        <th>Serviço</th>
                         <th>Profissional</th>
-                        <th>Horario</th>
+                        <th>Horário</th>
                         <th>Status</th>
                         <th>Valor</th>
                         <th class="coluna-acoes">Acoes</th>
@@ -119,16 +144,47 @@ require_once RAIZ . '/includes/painel_header.php';
                 </thead>
                 <tbody>
                     <?php foreach ($agendamentos as $agendamento): ?>
+                        <?php
+                        $sinal      = $sinais[(int) $agendamento['id_agendamento']] ?? null;
+                        $sinalPago  = $sinal !== null && $sinal['status'] === 'pago';
+                        $restante   = Agendamento::prazoSemPerda($agendamento) - time();
+                        $reaproveitado = $sinalPago && str_starts_with((string) $sinal['referencia'], Diferencial::PREFIXO_CREDITO);
+                        if (!$sinalPago) {
+                            $avisoCancelamento = '';
+                        } elseif ($restante > 0 && !$reaproveitado) {
+                            $avisoCancelamento = 'O sinal de ' . formatarMoeda($sinal['valor']) . ' fica como crédito para o seu próximo agendamento.';
+                        } else {
+                            $avisoCancelamento = 'O sinal de ' . formatarMoeda($sinal['valor']) . ' fica com o estabelecimento'
+                                . ($reaproveitado ? ': ele já veio de um cancelamento anterior.' : ': faltam menos de ' . $minutosSemPerda . ' min para o horário.');
+                        }
+                        ?>
                         <tr data-linha>
                             <td class="celula-principal"><?= formatarData($agendamento['data_agendamento']) ?></td>
                             <td><?= e($agendamento['nome_servico']) ?></td>
                             <td><?= e($agendamento['nome_profissional']) ?></td>
                             <td>
                                 <?= formatarHora($agendamento['hora_inicio']) ?>
-                                <span class="celula-secundaria">ate <?= formatarHora($agendamento['hora_fim']) ?></span>
+                                <span class="celula-secundaria">até <?= formatarHora($agendamento['hora_fim']) ?></span>
                             </td>
-                            <td><?= badgeStatus($agendamento['status']) ?></td>
-                            <td><?= formatarMoeda($agendamento['valor']) ?></td>
+                            <td>
+                                <?= badgeStatus($agendamento['status']) ?>
+                                <?php if ($sinalPago && !$reaproveitado && Agendamento::clientePodeCancelar($agendamento)): ?>
+                                    <span class="celula-secundaria">
+                                        <?php if ($restante > 0): ?>
+                                            Cancele sem perder o sinal:
+                                            <strong data-contagem="<?= (int) $restante ?>" data-contagem-fim="prazo encerrado"></strong>
+                                        <?php else: ?>
+                                            Prazo para cancelar sem perder o sinal encerrado.
+                                        <?php endif; ?>
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <?= formatarMoeda($agendamento['valor']) ?>
+                                <?php if ($sinal !== null): ?>
+                                    <span class="celula-secundaria">Sinal <?= formatarMoeda($sinal['valor']) ?> <?= badgeStatus($sinal['status']) ?></span>
+                                <?php endif; ?>
+                            </td>
                             <td class="coluna-acoes">
                                 <button type="button" class="btn btn-contorno btn-pequeno"
                                         data-modal="modalDetalhes"
@@ -139,7 +195,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                         data-campo-duracao="<?= e(duracaoTexto((int) $agendamento['duracao_minutos'])) ?>"
                                         data-campo-valor="<?= formatarMoeda($agendamento['valor']) ?>"
                                         data-campo-status="<?= e(ucfirst($agendamento['status'])) ?>"
-                                        data-campo-observacao="<?= e($agendamento['observacao'] ?: 'Sem observacoes.') ?>">
+                                        data-campo-observacao="<?= e($agendamento['observacao'] ?: 'Sem observações.') ?>">
                                     Detalhes
                                 </button>
 
@@ -148,7 +204,16 @@ require_once RAIZ . '/includes/painel_header.php';
                                         <?= campoCsrf() ?>
                                         <input type="hidden" name="acao" value="confirmar">
                                         <input type="hidden" name="id_agendamento" value="<?= (int) $agendamento['id_agendamento'] ?>">
-                                        <button type="submit" class="btn btn-pequeno">Confirmar presenca</button>
+                                        <button type="submit" class="btn btn-pequeno">Confirmar presença</button>
+                                    </form>
+                                <?php endif; ?>
+
+                                <?php if ($sinal !== null && $sinal['status'] === 'pendente' && Agendamento::clientePodeCancelar($agendamento)): ?>
+                                    <form method="post" class="formulario-inline">
+                                        <?= campoCsrf() ?>
+                                        <input type="hidden" name="acao" value="pagar_sinal">
+                                        <input type="hidden" name="id_agendamento" value="<?= (int) $agendamento['id_agendamento'] ?>">
+                                        <button type="submit" class="btn btn-secundario btn-pequeno">Pagar sinal (simulação)</button>
                                     </form>
                                 <?php endif; ?>
 
@@ -156,7 +221,8 @@ require_once RAIZ . '/includes/painel_header.php';
                                     <button type="button" class="btn btn-perigo btn-pequeno"
                                             data-modal="modalCancelar"
                                             data-campo-id_agendamento="<?= (int) $agendamento['id_agendamento'] ?>"
-                                            data-campo-resumo="<?= e($agendamento['nome_servico']) ?> em <?= formatarData($agendamento['data_agendamento']) ?> as <?= formatarHora($agendamento['hora_inicio']) ?>">
+                                            data-campo-aviso="<?= e($avisoCancelamento) ?>"
+                                            data-campo-resumo="<?= e($agendamento['nome_servico']) ?> em <?= formatarData($agendamento['data_agendamento']) ?> às <?= formatarHora($agendamento['hora_inicio']) ?>">
                                         Cancelar
                                     </button>
                                 <?php endif; ?>
@@ -177,7 +243,9 @@ require_once RAIZ . '/includes/painel_header.php';
 </div>
 
 <p class="texto-pequeno texto-secundario">
-    Cancelamentos pelo painel sao permitidos ate <?= (int) $limiteCancelamento ?>h antes do horario do atendimento.
+    Você pode cancelar pelo painel até o horário do atendimento. Cancelando até <?= (int) $minutosSemPerda ?> min antes,
+    o sinal pago fica como crédito para o próximo agendamento. Depois disso, ou se o sinal já veio de um cancelamento
+    anterior, ele fica com o estabelecimento.
 </p>
 
 <!-- Modal de detalhes -->
@@ -189,14 +257,14 @@ require_once RAIZ . '/includes/painel_header.php';
         </div>
         <div class="modal-corpo">
             <dl class="lista-detalhes">
-                <div><dt>Servico</dt><dd data-preenche="servico">-</dd></div>
+                <div><dt>Serviço</dt><dd data-preenche="servico">-</dd></div>
                 <div><dt>Profissional</dt><dd data-preenche="profissional">-</dd></div>
                 <div><dt>Data</dt><dd data-preenche="data">-</dd></div>
-                <div><dt>Horario</dt><dd data-preenche="horario">-</dd></div>
-                <div><dt>Duracao</dt><dd data-preenche="duracao">-</dd></div>
+                <div><dt>Horário</dt><dd data-preenche="horario">-</dd></div>
+                <div><dt>Duração</dt><dd data-preenche="duracao">-</dd></div>
                 <div><dt>Valor</dt><dd data-preenche="valor">-</dd></div>
                 <div><dt>Status</dt><dd data-preenche="status">-</dd></div>
-                <div><dt>Observacao</dt><dd data-preenche="observacao">-</dd></div>
+                <div><dt>Observação</dt><dd data-preenche="observacao">-</dd></div>
             </dl>
         </div>
         <div class="modal-rodape">
@@ -219,6 +287,7 @@ require_once RAIZ . '/includes/painel_header.php';
 
         <div class="modal-corpo">
             <p>Deseja realmente cancelar o agendamento <strong data-preenche="resumo"></strong>?</p>
+            <p class="texto-secundario" data-preenche="aviso"></p>
 
             <div class="campo">
                 <label for="motivo">Motivo (opcional)</label>

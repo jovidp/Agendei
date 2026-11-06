@@ -98,13 +98,13 @@ $tituloPagina = 'Entrar | ' . $estabelecimento['nome'];
                 <?= Tema::marca($estabelecimento) ?>
                 <?= e($estabelecimento['nome']) ?>
             </span>
-            <h2>Agendamento sem complicacao</h2>
+            <h2>Agendamento sem complicação</h2>
             <p>Acesse sua conta para agendar, acompanhar e gerenciar seus atendimentos.</p>
 
             <ul class="lista-beneficios">
-                <li>Horarios atualizados em tempo real</li>
-                <li>Historico completo dos atendimentos</li>
-                <li>Cancelamento pelo proprio painel</li>
+                <li>Horários atualizados em tempo real</li>
+                <li>Histórico completo dos atendimentos</li>
+                <li>Cancelamento pelo próprio painel</li>
             </ul>
         </div>
 
@@ -166,10 +166,10 @@ $tituloPagina = 'Entrar | ' . $estabelecimento['nome'];
             </form>
 
             <p class="autenticacao-rodape">
-                Ainda nao tem conta? <a href="<?= url('cadastro.php') ?>">Criar conta</a>
+                Ainda não tem conta? <a href="<?= url('cadastro.php') ?>">Criar conta</a>
             </p>
             <p class="autenticacao-rodape">
-                Sua empresa ainda nao usa o Agendei? <a href="<?= url('cadastro_empresa.php') ?>">Teste gratis por 7 dias</a>
+                Sua empresa ainda não usa o Agendei? <a href="<?= url('cadastro_empresa.php') ?>">Teste grátis por 7 dias</a>
             </p>
         </div>
     </div>

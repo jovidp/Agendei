@@ -205,7 +205,7 @@ class Totp
         $cifrado = openssl_encrypt($segredo, 'aes-256-gcm', self::chave(), OPENSSL_RAW_DATA, $nonce, $etiqueta);
 
         if ($cifrado === false) {
-            throw new RuntimeException('Nao foi possivel proteger o segredo do segundo fator.');
+            throw new RuntimeException('Não foi possível proteger o segredo do segundo fator.');
         }
 
         return 'v1.' . base64_encode($nonce . $etiqueta . $cifrado);

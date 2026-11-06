@@ -58,7 +58,7 @@ class LogAutenticacao
             ]);
         } catch (Throwable $erro) {
             // O log e um registro auxiliar: uma falha aqui nao pode derrubar o login.
-            error_log('Falha ao gravar log de autenticacao: ' . $erro->getMessage());
+            error_log('Falha ao gravar log de autenticação: ' . $erro->getMessage());
         }
     }
 

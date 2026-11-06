@@ -18,7 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $cliente   = Cliente::porId($idCliente);
 
     if (!$cliente) {
-        definirFlash('erro', 'Cliente nao encontrado.');
+        definirFlash('erro', 'Cliente não encontrado.');
     } elseif (post('acao') === 'status') {
         $novoStatus = post('status') === 'ativo' ? 'ativo' : 'inativo';
         // Liga ou desliga o vinculo de cliente com esta empresa; a pessoa continua
@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'data_nascimento' => $cliente['data_nascimento'],
             'observacoes'     => limitarTexto(post('observacoes'), 500),
         ]);
-        definirFlash('sucesso', 'Observacoes atualizadas.');
+        definirFlash('sucesso', 'Observações atualizadas.');
         redirecionar('admin/clientes.php?acao=ver&id=' . $idCliente);
     }
 
@@ -47,7 +47,7 @@ if ($acaoTela === 'ver') {
     $cliente = Cliente::porId((int) get('id'));
 
     if (!$cliente) {
-        definirFlash('erro', 'Cliente nao encontrado.');
+        definirFlash('erro', 'Cliente não encontrado.');
         redirecionar('admin/clientes.php');
     }
 
@@ -80,35 +80,35 @@ if ($acaoTela === 'ver') {
         <div class="indicador indicador-destaque">
             <span class="indicador-rotulo">Agendamentos</span>
             <span class="indicador-valor"><?= (int) $resumo['total'] ?></span>
-            <span class="indicador-nota">Total historico</span>
+            <span class="indicador-nota">Total histórico</span>
         </div>
         <div class="indicador indicador-positivo">
-            <span class="indicador-rotulo">Concluidos</span>
+            <span class="indicador-rotulo">Concluídos</span>
             <span class="indicador-valor"><?= (int) $resumo['concluidos'] ?></span>
             <span class="indicador-nota">Atendimentos realizados</span>
         </div>
         <div class="indicador indicador-negativo">
             <span class="indicador-rotulo">Cancelados</span>
             <span class="indicador-valor"><?= (int) $resumo['cancelados'] ?></span>
-            <span class="indicador-nota">Historico completo</span>
+            <span class="indicador-nota">Histórico completo</span>
         </div>
         <div class="indicador">
             <span class="indicador-rotulo">Valor gerado</span>
             <span class="indicador-valor"><?= formatarMoeda($valorTotal) ?></span>
-            <span class="indicador-nota">Somente concluidos</span>
+            <span class="indicador-nota">Somente concluídos</span>
         </div>
     </div>
 
     <div class="grade-painel">
         <div class="cartao">
             <div class="cartao-cabecalho">
-                <h3>Historico de agendamentos</h3>
+                <h3>Histórico de agendamentos</h3>
             </div>
 
             <?php if ($agendamentos === []): ?>
                 <div class="estado-vazio">
                     <strong>Nenhum agendamento registrado</strong>
-                    <p>Este cliente ainda nao realizou agendamentos.</p>
+                    <p>Este cliente ainda não realizou agendamentos.</p>
                 </div>
             <?php else: ?>
                 <div class="tabela-area">
@@ -116,9 +116,9 @@ if ($acaoTela === 'ver') {
                         <thead>
                             <tr>
                                 <th>Data</th>
-                                <th>Servico</th>
+                                <th>Serviço</th>
                                 <th>Profissional</th>
-                                <th>Horario</th>
+                                <th>Horário</th>
                                 <th>Status</th>
                                 <th class="coluna-acoes">Valor</th>
                             </tr>
@@ -172,7 +172,7 @@ if ($acaoTela === 'ver') {
                             <dd><?= formatarData($cliente['data_cadastro']) ?></dd>
                         </div>
                         <div>
-                            <dt>Situacao</dt>
+                            <dt>Situação</dt>
                             <dd><?= badgeStatus($cliente['status']) ?></dd>
                         </div>
                     </dl>
@@ -181,7 +181,7 @@ if ($acaoTela === 'ver') {
 
             <div class="cartao">
                 <div class="cartao-cabecalho">
-                    <h3>Observacoes internas</h3>
+                    <h3>Observações internas</h3>
                 </div>
                 <div class="cartao-corpo">
                     <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post">
@@ -190,11 +190,11 @@ if ($acaoTela === 'ver') {
                         <input type="hidden" name="id_cliente" value="<?= (int) $cliente['id_cliente'] ?>">
 
                         <div class="campo">
-                            <label for="observacoes">Anotacoes visiveis apenas para a equipe</label>
+                            <label for="observacoes">Anotações visíveis apenas para a equipe</label>
                             <textarea id="observacoes" name="observacoes" maxlength="500"><?= e($cliente['observacoes']) ?></textarea>
                         </div>
 
-                        <button type="submit" class="btn">Salvar observacoes</button>
+                        <button type="submit" class="btn">Salvar observações</button>
                     </form>
                 </div>
             </div>
@@ -287,7 +287,7 @@ require_once RAIZ . '/includes/painel_header.php';
                             <td><?= badgeStatus($cliente['status']) ?></td>
                             <td class="coluna-acoes">
                                 <a href="<?= url('admin/clientes.php?acao=ver&id=' . (int) $cliente['id_cliente']) ?>"
-                                    class="btn btn-contorno btn-pequeno">Historico</a>
+                                    class="btn btn-contorno btn-pequeno">Histórico</a>
 
                                 <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
                                     <?= campoCsrf() ?>

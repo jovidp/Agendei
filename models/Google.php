@@ -121,8 +121,8 @@ class Google
         $dados = json_decode($corpo, true);
         if ($status !== 200 || !is_array($dados) || empty($dados['id_token'])) {
             $motivo = is_array($dados) ? (string) ($dados['error_description'] ?? $dados['error'] ?? '') : '';
-            error_log('Google recusou o codigo (HTTP ' . $status . '): ' . $motivo);
-            throw new RuntimeException('O Google nao confirmou a entrada. Tente novamente.');
+            error_log('Google recusou o código (HTTP ' . $status . '): ' . $motivo);
+            throw new RuntimeException('O Google não confirmou a entrada. Tente novamente.');
         }
 
         return self::lerIdToken((string) $dados['id_token'], $configuracao['client_id']);
@@ -150,19 +150,19 @@ class Google
         $emissor = (string) ($carga['iss'] ?? '');
 
         if (!in_array($emissor, ['https://accounts.google.com', 'accounts.google.com'], true)) {
-            throw new RuntimeException('A resposta nao veio do Google.');
+            throw new RuntimeException('A resposta não veio do Google.');
         }
         if ((string) ($carga['aud'] ?? '') !== $clientId) {
-            throw new RuntimeException('A resposta do Google nao pertence a este sistema.');
+            throw new RuntimeException('A resposta do Google não pertence a este sistema.');
         }
         if ((int) ($carga['exp'] ?? 0) < $agora) {
-            throw new RuntimeException('A confirmacao do Google expirou. Tente novamente.');
+            throw new RuntimeException('A confirmação do Google expirou. Tente novamente.');
         }
 
         $email = mb_strtolower(trim((string) ($carga['email'] ?? '')));
         $verificado = filter_var($carga['email_verified'] ?? false, FILTER_VALIDATE_BOOLEAN);
         if ($email === '' || !$verificado) {
-            throw new RuntimeException('O Google nao confirmou o e-mail desta conta.');
+            throw new RuntimeException('O Google não confirmou o e-mail desta conta.');
         }
 
         $carga['email'] = $email;
@@ -318,7 +318,7 @@ class Google
             if ($resposta === false) {
                 $erro = curl_error($curl);
                 curl_close($curl);
-                throw new RuntimeException('Nao foi possivel falar com o Google (' . $erro . ').');
+                throw new RuntimeException('Não foi possível falar com o Google (' . $erro . ').');
             }
             $status = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
             curl_close($curl);
@@ -335,7 +335,7 @@ class Google
         ]]);
         $resposta = @file_get_contents($url, false, $contexto);
         if ($resposta === false) {
-            throw new RuntimeException('Nao foi possivel falar com o Google.');
+            throw new RuntimeException('Não foi possível falar com o Google.');
         }
         $status = 0;
         foreach ($http_response_header ?? [] as $linha) {

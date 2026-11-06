@@ -79,56 +79,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $cep     = apenasNumeros($dados['cep']);
 
     if (!validarNomeCompleto($dados['nome'])) {
-        $erros[] = 'O nome deve ter de 15 a 80 caracteres, apenas letras e espacos.';
+        $erros[] = 'O nome deve ter de 15 a 80 caracteres, apenas letras e espaços.';
     }
     if (!validarData($dados['data_nascimento']) || strtotime($dados['data_nascimento']) > time()) {
-        $erros[] = 'Informe uma data de nascimento valida.';
+        $erros[] = 'Informe uma data de nascimento válida.';
     }
     if (!in_array($dados['sexo'], ['F', 'M', 'O'], true)) {
         $erros[] = 'Selecione o sexo.';
     }
     if (!validarNomeMaterno($dados['nome_materno'])) {
-        $erros[] = 'Informe o nome materno com no minimo 5 caracteres alfabeticos.';
+        $erros[] = 'Informe o nome materno com no mínimo 5 caracteres alfabéticos.';
     }
     if (!validarCpf($cpf)) {
-        $erros[] = 'Informe um CPF valido.';
+        $erros[] = 'Informe um CPF válido.';
     }
     if (!validarEmail($dados['email'])) {
-        $erros[] = 'Informe um e-mail valido.';
+        $erros[] = 'Informe um e-mail válido.';
     }
     if (!validarTelefoneBr($celular, true)) {
-        $erros[] = 'Informe o telefone celular com DDD e 9 digitos.';
+        $erros[] = 'Informe o telefone celular com DDD e 9 dígitos.';
     }
-    if (!validarTelefoneBr($fixo)) {
-        $erros[] = 'Informe o telefone fixo com DDD e 8 digitos.';
+    // Fixo e opcional: so confere o formato quando foi preenchido.
+    if ($fixo !== '' && !validarTelefoneBr($fixo)) {
+        $erros[] = 'Informe o telefone fixo com DDD e 8 dígitos.';
     }
     if (!validarCep($cep)) {
-        $erros[] = 'Informe um CEP valido com oito digitos.';
+        $erros[] = 'Informe um CEP válido com oito dígitos.';
     }
     if ($dados['logradouro'] === '' || $dados['numero'] === '' || $dados['bairro'] === '' || $dados['cidade'] === '') {
-        $erros[] = 'Preencha o endereco completo.';
+        $erros[] = 'Preencha o endereço completo.';
     }
     if (!validarUf($dados['uf'])) {
         $erros[] = 'Informe a UF com duas letras.';
     }
     if (!validarLogin($dados['login'])) {
-        $erros[] = 'O login deve ter exatamente 6 caracteres alfabeticos.';
+        $erros[] = 'O usuário deve ter exatamente 6 letras.';
     }
     if (!validarSenhaProjeto($senha)) {
-        $erros[] = 'A senha deve ter exatamente 8 caracteres alfabeticos.';
+        $erros[] = 'A senha deve ter exatamente 8 caracteres alfabéticos.';
     }
     if ($senha !== $confirmacao) {
-        $erros[] = 'As senhas nao conferem.';
+        $erros[] = 'As senhas não conferem.';
     }
     if ($erros === [] && Usuario::loginEmUso($dados['login'])) {
-        $erros[] = 'Este login ja esta em uso. Escolha outro.';
+        $erros[] = 'Este usuário já está em uso. Escolha outro.';
     }
     if ($erros === [] && Usuario::emailEmUso($dados['email'])) {
         $emailConhecido = $dados['email'];
-        $erros[] = 'Este e-mail ja tem conta no Agendei. Nao precisa cadastrar de novo: confirme a sua senha e a mesma conta passa a valer aqui.';
+        $erros[] = 'Este e-mail já tem conta no Agendei. Não precisa cadastrar de novo: confirme a sua senha e a mesma conta passa a valer aqui.';
     }
     if ($erros === [] && Cliente::cpfEmUso($cpf)) {
-        $erros[] = 'Ja existe uma conta cadastrada com este CPF.';
+        $erros[] = 'Já existe uma conta cadastrada com este CPF.';
     }
 
     // Só cria a conta quando todos os dados obrigatórios passam pela validação do servidor.
@@ -160,7 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirecionar('login.php');
         } catch (Throwable $erro) {
             error_log('Falha no cadastro de cliente: ' . $erro->getMessage());
-            $erros[] = 'Nao foi possivel concluir o cadastro. Tente novamente.';
+            $erros[] = 'Não foi possível concluir o cadastro. Tente novamente.';
         }
     }
 }
@@ -189,11 +190,11 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
                 <?= e($estabelecimento['nome']) ?>
             </span>
             <h2>Crie sua conta</h2>
-            <p>Com a conta criada voce agenda em poucos cliques e acompanha todo o seu historico.</p>
+            <p>Com a conta criada você agenda em poucos cliques e acompanha todo o seu histórico.</p>
 
             <ul class="lista-beneficios">
                 <li>Agende quando e onde quiser</li>
-                <li>Receba a confirmacao pelo painel</li>
+                <li>Receba a confirmação pelo painel</li>
                 <li>Cancele dentro do prazo permitido</li>
             </ul>
         </div>
@@ -203,13 +204,6 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
 
             <h1>Criar conta</h1>
             <p class="subtitulo">Preencha seus dados para começar.</p>
-
-            <?php /* Os dois cadastros do Agendei se confundem; este diz qual e e aponta o outro. */ ?>
-            <p class="aviso-tipo-cadastro">
-                <strong>Cadastro de cliente de <?= e($estabelecimento['nome']) ?>.</strong>
-                Serve para marcar horários aqui. Tem um negócio e quer receber agendamentos?
-                <a href="<?= e(BASE_URL . '/criar_conta.php#estabelecimento') ?>">Veja a diferença</a>.
-            </p>
 
             <?php exibirFlash(); ?>
 
@@ -324,9 +318,9 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
                         </div>
 
                         <div class="campo">
-                            <label for="telefone_fixo">Telefone fixo <span class="obrigatorio">*</span></label>
+                            <label for="telefone_fixo">Telefone fixo <span class="opcional">(opcional)</span></label>
                             <input type="tel" id="telefone_fixo" name="telefone_fixo" value="<?= e($dados['telefone_fixo']) ?>"
-                                   data-mascara="telefone" inputmode="numeric" placeholder="(00) 0000-0000" required>
+                                   data-mascara="fixo" inputmode="numeric" placeholder="(00) 0000-0000">
                             <span class="mensagem-campo"></span>
                             <span class="ajuda-campo">Gravado como (+55)XX-XXXXXXXX.</span>
                         </div>
@@ -334,7 +328,7 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
                 </fieldset>
 
                 <fieldset class="grupo-campos">
-                    <legend>Endereco</legend>
+                    <legend>Endereço</legend>
 
                     <div class="linha-campos">
                         <div class="campo">
@@ -346,7 +340,7 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
                         </div>
 
                         <div class="campo">
-                            <label for="numero">Numero <span class="obrigatorio">*</span></label>
+                            <label for="numero">Número <span class="obrigatorio">*</span></label>
                             <input type="text" id="numero" name="numero" value="<?= e($dados['numero']) ?>" maxlength="20" required>
                             <span class="mensagem-campo"></span>
                         </div>
@@ -397,11 +391,11 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
                     <legend>Acesso</legend>
 
                     <div class="campo">
-                        <label for="login">Login <span class="obrigatorio">*</span></label>
+                        <label for="login">Usuário <span class="obrigatorio">*</span></label>
                         <input type="text" id="login" name="login" value="<?= e($dados['login']) ?>"
                                autocomplete="username" minlength="6" maxlength="6" required>
                         <span class="mensagem-campo"></span>
-                        <span class="ajuda-campo">Exatamente 6 letras, sem numeros ou simbolos.</span>
+                        <span class="ajuda-campo">Exatamente 6 letras, sem números ou símbolos.</span>
                     </div>
 
                     <div class="linha-campos">
@@ -428,8 +422,15 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
                 </div>
             </form>
 
+            <?php /* Os dois cadastros do Agendei se confundem; este diz qual é e aponta o outro. */ ?>
+            <p class="aviso-tipo-cadastro">
+                <strong>Cadastro de cliente de <?= e($estabelecimento['nome']) ?>.</strong>
+                Serve para marcar horários aqui. Tem um negócio e quer receber agendamentos?
+                <a href="<?= e(BASE_URL . '/criar_conta.php#estabelecimento') ?>">Veja a diferença</a>.
+            </p>
+
             <p class="autenticacao-rodape">
-                Ja tem uma conta? <a href="<?= url('login.php') ?>">Entrar</a>
+                Já tem uma conta? <a href="<?= url('login.php') ?>">Entrar</a>
                 &middot; Tem conta em outro estabelecimento? <a href="<?= url('vincular.php') ?>">Usar aqui</a>
             </p>
         </div>

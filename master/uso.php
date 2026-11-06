@@ -54,7 +54,7 @@ $diasDesde = static function (?string $dataHora) use ($agora): ?int {
 };
 
 $tituloPagina  = 'Uso da plataforma';
-$subtituloTopo = 'Movimento de cada estabelecimento nos ultimos ' . $janelas[$dias];
+$subtituloTopo = 'Movimento de cada estabelecimento nos últimos ' . $janelas[$dias];
 require RAIZ . '/includes/painel_header.php';
 ?>
 <div class="grade-indicadores">
@@ -94,7 +94,7 @@ require RAIZ . '/includes/painel_header.php';
     <?php if ($empresas === []): ?>
         <div class="estado-vazio">
             <strong>Nenhum estabelecimento cadastrado.</strong>
-            <p>Os numeros aparecem assim que a primeira empresa comecar a usar o sistema.</p>
+            <p>Os números aparecem assim que a primeira empresa começar a usar o sistema.</p>
         </div>
     <?php else: ?>
         <div class="tabela-area">
@@ -106,7 +106,7 @@ require RAIZ . '/includes/painel_header.php';
                         <th>Cancelados</th>
                         <th>Clientes novos</th>
                         <th>Total acumulado</th>
-                        <th>Ultimo acesso</th>
+                        <th>Último acesso</th>
                         <th>Status</th>
                     </tr>
                 </thead>
@@ -145,11 +145,11 @@ require RAIZ . '/includes/painel_header.php';
 <div class="cartao">
     <div class="cartao-cabecalho">
         <h3>Ativas, porém sem movimento</h3>
-        <small>Nenhum agendamento criado nos ultimos <?= e($janelas[$dias]) ?></small>
+        <small>Nenhum agendamento criado nos últimos <?= e($janelas[$dias]) ?></small>
     </div>
     <div class="tabela-area">
         <table class="tabela">
-            <thead><tr><th>Estabelecimento</th><th>Ultimo acesso</th><th>Base cadastrada</th><th class="coluna-acoes">Ação</th></tr></thead>
+            <thead><tr><th>Estabelecimento</th><th>Último acesso</th><th>Base cadastrada</th><th class="coluna-acoes">Ação</th></tr></thead>
             <tbody>
             <?php foreach ($paradas as $empresa): ?>
                 <?php $ociosa = $diasDesde($empresa['ultimo_acesso']); ?>

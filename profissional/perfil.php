@@ -14,7 +14,7 @@ $idUsuario      = usuarioId();
 $profissional   = Profissional::porId($idProfissional);
 
 if (!$profissional) {
-    definirFlash('erro', 'Perfil nao encontrado.');
+    definirFlash('erro', 'Perfil não encontrado.');
     redirecionar('profissional/dashboard.php');
 }
 
@@ -41,12 +41,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $erros[] = 'Informe seu nome completo.';
         }
         if (!validarEmail($email)) {
-            $erros[] = 'Informe um e-mail valido.';
+            $erros[] = 'Informe um e-mail válido.';
         } elseif (Usuario::emailEmUso($email, $idUsuario)) {
-            $erros[] = 'Este e-mail ja esta em uso por outra conta.';
+            $erros[] = 'Este e-mail já está em uso por outra conta.';
         }
         if ($telefone !== '' && !in_array(strlen($telefone), [10, 11], true)) {
-            $erros[] = 'Informe um telefone valido com DDD.';
+            $erros[] = 'Informe um telefone válido com DDD.';
         }
 
         if ($erros === []) {
@@ -130,12 +130,12 @@ require_once RAIZ . '/includes/painel_header.php';
                 </div>
 
                 <div class="campo">
-                    <label for="bio">Apresentacao</label>
+                    <label for="bio">Apresentação</label>
                     <textarea id="bio" name="bio" maxlength="400"><?= e($profissional['bio']) ?></textarea>
-                    <span class="ajuda-campo">Texto exibido na pagina inicial do estabelecimento.</span>
+                    <span class="ajuda-campo">Texto exibido na página inicial do estabelecimento.</span>
                 </div>
 
-                <button type="submit" class="btn">Salvar alteracoes</button>
+                <button type="submit" class="btn">Salvar alterações</button>
             </form>
         </div>
     </div>
@@ -158,7 +158,7 @@ require_once RAIZ . '/includes/painel_header.php';
                         <label for="nova_senha">Nova senha</label>
                         <input type="password" id="nova_senha" name="nova_senha" autocomplete="new-password" required>
                         <span class="mensagem-campo"></span>
-                        <span class="ajuda-campo">Minimo de 6 caracteres.</span>
+                        <span class="ajuda-campo">Mínimo de 6 caracteres.</span>
                     </div>
 
                     <div class="campo">
@@ -173,11 +173,11 @@ require_once RAIZ . '/includes/painel_header.php';
         </div>
 
         <div class="cartao">
-            <div class="cartao-cabecalho"><h3>Informacoes do cadastro</h3></div>
+            <div class="cartao-cabecalho"><h3>Informações do cadastro</h3></div>
             <div class="cartao-corpo">
                 <dl class="lista-detalhes">
                     <div><dt>Cadastro</dt><dd><?= formatarData($profissional['data_cadastro']) ?></dd></div>
-                    <div><dt>Situacao</dt><dd><?= badgeStatus($profissional['status']) ?></dd></div>
+                    <div><dt>Situação</dt><dd><?= badgeStatus($profissional['status']) ?></dd></div>
                     <div>
                         <dt>Bloqueio de agenda</dt>
                         <dd><?= !empty($profissional['pode_bloquear_agenda']) ? 'Permitido' : 'Somente pelo administrador' ?></dd>

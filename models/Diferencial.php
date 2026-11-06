@@ -239,11 +239,28 @@ class Diferencial
             throw $erro;
         }
     }
-    /** Cancela o sinal pendente e devolve o crédito de pacote de uma reserva cancelada. */
-    public static function cancelarFinanceiro(array $agendamento): void
+    /**
+     * Cancela o sinal pendente e devolve o crédito de pacote de uma reserva cancelada.
+     *
+     * Sinal já pago: vira crédito ('credito') para o próximo agendamento do
+     * cliente quando ele cancela dentro do prazo (Agendamento::prazoSemPerda).
+     * Fica com a empresa ('retido') quando ele cancela depois do prazo ou quando
+     * o sinal já tinha vindo de um cancelamento anterior: no segundo
+     * cancelamento seguido sem comparecer, o valor não volta mais. Cancelamento
+     * feito pela empresa nunca tira o sinal do cliente.
+     */
+    public static function cancelarFinanceiro(array $agendamento, bool $peloCliente = false): void
     {
         $q = bd()->prepare('UPDATE pagamentos SET status=\'cancelado\' WHERE id_estabelecimento=? AND id_agendamento=? AND status=\'pendente\'');
         $q->execute([Contexto::id(), $agendamento['id_agendamento']]);
+
+        $sinal = self::sinalDoAgendamento((int) $agendamento['id_agendamento']);
+        if ($sinal !== null && $sinal['status'] === 'pago') {
+            $reaproveitado = str_starts_with((string) $sinal['referencia'], self::PREFIXO_CREDITO);
+            $guardar = !$peloCliente || (!$reaproveitado && time() < Agendamento::prazoSemPerda($agendamento));
+            $q = bd()->prepare('UPDATE pagamentos SET status=? WHERE id_estabelecimento=? AND id_pagamento=? AND status=\'pago\'');
+            $q->execute([$guardar ? 'credito' : 'retido', Contexto::id(), $sinal['id_pagamento']]);
+        }
         $idPacote = (int) ($agendamento['id_cliente_pacote'] ?? 0);
         if ($idPacote > 0) {
             $q = bd()->prepare('UPDATE cliente_pacotes SET creditos_restantes=LEAST(creditos_total,creditos_restantes+1)
@@ -253,15 +270,115 @@ class Diferencial
             $q->execute([Contexto::id(), $agendamento['id_agendamento']]);
         }
     }
+    /** Referência do sinal que veio de um cancelamento anterior (seguida de AG-<reserva de origem>). */
+    public const PREFIXO_CREDITO = 'CREDITO-';
+
+    /** Sinal da reserva (qualquer status), ou null quando ela não tem sinal. */
+    public static function sinalDoAgendamento(int $idAgendamento): ?array
+    {
+        $q = bd()->prepare('SELECT * FROM pagamentos WHERE id_estabelecimento=? AND id_agendamento=? AND tipo=\'sinal\' LIMIT 1');
+        $q->execute([Contexto::id(), $idAgendamento]);
+        return $q->fetch() ?: null;
+    }
+
+    /** Soma dos sinais que o cliente tem guardados como crédito. */
+    public static function creditoSinal(int $idCliente): float
+    {
+        $q = bd()->prepare(
+            'SELECT COALESCE(SUM(pg.valor),0) FROM pagamentos pg
+             JOIN agendamentos a ON a.id_estabelecimento=pg.id_estabelecimento AND a.id_agendamento=pg.id_agendamento
+             WHERE pg.id_estabelecimento=? AND a.id_cliente=? AND pg.status=\'credito\''
+        );
+        $q->execute([Contexto::id(), $idCliente]);
+        return (float) $q->fetchColumn();
+    }
+
+    /**
+     * Leva o crédito de sinal mais antigo do cliente para a reserva nova, que já
+     * nasce com o sinal pago. A linha do pagamento muda de reserva; a referência
+     * guarda de onde ela veio.
+     * shortcut: o crédito vale como o sinal inteiro da reserva nova, mesmo se o sinal dela for maior; cobrar a diferença exige um segundo pagamento por reserva.
+     */
+    private static function usarCreditoSinal(array $agendamento): bool
+    {
+        $q = bd()->prepare(
+            'SELECT pg.id_pagamento, pg.id_agendamento FROM pagamentos pg
+             JOIN agendamentos a ON a.id_estabelecimento=pg.id_estabelecimento AND a.id_agendamento=pg.id_agendamento
+             WHERE pg.id_estabelecimento=? AND a.id_cliente=? AND pg.status=\'credito\'
+             ORDER BY pg.id_pagamento LIMIT 1'
+        );
+        $q->execute([Contexto::id(), $agendamento['id_cliente']]);
+        $credito = $q->fetch();
+        if (!$credito) {
+            return false;
+        }
+
+        $q = bd()->prepare(
+            'UPDATE pagamentos SET id_agendamento=?, status=\'pago\', referencia=?
+             WHERE id_estabelecimento=? AND id_pagamento=? AND status=\'credito\''
+        );
+        $q->execute([
+            $agendamento['id_agendamento'],
+            self::PREFIXO_CREDITO . 'AG-' . (int) $credito['id_agendamento'],
+            Contexto::id(),
+            $credito['id_pagamento'],
+        ]);
+        return $q->rowCount() > 0;
+    }
+
+    /** Simulação do pagamento do sinal pelo cliente: o pendente passa a pago. */
+    public static function pagarSinalSimulado(int $idAgendamento): bool
+    {
+        $q = bd()->prepare(
+            'UPDATE pagamentos SET status=\'pago\', data_pagamento=NOW()
+             WHERE id_estabelecimento=? AND id_agendamento=? AND tipo=\'sinal\' AND status=\'pendente\''
+        );
+        $q->execute([Contexto::id(), $idAgendamento]);
+        return $q->rowCount() > 0;
+    }
+
+    /**
+     * Libera no banco os status 'credito' e 'retido' do sinal. Roda na subida
+     * do container (scripts/preparar_runtime.php) e em scripts/migrar.php; não
+     * faz nada quando o banco já os aceita ou ainda não tem a tabela.
+     */
+    public static function garantirStatusSinal(): void
+    {
+        $db = bd();
+        if (Database::ehPostgres()) {
+            if ($db->query("SELECT to_regclass('pagamentos')")->fetchColumn() === null) {
+                return;
+            }
+            $definicao = $db->query(
+                "SELECT pg_get_constraintdef(oid) FROM pg_constraint
+                 WHERE conname = 'ck_pagamento_status' AND conrelid = 'pagamentos'::regclass"
+            )->fetchColumn();
+            if (str_contains((string) $definicao, 'credito')) {
+                return;
+            }
+            $db->exec('ALTER TABLE pagamentos DROP CONSTRAINT IF EXISTS ck_pagamento_status');
+            $db->exec("ALTER TABLE pagamentos ADD CONSTRAINT ck_pagamento_status CHECK (status IN ('pendente','pago','cancelado','estornado','credito','retido'))");
+            return;
+        }
+
+        if (!$db->query("SHOW TABLES LIKE 'pagamentos'")->fetchColumn()) {
+            return;
+        }
+        $ddl = $db->query('SHOW CREATE TABLE pagamentos')->fetch(PDO::FETCH_NUM)[1];
+        if (!str_contains($ddl, "'credito'")) {
+            $db->exec("ALTER TABLE pagamentos MODIFY status ENUM('pendente','pago','cancelado','estornado','credito','retido') NOT NULL DEFAULT 'pendente'");
+        }
+    }
+
     public static function criarPagamentoSinal(int $idAgendamento): void
     {
+        $agendamento = Agendamento::porId($idAgendamento);
+        if (!$agendamento || self::usarCreditoSinal($agendamento)) {
+            return;
+        }
         $percentual = max(0, min(100, Configuracao::obterInteiro('sinal_percentual', 0)));
         $chave = Configuracao::obter('pix_chave');
         if ($percentual < 1 || $chave === '') {
-            return;
-        }
-        $agendamento = Agendamento::porId($idAgendamento);
-        if (!$agendamento) {
             return;
         }
         $valor = round((float) $agendamento['valor'] * $percentual / 100, 2);

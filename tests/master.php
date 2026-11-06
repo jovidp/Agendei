@@ -24,7 +24,7 @@ $ehPostgres = Database::ehPostgres();
 if (($argv[1] ?? '') !== '--worker') {
     $nomeTeste = 'agendei_test_' . bin2hex(random_bytes(6));
     if (!preg_match('/^agendei_test_[a-f0-9]{12}$/D', $nomeTeste)) {
-        throw new RuntimeException('Nome de banco de teste invalido.');
+        throw new RuntimeException('Nome de banco de teste inválido.');
     }
 
     $db = bd();
@@ -39,7 +39,7 @@ if (($argv[1] ?? '') !== '--worker') {
         $codigo = proc_close($processo);
 
         if ($codigo !== 0) {
-            throw new RuntimeException('Falha na administracao master.');
+            throw new RuntimeException('Falha na administração master.');
         }
     } finally {
         // O banco temporario e sempre descartado, mesmo quando o teste falha.
@@ -58,7 +58,7 @@ if (!preg_match('/^agendei_test_[a-f0-9]{12}$/D', getenv('AGENDEI_DB_NAME') ?: '
 
 $arquivoEsquema = $ehPostgres ? 'banco_postgres.sql' : 'banco.sql';
 if (!is_file($arquivoEsquema)) {
-    throw new RuntimeException("Esquema {$arquivoEsquema} nao encontrado.");
+    throw new RuntimeException("Esquema {$arquivoEsquema} não encontrado.");
 }
 $esquema = preg_replace('/^(CREATE DATABASE|USE)\b[^;]*;\r?\n/mi', '', file_get_contents($arquivoEsquema));
 bd()->exec($esquema);
@@ -111,10 +111,10 @@ $_SESSION['usuario_email'] = 'master@agendei.com.br';
 // -------------------------------------------------------------------------
 // Auditoria: grava, le e recusa acao fora do catalogo
 // -------------------------------------------------------------------------
-verificar('auditoria comeca vazia', LogMaster::contar(), 0);
+verificar('auditoria começa vazia', LogMaster::contar(), 0);
 
 LogMaster::registrar('login');
-verificar('a entrada na area master e registrada', LogMaster::contar(), 1);
+verificar('a entrada na área master e registrada', LogMaster::contar(), 1);
 
 $evento = LogMaster::listar(['limite' => 1])[0] ?? [];
 verificar('a auditoria guarda quem fez a acao', $evento['master_email'] ?? '', 'master@agendei.com.br');
@@ -130,7 +130,7 @@ verificar('acao fora do catalogo e ignorada', LogMaster::contar(), 1);
 $idEmpresa = Estabelecimento::contratar([
     'estabelecimento' => 'Studio Teste',
     'slug'            => 'studio-teste',
-    'nome'            => 'Ana Responsavel',
+    'nome'            => 'Ana Responsável',
     'email'           => 'ana@studio.test',
     'senha'           => 'senha123',
 ]);
@@ -149,16 +149,16 @@ $idAdmin = (int) $administradores[0]['id_usuario'];
 
 // O isolamento nao vem mais da sessao: cada consulta declara a empresa.
 verificar('administrador e lido pela empresa certa', is_array(Estabelecimento::administrador($idEmpresa, $idAdmin)), true);
-verificar('administrador nao e lido por outra empresa', Estabelecimento::administrador(1, $idAdmin), null);
+verificar('administrador não é lido por outra empresa', Estabelecimento::administrador(1, $idAdmin), null);
 
 // -------------------------------------------------------------------------
 // Consulta global de contas: "este e-mail e de qual estabelecimento?"
 // -------------------------------------------------------------------------
 $vinculos = Usuario::vinculosPorEmail('ana@studio.test');
 verificar('o e-mail do responsavel aponta para a empresa contratada', count($vinculos), 1);
-verificar('o vinculo traz o id da empresa', (int) ($vinculos[0]['id_estabelecimento'] ?? 0), $idEmpresa);
-verificar('o vinculo traz o slug da empresa', $vinculos[0]['estabelecimento_slug'] ?? '', 'studio-teste');
-verificar('o vinculo traz o tipo da conta', $vinculos[0]['tipo'] ?? '', 'admin');
+verificar('o vínculo traz o id da empresa', (int) ($vinculos[0]['id_estabelecimento'] ?? 0), $idEmpresa);
+verificar('o vínculo traz o slug da empresa', $vinculos[0]['estabelecimento_slug'] ?? '', 'studio-teste');
+verificar('o vínculo traz o tipo da conta', $vinculos[0]['tipo'] ?? '', 'admin');
 verificar('e-mail desconhecido nao tem vinculo', Usuario::vinculosPorEmail('ninguem@studio.test'), []);
 
 // O e-mail identifica uma unica pessoa em toda a plataforma: o mesmo e-mail
@@ -167,24 +167,24 @@ verificar('e-mail desconhecido nao tem vinculo', Usuario::vinculosPorEmail('ning
 $idEmpresaDuplicada = Estabelecimento::contratar([
     'estabelecimento' => 'Studio Duplicado',
     'slug'            => 'studio-duplicado',
-    'nome'            => 'Ana Responsavel',
+    'nome'            => 'Ana Responsável',
     'email'           => 'ANA@studio.test ',
     'senha'           => 'senha-ignorada',
 ]);
-verificar('o segundo vinculo nao criou outra pessoa', (int) bd()->query("SELECT COUNT(*) FROM usuarios WHERE email = 'ana@studio.test'")->fetchColumn(), 1);
-verificar('a senha da pessoa nao mudou', autenticarGlobal('ana@studio.test', 'senha-ignorada'), []);
-verificar('a entrada geral lista os dois vinculos', count(autenticarGlobal('ana@studio.test', 'senha123')), 2);
+verificar('o segundo vínculo não criou outra pessoa', (int) bd()->query("SELECT COUNT(*) FROM usuarios WHERE email = 'ana@studio.test'")->fetchColumn(), 1);
+verificar('a senha da pessoa não mudou', autenticarGlobal('ana@studio.test', 'senha-ignorada'), []);
+verificar('a entrada geral lista os dois vínculos', count(autenticarGlobal('ana@studio.test', 'senha123')), 2);
 
 $idEmpresaB = Estabelecimento::contratar([
     'estabelecimento' => 'Studio Dois',
     'slug'            => 'studio-dois',
-    'nome'            => 'Carlos Responsavel',
+    'nome'            => 'Carlos Responsável',
     'email'           => 'carlos@studio.test',
     'senha'           => 'senha123',
 ]);
 $vinculos = Usuario::vinculosPorEmail('ANA@studio.test ');
 verificar('o e-mail tem dois vinculos', count($vinculos), 2);
-verificar('um dos vinculos continua na empresa original', in_array($idEmpresa, array_map('intval', array_column($vinculos, 'id_estabelecimento')), true), true);
+verificar('um dos vínculos continua na empresa original', in_array($idEmpresa, array_map('intval', array_column($vinculos, 'id_estabelecimento')), true), true);
 
 verificar('busca global por parte do e-mail', Usuario::contarGlobal(['busca' => 'studio.test']), 3);
 verificar('busca global por parte do nome', Usuario::contarGlobal(['busca' => 'responsavel']), 3);
@@ -193,14 +193,14 @@ verificar('busca global filtra por tipo', Usuario::contarGlobal(['tipo' => 'clie
 verificar('tipo fora do catalogo e ignorado', Usuario::contarGlobal(['tipo' => 'master']), Usuario::contarGlobal());
 $linhas = Usuario::buscarGlobal(['estabelecimento' => $idEmpresaB]);
 verificar('a listagem global traz o nome da empresa', $linhas[0]['estabelecimento_nome'] ?? '', 'Studio Dois');
-verificar('a listagem global nao expoe o hash de senha', array_key_exists('senha_hash', $linhas[0] ?? []), false);
+verificar('a listagem global não expoe o hash de senha', array_key_exists('senha_hash', $linhas[0] ?? []), false);
 verificar('a listagem global respeita o limite', count(Usuario::buscarGlobal(['limite' => 1])), 1);
 
 // -------------------------------------------------------------------------
 // A empresa nunca fica sem administrador ativo
 // -------------------------------------------------------------------------
 verificar('contagem de administradores ativos', Estabelecimento::administradoresAtivos($idEmpresa), 1);
-verificar('o ultimo administrador ativo nao e desativado', Estabelecimento::alterarStatusAdministrador($idEmpresa, $idAdmin, 'inativo'), false);
+verificar('o último administrador ativo não é desativado', Estabelecimento::alterarStatusAdministrador($idEmpresa, $idAdmin, 'inativo'), false);
 verificar('a conta continua ativa depois da recusa', Estabelecimento::administrador($idEmpresa, $idAdmin)['status'], 'ativo');
 
 $idAdmin2 = Estabelecimento::criarAdministrador($idEmpresa, [
@@ -220,21 +220,21 @@ try {
     $tetoRecusado = true;
 }
 verificar('o terceiro administrador e recusado', $tetoRecusado, true);
-verificar('a recusa nao deixou a pessoa criada', Usuario::pessoaPorEmail('terceiro@studio.test'), null);
+verificar('a recusa não deixou a pessoa criada', Usuario::pessoaPorEmail('terceiro@studio.test'), null);
 verificar('a empresa continua com dois administradores', count(Estabelecimento::administradores($idEmpresa)), 2);
 
 // E-mail conhecido: a pessoa que ja existe ganha o vinculo, sem senha nem nome novos.
 $idAnaVinculada = Estabelecimento::criarAdministrador($idEmpresaB, ['nome' => 'Nome Ignorado', 'email' => 'ana@studio.test', 'senha' => 'senha-ignorada']);
 verificar('a pessoa existente e vinculada sem duplicar', $idAnaVinculada, (int) Usuario::pessoaPorEmail('ana@studio.test')['id_usuario']);
-verificar('a pessoa vinculada mantem o nome', Usuario::pessoaPorEmail('ana@studio.test')['nome'], 'Ana Responsavel');
+verificar('a pessoa vinculada mantem o nome', Usuario::pessoaPorEmail('ana@studio.test')['nome'], 'Ana Responsável');
 verificar('a empresa B passa a ter dois administradores', count(Estabelecimento::administradores($idEmpresaB)), 2);
 $vinculoRepetido = false;
 try {
-    Estabelecimento::criarAdministrador($idEmpresaB, ['nome' => 'Ana Responsavel', 'email' => 'ana@studio.test', 'senha' => 'x']);
+    Estabelecimento::criarAdministrador($idEmpresaB, ['nome' => 'Ana Responsável', 'email' => 'ana@studio.test', 'senha' => 'x']);
 } catch (DomainException) {
     $vinculoRepetido = true;
 }
-verificar('a mesma pessoa nao vira administradora duas vezes da mesma empresa', $vinculoRepetido, true);
+verificar('a mesma pessoa não vira administradora duas vezes da mesma empresa', $vinculoRepetido, true);
 
 // -------------------------------------------------------------------------
 // Redefinicao de senha pelo master
@@ -248,7 +248,7 @@ $consulta = bd()->prepare('SELECT senha_hash, token_recuperacao FROM usuarios WH
 $consulta->execute([$idAdmin2]);
 $conta = $consulta->fetch();
 verificar('a nova senha do administrador vale', password_verify('nova-senha-1', $conta['senha_hash']), true);
-verificar('o token de recuperacao pendente e descartado', $conta['token_recuperacao'], null);
+verificar('o token de recuperação pendente e descartado', $conta['token_recuperacao'], null);
 
 // Uma empresa nao redefine a senha de quem nao e dela.
 Estabelecimento::definirSenhaAdministrador(1, $idAdmin2, 'invasao');
@@ -259,22 +259,22 @@ verificar('redefinir senha exige a empresa correta', password_verify('nova-senha
 // Contas master: a plataforma nunca fica sem administracao
 // -------------------------------------------------------------------------
 verificar('existe uma conta master ativa', Master::contarAtivos(), 1);
-verificar('a ultima conta master ativa nao e desativada', Master::alterarStatus($idMaster, 'inativo'), false);
+verificar('a última conta master ativa não é desativada', Master::alterarStatus($idMaster, 'inativo'), false);
 verificar('a conta master continua ativa depois da recusa', Master::porId($idMaster)['status'], 'ativo');
 
 $idMaster2 = Master::criar(['nome' => 'Segunda Conta', 'email' => 'segunda@agendei.test', 'senha' => 'senha123']);
 verificar('a segunda conta master nasce ativa', Master::contarAtivos(), 2);
 verificar('e-mail repetido e recusado', Master::emailEmUso('segunda@agendei.test'), true);
-verificar('a propria conta nao conflita consigo mesma', Master::emailEmUso('segunda@agendei.test', $idMaster2), false);
-verificar('a listagem nao expoe o hash da senha', array_key_exists('senha_hash', Master::listar()[0]), false);
+verificar('a própria conta não conflita consigo mesma', Master::emailEmUso('segunda@agendei.test', $idMaster2), false);
+verificar('a listagem não expoe o hash da senha', array_key_exists('senha_hash', Master::listar()[0]), false);
 verificar('com duas contas, uma pode ser desativada', Master::alterarStatus($idMaster2, 'inativo'), true);
-verificar('conta master inativa nao autentica', Master::autenticar('segunda@agendei.test', 'senha123'), null);
+verificar('conta master inativa não autentica', Master::autenticar('segunda@agendei.test', 'senha123'), null);
 
 // -------------------------------------------------------------------------
 // Log de autenticacao visto de cima
 // -------------------------------------------------------------------------
 LogAutenticacao::registrar('login_falha', 'ana@studio.test');
-verificar('a consulta global enxerga o log de autenticacao', LogAutenticacao::contarGlobal(), 1);
+verificar('a consulta global enxerga o log de autenticação', LogAutenticacao::contarGlobal(), 1);
 verificar('filtro por evento no log global', LogAutenticacao::contarGlobal(['evento' => 'login_sucesso']), 0);
 verificar('busca por login informado no log global', LogAutenticacao::contarGlobal(['busca' => 'ana@studio']), 1);
 verificar('o resumo conta a falha de login', LogAutenticacao::resumoGlobal(24)['login_falha'] ?? 0, 1);
@@ -282,7 +282,7 @@ verificar('o resumo conta a falha de login', LogAutenticacao::resumoGlobal(24)['
 // -------------------------------------------------------------------------
 // Bloqueios de forca bruta: listar e liberar
 // -------------------------------------------------------------------------
-verificar('nenhum bloqueio no comeco', Tentativa::bloqueiosAtivos(), []);
+verificar('nenhum bloqueio no começo', Tentativa::bloqueiosAtivos(), []);
 
 for ($i = 0; $i < 6; $i++) {
     anotarFalha('master_ip', '203.0.113.9');
@@ -294,7 +294,7 @@ verificar('o escopo do bloqueio e identificado', $bloqueios[0]['escopo'] ?? '', 
 verificar('a listagem conta as falhas', $bloqueios[0]['total'] ?? 0, 6);
 verificar('o bloqueio tem tempo restante', ($bloqueios[0]['restante'] ?? 0) > 0, true);
 verificar('a chave exposta na tela e um hash', (bool) preg_match('/^[a-f0-9]{64}$/D', (string) ($bloqueios[0]['chave'] ?? '')), true);
-verificar('o login master esta bloqueado', tempoBloqueado('master_ip', '203.0.113.9') > 0, true);
+verificar('o login master está bloqueado', tempoBloqueado('master_ip', '203.0.113.9') > 0, true);
 
 Tentativa::limpar((string) $bloqueios[0]['escopo'], (string) $bloqueios[0]['chave']);
 verificar('liberar pela chave da listagem remove o bloqueio', Tentativa::bloqueiosAtivos(), []);
@@ -310,8 +310,8 @@ LogMaster::registrar('estabelecimento_status', [
     'detalhe'              => 'de ativo para inativo',
 ]);
 $historico = LogMaster::listar(['estabelecimento' => $idInexistente]);
-verificar('o historico aceita empresa que nao existe mais', count($historico), 1);
-verificar('o nome da empresa segue legivel no historico', $historico[0]['estabelecimento_nome'], 'Empresa Encerrada');
+verificar('o histórico aceita empresa que não existe mais', count($historico), 1);
+verificar('o nome da empresa segue legível no histórico', $historico[0]['estabelecimento_nome'], 'Empresa Encerrada');
 
 // -------------------------------------------------------------------------
 // Simulacao: o master entrando no painel de um estabelecimento
@@ -320,32 +320,32 @@ $empresaSimulada = Estabelecimento::porIdGlobal($idEmpresa);
 $contaSimulada = Estabelecimento::administrador($idEmpresa, $idAdmin2);
 $masterAtual = Master::porId($idMaster);
 
-verificar('a sessao master nao e simulacao', ehSimulacao(), false);
-verificar('a conta administrativa traz o tipo, exigido pela sessao', $contaSimulada['tipo'], 'admin');
+verificar('a sessão master não é simulação', ehSimulacao(), false);
+verificar('a conta administrativa traz o tipo, exigido pela sessão', $contaSimulada['tipo'], 'admin');
 
 $acessoAntes = $contaSimulada['ultimo_acesso'];
 iniciarSimulacao($contaSimulada, $masterAtual, Estabelecimento::idAdministrador($idEmpresa, $idAdmin2));
 
-verificar('a sessao passa a ser a do administrador', perfil(), 'admin');
-verificar('a sessao aponta para a empresa simulada', (int) $_SESSION['estabelecimento_id'], $idEmpresa);
-verificar('a marca de simulacao fica na sessao', ehSimulacao(), true);
-verificar('a simulacao guarda quem a abriu', (int) simulacaoAtual()['master_id'], $idMaster);
-verificar('a sessao deixa de ser master', isset($_SESSION['master_id']), false);
+verificar('a sessão passa a ser a do administrador', perfil(), 'admin');
+verificar('a sessão aponta para a empresa simulada', (int) $_SESSION['estabelecimento_id'], $idEmpresa);
+verificar('a marca de simulação fica na sessão', ehSimulacao(), true);
+verificar('a simulação guarda quem a abriu', (int) simulacaoAtual()['master_id'], $idMaster);
+verificar('a sessão deixa de ser master', isset($_SESSION['master_id']), false);
 verificar('o perfil_id aponta para o registro de administrador', perfilId(), Estabelecimento::idAdministrador($idEmpresa, $idAdmin2));
 
 // "Ultimo acesso" diz quando o responsavel entrou: o master no lugar dele nao
 // pode reescrever esse dado, que serve para saber se a conta esta em uso.
-verificar('o ultimo acesso da conta nao e alterado', Estabelecimento::administrador($idEmpresa, $idAdmin2)['ultimo_acesso'], $acessoAntes);
+verificar('o último acesso da conta não é alterado', Estabelecimento::administrador($idEmpresa, $idAdmin2)['ultimo_acesso'], $acessoAntes);
 
 $masterVoltou = encerrarSimulacao();
 verificar('a volta restaura a conta master', (int) ($masterVoltou['id_master'] ?? 0), $idMaster);
-verificar('a sessao volta a ser master', perfil(), 'master');
-verificar('a marca de simulacao sai da sessao', ehSimulacao(), false);
-verificar('a sessao perde o vinculo com a empresa', isset($_SESSION['usuario_id']), false);
+verificar('a sessão volta a ser master', perfil(), 'master');
+verificar('a marca de simulação sai da sessão', ehSimulacao(), false);
+verificar('a sessão perde o vínculo com a empresa', isset($_SESSION['usuario_id']), false);
 
 // O topo do painel mostra usuario_login. Se ele sobrevivesse a volta, o master
 // continuaria anunciando a conta do administrador que acabou de deixar.
-verificar('a sessao nao herda o login do administrador', isset($_SESSION['usuario_login']), false);
+verificar('a sessão não herda o login do administrador', isset($_SESSION['usuario_login']), false);
 verificar('o topo volta a identificar o master', usuarioLogin(), 'master@agendei.com.br');
 
 // -------------------------------------------------------------------------
@@ -363,7 +363,7 @@ foreach ($uso as $linha) {
 verificar('a empresa criada aparece no uso', is_array($usoEmpresa), true);
 verificar('empresa recem-criada nao tem agendamento no periodo', (int) $usoEmpresa['agendamentos_periodo'], 0);
 verificar('a coluna de clientes responde', (int) $usoEmpresa['clientes_total'], 0);
-verificar('o ultimo acesso vem nulo enquanto ninguem entrou', $usoEmpresa['ultimo_acesso'], null);
+verificar('o último acesso vem nulo enquanto ninguém entrou', $usoEmpresa['ultimo_acesso'], null);
 
 // -------------------------------------------------------------------------
 // Saude do sistema
@@ -375,19 +375,19 @@ $porNome = [];
 foreach ($diagnostico as $item) {
     $porNome[$item['nome']] = $item;
 }
-verificar('o banco aparece no diagnostico', $porNome['Conexao com o banco']['estado'], Saude::OK);
-verificar('a auditoria aparece no diagnostico', $porNome['Auditoria da administracao']['estado'], Saude::OK);
+verificar('o banco aparece no diagnostico', $porNome['Conexão com o banco']['estado'], Saude::OK);
+verificar('a auditoria aparece no diagnostico', $porNome['Auditoria da administração']['estado'], Saude::OK);
 
 // Neste ponto a segunda conta master esta desativada e o estabelecimento de
 // demonstracao do esquema ainda nao tem administrador: os dois itens devem
 // acusar isso em vez de passar batido.
-verificar('conta master unica vira aviso', $porNome['Contas master ativas']['estado'], Saude::AVISO);
+verificar('conta master única vira aviso', $porNome['Contas master ativas']['estado'], Saude::AVISO);
 verificar('empresa sem administrador e apontada como problema', $porNome['Empresas sem administrador']['estado'], Saude::ERRO);
 
 // Corrigido o que faltava, o mesmo diagnostico precisa voltar a ficar limpo.
 Master::alterarStatus($idMaster2, 'ativo');
 Estabelecimento::criarAdministrador(1, [
-    'nome'  => 'Responsavel Demo',
+    'nome'  => 'Responsável Demo',
     'email' => 'demo@estabelecimento.test',
     'senha' => 'senha123',
 ]);
@@ -409,8 +409,8 @@ verificar(
 // -------------------------------------------------------------------------
 // Planos: o teto so existe depois de atribuido
 // -------------------------------------------------------------------------
-verificar('as tabelas de plano estao disponiveis', Plano::disponivel(), true);
-verificar('empresa sem plano nao tem teto', Plano::limiteDe('servicos', $idEmpresa), null);
+verificar('as tabelas de plano estão disponíveis', Plano::disponivel(), true);
+verificar('empresa sem plano não tem teto', Plano::limiteDe('servicos', $idEmpresa), null);
 verificar('empresa sem plano nunca bloqueia', Plano::bloqueio('servicos', $idEmpresa), null);
 
 $idPlano = Plano::criar([
@@ -427,8 +427,8 @@ verificar('plano sem limite devolve nulo na coluna', Plano::porNome('Sem teto')[
 Plano::atribuir($idEmpresa, $idPlano);
 verificar('o plano fica vinculado a empresa', Plano::doEstabelecimento($idEmpresa)['nome'], 'Basico');
 verificar('o teto passa a valer', Plano::limiteDe('servicos', $idEmpresa), 2);
-verificar('o mapa de vinculos traz a empresa', isset(Plano::porEstabelecimento()[$idEmpresa]), true);
-verificar('dentro do teto nao ha bloqueio', Plano::bloqueio('servicos', $idEmpresa), null);
+verificar('o mapa de vínculos traz a empresa', isset(Plano::porEstabelecimento()[$idEmpresa]), true);
+verificar('dentro do teto não ha bloqueio', Plano::bloqueio('servicos', $idEmpresa), null);
 
 // Preenche o catalogo ate o limite direto no banco: os models de servico
 // filtram pela empresa da sessao, que aqui e a da area master.
@@ -440,25 +440,25 @@ $insercao->execute([$idEmpresa, 'Corte']);
 $insercao->execute([$idEmpresa, 'Barba']);
 
 verificar('o consumo acompanha os cadastros', Plano::uso($idEmpresa)['servicos'], 2);
-verificar('no teto, a criacao e recusada', is_string(Plano::bloqueio('servicos', $idEmpresa)), true);
+verificar('no teto, a criação e recusada', is_string(Plano::bloqueio('servicos', $idEmpresa)), true);
 verificar('a mensagem recusada cita o plano', str_contains((string) Plano::bloqueio('servicos', $idEmpresa), 'Basico'), true);
-verificar('a situacao marca o recurso como excedido', Plano::situacao($idEmpresa)['servicos']['excedido'], true);
+verificar('a situação marca o recurso como excedido', Plano::situacao($idEmpresa)['servicos']['excedido'], true);
 
 // Servico desativado nao ocupa vaga: quem desfez volta a caber no teto.
 bd()->prepare("UPDATE servicos SET status = 'inativo' WHERE id_estabelecimento = ? AND nome = ?")
     ->execute([$idEmpresa, 'Barba']);
-verificar('servico desativado libera a vaga', Plano::bloqueio('servicos', $idEmpresa), null);
+verificar('serviço desativado libera a vaga', Plano::bloqueio('servicos', $idEmpresa), null);
 
-verificar('profissionais tem teto proprio', Plano::limiteDe('profissionais', $idEmpresa), 1);
-verificar('recurso desconhecido nao inventa limite', Plano::limiteDe('inexistente', $idEmpresa), null);
+verificar('profissionais tem teto próprio', Plano::limiteDe('profissionais', $idEmpresa), 1);
+verificar('recurso desconhecido não inventa limite', Plano::limiteDe('inexistente', $idEmpresa), null);
 
 // Tirar o plano devolve a empresa ao estado anterior, sem apagar nada.
 Plano::atribuir($idEmpresa, null);
-verificar('sem plano, o vinculo some', Plano::doEstabelecimento($idEmpresa), null);
+verificar('sem plano, o vínculo some', Plano::doEstabelecimento($idEmpresa), null);
 verificar('sem plano, o teto some junto', Plano::bloqueio('servicos', $idEmpresa), null);
-verificar('os servicos cadastrados continuam la', Plano::uso($idEmpresa)['servicos'], 1);
+verificar('os serviços cadastrados continuam la', Plano::uso($idEmpresa)['servicos'], 1);
 
 // -------------------------------------------------------------------------
-echo "OK: {$total} verificacoes da administracao master";
+echo "OK: {$total} verificações da administração master";
 echo $falhas === 0 ? ".\n" : ", {$falhas} FALHA(S).\n";
 exit($falhas === 0 ? 0 : 1);

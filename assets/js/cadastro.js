@@ -74,7 +74,7 @@
       verificar(
         "data_nascimento",
         nascimento !== "" && !isNaN(data.getTime()) && data < new Date(),
-        "Informe uma data de nascimento valida.",
+        "Informe uma data de nascimento válida.",
       ) && valido;
 
     valido =
@@ -85,48 +85,49 @@
       verificar(
         "nome_materno",
         materno.length >= 5 && apenasLetras(materno),
-        "Informe o nome materno com no minimo 5 letras.",
+        "Informe o nome materno com no mínimo 5 letras.",
       ) && valido;
 
     valido =
       verificar(
         "cpf",
         Agendei.validarCpf(valor("cpf")),
-        "Informe um CPF valido.",
+        "Informe um CPF válido.",
       ) && valido;
 
     valido =
       verificar(
         "email",
         Agendei.validarEmail(valor("email")),
-        "Informe um e-mail valido.",
+        "Informe um e-mail válido.",
       ) && valido;
 
     valido =
       verificar(
         "telefone",
         digitos(valor("telefone")).length === 11,
-        "Informe o celular com DDD e 9 digitos.",
+        "Informe o celular com DDD e 9 dígitos.",
       ) && valido;
 
+    var fixo = digitos(valor("telefone_fixo"));
     valido =
       verificar(
         "telefone_fixo",
-        digitos(valor("telefone_fixo")).length === 10,
-        "Informe o fixo com DDD e 8 digitos.",
+        fixo === "" || fixo.length === 10,
+        "Informe o fixo com DDD e 8 dígitos.",
       ) && valido;
 
     valido =
       verificar(
         "cep",
         digitos(valor("cep")).length === 8,
-        "Informe um CEP com oito digitos.",
+        "Informe um CEP com oito dígitos.",
       ) && valido;
 
     valido =
       verificar("logradouro", valor("logradouro") !== "", "Informe o logradouro.") &&
       valido;
-    valido = verificar("numero", valor("numero") !== "", "Informe o numero.") && valido;
+    valido = verificar("numero", valor("numero") !== "", "Informe o número.") && valido;
     valido = verificar("bairro", valor("bairro") !== "", "Informe o bairro.") && valido;
     valido = verificar("cidade", valor("cidade") !== "", "Informe a cidade.") && valido;
     valido = verificar("uf", valor("uf") !== "", "Selecione a UF.") && valido;
@@ -135,7 +136,7 @@
       verificar(
         "login",
         /^[A-Za-z]{6}$/.test(valor("login")),
-        "O login deve ter exatamente 6 letras.",
+        "O usuário deve ter exatamente 6 letras.",
       ) && valido;
 
     var senha = valor("senha");
@@ -150,7 +151,7 @@
       verificar(
         "confirmar_senha",
         valor("confirmar_senha") === senha && senha !== "",
-        "As senhas nao conferem.",
+        "As senhas não conferem.",
       ) && valido;
 
     if (!valido) {

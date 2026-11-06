@@ -16,7 +16,7 @@ $idServico      = (int) get('id_servico');
 $mes            = get('mes', date('Y-m'));
 
 if ($idProfissional <= 0 || $idServico <= 0 || !preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $mes)) {
-    jsonResposta(['sucesso' => false, 'mensagem' => 'Parametros invalidos.', 'dias' => []], 400);
+    jsonResposta(['sucesso' => false, 'mensagem' => 'Parâmetros inválidos.', 'dias' => []], 400);
 }
 
 // Permite a consulta interna da equipe sem os limites de antecedência aplicados ao cliente.
@@ -35,22 +35,11 @@ $limite     = $maximoDias > 0 && !$ignorarAntecedencia
 
 $fim = min($ultimoDoMes, $limite);
 
-$dias = [];
-
-if ($inicio <= $fim) {
-    $atual = $inicio;
-    // Consulta cada data do intervalo e inclui apenas os dias com pelo menos uma vaga.
-    while ($atual <= $fim) {
-        $slots = Disponibilidade::slots($idProfissional, $idServico, $atual, [
-            'ignorar_antecedencia' => $ignorarAntecedencia,
-        ]);
-
-        if ($slots !== []) {
-            $dias[] = $atual;
-        }
-
-        $atual = date('Y-m-d', strtotime($atual . ' +1 day'));
-    }
-}
+// O mes inteiro sai de poucas consultas (ver Disponibilidade::diasComVagas).
+$dias = $inicio <= $fim
+    ? Disponibilidade::diasComVagas($idProfissional, $idServico, $inicio, $fim, [
+        'ignorar_antecedencia' => $ignorarAntecedencia,
+    ])
+    : [];
 
 jsonResposta(['sucesso' => true, 'mes' => $mes, 'dias' => $dias]);

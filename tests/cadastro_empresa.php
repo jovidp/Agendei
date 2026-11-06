@@ -25,7 +25,7 @@ $ehPostgres = Database::ehPostgres();
 if (($argv[1] ?? '') !== '--worker') {
     $nomeTeste = 'agendei_test_' . bin2hex(random_bytes(6));
     if (!preg_match('/^agendei_test_[a-f0-9]{12}$/D', $nomeTeste)) {
-        throw new RuntimeException('Nome de banco de teste invalido.');
+        throw new RuntimeException('Nome de banco de teste inválido.');
     }
 
     $db = bd();
@@ -57,7 +57,7 @@ if (!preg_match('/^agendei_test_[a-f0-9]{12}$/D', getenv('AGENDEI_DB_NAME') ?: '
 
 $arquivoEsquema = $ehPostgres ? 'banco_postgres.sql' : 'banco.sql';
 if (!is_file($arquivoEsquema)) {
-    throw new RuntimeException("Esquema {$arquivoEsquema} nao encontrado.");
+    throw new RuntimeException("Esquema {$arquivoEsquema} não encontrado.");
 }
 $esquema = preg_replace('/^(CREATE DATABASE|USE)\b[^;]*;\r?\n/mi', '', file_get_contents($arquivoEsquema));
 bd()->exec($esquema);
@@ -107,36 +107,36 @@ $pedido = [
 // -------------------------------------------------------------------------
 // Pagina inicial: contexto do produto e endereco livre
 // -------------------------------------------------------------------------
-verificar('a pagina do produto nao assume empresa', Contexto::id(), 0);
-verificar('a pagina do produto usa o nome do sistema', Contexto::dados()['nome'], NOME_SISTEMA);
-verificar('a pagina do produto usa o slogan da marca', Contexto::dados()['slogan'], MARCA_SLOGAN);
-verificar('a tabela de solicitacoes e criada sob demanda', Solicitacao::disponivel(), true);
-verificar('o endereco comeca livre', Solicitacao::slugEmUso($pedido['slug']), false);
-verificar('nenhuma solicitacao pendente no inicio', Solicitacao::contarPendentes(), 0);
+verificar('a página do produto não assume empresa', Contexto::id(), 0);
+verificar('a página do produto usa o nome do sistema', Contexto::dados()['nome'], NOME_SISTEMA);
+verificar('a página do produto usa o slogan da marca', Contexto::dados()['slogan'], MARCA_SLOGAN);
+verificar('a tabela de solicitações e criada sob demanda', Solicitacao::disponivel(), true);
+verificar('o endereço começa livre', Solicitacao::slugEmUso($pedido['slug']), false);
+verificar('nenhuma solicitação pendente no início', Solicitacao::contarPendentes(), 0);
 
 // -------------------------------------------------------------------------
 // Abertura da solicitacao, sem master na sessao
 // -------------------------------------------------------------------------
 $idSolicitacao = Solicitacao::abrir($pedido);
-verificar('a solicitacao recebe um id', $idSolicitacao > 0, true);
+verificar('a solicitação recebe um id', $idSolicitacao > 0, true);
 
 $solicitacao = Solicitacao::porId($idSolicitacao);
-verificar('a solicitacao nasce pendente', $solicitacao['status'] ?? null, 'pendente');
-verificar('a solicitacao guarda a empresa', $solicitacao['estabelecimento_nome'] ?? null, $pedido['estabelecimento']);
-verificar('a solicitacao guarda o contato', $solicitacao['telefone'] ?? null, $pedido['telefone']);
-verificar('a solicitacao guarda a mensagem', $solicitacao['mensagem'] ?? null, $pedido['mensagem']);
+verificar('a solicitação nasce pendente', $solicitacao['status'] ?? null, 'pendente');
+verificar('a solicitação guarda a empresa', $solicitacao['estabelecimento_nome'] ?? null, $pedido['estabelecimento']);
+verificar('a solicitação guarda o contato', $solicitacao['telefone'] ?? null, $pedido['telefone']);
+verificar('a solicitação guarda a mensagem', $solicitacao['mensagem'] ?? null, $pedido['mensagem']);
 
 $idEmpresa = (int) $solicitacao['id_estabelecimento'];
 $empresa = Estabelecimento::porIdGlobal($idEmpresa);
 verificar('a empresa e criada', $empresa !== null, true);
 verificar('a empresa nasce inativa', $empresa['status'] ?? null, 'inativo');
-verificar('o endereco passa a estar em uso', Solicitacao::slugEmUso($pedido['slug']), true);
+verificar('o endereço passa a estar em uso', Solicitacao::slugEmUso($pedido['slug']), true);
 verificar('a empresa aparece entre as pendentes', in_array($idEmpresa, Solicitacao::empresasPendentes(), true), true);
-verificar('o pedido e encontrado pelo endereco', (int) (Solicitacao::pendentePorSlug($pedido['slug'])['id_solicitacao'] ?? 0), $idSolicitacao);
+verificar('o pedido e encontrado pelo endereço', (int) (Solicitacao::pendentePorSlug($pedido['slug'])['id_solicitacao'] ?? 0), $idSolicitacao);
 verificar('a fila do master tem um pedido', Solicitacao::contarPendentes(), 1);
 
 $admins = Estabelecimento::administradores($idEmpresa);
-verificar('o responsavel vira administrador da empresa', count($admins), 1);
+verificar('o responsável vira administrador da empresa', count($admins), 1);
 verificar('o administrador e criado ativo', $admins[0]['status'] ?? null, 'ativo');
 
 // A empresa inativa nao entra pela entrada geral, mesmo com a senha certa.
@@ -145,7 +145,7 @@ verificar('a entrada geral recusa a conta enquanto pendente', autenticarGlobal($
 LogMaster::registrar('cadastro_solicitado', ['estabelecimento_nome' => $pedido['estabelecimento'], 'alvo' => $pedido['email']]);
 $evento = LogMaster::listar(['limite' => 1])[0] ?? [];
 verificar('o pedido entra na auditoria', $evento['acao'] ?? null, 'cadastro_solicitado');
-verificar('o pedido nao tem master associado', (int) ($evento['id_master'] ?? 0), 0);
+verificar('o pedido não tem master associado', (int) ($evento['id_master'] ?? 0), 0);
 
 // -------------------------------------------------------------------------
 // Aprovacao pelo master
@@ -163,15 +163,15 @@ $_SESSION['usuario_email'] = 'master@agendei.com.br';
 
 verificar('aprovar devolve verdadeiro', Solicitacao::aprovar($idSolicitacao), true);
 verificar('a empresa passa a ativa', Estabelecimento::porIdGlobal($idEmpresa)['status'] ?? null, 'ativo');
-verificar('a solicitacao fica aprovada', Solicitacao::porId($idSolicitacao)['status'] ?? null, 'aprovada');
-verificar('a data da decisao e gravada', Solicitacao::porId($idSolicitacao)['data_decisao'] !== null, true);
+verificar('a solicitação fica aprovada', Solicitacao::porId($idSolicitacao)['status'] ?? null, 'aprovada');
+verificar('a data da decisão e gravada', Solicitacao::porId($idSolicitacao)['data_decisao'] !== null, true);
 verificar('a fila do master esvazia', Solicitacao::contarPendentes(), 0);
-verificar('o pedido some da busca por endereco', Solicitacao::pendentePorSlug($pedido['slug']), null);
+verificar('o pedido some da busca por endereço', Solicitacao::pendentePorSlug($pedido['slug']), null);
 verificar('aprovar de novo e recusado', Solicitacao::aprovar($idSolicitacao), false);
 verificar('recusar depois de aprovar e recusado', Solicitacao::recusar($idSolicitacao), false);
 
 $contas = autenticarGlobal($pedido['email'], $pedido['senha']);
-verificar('a entrada geral aceita a conta depois da aprovacao', count($contas), 1);
+verificar('a entrada geral aceita a conta depois da aprovação', count($contas), 1);
 verificar('a conta aceita e a da empresa aprovada', (int) ($contas[0]['id_estabelecimento'] ?? 0), $idEmpresa);
 
 // -------------------------------------------------------------------------
@@ -185,10 +185,10 @@ verificar('a segunda empresa existe antes da recusa', Estabelecimento::porIdGlob
 
 verificar('recusar devolve verdadeiro', Solicitacao::recusar($idSegunda), true);
 verificar('a empresa recusada e apagada', Estabelecimento::porIdGlobal($idEmpresaB), null);
-verificar('o endereco recusado fica livre', Solicitacao::slugEmUso($segundo['slug']), false);
-verificar('a solicitacao fica como recusada', Solicitacao::porId($idSegunda)['status'] ?? null, 'recusada');
-verificar('a solicitacao recusada continua legivel', Solicitacao::porId($idSegunda)['estabelecimento_nome'] ?? null, $segundo['estabelecimento']);
-verificar('a empresa aprovada nao e afetada', Estabelecimento::porIdGlobal($idEmpresa)['status'] ?? null, 'ativo');
+verificar('o endereço recusado fica livre', Solicitacao::slugEmUso($segundo['slug']), false);
+verificar('a solicitação fica como recusada', Solicitacao::porId($idSegunda)['status'] ?? null, 'recusada');
+verificar('a solicitação recusada continua legível', Solicitacao::porId($idSegunda)['estabelecimento_nome'] ?? null, $segundo['estabelecimento']);
+verificar('a empresa aprovada não é afetada', Estabelecimento::porIdGlobal($idEmpresa)['status'] ?? null, 'ativo');
 
 // -------------------------------------------------------------------------
 // Autonomo: administra e atende no proprio negocio, com a Matriz e agenda propria
@@ -197,10 +197,10 @@ $autonomo = ['estabelecimento' => 'Joana Manicure', 'slug' => 'joana-manicure', 
 $idTerceira = Solicitacao::abrir($autonomo);
 $idEmpresaC = (int) Solicitacao::porId($idTerceira)['id_estabelecimento'];
 $pessoaJoana = Usuario::pessoaPorEmail($autonomo['email']);
-verificar('a autonoma e uma pessoa so', $pessoaJoana !== null, true);
+verificar('a autonoma e uma pessoa só', $pessoaJoana !== null, true);
 $tiposJoana = array_column(Vinculo::daPessoa((int) $pessoaJoana['id_usuario']), 'tipo');
 sort($tiposJoana);
-verificar('a autonoma e administradora e profissional da propria empresa', $tiposJoana, ['admin', 'profissional']);
+verificar('a autonoma e administradora e profissional da própria empresa', $tiposJoana, ['admin', 'profissional']);
 verificar('a autonoma tem a unidade Matriz', (int) bd()->query("SELECT COUNT(*) FROM filiais WHERE id_estabelecimento = $idEmpresaC")->fetchColumn(), 1);
 verificar('a autonoma tem perfil de profissional', (int) bd()->query("SELECT COUNT(*) FROM profissionais WHERE id_estabelecimento = $idEmpresaC")->fetchColumn(), 1);
 
@@ -208,14 +208,14 @@ verificar('a autonoma tem perfil de profissional', (int) bd()->query("SELECT COU
 $reaproveitado = ['estabelecimento' => 'Segundo Negocio da Joana', 'slug' => 'joana-dois', 'nome' => 'Outro Nome', 'email' => 'joana@autonoma.test', 'senha' => 'qualquer', 'telefone' => '', 'mensagem' => ''];
 Solicitacao::abrir($reaproveitado);
 verificar('a segunda empresa reaproveita a pessoa', (int) bd()->query("SELECT COUNT(*) FROM usuarios WHERE email = 'joana@autonoma.test'")->fetchColumn(), 1);
-verificar('a pessoa passa a ter tres vinculos', count(Vinculo::daPessoa((int) $pessoaJoana['id_usuario'])), 3);
+verificar('a pessoa passa a ter três vínculos', count(Vinculo::daPessoa((int) $pessoaJoana['id_usuario'])), 3);
 verificar('a pessoa reaproveitada mantem o nome', Usuario::pessoaPorEmail('joana@autonoma.test')['nome'], 'Joana Autonoma');
 
 // -------------------------------------------------------------------------
 // Freio por origem do cadastro publico
 // -------------------------------------------------------------------------
 $limites = politicaLimites();
-verificar('o cadastro de empresa tem limite proprio', isset($limites['cadastro_empresa_ip']), true);
+verificar('o cadastro de empresa tem limite próprio', isset($limites['cadastro_empresa_ip']), true);
 for ($i = 0; $i < ($limites['cadastro_empresa_ip']['limite'] ?? 5); $i++) {
     anotarFalha('cadastro_empresa_ip', '203.0.113.7');
 }
@@ -223,24 +223,24 @@ verificar('estourar o limite bloqueia a origem', conferirBloqueio(['cadastro_emp
 verificar('outra origem segue livre', conferirBloqueio(['cadastro_empresa_ip' => '203.0.113.8']), '');
 
 // Cadastro publico atual: demonstracao imediata, sem afetar pedidos legados.
-$demo = ['estabelecimento' => 'Empresa Demo', 'slug' => 'empresa-demo', 'nome' => 'Responsavel Demo', 'email' => 'demo@teste.local', 'senha' => 'senha-demo', 'iniciar_demo' => true];
+$demo = ['estabelecimento' => 'Empresa Demo', 'slug' => 'empresa-demo', 'nome' => 'Responsável Demo', 'email' => 'demo@teste.local', 'senha' => 'senha-demo', 'iniciar_demo' => true];
 $idDemo = Estabelecimento::contratar($demo);
 $assinaturaDemo = Assinatura::situacao($idDemo);
 verificar('empresa demo nasce ativa', Estabelecimento::porIdGlobal($idDemo)['status'], 'ativo');
-verificar('demonstracao registrada', $assinaturaDemo['status'], 'demo');
-verificar('demonstracao dura sete dias', strtotime($assinaturaDemo['data_fim_demo']) - strtotime($assinaturaDemo['data_inicio_demo']), 7 * 86400);
+verificar('demonstração registrada', $assinaturaDemo['status'], 'demo');
+verificar('demonstração dura sete dias', strtotime($assinaturaDemo['data_fim_demo']) - strtotime($assinaturaDemo['data_inicio_demo']), 7 * 86400);
 verificar('empresa legada permanece ativa', Assinatura::situacao($idEmpresa)['status'], 'ativa');
-verificar('metodo invalido recusado', Assinatura::solicitarPagamento($idDemo, 'invalido'), false);
+verificar('método inválido recusado', Assinatura::solicitarPagamento($idDemo, 'invalido'), false);
 Assinatura::solicitarPagamento($idDemo, 'pix');
-verificar('pagamento aguarda confirmacao', Assinatura::situacao($idDemo)['status'], 'pendente');
+verificar('pagamento aguarda confirmação', Assinatura::situacao($idDemo)['status'], 'pendente');
 bd()->prepare('UPDATE assinaturas SET data_fim_demo = ? WHERE id_estabelecimento = ?')->execute([date('Y-m-d H:i:s', time() - 60), $idDemo]);
-verificar('demonstracao expirada bloqueia', Assinatura::acessoBloqueado($idDemo), true);
+verificar('demonstração expirada bloqueia', Assinatura::acessoBloqueado($idDemo), true);
 Assinatura::confirmarPagamento($idDemo);
 verificar('pagamento confirmado libera acesso', Assinatura::acessoBloqueado($idDemo), false);
 
 echo "\n";
 if ($falhas > 0) {
-    echo "FALHOU: {$falhas} de {$total} verificacoes do cadastro de empresa.\n";
+    echo "FALHOU: {$falhas} de {$total} verificações do cadastro de empresa.\n";
     exit(1);
 }
-echo "OK: {$total} verificacoes do cadastro de empresa.\n";
+echo "OK: {$total} verificações do cadastro de empresa.\n";

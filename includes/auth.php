@@ -94,7 +94,7 @@ function perfilRotulo(?string $tipo = null): string
         'master'       => 'Administrador master',
         'admin'        => 'Administrador do estabelecimento',
         'profissional' => 'Profissional',
-        'cliente'      => 'Usuario comum',
+        'cliente'      => 'Usuário comum',
         default        => '',
     };
 }
@@ -610,10 +610,10 @@ function exigirLogin(array|string $tiposPermitidos = []): void
 {
     if (!estaLogado()) {
         if (ehRequisicaoAjax()) {
-            jsonResposta(['sucesso' => false, 'mensagem' => 'Sessao expirada. Faca login novamente.'], 401);
+            jsonResposta(['sucesso' => false, 'mensagem' => 'Sessão expirada. Faça login novamente.'], 401);
         }
         $_SESSION['redirecionar_apos_login'] = $_SERVER['REQUEST_URI'] ?? null;
-        definirFlash('aviso', 'Faca login para continuar.');
+        definirFlash('aviso', 'Faça login para continuar.');
         $permitidos = is_string($tiposPermitidos) ? [$tiposPermitidos] : $tiposPermitidos;
         redirecionar(in_array('master', $permitidos, true) ? 'master/login.php' : 'login.php');
     }
@@ -629,9 +629,9 @@ function exigirLogin(array|string $tiposPermitidos = []): void
             'usuario'   => (int) (usuarioId() ?? 0),
         ]);
         if (ehRequisicaoAjax()) {
-            jsonResposta(['sucesso' => false, 'mensagem' => 'Voce nao tem permissao para esta acao.'], 403);
+            jsonResposta(['sucesso' => false, 'mensagem' => 'Você não tem permissão para esta acao.'], 403);
         }
-        definirFlash('erro', 'Voce nao tem permissao para acessar esta area.');
+        definirFlash('erro', 'Você não tem permissão para acessar esta área.');
         redirecionar('erro.php?codigo=permissao');
     }
 
@@ -641,9 +641,9 @@ function exigirLogin(array|string $tiposPermitidos = []): void
     // consegue prestar suporte por meio da simulacao.
     if (perfil() === 'admin' && !ehSimulacao() && Assinatura::acessoBloqueado(Contexto::id())) {
         if (ehRequisicaoAjax()) {
-            jsonResposta(['sucesso' => false, 'mensagem' => 'A demonstracao terminou. Regularize a assinatura para continuar.'], 402);
+            jsonResposta(['sucesso' => false, 'mensagem' => 'A demonstração terminou. Regularize a assinatura para continuar.'], 402);
         }
-        definirFlash('aviso', 'Sua demonstracao terminou. Escolha uma forma de pagamento para reativar o acesso.');
+        definirFlash('aviso', 'Sua demonstração terminou. Escolha uma forma de pagamento para reativar o acesso.');
         redirecionar('assinatura.php');
     }
 }
@@ -748,13 +748,13 @@ function alterarSenhaUsuario(int $idUsuario, string $senhaAtual, string $novaSen
     $usuario = Usuario::porId($idUsuario, usuarioId() === $idUsuario ? perfil() : null);
     if (($usuario['tipo'] ?? '') === 'cliente') {
         if (!validarSenhaProjeto($novaSenha)) {
-            $erros[] = 'A nova senha deve ter exatamente 8 caracteres alfabeticos.';
+            $erros[] = 'A nova senha deve ter exatamente 8 caracteres alfabéticos.';
         }
     } elseif (!validarSenha($novaSenha)) {
-        $erros[] = 'A nova senha deve ter no minimo 6 caracteres.';
+        $erros[] = 'A nova senha deve ter no mínimo 6 caracteres.';
     }
     if ($novaSenha !== $confirmacao) {
-        $erros[] = 'As senhas nao conferem.';
+        $erros[] = 'As senhas não conferem.';
     }
 
     if ($erros === []) {
@@ -812,7 +812,7 @@ function lembrarSeSolicitado(array $usuario): void
         gravarCookieLembrar(SessaoLembrada::criar((int) $usuario['id_estabelecimento'], (int) $usuario['id_usuario'], (int) $usuario['id_vinculo']));
     } catch (Throwable $erro) {
         // Sem a tabela (banco anterior a migracao) o login segue normal, so nao lembra.
-        error_log('Nao foi possivel lembrar o dispositivo: ' . $erro->getMessage());
+        error_log('Não foi possível lembrar o dispositivo: ' . $erro->getMessage());
     }
 }
 
@@ -843,7 +843,7 @@ function esquecerDispositivo(): void
                 SessaoLembrada::apagar((int) $registro['id_sessao']);
             }
         } catch (Throwable $erro) {
-            error_log('Nao foi possivel esquecer o dispositivo: ' . $erro->getMessage());
+            error_log('Não foi possível esquecer o dispositivo: ' . $erro->getMessage());
         }
     }
     apagarCookieLembrar();
@@ -907,7 +907,7 @@ function restaurarSessaoLembrada(): void
         LogAutenticacao::registrarEm((int) $usuario['id_estabelecimento'], 'login_sucesso', (string) (($usuario['login'] ?? '') ?: $usuario['email']), $usuario);
     } catch (Throwable $erro) {
         // Banco sem a tabela ou fora do ar: a pagina segue sem sessao, como sem o cookie.
-        error_log('Nao foi possivel restaurar a sessao lembrada: ' . $erro->getMessage());
+        error_log('Não foi possível restaurar a sessão lembrada: ' . $erro->getMessage());
     }
 }
 
@@ -978,9 +978,9 @@ function exigirCsrf(): void
             'perfil' => (string) perfil(),
         ]);
         if (ehRequisicaoAjax()) {
-            jsonResposta(['sucesso' => false, 'mensagem' => 'Requisicao invalida. Recarregue a pagina.'], 419);
+            jsonResposta(['sucesso' => false, 'mensagem' => 'Requisição inválida. Recarregue a página.'], 419);
         }
-        definirFlash('erro', 'Sessao expirada ou requisicao invalida. Tente novamente.');
+        definirFlash('erro', 'Sessão expirada ou requisição inválida. Tente novamente.');
         redirecionar(estaLogado() ? painelDe(perfil()) : 'login.php');
     }
 }

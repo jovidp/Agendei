@@ -36,7 +36,7 @@ $lista = LogAutenticacao::listar($filtros + [
 ]);
 
 // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
-$tituloPagina  = 'Logs de autenticacao';
+$tituloPagina  = 'Logs de autenticação';
 $subtituloTopo = $total . ' registro(s) encontrado(s)';
 
 // Renderiza a estrutura comum do painel após preparar os dados desta tela.
@@ -51,7 +51,7 @@ require_once RAIZ . '/includes/painel_header.php';
             <label for="campo">Buscar por</label>
             <select id="campo" name="campo">
                 <option value="todos" <?= $campo === 'todos' ? 'selected' : '' ?>>Todos</option>
-                <option value="nome" <?= $campo === 'nome' ? 'selected' : '' ?>>Nome do usuario</option>
+                <option value="nome" <?= $campo === 'nome' ? 'selected' : '' ?>>Nome do usuário</option>
                 <option value="cpf" <?= $campo === 'cpf' ? 'selected' : '' ?>>CPF</option>
             </select>
         </div>
@@ -67,10 +67,10 @@ require_once RAIZ . '/includes/painel_header.php';
             <select id="evento" name="evento" data-envia-ao-mudar>
                 <option value="">Todos os eventos</option>
                 <option value="login_sucesso" <?= $evento === 'login_sucesso' ? 'selected' : '' ?>>Login validado</option>
-                <option value="2fa_sucesso" <?= $evento === '2fa_sucesso' ? 'selected' : '' ?>>Entrada concluida</option>
+                <option value="2fa_sucesso" <?= $evento === '2fa_sucesso' ? 'selected' : '' ?>>Entrada concluída</option>
                 <option value="login_falha" <?= $evento === 'login_falha' ? 'selected' : '' ?>>Falha no login</option>
                 <option value="2fa_falha" <?= $evento === '2fa_falha' ? 'selected' : '' ?>>Resposta 2FA incorreta</option>
-                <option value="2fa_bloqueio" <?= $evento === '2fa_bloqueio' ? 'selected' : '' ?>>Bloqueio apos 3 tentativas</option>
+                <option value="2fa_bloqueio" <?= $evento === '2fa_bloqueio' ? 'selected' : '' ?>>Bloqueio após 3 tentativas</option>
                 <option value="logout" <?= $evento === 'logout' ? 'selected' : '' ?>>Saida do sistema</option>
             </select>
         </div>
@@ -89,7 +89,7 @@ require_once RAIZ . '/includes/painel_header.php';
     <?php if ($lista === []): ?>
         <div class="estado-vazio">
             <strong>Nenhum registro encontrado.</strong>
-            <p>As entradas aparecem aqui conforme os usuarios acessam o sistema.</p>
+            <p>As entradas aparecem aqui conforme os usuários acessam o sistema.</p>
         </div>
     <?php else: ?>
         <div class="tabela-area">

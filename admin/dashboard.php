@@ -53,19 +53,19 @@ require_once RAIZ . '/includes/painel_header.php';
         <span class="indicador-nota"><?= (int) $indicadores['clientes_ativos'] ?> ativos</span>
     </div>
     <div class="indicador indicador-positivo">
-        <span class="indicador-rotulo">Servicos realizados</span>
+        <span class="indicador-rotulo">Serviços realizados</span>
         <span class="indicador-valor"><?= (int) $indicadores['servicos_realizados'] ?></span>
-        <span class="indicador-nota">Concluidos no mes</span>
+        <span class="indicador-nota">Concluídos no mês</span>
     </div>
     <div class="indicador indicador-destaque">
         <span class="indicador-rotulo">Faturamento estimado</span>
         <span class="indicador-valor"><?= formatarMoeda($indicadores['faturamento_mes']) ?></span>
-        <span class="indicador-nota"><?= formatarMoeda($indicadores['faturamento_realizado_mes']) ?> ja realizados</span>
+        <span class="indicador-nota"><?= formatarMoeda($indicadores['faturamento_realizado_mes']) ?> já realizados</span>
     </div>
     <div class="indicador indicador-negativo">
         <span class="indicador-rotulo">Cancelamentos</span>
         <span class="indicador-valor"><?= (int) $indicadores['cancelamentos_mes'] ?></span>
-        <span class="indicador-nota">No mes atual</span>
+        <span class="indicador-nota">No mês atual</span>
     </div>
 </div>
 
@@ -79,16 +79,16 @@ require_once RAIZ . '/includes/painel_header.php';
         <?php if ($proximos === []): ?>
             <div class="estado-vazio">
                 <strong>Nenhum agendamento futuro</strong>
-                <p>Os proximos atendimentos aparecerao aqui.</p>
+                <p>Os próximos atendimentos aparecerão aqui.</p>
             </div>
         <?php else: ?>
             <div class="tabela-area">
                 <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela">
                     <thead>
                         <tr>
-                            <th>Horario</th>
+                            <th>Horário</th>
                             <th>Cliente</th>
-                            <th>Servico</th>
+                            <th>Serviço</th>
                             <th>Profissional</th>
                             <th class="coluna-acoes">Status</th>
                         </tr>
@@ -118,14 +118,14 @@ require_once RAIZ . '/includes/painel_header.php';
     <div>
         <div class="cartao">
             <div class="cartao-cabecalho">
-                <h3>Servicos mais agendados</h3>
+                <h3>Serviços mais agendados</h3>
                 <span class="texto-pequeno texto-secundario">Mes atual</span>
             </div>
 
             <?php if ($ranking === []): ?>
                 <div class="estado-vazio">
-                    <strong>Sem dados no mes</strong>
-                    <p>Nenhum agendamento registrado neste periodo.</p>
+                    <strong>Sem dados no mês</strong>
+                    <p>Nenhum agendamento registrado neste período.</p>
                 </div>
             <?php else: ?>
                 <ul class="lista-simples">
@@ -154,7 +154,7 @@ require_once RAIZ . '/includes/painel_header.php';
             <?php if ($recentes === []): ?>
                 <div class="estado-vazio">
                     <strong>Nenhum agendamento registrado</strong>
-                    <p>Os ultimos registros criados aparecerao aqui.</p>
+                    <p>Os últimos registros criados aparecerão aqui.</p>
                 </div>
             <?php else: ?>
                 <ul class="lista-simples">
@@ -164,7 +164,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                 <strong><?= e($agendamento['nome_cliente']) ?></strong>
                                 <span>
                                     <?= e($agendamento['nome_servico']) ?> &middot;
-                                    <?= formatarData($agendamento['data_agendamento']) ?> as <?= formatarHora($agendamento['hora_inicio']) ?>
+                                    <?= formatarData($agendamento['data_agendamento']) ?> às <?= formatarHora($agendamento['hora_inicio']) ?>
                                 </span>
                             </div>
                             <span class="valor"><?= badgeStatus($agendamento['status']) ?></span>

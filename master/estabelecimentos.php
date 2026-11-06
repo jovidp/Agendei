@@ -143,7 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $id = (int) post('id_estabelecimento');
             $empresa = Estabelecimento::porIdGlobal($id);
             if (!$empresa) {
-                $erros[] = 'Estabelecimento nao encontrado.';
+                $erros[] = 'Estabelecimento não encontrado.';
             } else {
                 Assinatura::confirmarPagamento($id);
                 LogMaster::registrar('assinatura_confirmada', [
@@ -244,7 +244,7 @@ require RAIZ . '/includes/painel_header.php';
 <?php $assinaturaEmpresa = Assinatura::situacao((int) $selecionado['id_estabelecimento']); ?>
 <div class="cartao"><div class="cartao-cabecalho"><h3>Assinatura da plataforma</h3><?= badgeStatus($assinaturaEmpresa['status']) ?></div><div class="cartao-corpo">
     <p><strong>Mensalidade:</strong> R$ 149,00</p>
-    <?php if (!empty($assinaturaEmpresa['data_fim_demo'])): ?><p><strong>Fim da demonstracao:</strong> <?= e(formatarData(substr((string) $assinaturaEmpresa['data_fim_demo'], 0, 10))) ?></p><?php endif; ?>
+    <?php if (!empty($assinaturaEmpresa['data_fim_demo'])): ?><p><strong>Fim da demonstração:</strong> <?= e(formatarData(substr((string) $assinaturaEmpresa['data_fim_demo'], 0, 10))) ?></p><?php endif; ?>
     <p><strong>Forma escolhida:</strong> <?= e(Assinatura::rotuloMetodo($assinaturaEmpresa['metodo_pagamento'] ?? null)) ?></p>
     <?php if ($assinaturaEmpresa['status'] !== 'ativa'): ?><form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="confirmar_assinatura"><input type="hidden" name="id_estabelecimento" value="<?= (int) $selecionado['id_estabelecimento'] ?>"><button class="btn" type="submit" data-confirmar="Confirmar o pagamento de R$ 149,00 e liberar o acesso?">Confirmar pagamento</button></form><?php endif; ?>
 </div></div>

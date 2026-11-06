@@ -20,7 +20,7 @@ $data           = get('data');
 $ignorar        = (int) get('ignorar_agendamento');
 
 if ($idProfissional <= 0 || $idServico <= 0 || !validarData($data)) {
-    jsonResposta(['sucesso' => false, 'mensagem' => 'Parametros invalidos.', 'horarios' => []], 400);
+    jsonResposta(['sucesso' => false, 'mensagem' => 'Parâmetros inválidos.', 'horarios' => []], 400);
 }
 
 // Administradores e profissionais podem encaixar horarios sem a antecedencia minima.

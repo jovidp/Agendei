@@ -112,7 +112,7 @@ if (estaLogado()) {
  * O rastro tecnico vai para o log e so aparece na tela em desenvolvimento.
  */
 set_exception_handler(static function (Throwable $erro): void {
-    error_log('Erro nao tratado: ' . $erro->getMessage() . ' em ' . $erro->getFile() . ':' . $erro->getLine());
+    error_log('Erro não tratado: ' . $erro->getMessage() . ' em ' . $erro->getFile() . ':' . $erro->getLine());
 
     // Chamadas de API devem continuar respondendo JSON, e nao HTML de redirecionamento.
     if (ehRequisicaoAjax()) {
@@ -130,7 +130,7 @@ set_exception_handler(static function (Throwable $erro): void {
     // Depois que o HTML comecou a ser enviado nao ha mais como redirecionar.
     if (headers_sent()) {
         http_response_code(500);
-        echo '<div class="alerta alerta-erro" role="alert">Erro inesperado ao processar a pagina.</div>';
+        echo '<div class="alerta alerta-erro" role="alert">Erro inesperado ao processar a página.</div>';
         exit;
     }
 

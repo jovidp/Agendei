@@ -32,7 +32,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($bloqueio !== '') {
         $erro = $bloqueio;
     } elseif (!validarEmail($email)) {
-        $erro = 'Informe um e-mail valido.';
+        $erro = 'Informe um e-mail válido.';
     } else {
         // Toda solicitacao conta, tenha o e-mail cadastro ou nao: contar so os
         // acertos devolveria justamente a informacao que queremos esconder.
@@ -83,7 +83,7 @@ $estabelecimento = Estabelecimento::dados();
             <a href="<?= url('login.php') ?>" class="voltar-site">&larr; Voltar para o login</a>
 
             <h1>Recuperar senha</h1>
-            <p class="subtitulo">Informe o e-mail cadastrado para receber o link de redefinicao.</p>
+            <p class="subtitulo">Informe o e-mail cadastrado para receber o link de redefinição.</p>
 
             <?php if ($erro !== ''): ?>
                 <div class="alerta alerta-erro"><span class="alerta-texto"><?= e($erro) ?></span></div>
@@ -93,13 +93,13 @@ $estabelecimento = Estabelecimento::dados();
                 <?php if ($emailDisponivel || $linkGerado !== null): ?>
                     <div class="alerta alerta-info">
                         <span class="alerta-texto">
-                            Se este e-mail estiver cadastrado, o link de redefinicao sera enviado em instantes. Confira tambem a caixa de spam.
+                            Se este e-mail estiver cadastrado, o link de redefinição será enviado em instantes. Confira também a caixa de spam.
                         </span>
                     </div>
                 <?php else: ?>
                     <div class="alerta alerta-aviso">
                         <span class="alerta-texto">
-                            O envio de e-mail nao esta disponivel neste momento. Fale com o estabelecimento para redefinir a sua senha.
+                            O envio de e-mail não está disponível neste momento. Fale com o estabelecimento para redefinir a sua senha.
                         </span>
                     </div>
                 <?php endif; ?>
@@ -107,7 +107,7 @@ $estabelecimento = Estabelecimento::dados();
                 <?php if ($linkGerado !== null): ?>
                     <div class="credenciais-demo">
                         <strong>Ambiente de desenvolvimento</strong><br>
-                        O link nao foi por e-mail. Use-o aqui:<br>
+                        O link não foi por e-mail. Use-o aqui:<br>
                         <a href="<?= e($linkGerado) ?>"><?= e($linkGerado) ?></a>
                     </div>
                 <?php endif; ?>
@@ -121,7 +121,7 @@ $estabelecimento = Estabelecimento::dados();
                         <span class="mensagem-campo"></span>
                     </div>
 
-                    <button type="submit" class="btn btn-bloco btn-grande">Enviar link de recuperacao</button>
+                    <button type="submit" class="btn btn-bloco btn-grande">Enviar link de recuperação</button>
                 </form>
             <?php endif; ?>
 

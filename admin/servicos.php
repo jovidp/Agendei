@@ -31,13 +31,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ];
 
         if (mb_strlen($dados['nome']) < 3) {
-            $erros[] = 'Informe o nome do servico (minimo 3 caracteres).';
+            $erros[] = 'Informe o nome do serviço (mínimo 3 caracteres).';
         }
         if ($dados['preco'] < 0) {
-            $erros[] = 'Informe um preco valido.';
+            $erros[] = 'Informe um preço válido.';
         }
         if ($dados['duracao_minutos'] < 5 || $dados['duracao_minutos'] > 600) {
-            $erros[] = 'A duracao deve estar entre 5 e 600 minutos.';
+            $erros[] = 'A duração deve estar entre 5 e 600 minutos.';
         }
 
         // O teto do plano vale para catalogo novo; editar o que ja existe
@@ -52,10 +52,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($erros === []) {
             if ($idServico > 0) {
                 Servico::atualizar($idServico, $dados);
-                definirFlash('sucesso', 'Servico atualizado com sucesso.');
+                definirFlash('sucesso', 'Serviço atualizado com sucesso.');
             } else {
                 Servico::criar($dados);
-                definirFlash('sucesso', 'Servico cadastrado com sucesso.');
+                definirFlash('sucesso', 'Serviço cadastrado com sucesso.');
             }
             redirecionar('admin/servicos.php');
         }
@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             definirFlash('erro', $limitePlano);
         } else {
             Servico::alterarStatus($idServico, $novoStatus);
-            definirFlash('sucesso', $novoStatus === 'ativo' ? 'Servico ativado.' : 'Servico desativado.');
+            definirFlash('sucesso', $novoStatus === 'ativo' ? 'Serviço ativado.' : 'Serviço desativado.');
         }
 
         redirecionar('admin/servicos.php');
@@ -83,10 +83,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Confere o registro e as regras aplicáveis antes da exclusão.
     if ($acao === 'excluir' && $idServico > 0) {
         if (!Servico::podeExcluir($idServico)) {
-            definirFlash('erro', 'Este servico ja possui agendamentos e nao pode ser excluido. Desative-o para retirar da lista.');
+            definirFlash('erro', 'Este serviço já possui agendamentos e não pode ser excluído. Desative-o para retirar da lista.');
         } else {
             Servico::excluir($idServico);
-            definirFlash('sucesso', 'Servico excluido.');
+            definirFlash('sucesso', 'Serviço excluído.');
         }
         redirecionar('admin/servicos.php');
     }
@@ -98,7 +98,7 @@ $edicao   = null;
 if ($acaoTela === 'editar') {
     $edicao = Servico::porId((int) get('id'));
     if (!$edicao) {
-        definirFlash('erro', 'Servico nao encontrado.');
+        definirFlash('erro', 'Serviço não encontrado.');
         redirecionar('admin/servicos.php');
     }
 }
@@ -110,11 +110,11 @@ $status  = get('status');
 $lista   = Servico::listar(array_filter(['busca' => $busca, 'status' => $status]));
 
 // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
-$tituloPagina  = 'Servicos';
-$subtituloTopo = 'Cadastro, precos e duracao dos servicos';
+$tituloPagina  = 'Serviços';
+$subtituloTopo = 'Cadastro, preços e duração dos serviços';
 $acoesTopo     = $formularioAberto
     ? '<a href="' . url('admin/servicos.php') . '" class="btn btn-contorno btn-pequeno">Voltar para a lista</a>'
-    : '<a href="' . url('admin/servicos.php?acao=novo') . '" class="btn btn-pequeno">Novo servico</a>';
+    : '<a href="' . url('admin/servicos.php?acao=novo') . '" class="btn btn-pequeno">Novo serviço</a>';
 
 // Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
@@ -135,7 +135,7 @@ require_once RAIZ . '/includes/painel_header.php';
 
     <div class="cartao">
         <div class="cartao-cabecalho">
-            <h3><?= $edicao ? 'Editar servico' : 'Novo servico' ?></h3>
+            <h3><?= $edicao ? 'Editar serviço' : 'Novo serviço' ?></h3>
         </div>
         <div class="cartao-corpo">
             <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post">
@@ -144,26 +144,26 @@ require_once RAIZ . '/includes/painel_header.php';
                 <input type="hidden" name="id_servico" value="<?= (int) ($edicao['id_servico'] ?? 0) ?>">
 
                 <div class="campo">
-                    <label for="nome">Nome do servico <span class="obrigatorio">*</span></label>
+                    <label for="nome">Nome do serviço <span class="obrigatorio">*</span></label>
                     <input type="text" id="nome" name="nome" maxlength="120"
                         value="<?= e($edicao['nome'] ?? post('nome')) ?>" required>
                 </div>
 
                 <div class="campo">
-                    <label for="descricao">Descricao</label>
+                    <label for="descricao">Descrição</label>
                     <textarea id="descricao" name="descricao" maxlength="500"><?= e($edicao['descricao'] ?? post('descricao')) ?></textarea>
-                    <span class="ajuda-campo">Aparece na pagina inicial e na tela de agendamento.</span>
+                    <span class="ajuda-campo">Aparece na página inicial e na tela de agendamento.</span>
                 </div>
 
                 <div class="linha-campos-3">
                     <div class="campo">
-                        <label for="preco">Preco (R$) <span class="obrigatorio">*</span></label>
+                        <label for="preco">Preço (R$) <span class="obrigatorio">*</span></label>
                         <input type="text" id="preco" name="preco" data-mascara="moeda" inputmode="numeric"
                             value="<?= e($edicao ? number_format((float) $edicao['preco'], 2, ',', '') : post('preco')) ?>" required>
                     </div>
 
                     <div class="campo">
-                        <label for="duracao_minutos">Duracao (minutos) <span class="obrigatorio">*</span></label>
+                        <label for="duracao_minutos">Duração (minutos) <span class="obrigatorio">*</span></label>
                         <input type="number" id="duracao_minutos" name="duracao_minutos" min="5" max="600" step="5"
                             value="<?= (int) ($edicao['duracao_minutos'] ?? post('duracao_minutos', '30')) ?>" required>
                     </div>
@@ -180,11 +180,11 @@ require_once RAIZ . '/includes/painel_header.php';
                 <div class="campo-checkbox">
                     <input type="checkbox" id="destaque" name="destaque" value="1"
                         <?= !empty($edicao['destaque']) ? 'checked' : '' ?>>
-                    <label for="destaque">Exibir em destaque na pagina inicial</label>
+                    <label for="destaque">Exibir em destaque na página inicial</label>
                 </div>
 
                 <div class="grupo-botoes">
-                    <button type="submit" class="btn"><?= $edicao ? 'Salvar alteracoes' : 'Cadastrar servico' ?></button>
+                    <button type="submit" class="btn"><?= $edicao ? 'Salvar alterações' : 'Cadastrar serviço' ?></button>
                     <a href="<?= url('admin/servicos.php') ?>" class="btn btn-contorno">Cancelar</a>
                 </div>
             </form>
@@ -197,8 +197,8 @@ require_once RAIZ . '/includes/painel_header.php';
     <?php /* Filtros enviados na URL para permitir atualizar e compartilhar a consulta. */ ?><form method="get" class="barra-filtros">
         <input type="hidden" name="estabelecimento" value="<?= e(Contexto::slug()) ?>">
         <div class="campo campo-busca">
-            <label for="busca">Buscar servico</label>
-            <input type="search" id="busca" name="busca" value="<?= e($busca) ?>" placeholder="Nome ou descricao">
+            <label for="busca">Buscar serviço</label>
+            <input type="search" id="busca" name="busca" value="<?= e($busca) ?>" placeholder="Nome ou descrição">
         </div>
 
         <div class="campo">
@@ -217,9 +217,9 @@ require_once RAIZ . '/includes/painel_header.php';
 
     <?php if ($lista === []): ?>
         <div class="estado-vazio">
-            <strong>Nenhum servico cadastrado.</strong>
-            <p>Cadastre os servicos oferecidos para liberar os agendamentos.</p>
-            <a href="<?= url('admin/servicos.php?acao=novo') ?>" class="btn margem-topo">Novo servico</a>
+            <strong>Nenhum serviço cadastrado.</strong>
+            <p>Cadastre os serviços oferecidos para liberar os agendamentos.</p>
+            <a href="<?= url('admin/servicos.php?acao=novo') ?>" class="btn margem-topo">Novo serviço</a>
         </div>
     <?php else: ?>
         <div class="tabela-area">
@@ -227,9 +227,9 @@ require_once RAIZ . '/includes/painel_header.php';
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Servico</th>
-                        <th>Preco</th>
-                        <th>Duracao</th>
+                        <th>Serviço</th>
+                        <th>Preço</th>
+                        <th>Duração</th>
                         <th>Profissionais</th>
                         <th>Status</th>
                         <th>Cadastro</th>
@@ -273,7 +273,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                         <input type="hidden" name="id_servico" value="<?= (int) $servico['id_servico'] ?>">
                                         <button type="submit" class="btn btn-perigo btn-pequeno"
                                             data-confirmar="Excluir o servico <?= e($servico['nome']) ?>? Esta acao nao pode ser desfeita."
-                                            data-confirmar-titulo="Excluir servico"
+                                            data-confirmar-titulo="Excluir serviço"
                                             data-confirmar-rotulo="Excluir">
                                             Excluir
                                         </button>

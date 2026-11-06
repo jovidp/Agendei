@@ -37,7 +37,7 @@ $jsExtra = $jsExtra ?? [];
             <div>
                 <h4>Atendimento</h4>
                 <ul class="rodape-lista">
-                    <li><a href="<?= url('index.php#servicos') ?>">Servicos</a></li>
+                    <li><a href="<?= url('index.php#servicos') ?>">Serviços</a></li>
                     <li><a href="<?= url('index.php#como-funciona') ?>">Como funciona</a></li>
                     <li><a href="<?= url('login.php') ?>">Entrar</a></li>
                     <li><a href="<?= url('cadastro.php') ?>">Criar conta</a></li>

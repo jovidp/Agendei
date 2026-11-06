@@ -25,7 +25,7 @@ function migrarEmailUnico(PDO $db, bool $exibir = true): bool
 
     if ($duplicados !== []) {
         if ($exibir) {
-            fwrite(STDERR, "Nao foi possivel criar a unicidade global: existem e-mails repetidos.\n");
+            fwrite(STDERR, "Não foi possível criar a unicidade global: existem e-mails repetidos.\n");
             $detalhes = $db->prepare(
                 'SELECT u.id_usuario, u.nome, u.email, e.nome AS estabelecimento
                  FROM usuarios u
@@ -72,7 +72,7 @@ function migrarEmailUnico(PDO $db, bool $exibir = true): bool
     }
 
     if ($exibir) {
-        echo "E-mail unico em toda a plataforma: migracao concluida.\n";
+        echo "E-mail único em toda a plataforma: migração concluída.\n";
     }
     return true;
 }

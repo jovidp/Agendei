@@ -26,14 +26,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Confere a propriedade da reserva antes de permitir uma ação do profissional.
     if (!$agendamento || (int) $agendamento['id_profissional'] !== $idProfissional) {
-        definirFlash('erro', 'Agendamento nao encontrado na sua agenda.');
+        definirFlash('erro', 'Agendamento não encontrado na sua agenda.');
     } elseif (!in_array($novoStatus, ['confirmado', 'concluido'], true)) {
-        definirFlash('erro', 'Acao invalida.');
+        definirFlash('erro', 'Acao inválida.');
     } elseif ($novoStatus === 'concluido' && !Agendamento::jaComecou($agendamento)) {
-        definirFlash('erro', 'O atendimento so pode ser concluido a partir do horario de inicio.');
+        definirFlash('erro', 'O atendimento só pode ser concluído a partir do horário de início.');
     } else {
         Agendamento::alterarStatus($idAgendamento, $novoStatus);
-        definirFlash('sucesso', $novoStatus === 'confirmado' ? 'Atendimento confirmado.' : 'Atendimento concluido.');
+        definirFlash('sucesso', $novoStatus === 'confirmado' ? 'Atendimento confirmado.' : 'Atendimento concluído.');
     }
 
     redirecionar($retorno);
@@ -67,7 +67,7 @@ $rotuloPeriodo = $visao === 'semana'
 
 // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Minha agenda';
-$subtituloTopo = count($agendamentos) . ' atendimento(s) no periodo';
+$subtituloTopo = count($agendamentos) . ' atendimento(s) no período';
 
 // Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
@@ -77,11 +77,11 @@ require_once RAIZ . '/includes/painel_header.php';
     <div class="agenda-barra">
         <div class="agenda-navegacao">
             <a href="?<?= e(http_build_query($parametros + ['data' => $dataAnterior])) ?>"
-               class="btn btn-contorno btn-pequeno" aria-label="Periodo anterior">&lsaquo;</a>
+               class="btn btn-contorno btn-pequeno" aria-label="Período anterior">&lsaquo;</a>
             <a href="?<?= e(http_build_query($parametros + ['data' => date('Y-m-d')])) ?>"
                class="btn btn-contorno btn-pequeno">Hoje</a>
             <a href="?<?= e(http_build_query($parametros + ['data' => $dataProxima])) ?>"
-               class="btn btn-contorno btn-pequeno" aria-label="Proximo periodo">&rsaquo;</a>
+               class="btn btn-contorno btn-pequeno" aria-label="Próximo período">&rsaquo;</a>
             <span class="agenda-data-atual"><?= e($rotuloPeriodo) ?></span>
         </div>
 
@@ -99,7 +99,7 @@ require_once RAIZ . '/includes/painel_header.php';
             <div class="agenda-legenda">
                 <?php foreach ($bloqueios as $bloqueio): ?>
                     <span>
-                        Bloqueio: <?= formatarHora($bloqueio['hora_inicio']) ?> as <?= formatarHora($bloqueio['hora_fim']) ?>
+                        Bloqueio: <?= formatarHora($bloqueio['hora_inicio']) ?> às <?= formatarHora($bloqueio['hora_fim']) ?>
                         <?= !empty($bloqueio['motivo']) ? ' - ' . e($bloqueio['motivo']) : '' ?>
                     </span>
                 <?php endforeach; ?>
@@ -109,16 +109,16 @@ require_once RAIZ . '/includes/painel_header.php';
         <?php if ($agendamentos === []): ?>
             <div class="estado-vazio">
                 <strong>Nenhum atendimento neste dia</strong>
-                <p>Escolha outra data ou confira seus horarios de atendimento.</p>
+                <p>Escolha outra data ou confira seus horários de atendimento.</p>
             </div>
         <?php else: ?>
             <div class="tabela-area">
                 <?php /* Tabela de apresentação dos registros retornados pela consulta. */ ?><table class="tabela">
                     <thead>
                         <tr>
-                            <th>Horario</th>
+                            <th>Horário</th>
                             <th>Cliente</th>
-                            <th>Servico</th>
+                            <th>Serviço</th>
                             <th>Valor</th>
                             <th>Status</th>
                             <th class="coluna-acoes">Acoes</th>
@@ -129,7 +129,7 @@ require_once RAIZ . '/includes/painel_header.php';
                             <tr>
                                 <td>
                                     <span class="celula-principal"><?= formatarHora($agendamento['hora_inicio']) ?></span>
-                                    <span class="celula-secundaria">ate <?= formatarHora($agendamento['hora_fim']) ?></span>
+                                    <span class="celula-secundaria">até <?= formatarHora($agendamento['hora_fim']) ?></span>
                                 </td>
                                 <td>
                                     <?= e($agendamento['nome_cliente']) ?>
@@ -228,7 +228,7 @@ require_once RAIZ . '/includes/painel_header.php';
         <div class="agenda-legenda">
             <span><i class="legenda-agendado"></i> Agendado</span>
             <span><i class="legenda-confirmado"></i> Confirmado</span>
-            <span><i class="legenda-concluido"></i> Concluido</span>
+            <span><i class="legenda-concluido"></i> Concluído</span>
             <span>Clique em um atendimento para abrir o dia</span>
         </div>
 

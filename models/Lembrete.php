@@ -88,7 +88,7 @@ class Lembrete
         }
 
         $resultado = array_replace($resultado, self::enviarPendentes());
-        Configuracao::definir('whatsapp_ultima_execucao', date('Y-m-d H:i:s'), 'Ultimo envio automatico de lembretes');
+        Configuracao::definir('whatsapp_ultima_execucao', date('Y-m-d H:i:s'), 'Último envio automático de lembretes');
 
         return $resultado;
     }
@@ -145,7 +145,7 @@ class Lembrete
 
             $numero = WhatsApp::normalizarNumero($item['destinatario']);
             if ($numero === null) {
-                self::cancelarNotificacao($id, 'Telefone do cliente incompleto ou invalido.');
+                self::cancelarNotificacao($id, 'Telefone do cliente incompleto ou inválido.');
                 $totais['canceladas']++;
                 continue;
             }
@@ -175,7 +175,7 @@ class Lembrete
 
         // Notificacao sem agendamento (LEFT JOIN vazio): o registro foi apagado.
         if ($ehLembrete && $status === null && $item['data_agendamento'] === null) {
-            return 'O agendamento nao existe mais.';
+            return 'O agendamento não existe mais.';
         }
 
         // So o lembrete depende de a reserva continuar de pe. O aviso de vaga e
@@ -185,14 +185,14 @@ class Lembrete
         }
 
         if ($ehLembrete && $status === 'concluido') {
-            return 'Atendimento ja concluido.';
+            return 'Atendimento já concluído.';
         }
 
         if (
             $item['data_agendamento'] !== null
             && strtotime($item['data_agendamento'] . ' ' . $item['hora_inicio']) < time()
         ) {
-            return 'O horario ja passou.';
+            return 'O horário já passou.';
         }
 
         return null;
@@ -267,7 +267,7 @@ class Lembrete
     {
         $numero = WhatsApp::normalizarNumero($telefone);
         if ($numero === null) {
-            throw new RuntimeException('Informe um numero com DDD (10 ou 11 digitos).');
+            throw new RuntimeException('Informe um número com DDD (10 ou 11 dígitos).');
         }
 
         if (!WhatsApp::ativo()) {
@@ -275,8 +275,8 @@ class Lembrete
         }
 
         $empresa = Estabelecimento::campo('nome', NOME_SISTEMA);
-        $texto   = 'Ola! Esta e uma mensagem de teste do ' . $empresa
-            . '. Se voce a recebeu, os lembretes automaticos estao funcionando.';
+        $texto   = 'Olá! Esta e uma mensagem de teste do ' . $empresa
+            . '. Se você a recebeu, os lembretes automáticos estão funcionando.';
 
         WhatsApp::enviarLembrete($numero, $texto, ['Teste', 'Mensagem de teste', formatarData(date('Y-m-d')), formatarHora(date('H:i:s'))]);
     }

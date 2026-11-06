@@ -30,7 +30,7 @@ $tentar = static function (string $comando, string $rotulo) use ($db, &$feito): 
         $mensagem = strtolower($erro->getMessage());
         $jaExiste = str_contains($mensagem, 'duplicate')
             || str_contains($mensagem, 'already exists')
-            || str_contains($mensagem, 'ja existe');
+            || str_contains($mensagem, 'já existe');
 
         if (!$jaExiste) {
             throw $erro;
@@ -111,8 +111,8 @@ foreach (['usuarios', 'administradores_master'] as $tabela) {
 }
 
 $dialeto = $ehPostgres ? 'PostgreSQL' : 'MySQL/MariaDB';
-echo "Banco preparado para o segundo fator por codigo em {$dialeto}.\n";
-echo $feito === [] ? "Nada a alterar: o esquema ja estava pronto.\n" : '  - ' . implode("\n  - ", $feito) . "\n";
+echo "Banco preparado para o segundo fator por código em {$dialeto}.\n";
+echo $feito === [] ? "Nada a alterar: o esquema já estava pronto.\n" : '  - ' . implode("\n  - ", $feito) . "\n";
 echo "\nDefina AGENDEI_CHAVE_TOTP no ambiente antes de cadastrar o primeiro aplicativo:\n";
 echo "e a chave que protege os segredos gravados. Trocar essa chave depois\n";
-echo "invalida os aplicativos ja cadastrados, que precisarao ser cadastrados de novo.\n";
+echo "inválida os aplicativos já cadastrados, que precisarao ser cadastrados de novo.\n";

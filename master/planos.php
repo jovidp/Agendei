@@ -36,12 +36,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $existente = Plano::porNome($nome);
             if ($existente && (int) $existente['id_plano'] !== $id) {
-                $erros[] = 'Ja existe um plano com esse nome.';
+                $erros[] = 'Já existe um plano com esse nome.';
             }
 
             foreach (['limite_profissionais', 'limite_servicos', 'limite_agendamentos_mes'] as $campo) {
                 if (post($campo) !== '' && (int) post($campo) < 0) {
-                    $erros[] = 'Os limites nao podem ser negativos. Deixe em branco para ilimitado.';
+                    $erros[] = 'Os limites não podem ser negativos. Deixe em branco para ilimitado.';
                     break;
                 }
             }
@@ -56,11 +56,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!$erros && $acao === 'editar') {
                 $antigo = Plano::porId($id);
                 if (!$antigo) {
-                    $erros[] = 'Plano nao encontrado.';
+                    $erros[] = 'Plano não encontrado.';
                 } else {
                     Plano::atualizar($id, $dados);
                     LogMaster::registrar('plano_alterado', ['alvo' => $nome, 'detalhe' => 'limites revisados']);
-                    definirFlash('sucesso', 'Plano atualizado. Os novos tetos passam a valer nas proximas criacoes.');
+                    definirFlash('sucesso', 'Plano atualizado. Os novos tetos passam a valer nas próximas criações.');
                     redirecionar('master/planos.php');
                 }
             }
@@ -72,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $novoStatus = post('status') === 'ativo' ? 'ativo' : 'inativo';
 
             if (!$plano) {
-                $erros[] = 'Plano nao encontrado.';
+                $erros[] = 'Plano não encontrado.';
             } else {
                 Plano::alterarStatus($id, $novoStatus);
                 LogMaster::registrar('plano_alterado', [
@@ -91,9 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $plano = $idPlano === null ? null : Plano::porId($idPlano);
 
             if (!$empresa) {
-                $erros[] = 'Estabelecimento nao encontrado.';
+                $erros[] = 'Estabelecimento não encontrado.';
             } elseif ($idPlano !== null && !$plano) {
-                $erros[] = 'Plano nao encontrado.';
+                $erros[] = 'Plano não encontrado.';
             } else {
                 Plano::atribuir($idEmpresa, $idPlano, post('observacao'));
                 LogMaster::registrar('plano_atribuido', [
@@ -107,7 +107,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
     } catch (Throwable $erro) {
-        $erros[] = 'Nao foi possivel concluir a operacao.';
+        $erros[] = 'Não foi possível concluir a operação.';
         error_log('Falha na tela de planos: ' . $erro->getMessage());
     }
 }
@@ -137,7 +137,7 @@ require RAIZ . '/includes/painel_header.php';
 
 <?php if (!$disponivel): ?>
     <div class="alerta alerta-erro" role="alert">
-        As tabelas de planos nao estao disponiveis neste banco. Rode <code>php scripts/migrar_seguranca.php</code> no servidor.
+        As tabelas de planos não estão disponíveis neste banco. Rode <code>php scripts/migrar_seguranca.php</code> no servidor.
     </div>
 <?php endif; ?>
 
@@ -152,7 +152,7 @@ require RAIZ . '/includes/painel_header.php';
                 <input type="hidden" name="id_plano" value="<?= (int) ($plano['id_plano'] ?? 0) ?>">
                 <div class="linha-campos">
                     <div class="campo"><label for="nome">Nome</label><input id="nome" name="nome" maxlength="60" value="<?= e($plano['nome'] ?? '') ?>" required></div>
-                    <div class="campo"><label for="descricao">Descricao</label><input id="descricao" name="descricao" maxlength="255" value="<?= e($plano['descricao'] ?? '') ?>"></div>
+                    <div class="campo"><label for="descricao">Descrição</label><input id="descricao" name="descricao" maxlength="255" value="<?= e($plano['descricao'] ?? '') ?>"></div>
                 </div>
                 <div class="linha-campos">
                     <div class="campo">
@@ -160,16 +160,16 @@ require RAIZ . '/includes/painel_header.php';
                         <input type="number" min="0" id="limite_profissionais" name="limite_profissionais" value="<?= e((string) ($plano['limite_profissionais'] ?? '')) ?>" placeholder="ilimitado">
                     </div>
                     <div class="campo">
-                        <label for="limite_servicos">Servicos ativos</label>
+                        <label for="limite_servicos">Serviços ativos</label>
                         <input type="number" min="0" id="limite_servicos" name="limite_servicos" value="<?= e((string) ($plano['limite_servicos'] ?? '')) ?>" placeholder="ilimitado">
                     </div>
                     <div class="campo">
-                        <label for="limite_agendamentos_mes">Agendamentos por mes</label>
+                        <label for="limite_agendamentos_mes">Agendamentos por mês</label>
                         <input type="number" min="0" id="limite_agendamentos_mes" name="limite_agendamentos_mes" value="<?= e((string) ($plano['limite_agendamentos_mes'] ?? '')) ?>" placeholder="ilimitado">
                     </div>
                 </div>
                 <p class="ajuda-campo">
-                    O teto e conferido na hora de criar. Baixar um plano nao apaga o que a empresa ja tem: ela apenas para de crescer ate voltar para dentro do limite.
+                    O teto e conferido na hora de criar. Baixar um plano não apaga o que a empresa já tem: ela apenas para de crescer até voltar para dentro do limite.
                 </p>
                 <button class="btn" type="submit"><?= $plano ? 'Salvar plano' : 'Criar plano' ?></button>
             </form>
@@ -182,12 +182,12 @@ require RAIZ . '/includes/painel_header.php';
     <?php if ($planos === []): ?>
         <div class="estado-vazio">
             <strong>Nenhum plano cadastrado.</strong>
-            <p>Sem plano, todo estabelecimento fica sem teto — que e exatamente como o sistema funcionava ate aqui.</p>
+            <p>Sem plano, todo estabelecimento fica sem teto — que é exatamente como o sistema funcionava até aqui.</p>
         </div>
     <?php else: ?>
         <div class="tabela-area">
             <table class="tabela">
-                <thead><tr><th>Plano</th><th>Profissionais</th><th>Servicos</th><th>Agendamentos/mes</th><th>Empresas</th><th>Status</th><th class="coluna-acoes">Acoes</th></tr></thead>
+                <thead><tr><th>Plano</th><th>Profissionais</th><th>Serviços</th><th>Agendamentos/mes</th><th>Empresas</th><th>Status</th><th class="coluna-acoes">Acoes</th></tr></thead>
                 <tbody>
                 <?php foreach ($planos as $plano): ?>
                     <tr>
@@ -221,7 +221,7 @@ require RAIZ . '/includes/painel_header.php';
 </div>
 
 <div class="cartao">
-    <div class="cartao-cabecalho"><h3>Plano de cada estabelecimento</h3><small>Consumo do mes corrente</small></div>
+    <div class="cartao-cabecalho"><h3>Plano de cada estabelecimento</h3><small>Consumo do mês corrente</small></div>
     <?php if ($empresas === []): ?>
         <div class="estado-vazio"><strong>Nenhum estabelecimento cadastrado.</strong></div>
     <?php else: ?>

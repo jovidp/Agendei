@@ -48,7 +48,7 @@ foreach (LogMaster::ddl() as $comando) {
 $db->query('SELECT COUNT(*) FROM logs_master')->fetchColumn();
 
 echo "Tabela logs_master pronta em {$dialeto}.\n";
-echo "As acoes da administracao master passam a ser registradas.\n";
+echo "As acoes da administração master passam a ser registradas.\n";
 
 foreach (Plano::ddl() as $comando) {
     $db->exec($comando);
@@ -58,4 +58,4 @@ $db->query('SELECT COUNT(*) FROM planos')->fetchColumn();
 $db->query('SELECT COUNT(*) FROM estabelecimento_plano')->fetchColumn();
 
 echo "Tabelas planos e estabelecimento_plano prontas em {$dialeto}.\n";
-echo "Enquanto nenhum plano for atribuido, todo estabelecimento segue sem limite.\n";
+echo "Enquanto nenhum plano for atribuído, todo estabelecimento segue sem limite.\n";

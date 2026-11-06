@@ -9,4 +9,4 @@ require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../models/Assinatura.php';
 
 Assinatura::garantirEstrutura();
-echo "Tabela de assinaturas pronta. Empresas existentes permanecem ativas; novas empresas recebem 7 dias de demonstracao.\n";
+echo "Tabela de assinaturas pronta. Empresas existentes permanecem ativas; novas empresas recebem 7 dias de demonstração.\n";

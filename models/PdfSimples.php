@@ -42,7 +42,7 @@ class PdfSimples
     public function subtitulo(string $texto): void
     {
         if ($this->iniciado) {
-            throw new LogicException('Defina o subtitulo antes de adicionar conteudo ao PDF.');
+            throw new LogicException('Defina o subtitulo antes de adicionar conteúdo ao PDF.');
         }
 
         $this->subtitulo = $texto;

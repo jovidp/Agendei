@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exigirCsrf();
 
     if (!$permitido) {
-        definirFlash('erro', 'Voce nao tem permissao para bloquear a agenda. Fale com o administrador.');
+        definirFlash('erro', 'Você não tem permissão para bloquear a agenda. Fale com o administrador.');
         redirecionar('profissional/bloqueios.php');
     }
 
@@ -34,13 +34,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $horaFim    = post('hora_fim') ?: '23:59';
 
         if (!validarData($data)) {
-            definirFlash('erro', 'Informe uma data valida.');
+            definirFlash('erro', 'Informe uma data válida.');
         } elseif (strtotime($data) < strtotime('today')) {
-            definirFlash('erro', 'Nao e possivel bloquear uma data que ja passou.');
+            definirFlash('erro', 'Não é possível bloquear uma data que já passou.');
         } elseif (!validarHora($horaInicio) || !validarHora($horaFim)) {
-            definirFlash('erro', 'Informe horarios validos.');
+            definirFlash('erro', 'Informe horários válidos.');
         } elseif (horaParaMinutos($horaFim) <= horaParaMinutos($horaInicio)) {
-            definirFlash('erro', 'O horario final deve ser maior que o inicial.');
+            definirFlash('erro', 'O horário final deve ser maior que o inicial.');
         } else {
             $conflitos = Bloqueio::agendamentosNoIntervalo($idProfissional, $data, $horaInicio, $horaFim);
 
@@ -53,10 +53,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'id_usuario_criou' => usuarioId(),
             ]);
 
-            definirFlash('sucesso', 'Bloqueio criado. Este horario deixa de aparecer para os clientes.');
+            definirFlash('sucesso', 'Bloqueio criado. Este horário deixa de aparecer para os clientes.');
 
             if ($conflitos !== []) {
-                definirFlash('aviso', count($conflitos) . ' atendimento(s) ja agendado(s) continuam neste intervalo. Combine o cancelamento com o estabelecimento.');
+                definirFlash('aviso', count($conflitos) . ' atendimento(s) já agendado(s) continuam neste intervalo. Combine o cancelamento com o estabelecimento.');
             }
         }
     }
@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             Bloqueio::excluir((int) $bloqueio['id_bloqueio']);
             definirFlash('sucesso', 'Bloqueio removido.');
         } else {
-            definirFlash('erro', 'Bloqueio nao encontrado.');
+            definirFlash('erro', 'Bloqueio não encontrado.');
         }
     }
 
@@ -92,8 +92,8 @@ require_once RAIZ . '/includes/painel_header.php';
 <?php if (!$permitido): ?>
     <div class="alerta alerta-info">
         <span class="alerta-texto">
-            O bloqueio da propria agenda esta desativado para o seu perfil.
-            Solicite ao administrador o bloqueio dos horarios necessarios.
+            O bloqueio da própria agenda está desativado para o seu perfil.
+            Solicite ao administrador o bloqueio dos horários necessários.
         </span>
     </div>
 <?php endif; ?>
@@ -104,7 +104,7 @@ require_once RAIZ . '/includes/painel_header.php';
     <?php if ($bloqueios === []): ?>
         <div class="estado-vazio">
             <strong>Nenhum bloqueio cadastrado.</strong>
-            <p>Os bloqueios impedem novos agendamentos no periodo informado.</p>
+            <p>Os bloqueios impedem novos agendamentos no período informado.</p>
         </div>
     <?php else: ?>
         <div class="tabela-area">
@@ -112,9 +112,9 @@ require_once RAIZ . '/includes/painel_header.php';
                 <thead>
                     <tr>
                         <th>Data</th>
-                        <th>Horario</th>
+                        <th>Horário</th>
                         <th>Motivo</th>
-                        <th>Situacao</th>
+                        <th>Situação</th>
                         <th class="coluna-acoes">Acoes</th>
                     </tr>
                 </thead>
@@ -123,7 +123,7 @@ require_once RAIZ . '/includes/painel_header.php';
                         <?php $futuro = strtotime($bloqueio['data_bloqueio']) >= strtotime('today'); ?>
                         <tr>
                             <td class="celula-principal"><?= formatarData($bloqueio['data_bloqueio']) ?></td>
-                            <td><?= formatarHora($bloqueio['hora_inicio']) ?> as <?= formatarHora($bloqueio['hora_fim']) ?></td>
+                            <td><?= formatarHora($bloqueio['hora_inicio']) ?> às <?= formatarHora($bloqueio['hora_fim']) ?></td>
                             <td><?= e($bloqueio['motivo'] ?: '-') ?></td>
                             <td><?= $futuro ? '<span class="badge badge-agendado">Ativo</span>' : '<span class="badge badge-concluido">Encerrado</span>' ?></td>
                             <td class="coluna-acoes">
@@ -172,7 +172,7 @@ require_once RAIZ . '/includes/painel_header.php';
                         <input type="time" id="hora_inicio" name="hora_inicio" value="08:00" required>
                     </div>
                     <div class="campo">
-                        <label for="hora_fim">Ate</label>
+                        <label for="hora_fim">Até</label>
                         <input type="time" id="hora_fim" name="hora_fim" value="18:00" required>
                     </div>
                 </div>

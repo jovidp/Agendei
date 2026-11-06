@@ -217,22 +217,22 @@ $profissionalDuplo = Profissional::criar([
     'id_usuario' => $pessoaDupla, 'especialidade' => 'Convidado',
     'pode_bloquear_agenda' => 1, 'servicos' => [$fixtures['empresa-b']['servico']],
 ]);
-verificar((int) Profissional::porId($profissionalDuplo)['id_usuario'] === $pessoaDupla, 'O profissional nao reaproveitou a pessoa existente.');
+verificar((int) Profissional::porId($profissionalDuplo)['id_usuario'] === $pessoaDupla, 'O profissional não reaproveitou a pessoa existente.');
 verificar((int) bd()->query("SELECT COUNT(*) FROM usuarios WHERE id_usuario = $pessoaDupla")->fetchColumn() === 1, 'A pessoa foi duplicada.');
-verificar(count(Vinculo::daPessoa($pessoaDupla)) === 2, 'A pessoa nao ficou com dois vinculos.');
+verificar(count(Vinculo::daPessoa($pessoaDupla)) === 2, 'A pessoa não ficou com dois vínculos.');
 verificar(Cliente::porUsuario($pessoaDupla) === null, 'O perfil de cliente da empresa A apareceu na empresa B.');
-verificar(autenticar($fa['emailCliente'], 'Teste12345!')['tipo'] === 'profissional', 'Na empresa B a pessoa nao entra como profissional.');
+verificar(autenticar($fa['emailCliente'], 'Teste12345!')['tipo'] === 'profissional', 'Na empresa B a pessoa não entra como profissional.');
 // Desligar o profissional em B nao desliga o cliente em A.
 Vinculo::alterarStatus((int) Profissional::porId($profissionalDuplo)['id_vinculo'], 'inativo');
 verificar(autenticar($fa['emailCliente'], 'Teste12345!') === null, 'Vinculo desligado ainda entra na empresa B.');
 empresa('empresa-a');
-verificar(autenticar($fa['emailCliente'], 'Teste12345!')['tipo'] === 'cliente', 'Desligar em B derrubou o vinculo de cliente em A.');
+verificar(autenticar($fa['emailCliente'], 'Teste12345!')['tipo'] === 'cliente', 'Desligar em B derrubou o vínculo de cliente em A.');
 verificar(Cliente::porId($fa['cliente'])['status'] === 'ativo', 'O cliente de A foi desativado por tabela.');
 // Bloqueio global da pessoa (so o master): nao entra em lugar nenhum.
 Usuario::alterarStatusPessoa($pessoaDupla, 'inativo');
 verificar(autenticar($fa['emailCliente'], 'Teste12345!') === null, 'Pessoa bloqueada entrou na empresa A.');
 Usuario::alterarStatusPessoa($pessoaDupla, 'ativo');
-verificar(autenticar($fa['emailCliente'], 'Teste12345!') !== null, 'Pessoa desbloqueada nao voltou a entrar.');
+verificar(autenticar($fa['emailCliente'], 'Teste12345!') !== null, 'Pessoa desbloqueada não voltou a entrar.');
 
 empresa('empresa-b');
 verificar(Diferencial::listaAdministrativa() === [], 'Lista de espera vazou entre estabelecimentos.');

@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($alvo === null) {
-        $erros[] = 'Escolha um dos seus vinculos.';
+        $erros[] = 'Escolha um dos seus vínculos.';
     } else {
         // A saida da empresa atual fica no log dela, como no logout.
         $saindo = Usuario::daSessao();
@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $usuario = Usuario::porVinculo($idVinculo);
 
         if ($usuario === null || $usuario['status'] !== 'ativo') {
-            $erros[] = 'Este vinculo nao esta mais disponivel.';
+            $erros[] = 'Este vínculo não está mais disponível.';
         } elseif (exigeSegundoFator($usuario)) {
             // O segundo fator e conferido por vinculo: a sessao atual fecha e a
             // nova so abre depois da resposta, como num login comum.
@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             LogAutenticacao::registrar('login_sucesso', $email, $usuario, null, cpfDoUsuario($usuario));
             registrarSessao($usuario);
-            definirFlash('sucesso', 'Agora voce esta em ' . $alvo['estabelecimento_nome'] . ' como ' . mb_strtolower(perfilRotulo($usuario['tipo'])) . '.');
+            definirFlash('sucesso', 'Agora você está em ' . $alvo['estabelecimento_nome'] . ' como ' . mb_strtolower(perfilRotulo($usuario['tipo'])) . '.');
             header('Location: ' . url(painelDe($usuario['tipo'])));
             exit;
         }
@@ -79,12 +79,12 @@ require_once RAIZ . '/includes/painel_header.php';
 
 <div class="cartao">
     <div class="cartao-cabecalho">
-        <h3>Onde voce quer estar?</h3>
-        <small>Voce esta em <?= e(Estabelecimento::dados()['nome']) ?> como <?= e(mb_strtolower(perfilRotulo())) ?>.</small>
+        <h3>Onde você quer estar?</h3>
+        <small>Você está em <?= e(Estabelecimento::dados()['nome']) ?> como <?= e(mb_strtolower(perfilRotulo())) ?>.</small>
     </div>
     <div class="cartao-corpo">
         <?php if ($vinculos === []): ?>
-            <p class="texto-secundario sem-margem">Sua conta so tem este vinculo por enquanto.</p>
+            <p class="texto-secundario sem-margem">Sua conta só tem este vínculo por enquanto.</p>
         <?php else: ?>
             <form method="post">
                 <?= campoCsrf() ?>
@@ -99,7 +99,7 @@ require_once RAIZ . '/includes/painel_header.php';
                     <?php endforeach; ?>
                 </ul>
             </form>
-            <p class="ajuda-campo">A troca fecha a sessao atual e abre a escolhida. Se o vinculo novo exigir a verificacao em duas etapas, ela e pedida de novo.</p>
+            <p class="ajuda-campo">A troca fecha a sessão atual e abre a escolhida. Se o vínculo novo exigir a verificação em duas etapas, ela e pedida de novo.</p>
         <?php endif; ?>
     </div>
 </div>

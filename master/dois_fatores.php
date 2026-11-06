@@ -12,14 +12,14 @@ bloquearSeLogado('master');
 // Sem desafio pendente nao ha o que responder: o fluxo recomeca pelo login.
 $pendente = segundoFatorMasterPendente();
 if ($pendente === null) {
-    definirFlash('aviso', 'Faca login para continuar.');
+    definirFlash('aviso', 'Faça login para continuar.');
     redirecionar('master/login.php');
 }
 
 $master = Master::porId((int) $pendente['master_id']);
 if ($master === null || $master['status'] !== 'ativo' || !Master::totpAtivo($master)) {
     cancelarSegundoFatorMaster();
-    definirFlash('erro', 'Nao foi possivel continuar a autenticacao. Faca login novamente.');
+    definirFlash('erro', 'Não foi possível continuar a autenticação. Faça login novamente.');
     redirecionar('master/login.php');
 }
 
@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($bloqueio !== '') {
         $erros[] = $bloqueio;
     } elseif ($codigo === '') {
-        $erros[] = 'Informe o codigo do aplicativo.';
+        $erros[] = 'Informe o código do aplicativo.';
     } elseif (Master::totpConfere($master, $codigo)) {
         cancelarSegundoFatorMaster();
         limparFalhas('master_ip', ipCliente());
@@ -59,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $restantes = tentativasRestantesSegundoFatorMaster();
-        $erros[] = 'Codigo incorreto ou ja utilizado. Voce ainda tem ' . $restantes
+        $erros[] = 'Código incorreto ou já utilizado. Você ainda tem ' . $restantes
             . ($restantes === 1 ? ' tentativa.' : ' tentativas.');
     }
 }
@@ -72,7 +72,7 @@ $estabelecimento = Contexto::dados();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex,nofollow">
-    <title>Verificacao em duas etapas | <?= e($estabelecimento['nome']) ?></title>
+    <title>Verificação em duas etapas | <?= e($estabelecimento['nome']) ?></title>
     <link rel="stylesheet" href="<?= url('assets/css/style.css') ?>">
     <link rel="stylesheet" href="<?= url('assets/css/login.css') ?>">
     <?php require RAIZ . '/includes/tema.php'; ?>
@@ -83,10 +83,10 @@ $estabelecimento = Contexto::dados();
         <div class="autenticacao-formulario">
             <div class="marca"><?= Tema::marca($estabelecimento) ?> <?= e($estabelecimento['nome']) ?></div>
 
-            <h1>Verificacao em duas etapas</h1>
+            <h1>Verificação em duas etapas</h1>
             <p class="subtitulo">
-                Ola, <?= e(explode(' ', (string) $master['nome'])[0]) ?>.
-                Informe o codigo do aplicativo autenticador para abrir a administracao master.
+                Olá, <?= e(explode(' ', (string) $master['nome'])[0]) ?>.
+                Informe o código do aplicativo autenticador para abrir a administração master.
             </p>
 
             <?php if ($erros !== []): ?>
@@ -97,7 +97,7 @@ $estabelecimento = Contexto::dados();
                 <?= campoCsrf() ?>
 
                 <div class="campo">
-                    <label for="codigo">Codigo de seis digitos</label>
+                    <label for="codigo">Código de seis dígitos</label>
                     <input type="text" id="codigo" name="codigo" class="campo-codigo"
                            inputmode="numeric" pattern="[0-9 ]*" maxlength="7" placeholder="000000"
                            autocomplete="one-time-code" required autofocus>

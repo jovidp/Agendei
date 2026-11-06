@@ -20,17 +20,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $cliente   = Cliente::porId($idCliente);
 
         if ($cliente === null) {
-            definirFlash('erro', 'Usuario nao encontrado.');
+            definirFlash('erro', 'Usuário não encontrado.');
         } else {
             try {
                 // Apaga o vinculo de cliente com esta empresa (o perfil cai em
                 // cascata); a pessoa so some se nao tiver vinculo em outra empresa.
                 // O log de autenticacao permanece: ele guarda nome e CPF por copia.
                 Vinculo::excluir((int) $cliente['id_vinculo']);
-                definirFlash('sucesso', 'Usuario ' . $cliente['nome'] . ' excluido com sucesso.');
+                definirFlash('sucesso', 'Usuario ' . $cliente['nome'] . ' excluído com sucesso.');
             } catch (Throwable $erro) {
-                error_log('Falha ao excluir usuario: ' . $erro->getMessage());
-                definirFlash('erro', 'Nao foi possivel excluir este usuario.');
+                error_log('Falha ao excluir usuário: ' . $erro->getMessage());
+                definirFlash('erro', 'Não foi possível excluir este usuário.');
             }
         }
 
@@ -53,7 +53,7 @@ $lista   = Cliente::listar($filtros + [
 ]);
 
 // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
-$tituloPagina  = 'Consulta de usuarios';
+$tituloPagina  = 'Consulta de usuários';
 $subtituloTopo = $total . ' usuario(s) comum(ns) cadastrado(s)';
 $acoesTopo     = '<a class="btn btn-contorno" href="'
     . e(url('admin/usuarios_pdf.php' . ($busca !== '' ? '?busca=' . rawurlencode($busca) : '')))
@@ -67,10 +67,10 @@ require_once RAIZ . '/includes/painel_header.php';
     <?php /* Filtros enviados na URL para permitir atualizar e compartilhar a consulta. */ ?><form method="get" class="barra-filtros">
         <input type="hidden" name="estabelecimento" value="<?= e(Contexto::slug()) ?>">
         <div class="campo campo-busca">
-            <label for="busca">Pesquisar usuario</label>
+            <label for="busca">Pesquisar usuário</label>
             <input type="search" id="busca" name="busca" value="<?= e($busca) ?>"
                    placeholder="Digite parte do nome" autofocus>
-            <span class="ajuda-campo">A lista mostra todos os usuarios cujo nome contem o texto digitado.</span>
+            <span class="ajuda-campo">A lista mostra todos os usuários cujo nome contem o texto digitado.</span>
         </div>
 
         <div class="campo">
@@ -86,11 +86,11 @@ require_once RAIZ . '/includes/painel_header.php';
 
     <?php if ($lista === []): ?>
         <div class="estado-vazio">
-            <strong>Nenhum usuario encontrado.</strong>
+            <strong>Nenhum usuário encontrado.</strong>
             <p>
                 <?= $busca !== ''
                     ? 'Nenhum nome contem "' . e($busca) . '".'
-                    : 'Os usuarios aparecem aqui assim que criam a conta pelo site.' ?>
+                    : 'Os usuários aparecem aqui assim que criam a conta pelo site.' ?>
             </p>
         </div>
     <?php else: ?>
@@ -135,7 +135,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                     <input type="hidden" name="id_cliente" value="<?= (int) $usuario['id_cliente'] ?>">
                                     <button type="submit" class="btn btn-perigo btn-pequeno"
                                             data-confirmar="Excluir o usuario <?= e($usuario['nome']) ?>? Os agendamentos dele tambem serao removidos. Esta acao nao pode ser desfeita."
-                                            data-confirmar-titulo="Excluir usuario"
+                                            data-confirmar-titulo="Excluir usuário"
                                             data-confirmar-rotulo="Excluir">
                                         Excluir
                                     </button>

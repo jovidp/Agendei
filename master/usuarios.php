@@ -46,7 +46,7 @@ require RAIZ . '/includes/painel_header.php';
         <div class="campo campo-busca">
             <label for="busca">E-mail, nome ou login</label>
             <input type="search" id="busca" name="busca" value="<?= e($busca) ?>" placeholder="pessoa@exemplo.com" autofocus>
-            <span class="ajuda-campo">Procura em todas as empresas. A mesma pessoa aparece uma vez por vinculo: empresa e papel.</span>
+            <span class="ajuda-campo">Procura em todas as empresas. A mesma pessoa aparece uma vez por vínculo: empresa e papel.</span>
         </div>
 
         <div class="campo">
@@ -81,7 +81,7 @@ require RAIZ . '/includes/painel_header.php';
     <?php if ($lista === []): ?>
         <div class="estado-vazio">
             <strong>Nenhuma conta encontrada.</strong>
-            <p><?= $parametrosUrl ? 'Nenhum vinculo atende aos filtros informados.' : 'As contas aparecem aqui assim que sao criadas em algum estabelecimento.' ?></p>
+            <p><?= $parametrosUrl ? 'Nenhum vínculo atende aos filtros informados.' : 'As contas aparecem aqui assim que são criadas em algum estabelecimento.' ?></p>
         </div>
     <?php else: ?>
         <div class="tabela-area">
@@ -92,7 +92,7 @@ require RAIZ . '/includes/painel_header.php';
                         <th>Login</th>
                         <th>Tipo</th>
                         <th>Estabelecimento</th>
-                        <th>Ultimo acesso</th>
+                        <th>Último acesso</th>
                         <th>Status</th>
                         <th class="coluna-acoes">Acoes</th>
                     </tr>

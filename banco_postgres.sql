@@ -499,7 +499,7 @@ CREATE TABLE pagamentos (
   CONSTRAINT uk_pagamento_agendamento_tipo UNIQUE (id_estabelecimento, id_agendamento, tipo),
   CONSTRAINT ck_pagamento_tipo CHECK (tipo IN ('sinal','integral')),
   CONSTRAINT ck_pagamento_metodo CHECK (metodo IN ('pix','dinheiro','cartao','outro')),
-  CONSTRAINT ck_pagamento_status CHECK (status IN ('pendente','pago','cancelado','estornado')),
+  CONSTRAINT ck_pagamento_status CHECK (status IN ('pendente','pago','cancelado','estornado','credito','retido')),
   CONSTRAINT fk_pagamento_empresa FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento (id_estabelecimento),
   CONSTRAINT fk_pagamento_agendamento_tenant FOREIGN KEY (id_estabelecimento, id_agendamento) REFERENCES agendamentos (id_estabelecimento, id_agendamento) ON DELETE CASCADE
 );
@@ -737,7 +737,7 @@ VALUES
 INSERT INTO configuracoes (id_estabelecimento,chave,valor,descricao) VALUES
   (1, 'antecedencia_minima_horas', '2',  'Antecedencia minima, em horas, para o cliente agendar'),
   (1, 'antecedencia_maxima_dias',  '60', 'Quantos dias no futuro o cliente pode agendar'),
-  (1, 'cancelamento_limite_horas', '4',  'Ate quantas horas antes o cliente pode cancelar'),
+  (1, 'cancelamento_limite_minutos', '30', 'Ate quantos minutos antes o cliente cancela sem perder o sinal'),
   (1, 'intervalo_slots_minutos',   '30', 'Intervalo padrao entre horarios exibidos'),
   (1, 'permitir_bloqueio_profissional', '1', 'Profissional pode bloquear a propria agenda (1=sim, 0=nao)'),
   (1, 'confirmar_automaticamente', '0',  'Agendamentos nascem confirmados (1=sim, 0=nao)');

@@ -63,7 +63,7 @@ if ($peloGoogle !== null) {
     if ($pessoa !== null && $pessoa['status'] === 'ativo') {
         confirmarPessoa($pessoa);
     }
-    $erros[] = 'Nao encontramos uma conta ativa com o e-mail confirmado pelo Google.';
+    $erros[] = 'Não encontramos uma conta ativa com o e-mail confirmado pelo Google.';
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -101,19 +101,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $dados['cpf']   = apenasNumeros(post('cpf'));
 
         if ($pendente === null) {
-            $erros[] = 'A confirmacao expirou. Informe o e-mail e a senha novamente.';
+            $erros[] = 'A confirmação expirou. Informe o e-mail e a senha novamente.';
         } else {
             if (!validarLogin($dados['login'])) {
-                $erros[] = 'O login deve ter exatamente 6 caracteres alfabeticos.';
+                $erros[] = 'O login deve ter exatamente 6 caracteres alfabéticos.';
             }
             if (!validarCpf($dados['cpf'])) {
-                $erros[] = 'Informe um CPF valido.';
+                $erros[] = 'Informe um CPF válido.';
             }
             if ($erros === [] && Usuario::loginEmUso($dados['login'])) {
-                $erros[] = 'Este login ja esta em uso. Escolha outro.';
+                $erros[] = 'Este login já está em uso. Escolha outro.';
             }
             if ($erros === [] && Cliente::cpfEmUso($dados['cpf'])) {
-                $erros[] = 'Ja existe uma conta cadastrada com este CPF.';
+                $erros[] = 'Já existe uma conta cadastrada com este CPF.';
             }
             if ($erros === []) {
                 $pessoa = Usuario::pessoaPorId((int) $pendente['id_usuario']);
@@ -125,13 +125,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         'data_nascimento' => $pessoa['data_nascimento'] ?? null,
                     ]);
                     unset($_SESSION['vinculo_pendente']);
-                    definirFlash('sucesso', 'Pronto: sua conta agora tambem vale aqui. Entre com o login ou o e-mail e a senha de sempre.');
+                    definirFlash('sucesso', 'Pronto: sua conta agora também vale aqui. Entre com o login ou o e-mail e a senha de sempre.');
                     redirecionar('login.php');
                 } catch (DomainException $erro) {
                     $erros[] = $erro->getMessage();
                 } catch (Throwable $erro) {
-                    error_log('Falha na adesao de cliente: ' . $erro->getMessage());
-                    $erros[] = 'Nao foi possivel concluir. Tente novamente.';
+                    error_log('Falha na adesão de cliente: ' . $erro->getMessage());
+                    $erros[] = 'Não foi possível concluir. Tente novamente.';
                 }
             }
         }
@@ -143,7 +143,7 @@ $pendente = adesaoPendente();
 // Quem ja e cliente aqui nao tem o que vincular: e so entrar.
 if ($pendente !== null && Vinculo::porPessoaEmpresaTipo(Contexto::id(), (int) $pendente['id_usuario'], 'cliente') !== null) {
     unset($_SESSION['vinculo_pendente']);
-    definirFlash('info', 'Voce ja tem conta neste estabelecimento. E so entrar.');
+    definirFlash('info', 'Você já tem conta neste estabelecimento. E só entrar.');
     redirecionar('login.php');
 }
 
@@ -171,12 +171,12 @@ $tituloPagina = 'Usar minha conta | ' . $estabelecimento['nome'];
                 <?= e($estabelecimento['nome']) ?>
             </span>
             <h2>Uma conta, varios lugares</h2>
-            <p>Quem ja tem conta no Agendei nao precisa se cadastrar de novo: a mesma conta passa a valer aqui.</p>
+            <p>Quem já tem conta no Agendei não precisa se cadastrar de novo: a mesma conta passa a valer aqui.</p>
 
             <ul class="lista-beneficios">
                 <li>Mesmo e-mail e mesma senha</li>
                 <li>Seus dados pessoais continuam os mesmos</li>
-                <li>Historico e agenda separados por estabelecimento</li>
+                <li>Histórico e agenda separados por estabelecimento</li>
             </ul>
         </div>
 
@@ -199,7 +199,7 @@ $tituloPagina = 'Usar minha conta | ' . $estabelecimento['nome'];
 
             <?php if ($pendente !== null): ?>
                 <h1>Quase la, <?= e(explode(' ', (string) $pendente['nome'])[0]) ?></h1>
-                <p class="subtitulo">Conta <strong><?= e((string) $pendente['email']) ?></strong> confirmada. Falta so o que <?= e($estabelecimento['nome']) ?> precisa.</p>
+                <p class="subtitulo">Conta <strong><?= e((string) $pendente['email']) ?></strong> confirmada. Falta só o que <?= e($estabelecimento['nome']) ?> precisa.</p>
 
                 <form method="post" id="formVincular" novalidate>
                     <?= campoCsrf() ?>
@@ -210,7 +210,7 @@ $tituloPagina = 'Usar minha conta | ' . $estabelecimento['nome'];
                         <input type="text" id="login" name="login" value="<?= e($dados['login']) ?>"
                                autocomplete="username" minlength="6" maxlength="6" required autofocus>
                         <span class="mensagem-campo"></span>
-                        <span class="ajuda-campo">Exatamente 6 letras. Pode ser o mesmo que voce usa em outro lugar, se estiver livre aqui.</span>
+                        <span class="ajuda-campo">Exatamente 6 letras. Pode ser o mesmo que você usa em outro lugar, se estiver livre aqui.</span>
                     </div>
 
                     <div class="campo">
@@ -226,7 +226,7 @@ $tituloPagina = 'Usar minha conta | ' . $estabelecimento['nome'];
                 </form>
 
                 <p class="autenticacao-rodape">
-                    Nao e voce? <a href="<?= url('vincular.php?acao=cancelar') ?>">Cancelar</a>
+                    Não é você? <a href="<?= url('vincular.php?acao=cancelar') ?>">Cancelar</a>
                 </p>
             <?php else: ?>
                 <h1>Usar minha conta</h1>
@@ -261,7 +261,7 @@ $tituloPagina = 'Usar minha conta | ' . $estabelecimento['nome'];
                         <label for="senha">Senha</label>
                         <input type="password" id="senha" name="senha" autocomplete="current-password" required>
                         <span class="mensagem-campo"></span>
-                        <span class="ajuda-campo">A mesma senha de sempre. Ela nao muda.</span>
+                        <span class="ajuda-campo">A mesma senha de sempre. Ela não muda.</span>
                     </div>
 
                     <div class="acoes-formulario">
@@ -270,7 +270,7 @@ $tituloPagina = 'Usar minha conta | ' . $estabelecimento['nome'];
                 </form>
 
                 <p class="autenticacao-rodape">
-                    Ainda nao tem conta? <a href="<?= url('cadastro.php') ?>">Criar conta</a>
+                    Ainda não tem conta? <a href="<?= url('cadastro.php') ?>">Criar conta</a>
                 </p>
             <?php endif; ?>
         </div>

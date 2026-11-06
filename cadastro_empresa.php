@@ -106,11 +106,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'estabelecimento' => $idEmpresa,
                 'estabelecimento_nome' => $dados['estabelecimento'],
                 'alvo' => $dados['email'],
-                'detalhe' => 'demonstracao de 7 dias',
+                'detalhe' => 'demonstração de 7 dias',
             ]);
             limparFalhas('cadastro_empresa_ip', ipCliente());
             Google::limparCadastro();
-            definirFlash('sucesso', 'Sua empresa foi criada. Voce tem 7 dias de demonstracao gratis.');
+            definirFlash('sucesso', 'Sua empresa foi criada. Você tem 7 dias de demonstração grátis.');
             redirecionar('login.php?estabelecimento=' . rawurlencode($dados['slug']));
         } catch (PDOException $erro) {
             error_log('Falha no cadastro de empresa: ' . $erro->getMessage());
@@ -151,7 +151,7 @@ $tituloPagina = 'Cadastrar empresa | ' . NOME_SISTEMA;
                 <a href="<?= e(urlInicio()) ?>" class="voltar-site">&larr; Voltar ao início</a>
 
                 <h1>Cadastrar minha empresa</h1>
-                <p class="subtitulo">Comece agora com 7 dias gratis. Depois, R$ 149 por mes.</p>
+                <p class="subtitulo">Comece agora com 7 dias grátis. Depois, R$ 149 por mês.</p>
 
                 <?php /* Os dois cadastros do Agendei se confundem; este diz qual e e aponta o outro. */ ?>
                 <p class="aviso-tipo-cadastro">
@@ -215,7 +215,8 @@ $tituloPagina = 'Cadastrar empresa | ' . NOME_SISTEMA;
                         </div>
                         <div class="campo">
                             <label for="telefone">Telefone ou WhatsApp</label>
-                            <input type="tel" id="telefone" name="telefone" value="<?= e($dados['telefone']) ?>" maxlength="20" autocomplete="tel" required>
+                            <input type="tel" id="telefone" name="telefone" value="<?= e($dados['telefone']) ?>" maxlength="20" autocomplete="tel"
+                                   data-mascara="telefone" inputmode="numeric" placeholder="(00) 00000-0000" required>
                             <span class="mensagem-campo"></span>
                         </div>
                     </div>

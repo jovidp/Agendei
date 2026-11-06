@@ -48,8 +48,8 @@ foreach (Agendamento::listar($filtros + ['status' => 'concluido']) as $registro)
 }
 
 // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
-$tituloPagina  = 'Historico';
-$subtituloTopo = 'Atendimentos ja realizados';
+$tituloPagina  = 'Histórico';
+$subtituloTopo = 'Atendimentos já realizados';
 
 // Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
@@ -57,24 +57,24 @@ require_once RAIZ . '/includes/painel_header.php';
 
 <div class="grade-indicadores">
     <div class="indicador">
-        <span class="indicador-rotulo">Atendimentos no periodo</span>
+        <span class="indicador-rotulo">Atendimentos no período</span>
         <span class="indicador-valor"><?= (int) $total ?></span>
         <span class="indicador-nota">Todos os status</span>
     </div>
     <div class="indicador indicador-positivo">
-        <span class="indicador-rotulo">Concluidos</span>
+        <span class="indicador-rotulo">Concluídos</span>
         <span class="indicador-valor"><?= (int) $concluidos ?></span>
-        <span class="indicador-nota">Servicos realizados</span>
+        <span class="indicador-nota">Serviços realizados</span>
     </div>
     <div class="indicador">
         <span class="indicador-rotulo">Cancelados</span>
         <span class="indicador-valor"><?= (int) $cancelados ?></span>
-        <span class="indicador-nota">No periodo filtrado</span>
+        <span class="indicador-nota">No período filtrado</span>
     </div>
     <div class="indicador indicador-destaque">
         <span class="indicador-rotulo">Total investido</span>
         <span class="indicador-valor"><?= formatarMoeda($valorTotal) ?></span>
-        <span class="indicador-nota">Somente atendimentos concluidos</span>
+        <span class="indicador-nota">Somente atendimentos concluídos</span>
     </div>
 </div>
 
@@ -86,7 +86,7 @@ require_once RAIZ . '/includes/painel_header.php';
             <input type="date" id="data_inicial" name="data_inicial" value="<?= e($dataInicial) ?>">
         </div>
         <div class="campo">
-            <label for="data_final">Ate</label>
+            <label for="data_final">Até</label>
             <input type="date" id="data_final" name="data_final" value="<?= e($dataFinal) ?>">
         </div>
         <div class="campo">
@@ -101,7 +101,7 @@ require_once RAIZ . '/includes/painel_header.php';
 
     <?php if ($lista === []): ?>
         <div class="estado-vazio">
-            <strong>Nenhum atendimento no periodo</strong>
+            <strong>Nenhum atendimento no período</strong>
             <p>Ajuste o filtro de datas ou agende um novo atendimento.</p>
         </div>
     <?php else: ?>
@@ -110,9 +110,9 @@ require_once RAIZ . '/includes/painel_header.php';
                 <thead>
                     <tr>
                         <th>Data</th>
-                        <th>Servico</th>
+                        <th>Serviço</th>
                         <th>Profissional</th>
-                        <th>Horario</th>
+                        <th>Horário</th>
                         <th>Status</th>
                         <th class="coluna-acoes">Valor</th>
                     </tr>

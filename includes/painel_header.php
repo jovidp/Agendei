@@ -34,18 +34,21 @@ $cssExtra        = $cssExtra ?? [];
         <?php /* O aviso acompanha a rolagem: ninguem deve esquecer que esta no painel de outra pessoa. */ ?>
         <div class="faixa-simulacao" role="status">
             <span>
-                Voce esta no painel de <strong><?= e($estabelecimento['nome']) ?></strong>
+                Você está no painel de <strong><?= e($estabelecimento['nome']) ?></strong>
                 como <strong><?= e(usuarioNome()) ?></strong>, pela conta master de <?= e($simulacao['master_nome']) ?>.
             </span>
             <form method="post" action="<?= url('master/simular.php') ?>">
                 <?= campoCsrf() ?>
                 <input type="hidden" name="acao" value="sair">
-                <button type="submit" class="btn btn-pequeno">Voltar para a administracao master</button>
+                <button type="submit" class="btn btn-pequeno">Voltar para a administração master</button>
             </form>
         </div>
 <?php endif; ?>
         <div class="topo-painel">
             <button type="button" class="botao-sidebar" aria-label="Abrir menu"><span></span></button>
+            <?php if (!ehMaster() || ehSimulacao()): ?>
+                <span class="topo-marca"><?= Tema::marca($estabelecimento) ?><strong><?= e($estabelecimento['nome']) ?></strong></span>
+            <?php endif; ?>
             <div>
                 <h1><?= e($tituloPagina) ?></h1>
                 <?php if (!empty($subtituloTopo)): ?>

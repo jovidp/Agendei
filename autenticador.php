@@ -18,7 +18,7 @@ $idUsuario = (int) usuarioId();
 $usuario   = Usuario::porId($idUsuario, perfil());
 
 if ($usuario === null) {
-    definirFlash('erro', 'Conta nao encontrada.');
+    definirFlash('erro', 'Conta não encontrada.');
     redirecionar(painelDe(perfil()));
 }
 
@@ -60,17 +60,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($bloqueio !== '') {
             $erros[] = $bloqueio;
         } elseif ($emUso === '') {
-            $erros[] = 'Gere um novo codigo de configuracao antes de confirmar.';
+            $erros[] = 'Gere um novo código de configuração antes de confirmar.';
         } elseif (!Totp::confere($emUso, $codigo, $contadorUsado)) {
             anotarFalha('fator_ip', ipCliente());
             atrasarResposta();
-            $erros[] = 'Codigo incorreto. Confira a hora do celular e tente o codigo atual.';
+            $erros[] = 'Código incorreto. Confira a hora do celular e tente o código atual.';
         } else {
             Usuario::totpAtivar($idUsuario, (int) $contadorUsado);
             limparFalhas('fator_ip', ipCliente());
             registrarEventoSeguranca('totp_ativado', ['usuario' => $idUsuario]);
 
-            definirFlash('sucesso', 'Aplicativo autenticador ativado. O proximo login vai pedir o codigo.');
+            definirFlash('sucesso', 'Aplicativo autenticador ativado. O próximo login vai pedir o código.');
             redirecionar('autenticador.php');
         }
 
@@ -111,8 +111,8 @@ $contaNoApp = ($usuario['login'] ?? '') ?: $usuario['email'];
 $uri = $segredo !== '' ? Totp::uri($segredo, $contaNoApp, $estabelecimento['nome']) : '';
 
 // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
-$tituloPagina  = 'Verificacao em duas etapas';
-$subtituloTopo = 'Proteja sua conta com um codigo que muda a cada 30 segundos';
+$tituloPagina  = 'Verificação em duas etapas';
+$subtituloTopo = 'Proteja sua conta com um código que muda a cada 30 segundos';
 
 // Renderiza a estrutura comum do painel após preparar os dados desta tela.
 require_once RAIZ . '/includes/painel_header.php';
@@ -138,7 +138,7 @@ require_once RAIZ . '/includes/painel_header.php';
         <div class="cartao-corpo">
             <p>
                 Desde <?= e(formatarData($usuario['totp_ativado_em'])) ?>, o acesso a esta conta
-                pede o codigo de seis digitos do seu aplicativo depois da senha.
+                pede o código de seis dígitos do seu aplicativo depois da senha.
             </p>
 
             <div class="grupo-botoes">
@@ -152,11 +152,11 @@ require_once RAIZ . '/includes/painel_header.php';
     </div>
 
     <div class="cartao">
-        <div class="cartao-cabecalho"><h3>Desligar a verificacao</h3></div>
+        <div class="cartao-cabecalho"><h3>Desligar a verificação</h3></div>
         <div class="cartao-corpo">
             <p class="ajuda-campo">
                 Ao desligar, sua conta volta a responder a pergunta cadastral no login —
-                uma protecao mais fraca, porque nome da mae, nascimento e CEP nao sao segredos.
+                uma proteção mais fraca, porque nome da mae, nascimento e CEP não são segredos.
             </p>
 
             <?php /* A senha atual e exigida para que ninguem desligue a protecao numa maquina destravada. */ ?><form method="post" novalidate>
@@ -170,7 +170,7 @@ require_once RAIZ . '/includes/painel_header.php';
                     <span class="mensagem-campo"></span>
                 </div>
 
-                <button type="submit" class="btn btn-perigo">Desligar verificacao em duas etapas</button>
+                <button type="submit" class="btn btn-perigo">Desligar verificação em duas etapas</button>
             </form>
         </div>
     </div>
@@ -178,24 +178,24 @@ require_once RAIZ . '/includes/painel_header.php';
 <?php elseif ($segredo === ''): ?>
 
     <div class="cartao">
-        <div class="cartao-cabecalho"><h3>Sua conta ainda nao usa codigo</h3></div>
+        <div class="cartao-cabecalho"><h3>Sua conta ainda não usa código</h3></div>
         <div class="cartao-corpo">
             <p>
                 Hoje o seu login e confirmado por uma pergunta cadastral (nome da mae,
                 data de nascimento ou CEP). Um aplicativo autenticador e bem mais seguro:
-                o codigo muda a cada 30 segundos e so existe no seu celular.
+                o código muda a cada 30 segundos e só existe no seu celular.
             </p>
 
             <p class="ajuda-campo">
                 Funciona com Google Authenticator, Microsoft Authenticator, Authy, 2FAS,
-                Bitwarden e qualquer outro aplicativo compativel. Nao e preciso pagar nada
+                Bitwarden e qualquer outro aplicativo compatível. Não é preciso pagar nada
                 nem ter internet no celular na hora de entrar.
             </p>
 
             <?php /* Gera o segredo apenas quando o usuario decide comecar. */ ?><form method="post">
                 <?= campoCsrf() ?>
                 <input type="hidden" name="acao" value="preparar">
-                <button type="submit" class="btn">Comecar configuracao</button>
+                <button type="submit" class="btn">Começar configuração</button>
             </form>
         </div>
     </div>
@@ -207,11 +207,11 @@ require_once RAIZ . '/includes/painel_header.php';
         <div class="cartao-corpo">
             <div class="autenticador-configuracao">
                 <div class="autenticador-qr">
-                    <?= QrCode::svg($uri, 'Codigo QR para cadastrar o aplicativo autenticador') ?>
+                    <?= QrCode::svg($uri, 'Código QR para cadastrar o aplicativo autenticador') ?>
                 </div>
 
                 <div class="autenticador-chave">
-                    <p><strong>Aponte a camera do aplicativo para o codigo acima.</strong></p>
+                    <p><strong>Aponte a camera do aplicativo para o código acima.</strong></p>
 
                     <p class="ajuda-campo">
                         Se preferir digitar, escolha <em>inserir chave manualmente</em> no
@@ -221,7 +221,7 @@ require_once RAIZ . '/includes/painel_header.php';
                     <p class="autenticador-segredo"><code><?= e(Totp::formatarSegredo($segredo)) ?></code></p>
 
                     <p class="ajuda-campo">
-                        Abrindo esta pagina no proprio celular, este link cadastra direto:
+                        Abrindo esta página no próprio celular, este link cadastra direto:
                         <a href="<?= e($uri) ?>">abrir no aplicativo autenticador</a>.
                     </p>
                 </div>
@@ -230,11 +230,11 @@ require_once RAIZ . '/includes/painel_header.php';
     </div>
 
     <div class="cartao">
-        <div class="cartao-cabecalho"><h3>Passo 2 — confirme o codigo</h3></div>
+        <div class="cartao-cabecalho"><h3>Passo 2 — confirme o código</h3></div>
         <div class="cartao-corpo">
             <p class="ajuda-campo">
-                A verificacao so passa a valer depois desta confirmacao. Enquanto isso, seu
-                login continua funcionando pela pergunta cadastral — voce nao corre risco de
+                A verificação só passa a valer depois desta confirmação. Enquanto isso, seu
+                login continua funcionando pela pergunta cadastral — você não corre risco de
                 ficar trancado fora da conta.
             </p>
 
@@ -243,16 +243,16 @@ require_once RAIZ . '/includes/painel_header.php';
                 <input type="hidden" name="acao" value="ativar">
 
                 <div class="campo">
-                    <label for="codigo">Codigo mostrado pelo aplicativo</label>
+                    <label for="codigo">Código mostrado pelo aplicativo</label>
                     <input type="text" id="codigo" name="codigo" class="campo-codigo"
                            inputmode="numeric" pattern="[0-9 ]*" maxlength="7" placeholder="000000"
                            autocomplete="one-time-code" required autofocus>
                     <span class="mensagem-campo"></span>
-                    <span class="ajuda-campo">Seis digitos. Se o codigo virar enquanto digita, use o novo.</span>
+                    <span class="ajuda-campo">Seis dígitos. Se o código virar enquanto digita, use o novo.</span>
                 </div>
 
                 <div class="grupo-botoes">
-                    <button type="submit" class="btn">Ativar verificacao</button>
+                    <button type="submit" class="btn">Ativar verificação</button>
                 </div>
             </form>
 

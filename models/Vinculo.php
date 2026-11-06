@@ -34,10 +34,10 @@ class Vinculo
     public static function criar(int $idEstabelecimento, int $idUsuario, string $tipo, array $dados = []): int
     {
         if (!in_array($tipo, self::TIPOS, true)) {
-            throw new InvalidArgumentException('Tipo de vinculo invalido.');
+            throw new InvalidArgumentException('Tipo de vínculo inválido.');
         }
         if (self::porPessoaEmpresaTipo($idEstabelecimento, $idUsuario, $tipo) !== null) {
-            throw new DomainException('Esta pessoa ja tem este vinculo com o estabelecimento.');
+            throw new DomainException('Esta pessoa já tem este vínculo com o estabelecimento.');
         }
 
         $login = mb_strtolower(trim((string) ($dados['login'] ?? '')));

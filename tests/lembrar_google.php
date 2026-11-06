@@ -97,7 +97,7 @@ $cookie = SessaoLembrada::criar(1, 10, 110);
 verificar((bool) preg_match('/^[a-f0-9]{24}:[a-f0-9]{64}$/D', $cookie), 'Cookie fora do formato seletor:validador.');
 
 $registro = SessaoLembrada::porCookie($cookie);
-verificar($registro !== null && (int) $registro['id_usuario'] === 10 && (int) $registro['id_estabelecimento'] === 1, 'Cookie recem-criado nao foi reconhecido.');
+verificar($registro !== null && (int) $registro['id_usuario'] === 10 && (int) $registro['id_estabelecimento'] === 1, 'Cookie recem-criado não foi reconhecido.');
 verificar(!str_contains((string) $registro['validador_hash'], explode(':', $cookie)[1]), 'O segredo do cookie foi gravado em claro.');
 
 verificar(SessaoLembrada::porCookie('lixo') === null, 'Cookie malformado foi aceito.');
@@ -105,28 +105,28 @@ verificar(SessaoLembrada::porCookie(str_repeat('a', 24) . ':' . str_repeat('b', 
 
 [$seletor] = explode(':', $cookie);
 verificar(SessaoLembrada::porCookie($seletor . ':' . str_repeat('c', 64)) === null, 'Seletor certo com segredo errado foi aceito.');
-verificar(SessaoLembrada::porCookie($cookie) === null, 'Copia com segredo errado nao invalidou o registro legitimo.');
+verificar(SessaoLembrada::porCookie($cookie) === null, 'Copia com segredo errado não invalidou o registro legitimo.');
 
 $cookie = SessaoLembrada::criar(1, 10, 110);
 $registro = SessaoLembrada::porCookie($cookie);
 $novo = SessaoLembrada::renovar($registro);
-verificar($novo !== $cookie && explode(':', $novo)[0] === $seletorNovo = explode(':', $cookie)[0], 'Renovar deveria trocar so o segredo.');
-verificar(SessaoLembrada::porCookie($novo) !== null, 'Segredo novo nao foi reconhecido.');
-verificar(SessaoLembrada::porCookie($cookie) === null, 'Segredo antigo continuou valendo depois da renovacao.');
+verificar($novo !== $cookie && explode(':', $novo)[0] === $seletorNovo = explode(':', $cookie)[0], 'Renovar deveria trocar só o segredo.');
+verificar(SessaoLembrada::porCookie($novo) !== null, 'Segredo novo não foi reconhecido.');
+verificar(SessaoLembrada::porCookie($cookie) === null, 'Segredo antigo continuou valendo depois da renovação.');
 // Usar o segredo antigo e o que uma copia roubada faria: o dispositivo inteiro cai.
-verificar(SessaoLembrada::porCookie($novo) === null, 'Copia antiga usada nao derrubou o dispositivo.');
+verificar(SessaoLembrada::porCookie($novo) === null, 'Copia antiga usada não derrubou o dispositivo.');
 
 $vencido = SessaoLembrada::criar(1, 10, 110);
 bd()->exec("UPDATE sessoes_lembradas SET expira_em = '2000-01-01 00:00:00'");
 verificar(SessaoLembrada::porCookie($vencido) === null, 'Cookie vencido foi aceito.');
-verificar((int) bd()->query('SELECT COUNT(*) FROM sessoes_lembradas')->fetchColumn() === 0, 'Registro vencido nao foi apagado ao ser usado.');
+verificar((int) bd()->query('SELECT COUNT(*) FROM sessoes_lembradas')->fetchColumn() === 0, 'Registro vencido não foi apagado ao ser usado.');
 
 SessaoLembrada::criar(1, 10, 110);
 SessaoLembrada::criar(2, 11, 111);
 SessaoLembrada::apagarDoUsuario(10);
 verificar((int) bd()->query('SELECT COUNT(*) FROM sessoes_lembradas')->fetchColumn() === 1, 'apagarDoUsuario apagou de mais ou de menos.');
 bd()->exec("UPDATE sessoes_lembradas SET expira_em = '2000-01-01 00:00:00'");
-verificar(SessaoLembrada::apagarVencidas() === 1, 'apagarVencidas nao limpou o registro vencido.');
+verificar(SessaoLembrada::apagarVencidas() === 1, 'apagarVencidas não limpou o registro vencido.');
 
 // -------------------------------------------------------------------------
 // Pedido no login: so vira cookie quando a sessao abre
@@ -141,13 +141,13 @@ verificar((int) bd()->query('SELECT COUNT(*) FROM sessoes_lembradas')->fetchColu
 
 $_SESSION = [];
 pedirLembrarDispositivo(true);
-verificar(!empty($_SESSION['lembrar_dispositivo']), 'Pedido nao ficou na sessao.');
+verificar(!empty($_SESSION['lembrar_dispositivo']), 'Pedido não ficou na sessão.');
 registrarSessao(conta(10));
 verificar(!empty($_SESSION['lembrar_dispositivo']), 'registrarSessao apagou o pedido antes de ele ser atendido.');
 lembrarSeSolicitado(conta(10));
-verificar(isset($_COOKIE[LEMBRAR_COOKIE]) && SessaoLembrada::porCookie($_COOKIE[LEMBRAR_COOKIE]) !== null, 'Pedido nao virou cookie reconhecido.');
-verificar(!isset($_SESSION['lembrar_dispositivo']), 'Pedido continuou na sessao depois de atendido.');
-verificar((int) $_SESSION['usuario_id'] === 10 && (int) $_SESSION['estabelecimento_id'] === 1 && (int) $_SESSION['perfil_id'] === 100, 'registrarSessao sem Contexto perdeu dados da sessao.');
+verificar(isset($_COOKIE[LEMBRAR_COOKIE]) && SessaoLembrada::porCookie($_COOKIE[LEMBRAR_COOKIE]) !== null, 'Pedido não virou cookie reconhecido.');
+verificar(!isset($_SESSION['lembrar_dispositivo']), 'Pedido continuou na sessão depois de atendido.');
+verificar((int) $_SESSION['usuario_id'] === 10 && (int) $_SESSION['estabelecimento_id'] === 1 && (int) $_SESSION['perfil_id'] === 100, 'registrarSessao sem Contexto perdeu dados da sessão.');
 
 // -------------------------------------------------------------------------
 // Sair esquece o dispositivo
@@ -164,54 +164,54 @@ $_GET = [];
 $_COOKIE = [LEMBRAR_COOKIE => SessaoLembrada::criar(1, 10, 110)];
 $antes = $_COOKIE[LEMBRAR_COOKIE];
 restaurarSessaoLembrada();
-verificar(estaLogado() && (int) usuarioId() === 10 && (int) $_SESSION['estabelecimento_id'] === 1 && perfil() === 'cliente', 'Cookie valido nao reabriu a sessao.');
-verificar($_COOKIE[LEMBRAR_COOKIE] !== $antes, 'O segredo do cookie nao foi trocado no uso.');
-verificar(SessaoLembrada::porCookie($_COOKIE[LEMBRAR_COOKIE]) !== null, 'Cookie renovado nao e reconhecido.');
-verificar((int) bd()->query("SELECT COUNT(*) FROM logs_autenticacao WHERE evento = 'login_sucesso' AND id_usuario = 10")->fetchColumn() >= 1, 'Sessao restaurada nao entrou no log de autenticacao.');
+verificar(estaLogado() && (int) usuarioId() === 10 && (int) $_SESSION['estabelecimento_id'] === 1 && perfil() === 'cliente', 'Cookie válido não reabriu a sessão.');
+verificar($_COOKIE[LEMBRAR_COOKIE] !== $antes, 'O segredo do cookie não foi trocado no uso.');
+verificar(SessaoLembrada::porCookie($_COOKIE[LEMBRAR_COOKIE]) !== null, 'Cookie renovado não é reconhecido.');
+verificar((int) bd()->query("SELECT COUNT(*) FROM logs_autenticacao WHERE evento = 'login_sucesso' AND id_usuario = 10")->fetchColumn() >= 1, 'Sessão restaurada não entrou no log de autenticação.');
 
 // Ja logado: o cookie nao mexe na sessao existente.
 $_SESSION['usuario_nome'] = 'marcador';
 restaurarSessaoLembrada();
-verificar($_SESSION['usuario_nome'] === 'marcador', 'Restaurar sobrescreveu uma sessao aberta.');
+verificar($_SESSION['usuario_nome'] === 'marcador', 'Restaurar sobrescreveu uma sessão aberta.');
 
 // Link de outra empresa: a sessao nao renasce ali, mas o cookie fica.
 $_SESSION = [];
 $_GET = ['estabelecimento' => 'salao-dois'];
 $guardado = $_COOKIE[LEMBRAR_COOKIE];
 restaurarSessaoLembrada();
-verificar(!estaLogado(), 'Sessao lembrada da empresa 1 renasceu no link da empresa 2.');
-verificar($_COOKIE[LEMBRAR_COOKIE] === $guardado, 'Cookie foi descartado so por abrir outro link.');
+verificar(!estaLogado(), 'Sessão lembrada da empresa 1 renasceu no link da empresa 2.');
+verificar($_COOKIE[LEMBRAR_COOKIE] === $guardado, 'Cookie foi descartado só por abrir outro link.');
 
 // Link da propria empresa: renasce.
 $_GET = ['estabelecimento' => 'studio-um'];
 restaurarSessaoLembrada();
-verificar(estaLogado() && (int) usuarioId() === 10, 'Sessao nao renasceu no link da propria empresa.');
+verificar(estaLogado() && (int) usuarioId() === 10, 'Sessão não renasceu no link da própria empresa.');
 $_GET = [];
 
 // Conta inativa: registro e cookie somem.
 $_SESSION = [];
 $_COOKIE = [LEMBRAR_COOKIE => SessaoLembrada::criar(1, 13, 113)];
 restaurarSessaoLembrada();
-verificar(!estaLogado() && !isset($_COOKIE[LEMBRAR_COOKIE]), 'Conta inativa reabriu a sessao ou manteve o cookie.');
+verificar(!estaLogado() && !isset($_COOKIE[LEMBRAR_COOKIE]), 'Conta inativa reabriu a sessão ou manteve o cookie.');
 verificar((int) bd()->query('SELECT COUNT(*) FROM sessoes_lembradas WHERE id_usuario = 13')->fetchColumn() === 0, 'Registro da conta inativa ficou no banco.');
 
 // Empresa inativa: idem.
 $_SESSION = [];
 $_COOKIE = [LEMBRAR_COOKIE => SessaoLembrada::criar(3, 12, 112)];
 restaurarSessaoLembrada();
-verificar(!estaLogado() && !isset($_COOKIE[LEMBRAR_COOKIE]), 'Empresa inativa reabriu a sessao.');
+verificar(!estaLogado() && !isset($_COOKIE[LEMBRAR_COOKIE]), 'Empresa inativa reabriu a sessão.');
 
 // Cookie invalido: apenas descartado.
 $_SESSION = [];
 $_COOKIE = [LEMBRAR_COOKIE => 'qualquer-coisa'];
 restaurarSessaoLembrada();
-verificar(!estaLogado() && !isset($_COOKIE[LEMBRAR_COOKIE]), 'Cookie invalido nao foi descartado.');
+verificar(!estaLogado() && !isset($_COOKIE[LEMBRAR_COOKIE]), 'Cookie inválido não foi descartado.');
 
 // Sessao master aberta: nada muda.
 $_SESSION = ['master_id' => 5, 'usuario_tipo' => 'master'];
 $_COOKIE = [LEMBRAR_COOKIE => SessaoLembrada::criar(1, 10, 110)];
 restaurarSessaoLembrada();
-verificar(ehMaster() && !isset($_SESSION['usuario_id']), 'Cookie lembrado derrubou a sessao master.');
+verificar(ehMaster() && !isset($_SESSION['usuario_id']), 'Cookie lembrado derrubou a sessão master.');
 $_SESSION = [];
 $_COOKIE = [];
 
@@ -220,7 +220,7 @@ SessaoLembrada::criar(1, 10, 110);
 SessaoLembrada::criar(1, 10, 110);
 verificar((int) bd()->query('SELECT COUNT(*) FROM sessoes_lembradas WHERE id_usuario = 10')->fetchColumn() >= 3, 'Massa dos dispositivos da conta 10.');
 SessaoLembrada::apagarDoUsuario(10);
-verificar((int) bd()->query('SELECT COUNT(*) FROM sessoes_lembradas WHERE id_usuario = 10')->fetchColumn() === 0, 'Dispositivos da conta nao foram apagados.');
+verificar((int) bd()->query('SELECT COUNT(*) FROM sessoes_lembradas WHERE id_usuario = 10')->fetchColumn() === 0, 'Dispositivos da conta não foram apagados.');
 
 // -------------------------------------------------------------------------
 // Google: configuracao e URL de autorizacao
@@ -231,18 +231,18 @@ verificar(!Google::configurado() || is_file(RAIZ . '/config/google.local.php'), 
 
 putenv('AGENDEI_GOOGLE_CLIENT_ID=cliente-teste.apps.googleusercontent.com');
 putenv('AGENDEI_GOOGLE_CLIENT_SECRET=segredo-teste');
-verificar(Google::configurado(), 'Com as variaveis, o Google nao apareceu como configurado.');
+verificar(Google::configurado(), 'Com as variáveis, o Google não apareceu como configurado.');
 
 $redirecionamento = Google::urlRedirecionamento();
 verificar($redirecionamento === 'http://agendei.test/google_login.php', 'URL de redirecionamento inesperada: ' . $redirecionamento);
 
 $urlAutorizacao = Google::urlAutorizacao('estado-xyz', $redirecionamento);
-verificar(str_starts_with($urlAutorizacao, Google::URL_AUTORIZACAO . '?'), 'URL de autorizacao nao aponta para o Google.');
+verificar(str_starts_with($urlAutorizacao, Google::URL_AUTORIZACAO . '?'), 'URL de autorização não aponta para o Google.');
 parse_str((string) parse_url($urlAutorizacao, PHP_URL_QUERY), $parametros);
 verificar($parametros['client_id'] === 'cliente-teste.apps.googleusercontent.com' && $parametros['state'] === 'estado-xyz'
     && $parametros['redirect_uri'] === $redirecionamento && $parametros['response_type'] === 'code'
-    && str_contains($parametros['scope'], 'email') && str_contains($parametros['scope'], 'openid'), 'Parametros da autorizacao incompletos.');
-verificar(!str_contains($urlAutorizacao, 'segredo-teste'), 'O segredo do cliente vazou na URL de autorizacao.');
+    && str_contains($parametros['scope'], 'email') && str_contains($parametros['scope'], 'openid'), 'Parâmetros da autorização incompletos.');
+verificar(!str_contains($urlAutorizacao, 'segredo-teste'), 'O segredo do cliente vazou na URL de autorização.');
 
 // -------------------------------------------------------------------------
 // Google: leitura do id_token
@@ -255,7 +255,7 @@ function jwt(array $carga): string
 
 $base = ['iss' => 'https://accounts.google.com', 'aud' => 'cliente-teste.apps.googleusercontent.com', 'exp' => time() + 3600, 'email' => 'Ana@Teste.local', 'email_verified' => true, 'name' => 'Ana Souza', 'sub' => '123'];
 $carga = Google::lerIdToken(jwt($base), 'cliente-teste.apps.googleusercontent.com');
-verificar($carga['email'] === 'ana@teste.local' && $carga['sub'] === '123', 'id_token valido nao foi lido (e-mail deveria sair em minusculas).');
+verificar($carga['email'] === 'ana@teste.local' && $carga['sub'] === '123', 'id_token válido não foi lido (e-mail deveria sair em minusculas).');
 verificar(Google::lerIdToken(jwt(['iss' => 'accounts.google.com', 'email_verified' => 'true'] + $base), 'cliente-teste.apps.googleusercontent.com')['email'] === 'ana@teste.local', 'Emissor sem https e email_verified em texto deveriam ser aceitos.');
 
 function recusa(callable $acao): string
@@ -272,7 +272,7 @@ verificar(recusa(fn () => Google::lerIdToken('nao-e-jwt', 'x')) !== '', 'Token m
 verificar(recusa(fn () => Google::lerIdToken(jwt(['aud' => 'outro-cliente'] + $base), 'cliente-teste.apps.googleusercontent.com')) !== '', 'Token de outro cliente foi aceito.');
 verificar(recusa(fn () => Google::lerIdToken(jwt(['iss' => 'https://evil.example'] + $base), 'cliente-teste.apps.googleusercontent.com')) !== '', 'Token de outro emissor foi aceito.');
 verificar(recusa(fn () => Google::lerIdToken(jwt(['exp' => time() - 10] + $base), 'cliente-teste.apps.googleusercontent.com')) !== '', 'Token vencido foi aceito.');
-verificar(recusa(fn () => Google::lerIdToken(jwt(['email_verified' => false] + $base), 'cliente-teste.apps.googleusercontent.com')) !== '', 'E-mail nao verificado foi aceito.');
+verificar(recusa(fn () => Google::lerIdToken(jwt(['email_verified' => false] + $base), 'cliente-teste.apps.googleusercontent.com')) !== '', 'E-mail não verificado foi aceito.');
 verificar(recusa(fn () => Google::lerIdToken(jwt(['email' => ''] + $base), 'cliente-teste.apps.googleusercontent.com')) !== '', 'Token sem e-mail foi aceito.');
 
 // -------------------------------------------------------------------------
@@ -288,21 +288,21 @@ Google::$postar = static function (string $url, array $campos) use (&$chamadas, 
 };
 
 $dados = Google::trocarCodigo('codigo-bom', $redirecionamento);
-verificar($dados['email'] === 'ana@teste.local', 'Troca do codigo nao devolveu o e-mail.');
+verificar($dados['email'] === 'ana@teste.local', 'Troca do código não devolveu o e-mail.');
 verificar($chamadas[0][0] === Google::URL_TOKEN && $chamadas[0][1]['client_secret'] === 'segredo-teste'
-    && $chamadas[0][1]['grant_type'] === 'authorization_code' && $chamadas[0][1]['redirect_uri'] === $redirecionamento, 'Troca do codigo enviou campos errados ao Google.');
-verificar(recusa(fn () => Google::trocarCodigo('codigo-ruim', $redirecionamento)) === 'O Google nao confirmou a entrada. Tente novamente.', 'Codigo recusado nao gerou a mensagem esperada.');
+    && $chamadas[0][1]['grant_type'] === 'authorization_code' && $chamadas[0][1]['redirect_uri'] === $redirecionamento, 'Troca do código enviou campos errados ao Google.');
+verificar(recusa(fn () => Google::trocarCodigo('codigo-ruim', $redirecionamento)) === 'O Google não confirmou a entrada. Tente novamente.', 'Código recusado não gerou a mensagem esperada.');
 Google::$postar = null;
 
 // -------------------------------------------------------------------------
 // Google: quais contas o e-mail confirmado abre
 // -------------------------------------------------------------------------
 $todas = Google::contas('ana@teste.local');
-verificar(count($todas) === 1 && !isset($todas[0]['senha_hash']), 'Conta do e-mail: esperada uma unica empresa ativa, sem hash.');
+verificar(count($todas) === 1 && !isset($todas[0]['senha_hash']), 'Conta do e-mail: esperada uma única empresa ativa, sem hash.');
 verificar(!in_array(3, array_map(static fn ($c) => (int) $c['id_estabelecimento'], $todas), true), 'Empresa inativa entrou na lista.');
 
 $daEmpresa = Google::contas('ANA-DOIS@teste.local', 'salao-dois');
-verificar(count($daEmpresa) === 1 && (int) $daEmpresa[0]['id_usuario'] === 11, 'Com o link da empresa, so a conta dela deveria entrar.');
+verificar(count($daEmpresa) === 1 && (int) $daEmpresa[0]['id_usuario'] === 11, 'Com o link da empresa, só a conta dela deveria entrar.');
 verificar(Google::contas('ana-fechado@teste.local', 'fechado') === [], 'Empresa inativa abriu conta pelo link.');
 verificar(Google::contas('bruno@teste.local') === [], 'Conta inativa abriu pelo Google.');
 verificar(Google::contas('ninguem@teste.local') === [], 'E-mail sem conta devolveu algo.');
@@ -312,16 +312,16 @@ verificar(Google::contas('ninguem@teste.local') === [], 'E-mail sem conta devolv
 // -------------------------------------------------------------------------
 Google::guardarCadastro(['name' => ' Ana Souza ', 'email' => 'ana@teste.local'], 'cadastro');
 $pendente = Google::cadastroPendente('cadastro');
-verificar($pendente !== null && $pendente['nome'] === 'Ana Souza' && $pendente['email'] === 'ana@teste.local', 'A confirmacao nao voltou para a tela de origem.');
-verificar(Google::cadastroPendente('cadastro_empresa') === null, 'A confirmacao do cadastro do cliente vazou para o cadastro de empresa.');
-verificar(Google::cadastroPendente('cadastro') !== null, 'Consultar por outra tela apagou a confirmacao.');
+verificar($pendente !== null && $pendente['nome'] === 'Ana Souza' && $pendente['email'] === 'ana@teste.local', 'A confirmação não voltou para a tela de origem.');
+verificar(Google::cadastroPendente('cadastro_empresa') === null, 'A confirmação do cadastro do cliente vazou para o cadastro de empresa.');
+verificar(Google::cadastroPendente('cadastro') !== null, 'Consultar por outra tela apagou a confirmação.');
 
 $_SESSION['google_cadastro']['expira'] = time() - 1;
-verificar(Google::cadastroPendente('cadastro') === null && !isset($_SESSION['google_cadastro']), 'Confirmacao vencida continuou valendo.');
+verificar(Google::cadastroPendente('cadastro') === null && !isset($_SESSION['google_cadastro']), 'Confirmação vencida continuou valendo.');
 
 Google::guardarCadastro(['email' => 'ana@teste.local'], 'cadastro_empresa');
 verificar((Google::cadastroPendente('cadastro_empresa')['nome'] ?? 'x') === '', 'Sem nome vindo do Google, o nome deveria ficar vazio.');
 Google::limparCadastro();
-verificar(Google::cadastroPendente('cadastro_empresa') === null, 'limparCadastro nao esqueceu a confirmacao.');
+verificar(Google::cadastroPendente('cadastro_empresa') === null, 'limparCadastro não esqueceu a confirmação.');
 
-echo "OK: {$checagens} verificacoes de manter conectado e entrada com o Google.\n";
+echo "OK: {$checagens} verificações de manter conectado e entrada com o Google.\n";

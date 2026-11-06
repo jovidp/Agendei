@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (Agendamento::cancelar($idAgendamento, usuarioId(), limitarTexto(post('motivo'), 200))) {
             definirFlash('sucesso', 'Agendamento cancelado.');
         } else {
-            definirFlash('erro', 'Nao foi possivel cancelar este agendamento.');
+            definirFlash('erro', 'Não foi possível cancelar este agendamento.');
         }
 
         redirecionar('admin/agendamentos.php');
@@ -86,7 +86,7 @@ if ($acaoTela === 'novo' || $erros !== []) {
 
     // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
     $tituloPagina  = 'Novo agendamento';
-    $subtituloTopo = 'Criacao manual pelo balcao';
+    $subtituloTopo = 'Criação manual pelo balção';
     $acoesTopo     = '<a href="' . url('admin/agendamentos.php') . '" class="btn btn-contorno btn-pequeno">Voltar para a lista</a>';
     $jsExtra       = ['admin-agendamento.js'];
 
@@ -97,7 +97,7 @@ if ($acaoTela === 'novo' || $erros !== []) {
     <?php if ($erros !== []): ?>
         <div class="alerta alerta-erro">
             <div>
-                <span class="alerta-texto">Nao foi possivel criar o agendamento:</span>
+                <span class="alerta-texto">Não foi possível criar o agendamento:</span>
                 <ul><?php foreach ($erros as $mensagem): ?><li><?= e($mensagem) ?></li><?php endforeach; ?></ul>
             </div>
         </div>
@@ -107,7 +107,7 @@ if ($acaoTela === 'novo' || $erros !== []) {
         <div class="cartao">
             <div class="estado-vazio">
                 <strong>Cadastros insuficientes</strong>
-                <p>E necessario ter ao menos um cliente ativo e um servico com profissional vinculado.</p>
+                <p>E necessário ter ao menos um cliente ativo e um serviço com profissional vinculado.</p>
             </div>
         </div>
     <?php else: ?>
@@ -135,9 +135,9 @@ if ($acaoTela === 'novo' || $erros !== []) {
 
                     <div class="linha-campos">
                         <div class="campo">
-                            <label for="id_servico">Servico <span class="obrigatorio">*</span></label>
+                            <label for="id_servico">Serviço <span class="obrigatorio">*</span></label>
                             <select id="id_servico" name="id_servico" required>
-                                <option value="">Selecione o servico</option>
+                                <option value="">Selecione o serviço</option>
                                 <?php foreach ($servicos as $servico): ?>
                                     <option value="<?= (int) $servico['id_servico'] ?>"
                                         <?= (int) post('id_servico') === (int) $servico['id_servico'] ? 'selected' : '' ?>>
@@ -150,7 +150,7 @@ if ($acaoTela === 'novo' || $erros !== []) {
                         <div class="campo">
                             <label for="id_profissional">Profissional <span class="obrigatorio">*</span></label>
                             <select id="id_profissional" name="id_profissional" required>
-                                <option value="">Selecione o servico primeiro</option>
+                                <option value="">Selecione o serviço primeiro</option>
                             </select>
                         </div>
                     </div>
@@ -163,16 +163,16 @@ if ($acaoTela === 'novo' || $erros !== []) {
                         </div>
 
                         <div class="campo">
-                            <label for="hora_inicio">Horario <span class="obrigatorio">*</span></label>
+                            <label for="hora_inicio">Horário <span class="obrigatorio">*</span></label>
                             <select id="hora_inicio" name="hora_inicio" required>
-                                <option value="">Selecione servico, profissional e data</option>
+                                <option value="">Selecione serviço, profissional e data</option>
                             </select>
                             <span class="mensagem-campo oculto" id="avisoHorarios"></span>
                         </div>
                     </div>
 
                     <div class="campo">
-                        <label for="observacao">Observacao</label>
+                        <label for="observacao">Observação</label>
                         <textarea id="observacao" name="observacao" maxlength="500"></textarea>
                     </div>
 
@@ -230,7 +230,7 @@ require_once RAIZ . '/includes/painel_header.php';
         <input type="hidden" name="estabelecimento" value="<?= e(Contexto::slug()) ?>">
         <div class="campo campo-busca">
             <label for="busca">Buscar</label>
-            <input type="search" id="busca" name="busca" value="<?= e(get('busca')) ?>" placeholder="Cliente, profissional ou servico">
+            <input type="search" id="busca" name="busca" value="<?= e(get('busca')) ?>" placeholder="Cliente, profissional ou serviço">
         </div>
 
         <div class="campo">
@@ -259,7 +259,7 @@ require_once RAIZ . '/includes/painel_header.php';
         </div>
 
         <div class="campo">
-            <label for="id_servico">Servico</label>
+            <label for="id_servico">Serviço</label>
             <select id="id_servico" name="id_servico">
                 <option value="">Todos</option>
                 <?php foreach ($servicos as $servico): ?>
@@ -277,7 +277,7 @@ require_once RAIZ . '/includes/painel_header.php';
         </div>
 
         <div class="campo">
-            <label for="data_final">Ate</label>
+            <label for="data_final">Até</label>
             <input type="date" id="data_final" name="data_final" value="<?= e(get('data_final')) ?>">
         </div>
 
@@ -304,9 +304,9 @@ require_once RAIZ . '/includes/painel_header.php';
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Data / horario</th>
+                        <th>Data / horário</th>
                         <th>Cliente</th>
-                        <th>Servico</th>
+                        <th>Serviço</th>
                         <th>Profissional</th>
                         <th>Valor</th>
                         <th>Status</th>
@@ -320,7 +320,7 @@ require_once RAIZ . '/includes/painel_header.php';
                             <td>
                                 <span class="celula-principal"><?= formatarData($agendamento['data_agendamento']) ?></span>
                                 <span class="celula-secundaria">
-                                    <?= formatarHora($agendamento['hora_inicio']) ?> as <?= formatarHora($agendamento['hora_fim']) ?>
+                                    <?= formatarHora($agendamento['hora_inicio']) ?> às <?= formatarHora($agendamento['hora_fim']) ?>
                                 </span>
                             </td>
                             <td>
@@ -343,7 +343,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                     data-campo-valor="<?= formatarMoeda($agendamento['valor']) ?>"
                                     data-campo-status="<?= e(ucfirst($agendamento['status'])) ?>"
                                     data-campo-origem="<?= e(ucfirst($agendamento['origem'])) ?>"
-                                    data-campo-observacao="<?= e($agendamento['observacao'] ?: 'Sem observacoes.') ?>">
+                                    data-campo-observacao="<?= e($agendamento['observacao'] ?: 'Sem observações.') ?>">
                                     Detalhes
                                 </button>
 
@@ -404,7 +404,7 @@ require_once RAIZ . '/includes/painel_header.php';
                     <dd data-preenche="contato">-</dd>
                 </div>
                 <div>
-                    <dt>Servico</dt>
+                    <dt>Serviço</dt>
                     <dd data-preenche="servico">-</dd>
                 </div>
                 <div>
@@ -416,7 +416,7 @@ require_once RAIZ . '/includes/painel_header.php';
                     <dd data-preenche="data">-</dd>
                 </div>
                 <div>
-                    <dt>Horario</dt>
+                    <dt>Horário</dt>
                     <dd data-preenche="horario">-</dd>
                 </div>
                 <div>
@@ -432,7 +432,7 @@ require_once RAIZ . '/includes/painel_header.php';
                     <dd data-preenche="origem">-</dd>
                 </div>
                 <div>
-                    <dt>Observacao</dt>
+                    <dt>Observação</dt>
                     <dd data-preenche="observacao">-</dd>
                 </div>
             </dl>
@@ -459,7 +459,7 @@ require_once RAIZ . '/includes/painel_header.php';
 
             <div class="campo">
                 <label for="motivo">Motivo do cancelamento</label>
-                <input type="text" id="motivo" name="motivo" maxlength="200" placeholder="Ex.: solicitacao do cliente">
+                <input type="text" id="motivo" name="motivo" maxlength="200" placeholder="Ex.: solicitação do cliente">
             </div>
         </div>
 

@@ -372,12 +372,12 @@ function validarSessao(): void
         iniciarSessao();
 
         if (ehRequisicaoAjax()) {
-            jsonResposta(['sucesso' => false, 'mensagem' => 'Sessao expirada. Faca login novamente.'], 401);
+            jsonResposta(['sucesso' => false, 'mensagem' => 'Sessão expirada. Faça login novamente.'], 401);
         }
 
         definirFlash('aviso', $motivo === 'inatividade'
-            ? 'Sua sessao expirou por inatividade. Entre novamente.'
-            : 'Sua sessao foi encerrada por seguranca. Entre novamente.');
+            ? 'Sua sessão expirou por inatividade. Entre novamente.'
+            : 'Sua sessão foi encerrada por segurança. Entre novamente.');
 
         redirecionar($master ? 'master/login.php' : 'login.php');
     }

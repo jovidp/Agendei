@@ -21,7 +21,7 @@ $origem = 'banco.sql';
 $destino = 'banco_hospedagem.sql';
 
 if (!is_file($origem)) {
-    fwrite(STDERR, "Arquivo {$origem} nao encontrado.\n");
+    fwrite(STDERR, "Arquivo {$origem} não encontrado.\n");
     exit(1);
 }
 
@@ -38,8 +38,8 @@ $sql = preg_replace(
 );
 
 $aviso = "-- Gerado por scripts/preparar_hospedagem.php\r\n"
-       . "-- Importe este arquivo DENTRO do banco ja criado no painel da hospedagem.\r\n"
-       . "-- Nao edite aqui: altere banco.sql e rode o script de novo.\r\n\r\n";
+       . "-- Importe este arquivo DENTRO do banco já criado no painel da hospedagem.\r\n"
+       . "-- Não edite aqui: altere banco.sql e rode o script de novo.\r\n\r\n";
 
 file_put_contents($destino, $aviso . $sql);
 

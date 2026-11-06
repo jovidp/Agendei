@@ -60,7 +60,7 @@ $master = inserir('administradores_master', ['nome' => 'Master', 'email' => 'mas
 $empresas = [];
 foreach (['empresa-a', 'empresa-b'] as $slug) {
     $sufixo = substr($slug, -1);
-    $id = Estabelecimento::contratar(['estabelecimento' => $slug, 'slug' => $slug, 'nome' => 'Responsavel', 'email' => 'admin-' . $sufixo . '@teste.local', 'senha' => 'SenhaTeste123!']);
+    $id = Estabelecimento::contratar(['estabelecimento' => $slug, 'slug' => $slug, 'nome' => 'Responsável', 'email' => 'admin-' . $sufixo . '@teste.local', 'senha' => 'SenhaTeste123!']);
     $empresas[] = $id;
     $vinculo = ['id_estabelecimento' => $id];
     inserir('assinaturas', $vinculo + ['status' => 'ativa']);
@@ -113,21 +113,21 @@ try {
 } catch (PDOException $erro) {
     $falhou = true;
 }
-verificar($falhou, 'Falha do banco nao foi propagada.');
-verificar(!bd()->inTransaction(), 'Transacao ficou aberta.');
+verificar($falhou, 'Falha do banco não foi propagada.');
+verificar(!bd()->inTransaction(), 'Transação ficou aberta.');
 verificar(retrato($alvo) === $antes, 'Falha removeu dados parcialmente.');
 bd()->exec('DROP TRIGGER impedir_exclusao');
 
-verificar(Estabelecimento::excluirGlobal($alvo), 'Empresa nao foi excluida.');
+verificar(Estabelecimento::excluirGlobal($alvo), 'Empresa não foi excluída.');
 foreach (retrato($alvo) as $tabela => $linhas) verificar($linhas === [], 'Restaram dados em ' . $tabela);
-verificar(retrato($vizinha) === $outraAntes, 'Exclusao alterou a outra empresa.');
+verificar(retrato($vizinha) === $outraAntes, 'Exclusão alterou a outra empresa.');
 // As pessoas que so existiam por causa da empresa excluida foram embora; as da vizinha ficaram.
-verificar((int) bd()->query('SELECT COUNT(*) FROM usuarios')->fetchColumn() === 3, 'Pessoas orfas da empresa excluida ficaram no banco, ou pessoas da vizinha sumiram.');
+verificar((int) bd()->query('SELECT COUNT(*) FROM usuarios')->fetchColumn() === 3, 'Pessoas orfas da empresa excluída ficaram no banco, ou pessoas da vizinha sumiram.');
 verificar((int) bd()->query('SELECT COUNT(*) FROM logs_master')->fetchColumn() === 2, 'Auditoria foi apagada.');
 verificar((int) bd()->query('SELECT COUNT(*) FROM planos')->fetchColumn() === 1, 'Plano compartilhado foi apagado.');
 verificar((int) bd()->query('SELECT COUNT(*) FROM administradores_master')->fetchColumn() === 1, 'Conta master foi apagada.');
-verificar(!Estabelecimento::excluirGlobal($alvo), 'Exclusao repetida reportou sucesso.');
-verificar(!Estabelecimento::excluirGlobal(0), 'ID invalido foi aceito.');
-verificar(bd()->query('PRAGMA foreign_key_check')->fetchAll() === [], 'Restaram vinculos invalidos.');
-verificar(Estabelecimento::excluirGlobal($vizinha), 'Ultima empresa nao pode ser excluida.');
-echo "OK: {$checagens} verificacoes de exclusao, isolamento e rollback.\n";
+verificar(!Estabelecimento::excluirGlobal($alvo), 'Exclusão repetida reportou sucesso.');
+verificar(!Estabelecimento::excluirGlobal(0), 'ID inválido foi aceito.');
+verificar(bd()->query('PRAGMA foreign_key_check')->fetchAll() === [], 'Restaram vínculos inválidos.');
+verificar(Estabelecimento::excluirGlobal($vizinha), 'Última empresa não pode ser excluída.');
+echo "OK: {$checagens} verificações de exclusão, isolamento e rollback.\n";

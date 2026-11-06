@@ -22,13 +22,13 @@ chdir(dirname(__DIR__));
 require_once 'config/database.php';
 
 if (Database::ehPostgres()) {
-    fwrite(STDERR, "Este teste roda apenas no MySQL/MariaDB: ele importa banco.sql em um banco temporario.\n"
-        . "Aponte AGENDEI_DB_DRIVER=mysql (e host, porta, usuario e senha) para um servidor local.\n");
+    fwrite(STDERR, "Este teste roda apenas no MySQL/MariaDB: ele importa banco.sql em um banco temporário.\n"
+        . "Aponte AGENDEI_DB_DRIVER=mysql (e host, porta, usuário e senha) para um servidor local.\n");
     exit(1);
 }
 
 $nomeTeste = 'agendei_test_' . bin2hex(random_bytes(6));
-if (!preg_match('/^agendei_test_[a-f0-9]{12}$/D', $nomeTeste)) throw new RuntimeException('Nome de banco de teste invalido.');
+if (!preg_match('/^agendei_test_[a-f0-9]{12}$/D', $nomeTeste)) throw new RuntimeException('Nome de banco de teste inválido.');
 
 $checagens = 0;
 function verificar(string $descricao, mixed $obtido, mixed $esperado): void
@@ -57,7 +57,7 @@ function formularios(string $html, string $pagina): array
     foreach ($marcas[0] as $marca) {
         $abertos += strtolower($marca) === '</form>' ? -1 : 1;
         if ($abertos > 1 || $abertos < 0) {
-            throw new RuntimeException('Formulario aninhado ou fechado fora de ordem em ' . $pagina . '.');
+            throw new RuntimeException('Formulário aninhado ou fechado fora de ordem em ' . $pagina . '.');
         }
     }
 
@@ -135,7 +135,7 @@ try {
     $schema = str_replace('`agendei`', '`' . $nomeTeste . '`', file_get_contents('banco.sql'));
     $db->exec($schema);
     $slug = (string) $db->query("SELECT slug FROM `$nomeTeste`.estabelecimento WHERE status = 'ativo' ORDER BY id_estabelecimento LIMIT 1")->fetchColumn();
-    verificar('o banco temporario traz um estabelecimento ativo', $slug !== '', true);
+    verificar('o banco temporário traz um estabelecimento ativo', $slug !== '', true);
 
     // O servidor embutido herda o ambiente: banco temporario e um Google "configurado"
     // (credenciais falsas bastam para as telas mostrarem o botao; nada e chamado no Google).
@@ -173,7 +173,7 @@ try {
         }
     }
     if ($porta === 0) {
-        throw new RuntimeException("O servidor embutido nao subiu.\nLog do servidor:\n" . (string) @file_get_contents($log));
+        throw new RuntimeException("O servidor embutido não subiu.\nLog do servidor:\n" . (string) @file_get_contents($log));
     }
     $base = 'http://127.0.0.1:' . $porta . '/';
 
@@ -181,25 +181,25 @@ try {
     // Cadastro do cliente: o Enter envia o cadastro, nunca o Google.
     // ---------------------------------------------------------------------
     $tela = formularios(baixar($base . 'cadastro.php?estabelecimento=' . rawurlencode($slug), $log), 'cadastro.php');
-    verificar('o cadastro tem o botao do Google', count($tela['google']), 1);
-    verificar('o botao padrao do cadastro e o de enviar o cadastro', $tela['forms']['formCadastro']['padrao'], 'Enviar');
-    verificar('o botao do Google nao pertence ao formulario de cadastro', $tela['google'][0]['dono'] !== 'formCadastro', true);
-    verificar('o botao do Google envia para google_login.php', str_contains($tela['google'][0]['destino'], 'google_login.php'), true);
+    verificar('o cadastro tem o botão do Google', count($tela['google']), 1);
+    verificar('o botão padrão do cadastro e o de enviar o cadastro', $tela['forms']['formCadastro']['padrao'], 'Enviar');
+    verificar('o botão do Google não pertence ao formulário de cadastro', $tela['google'][0]['dono'] !== 'formCadastro', true);
+    verificar('o botão do Google envia para google_login.php', str_contains($tela['google'][0]['destino'], 'google_login.php'), true);
     $formGoogle = $tela['forms'][$tela['google'][0]['dono']];
     verificar('o pedido ao Google leva o token CSRF', isset($formGoogle['ocultos']['csrf_token']) && $formGoogle['ocultos']['csrf_token'] !== '', true);
     verificar('o pedido ao Google leva a origem "cadastro"', $formGoogle['ocultos']['origem'] ?? null, 'cadastro');
     verificar('o pedido ao Google leva o link da empresa', $formGoogle['ocultos']['estabelecimento'] ?? null, $slug);
     verificar('o cadastro continua com o token CSRF', isset($tela['forms']['formCadastro']['ocultos']['csrf_token']), true);
-    verificar('o token e o mesmo nos dois formularios (mesma sessao)', $tela['forms']['formCadastro']['ocultos']['csrf_token'], $formGoogle['ocultos']['csrf_token']);
+    verificar('o token e o mesmo nos dois formulários (mesma sessão)', $tela['forms']['formCadastro']['ocultos']['csrf_token'], $formGoogle['ocultos']['csrf_token']);
 
     // ---------------------------------------------------------------------
     // Cadastro de empresa: mesma regra.
     // ---------------------------------------------------------------------
     $tela = formularios(baixar($base . 'cadastro_empresa.php', $log), 'cadastro_empresa.php');
-    verificar('o cadastro de empresa tem o botao do Google', count($tela['google']), 1);
-    verificar('o botao padrao do cadastro de empresa nao e o Google', str_contains((string) $tela['forms']['formCadastroEmpresa']['padrao'], 'Google'), false);
-    verificar('o botao do Google nao pertence ao cadastro de empresa', $tela['google'][0]['dono'] !== 'formCadastroEmpresa', true);
-    verificar('o botao do Google envia para google_login.php', str_contains($tela['google'][0]['destino'], 'google_login.php'), true);
+    verificar('o cadastro de empresa tem o botão do Google', count($tela['google']), 1);
+    verificar('o botão padrão do cadastro de empresa não é o Google', str_contains((string) $tela['forms']['formCadastroEmpresa']['padrao'], 'Google'), false);
+    verificar('o botão do Google não pertence ao cadastro de empresa', $tela['google'][0]['dono'] !== 'formCadastroEmpresa', true);
+    verificar('o botão do Google envia para google_login.php', str_contains($tela['google'][0]['destino'], 'google_login.php'), true);
     $formGoogle = $tela['forms'][$tela['google'][0]['dono']];
     verificar('o pedido ao Google leva o token CSRF', isset($formGoogle['ocultos']['csrf_token']) && $formGoogle['ocultos']['csrf_token'] !== '', true);
     verificar('o pedido ao Google leva a origem "cadastro_empresa"', $formGoogle['ocultos']['origem'] ?? null, 'cadastro_empresa');
@@ -210,8 +210,8 @@ try {
     // leva "manter conectado" e o link da empresa), mas depois de "Entrar".
     // ---------------------------------------------------------------------
     $tela = formularios(baixar($base . 'login.php?estabelecimento=' . rawurlencode($slug), $log), 'login.php');
-    verificar('o login tem o botao do Google', count($tela['google']), 1);
-    verificar('o botao padrao do login e "Entrar"', $tela['forms']['formLogin']['padrao'], 'Entrar');
+    verificar('o login tem o botão do Google', count($tela['google']), 1);
+    verificar('o botão padrão do login e "Entrar"', $tela['forms']['formLogin']['padrao'], 'Entrar');
     verificar('no login o Google envia para google_login.php', str_contains($tela['google'][0]['destino'], 'google_login.php'), true);
     verificar('o login leva o link da empresa ao Google', $tela['forms'][$tela['google'][0]['dono']]['ocultos']['estabelecimento'] ?? null, $slug);
 
@@ -220,22 +220,22 @@ try {
     // e-mail ou na senha confirma pela senha.
     // ---------------------------------------------------------------------
     $tela = formularios(baixar($base . 'vincular.php?estabelecimento=' . rawurlencode($slug), $log), 'vincular.php');
-    verificar('a adesao tem o botao do Google', count($tela['google']), 1);
-    verificar('o botao padrao da adesao e o de confirmar pela senha', $tela['forms']['formConfirmar']['padrao'], 'Confirmar');
-    verificar('o botao do Google nao pertence ao formulario de senha', $tela['google'][0]['dono'] !== 'formConfirmar', true);
-    verificar('na adesao o Google envia para google_login.php', str_contains($tela['google'][0]['destino'], 'google_login.php'), true);
-    verificar('a adesao pelo Google leva a origem "cadastro"', $tela['forms'][$tela['google'][0]['dono']]['ocultos']['origem'] ?? null, 'cadastro');
-    verificar('o formulario de senha continua com o token CSRF', isset($tela['forms']['formConfirmar']['ocultos']['csrf_token']), true);
+    verificar('a adesão tem o botão do Google', count($tela['google']), 1);
+    verificar('o botão padrão da adesão e o de confirmar pela senha', $tela['forms']['formConfirmar']['padrao'], 'Confirmar');
+    verificar('o botão do Google não pertence ao formulário de senha', $tela['google'][0]['dono'] !== 'formConfirmar', true);
+    verificar('na adesão o Google envia para google_login.php', str_contains($tela['google'][0]['destino'], 'google_login.php'), true);
+    verificar('a adesão pelo Google leva a origem "cadastro"', $tela['forms'][$tela['google'][0]['dono']]['ocultos']['origem'] ?? null, 'cadastro');
+    verificar('o formulário de senha continua com o token CSRF', isset($tela['forms']['formConfirmar']['ocultos']['csrf_token']), true);
 
     $tela = formularios(baixar($base . 'entrar.php', $log), 'entrar.php');
-    verificar('a entrada geral tem o botao do Google', count($tela['google']), 1);
+    verificar('a entrada geral tem o botão do Google', count($tela['google']), 1);
     foreach ($tela['forms'] as $chave => $form) {
-        verificar('na entrada geral nenhum formulario tem o Google como botao padrao (' . $chave . ')', str_contains((string) $form['padrao'], 'Google'), false);
+        verificar('na entrada geral nenhum formulário tem o Google como botão padrão (' . $chave . ')', str_contains((string) $form['padrao'], 'Google'), false);
     }
-    verificar('na entrada geral o botao padrao e "Entrar"', $tela['forms'][$tela['google'][0]['dono']]['padrao'], 'Entrar');
+    verificar('na entrada geral o botão padrão e "Entrar"', $tela['forms'][$tela['google'][0]['dono']]['padrao'], 'Entrar');
     verificar('na entrada geral o Google envia para google_login.php', str_contains($tela['google'][0]['destino'], 'google_login.php'), true);
 
-    echo "OK: $checagens verificacoes do botao do Google nos formularios.\n";
+    echo "OK: $checagens verificações do botão do Google nos formulários.\n";
 } finally {
     if (is_resource($servidor)) {
         proc_terminate($servidor);

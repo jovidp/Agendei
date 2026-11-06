@@ -1522,7 +1522,8 @@ legend {
   background: #fff4d6;
   border-color: #efdca8;
 }
-.badge-avisado {
+.badge-avisado,
+.badge-credito {
   color: #2a6076;
   background: var(--cor-primaria-clara);
   border-color: #cbdde3;
@@ -1535,6 +1536,7 @@ legend {
   border-color: #c9e4d7;
 }
 .badge-estornado,
+.badge-retido,
 .badge-oculta {
   color: #56606a;
   background: #edeff1;
@@ -1575,3 +1577,14 @@ legend {
 .resumo-confirmacao li strong { text-align: right; }
 .acoes-confirmacao { display: grid; gap: 10px; }
 .formulario-inline { display: inline; }
+
+/* Olho que mostra ou esconde a senha (main.js, iniciarMostrarSenha). */
+.senha-com-olho { position: relative; display: block; }
+.senha-com-olho input { padding-right: 42px; }
+.botao-olho {
+  position: absolute; top: 0; right: 0; height: var(--altura-campo); width: 40px;
+  display: flex; align-items: center; justify-content: center;
+  border: 0; background: none; color: var(--texto-secundario); cursor: pointer;
+}
+.botao-olho:hover, .botao-olho:focus-visible { color: var(--cor-primaria); }
+.botao-olho[aria-pressed="false"] .olho-risco { display: none; }

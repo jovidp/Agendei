@@ -118,7 +118,7 @@ class Filial
     public static function alterarStatus(int $idFilial, string $status): bool
     {
         if (!in_array($status, ['ativo', 'inativo'], true)) {
-            throw new InvalidArgumentException('Status de filial invalido.');
+            throw new InvalidArgumentException('Status de filial inválido.');
         }
 
         $consulta = bd()->prepare(
@@ -202,12 +202,12 @@ class Filial
     {
         $nome = trim((string) ($dados['nome'] ?? ''));
         if ($nome === '' || mb_strlen($nome) > 120) {
-            throw new InvalidArgumentException('Informe o nome da filial (ate 120 caracteres).');
+            throw new InvalidArgumentException('Informe o nome da filial (até 120 caracteres).');
         }
 
         $uf = strtoupper(trim((string) ($dados['uf'] ?? '')));
         if ($uf !== '' && !validarUf($uf)) {
-            throw new InvalidArgumentException('UF invalida.');
+            throw new InvalidArgumentException('UF inválida.');
         }
 
         // Limites das colunas. Sem esta conferencia, um valor longo (o maxlength
@@ -215,25 +215,25 @@ class Filial
         // em vez de voltar como aviso no formulario.
         $limites = [
             'logradouro'  => ['Logradouro', 150],
-            'numero'      => ['Numero', 20],
+            'numero'      => ['Número', 20],
             'complemento' => ['Complemento', 60],
             'bairro'      => ['Bairro', 100],
             'cidade'      => ['Cidade', 100],
         ];
         foreach ($limites as $campo => [$rotulo, $maximo]) {
             if (mb_strlen(trim((string) ($dados[$campo] ?? ''))) > $maximo) {
-                throw new InvalidArgumentException($rotulo . ' aceita ate ' . $maximo . ' caracteres.');
+                throw new InvalidArgumentException($rotulo . ' aceita até ' . $maximo . ' caracteres.');
             }
         }
 
         $telefone = preg_replace('/\D/', '', (string) ($dados['telefone'] ?? ''));
         if ($telefone !== '' && !in_array(strlen($telefone), [10, 11], true)) {
-            throw new InvalidArgumentException('Telefone invalido: informe DDD e numero (10 ou 11 digitos).');
+            throw new InvalidArgumentException('Telefone inválido: informe DDD e número (10 ou 11 dígitos).');
         }
 
         $cep = preg_replace('/\D/', '', (string) ($dados['cep'] ?? ''));
         if ($cep !== '' && strlen($cep) !== 8) {
-            throw new InvalidArgumentException('CEP invalido: use 8 digitos.');
+            throw new InvalidArgumentException('CEP inválido: use 8 dígitos.');
         }
 
         $ordem = (int) ($dados['ordem'] ?? 0);
@@ -243,7 +243,7 @@ class Filial
 
         $status = $dados['status'] ?? 'ativo';
         if (!in_array($status, ['ativo', 'inativo'], true)) {
-            throw new InvalidArgumentException('Status de filial invalido.');
+            throw new InvalidArgumentException('Status de filial inválido.');
         }
     }
 

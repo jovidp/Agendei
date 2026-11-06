@@ -19,8 +19,8 @@ class Plano
     /** Recursos limitados, com o rotulo usado nas telas e nas mensagens. */
     public const RECURSOS = [
         'profissionais'    => 'Profissionais',
-        'servicos'         => 'Servicos',
-        'agendamentos_mes' => 'Agendamentos por mes',
+        'servicos'         => 'Serviços',
+        'agendamentos_mes' => 'Agendamentos por mês',
     ];
 
     /** Estado das tabelas: null = ainda nao verificado, false = indisponivel. */
@@ -289,9 +289,9 @@ class Plano
         $plano = self::doEstabelecimento($idEstabelecimento);
 
         return match ($recurso) {
-            'profissionais'    => 'O plano ' . $plano['nome'] . ' permite ate ' . $limite . ' profissional(is) ativo(s). Desative um ou fale com a administracao para mudar de plano.',
-            'servicos'         => 'O plano ' . $plano['nome'] . ' permite ate ' . $limite . ' servico(s) ativo(s). Desative um ou fale com a administracao para mudar de plano.',
-            default            => 'O plano ' . $plano['nome'] . ' permite ate ' . $limite . ' agendamento(s) por mes, e o mes atual ja chegou a esse total.',
+            'profissionais'    => 'O plano ' . $plano['nome'] . ' permite até ' . $limite . ' profissional(is) ativo(s). Desative um ou fale com a administração para mudar de plano.',
+            'servicos'         => 'O plano ' . $plano['nome'] . ' permite até ' . $limite . ' servico(s) ativo(s). Desative um ou fale com a administração para mudar de plano.',
+            default            => 'O plano ' . $plano['nome'] . ' permite até ' . $limite . ' agendamento(s) por mês, e o mês atual já chegou a esse total.',
         };
     }
 
@@ -351,7 +351,7 @@ class Plano
             }
             self::$tabelasProntas = true;
         } catch (Throwable $erro) {
-            error_log('Tabelas de planos indisponiveis: ' . $erro->getMessage());
+            error_log('Tabelas de planos indisponíveis: ' . $erro->getMessage());
             self::$tabelasProntas = false;
         }
 
@@ -362,7 +362,7 @@ class Plano
     private static function exigirTabelas(): void
     {
         if (!self::disponivel()) {
-            throw new RuntimeException('As tabelas de planos nao estao disponiveis neste banco.');
+            throw new RuntimeException('As tabelas de planos não estão disponíveis neste banco.');
         }
     }
 

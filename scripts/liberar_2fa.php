@@ -35,7 +35,7 @@ $alvo = $argv[2] ?? '';
 // Sem argumentos: mostra o que existe, para nao liberar a conta errada
 // -------------------------------------------------------------------------
 if ($acao === '') {
-    echo "Contas com segundo fator por codigo ativo\n";
+    echo "Contas com segundo fator por código ativo\n";
     echo str_repeat('-', 62) . "\n";
 
     $masters = $db->query(
@@ -68,12 +68,12 @@ if ($acao === '') {
     }
 
     echo "\nPara liberar:  php scripts/liberar_2fa.php master <e-mail>\n";
-    echo "               php scripts/liberar_2fa.php usuario <e-mail ou login>\n";
+    echo "               php scripts/liberar_2fa.php usuário <e-mail ou login>\n";
     exit;
 }
 
 if (!in_array($acao, ['master', 'usuario'], true) || $alvo === '') {
-    fwrite(STDERR, "Uso: php scripts/liberar_2fa.php [master|usuario] <e-mail ou login>\n");
+    fwrite(STDERR, "Uso: php scripts/liberar_2fa.php [master|usuário] <e-mail ou login>\n");
     exit(1);
 }
 
@@ -92,8 +92,8 @@ if ($acao === 'master') {
     }
 
     echo "Segundo fator liberado para a conta master {$alvo}.\n";
-    echo "O proximo login pede somente a senha. Cadastre o aplicativo de novo\n";
-    echo "em Administracao master > Verificacao em 2 etapas.\n";
+    echo "O próximo login pede somente a senha. Cadastre o aplicativo de novo\n";
+    echo "em Administração master > Verificação em 2 etapas.\n";
     exit;
 }
 
@@ -116,4 +116,4 @@ if ($consulta->rowCount() === 0) {
 
 echo "Segundo fator liberado para {$alvo} ({$consulta->rowCount()} conta(s)).\n";
 echo "O login volta a pedir a pergunta cadastral. Cadastre o aplicativo de novo\n";
-echo "na tela Verificacao em 2 etapas do painel.\n";
+echo "na tela Verificação em 2 etapas do painel.\n";

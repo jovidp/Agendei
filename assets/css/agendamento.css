@@ -510,3 +510,16 @@
     min-height: 40px;
   }
 }
+
+/* Bolinha no canto do cartão: mostra qual serviço, unidade ou profissional está marcado. */
+.opcao label { padding-right: 40px; }
+.opcao label::after {
+  content: "";
+  position: absolute; top: 14px; right: 14px;
+  width: 18px; height: 18px; border-radius: 50%;
+  border: 2px solid var(--borda-forte); background-color: var(--branco);
+  box-sizing: border-box;
+}
+.opcao input[type="radio"]:checked + label::after {
+  border: 5px solid var(--cor-primaria);
+}

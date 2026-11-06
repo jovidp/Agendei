@@ -307,6 +307,11 @@
       .replace(/(\d{5})(\d{1,4})$/, "$1-$2");
   };
 
+  /** Telefone fixo: DDD e 8 dígitos, sem virar celular no 11º dígito. */
+  Agendei.mascaraFixo = function (valor) {
+    return Agendei.mascaraTelefone(valor.replace(/\D/g, "").slice(0, 10));
+  };
+
   /** Limita o CEP a oito dígitos e insere o hífen de apresentação. */
   Agendei.mascaraCep = function (valor) {
     return valor
@@ -329,6 +334,7 @@
     var mascaras = {
       cpf: Agendei.mascaraCpf,
       telefone: Agendei.mascaraTelefone,
+      fixo: Agendei.mascaraFixo,
       cep: Agendei.mascaraCep,
       moeda: Agendei.mascaraMoeda,
     };
@@ -343,6 +349,75 @@
 
       campo.addEventListener("input", function () {
         campo.value = funcao(campo.value);
+      });
+    });
+  }
+
+  // -----------------------------------------------------------------
+  // Relogio de prazo
+  // -----------------------------------------------------------------
+
+  /** Conta para tras os segundos de data-contagem; ao zerar mostra data-contagem-fim. */
+  function iniciarContagens() {
+    var relogios = document.querySelectorAll("[data-contagem]");
+    if (relogios.length === 0) {
+      return;
+    }
+    var inicio = Date.now();
+
+    function atualizar() {
+      var decorrido = Math.floor((Date.now() - inicio) / 1000);
+      relogios.forEach(function (relogio) {
+        var resto = parseInt(relogio.getAttribute("data-contagem"), 10) - decorrido;
+        if (resto <= 0) {
+          relogio.textContent = relogio.getAttribute("data-contagem-fim") || "0s";
+          return;
+        }
+        var dias = Math.floor(resto / 86400);
+        var horas = Math.floor((resto % 86400) / 3600);
+        var minutos = Math.floor((resto % 3600) / 60);
+        var segundos = resto % 60;
+        relogio.textContent =
+          (dias > 0 ? dias + "d " : "") +
+          String(horas).padStart(2, "0") + ":" +
+          String(minutos).padStart(2, "0") + ":" +
+          String(segundos).padStart(2, "0");
+      });
+    }
+
+    atualizar();
+    window.setInterval(atualizar, 1000);
+  }
+
+  // -----------------------------------------------------------------
+  // Mostrar senha
+  // -----------------------------------------------------------------
+
+  /** Coloca um botão de olho em todo campo de senha para mostrar ou esconder o que foi digitado. */
+  function iniciarMostrarSenha() {
+    document.querySelectorAll('input[type="password"]').forEach(function (campo) {
+      var envoltorio = document.createElement("span");
+      envoltorio.className = "senha-com-olho";
+      campo.parentNode.insertBefore(envoltorio, campo);
+      envoltorio.appendChild(campo);
+
+      var botao = document.createElement("button");
+      botao.type = "button";
+      botao.className = "botao-olho";
+      botao.setAttribute("aria-label", "Mostrar senha");
+      botao.setAttribute("aria-pressed", "false");
+      botao.innerHTML =
+        '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/>' +
+        '<line class="olho-risco" x1="3" y1="3" x2="21" y2="21"/></svg>';
+      envoltorio.appendChild(botao);
+
+      botao.addEventListener("click", function () {
+        var mostrar = campo.type === "password";
+        campo.type = mostrar ? "text" : "password";
+        botao.setAttribute("aria-pressed", mostrar ? "true" : "false");
+        botao.setAttribute("aria-label", mostrar ? "Esconder senha" : "Mostrar senha");
+        campo.focus();
       });
     });
   }
@@ -407,7 +482,7 @@
           .fetch("https://viacep.com.br/ws/" + cep + "/json/")
           .then(function (resposta) {
             if (!resposta.ok) {
-              throw new Error("resposta invalida");
+              throw new Error("resposta inválida");
             }
             return resposta.json();
           })
@@ -456,7 +531,7 @@
   Agendei.marcarErro = function (campo, mensagem) {
     campo.classList.add("invalido");
 
-    var alvo = campo.parentNode.querySelector(".mensagem-campo");
+    var alvo = (campo.closest(".campo") || campo.parentNode).querySelector(".mensagem-campo");
     if (alvo) {
       alvo.textContent = mensagem;
       alvo.classList.add("visivel");
@@ -467,7 +542,7 @@
   Agendei.limparErro = function (campo) {
     campo.classList.remove("invalido");
 
-    var alvo = campo.parentNode.querySelector(".mensagem-campo");
+    var alvo = (campo.closest(".campo") || campo.parentNode).querySelector(".mensagem-campo");
     if (alvo) {
       alvo.textContent = "";
       alvo.classList.remove("visivel");
@@ -587,6 +662,8 @@
     iniciarModais();
     iniciarConfirmacoes();
     iniciarMascaras();
+    iniciarMostrarSenha();
+    iniciarContagens();
     iniciarBuscaCep();
     iniciarBuscaTabela();
     iniciarFiltrosAutomaticos();

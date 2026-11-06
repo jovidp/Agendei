@@ -59,17 +59,17 @@ class Saude
             $dialeto = Database::ehPostgres() ? 'PostgreSQL' : 'MySQL/MariaDB';
 
             $itens[] = self::item(
-                'Conexao com o banco',
+                'Conexão com o banco',
                 // Acima de meio segundo para responder "SELECT 1" o problema nao
                 // e a consulta: e a rede ou o servidor do banco.
                 $ms > 500 ? self::AVISO : self::OK,
                 $dialeto . ' ' . $versao,
                 $ms > 500
-                    ? 'A resposta levou ' . $ms . ' ms. Verifique a latencia ate o servidor do banco.'
+                    ? 'A resposta levou ' . $ms . ' ms. Verifique a latencia até o servidor do banco.'
                     : 'Respondeu em ' . $ms . ' ms.'
             );
         } catch (Throwable $erro) {
-            $itens[] = self::item('Conexao com o banco', self::ERRO, 'sem resposta', 'O banco nao respondeu a uma consulta simples.');
+            $itens[] = self::item('Conexão com o banco', self::ERRO, 'sem resposta', 'O banco não respondeu a uma consulta simples.');
             return $itens;
         }
 
@@ -83,9 +83,9 @@ class Saude
     private static function tabelasDeApoio(): array
     {
         $tabelas = [
-            'logs_master'       => ['Auditoria da administracao', 'As acoes do master nao estao sendo registradas. Rode scripts/migrar_seguranca.php.'],
-            'tentativas_acesso' => ['Controle de forca bruta', 'A contagem caiu para arquivos no diretorio temporario, que nao serve quando ha mais de uma instancia.'],
-            'logs_autenticacao' => ['Log de autenticacao', 'O historico de acessos nao esta sendo gravado. Importe o esquema atualizado.'],
+            'logs_master'       => ['Auditoria da administração', 'As acoes do master não estão sendo registradas. Rode scripts/migrar_seguranca.php.'],
+            'tentativas_acesso' => ['Controle de forca bruta', 'A contagem caiu para arquivos no diretorio temporário, que não serve quando ha mais de uma instancia.'],
+            'logs_autenticacao' => ['Log de autenticação', 'O histórico de acessos não está sendo gravado. Importe o esquema atualizado.'],
         ];
 
         $itens = [];
@@ -111,20 +111,20 @@ class Saude
         $itens = [];
 
         $itens[] = self::item(
-            'Modo de execucao',
+            'Modo de execução',
             AMBIENTE === 'producao' ? self::OK : self::AVISO,
             AMBIENTE,
             AMBIENTE === 'producao'
-                ? 'Erros vao para o log e nao aparecem na tela.'
-                : 'Em desenvolvimento o rastro do erro aparece na tela. Nao publique assim.'
+                ? 'Erros vão para o log e não aparecem na tela.'
+                : 'Em desenvolvimento o rastro do erro aparece na tela. Não publique assim.'
         );
 
         $itens[] = self::item(
-            'Versao do PHP',
+            'Versão do PHP',
             version_compare(PHP_VERSION, '8.1', '>=') ? self::OK : self::ERRO,
             PHP_VERSION,
             version_compare(PHP_VERSION, '8.1', '>=')
-                ? 'Compativel com o codigo do projeto.'
+                ? 'Compatível com o código do projeto.'
                 : 'O projeto usa recursos do PHP 8.1 em diante.'
         );
 
@@ -135,12 +135,12 @@ class Saude
         ));
 
         $itens[] = self::item(
-            'Extensoes do PHP',
+            'Extensões do PHP',
             $faltando === [] ? self::OK : self::ERRO,
             $faltando === [] ? 'completas' : 'faltam ' . implode(', ', $faltando),
             $faltando === []
                 ? 'PDO do banco em uso, mbstring e openssl carregados.'
-                : 'Sem essas extensoes partes do sistema deixam de funcionar.'
+                : 'Sem essas extensões partes do sistema deixam de funcionar.'
         );
 
         // Sob HTTPS o cookie de sessao vai como Secure e o HSTS e anunciado.
@@ -152,8 +152,8 @@ class Saude
                 $seguro ? self::OK : self::AVISO,
                 $seguro ? 'ativo' : 'inativo',
                 $seguro
-                    ? 'Cookie de sessao marcado como Secure.'
-                    : 'Sem HTTPS a sessao viaja sem protecao de transporte. Vale so para ambiente local.'
+                    ? 'Cookie de sessão marcado como Secure.'
+                    : 'Sem HTTPS a sessão viaja sem proteção de transporte. Vale só para ambiente local.'
             );
 
             // Atras de um proxy, REMOTE_ADDR e sempre o mesmo endereco interno:
@@ -163,12 +163,12 @@ class Saude
 
             if ($atrasDeProxy || $confia) {
                 $itens[] = self::item(
-                    'Identificacao da origem',
+                    'Identificação da origem',
                     $atrasDeProxy && !$confia ? self::AVISO : self::OK,
-                    $confia ? 'proxy confiavel ligado' : 'proxy detectado',
+                    $confia ? 'proxy confiável ligado' : 'proxy detectado',
                     $atrasDeProxy && !$confia
-                        ? 'A requisicao chega por proxy, mas AGENDEI_PROXY_CONFIAVEL esta desligada: o bloqueio por origem vai contar todo mundo como o mesmo IP.'
-                        : 'O endereco do visitante e lido do cabecalho escrito pelo proxy.'
+                        ? 'A requisição chega por proxy, mas AGENDEI_PROXY_CONFIAVEL está desligada: o bloqueio por origem vai contar todo mundo como o mesmo IP.'
+                        : 'O endereço do visitante e lido do cabeçalho escrito pelo proxy.'
                 );
             }
         }
@@ -176,12 +176,12 @@ class Saude
         // O contador de tentativas cai para arquivo quando o banco recusa DDL.
         $temp = sys_get_temp_dir();
         $itens[] = self::item(
-            'Diretorio temporario',
+            'Diretorio temporário',
             is_writable($temp) ? self::OK : self::AVISO,
             $temp,
             is_writable($temp)
                 ? 'Serve de reserva para o controle de forca bruta.'
-                : 'Sem escrita aqui, a reserva do controle de forca bruta nao funciona.'
+                : 'Sem escrita aqui, a reserva do controle de forca bruta não funciona.'
         );
 
         return $itens;
@@ -202,11 +202,11 @@ class Saude
             match ($meio) {
                 'api'   => 'API Brevo (HTTPS)',
                 'smtp'  => $config['host'] . ':' . $config['porta'] . ' (' . $config['seguranca'] . ')',
-                default => 'nao configurado',
+                default => 'não configurado',
             },
             $meio !== ''
-                ? 'Cadastro de empresa, aprovacao e recuperacao de senha avisam por e-mail a partir de ' . $config['remetente'] . '. Use o teste abaixo para confirmar a entrega.'
-                : 'Defina AGENDEI_EMAIL_API_CHAVE e AGENDEI_EMAIL_REMETENTE (Brevo, funciona no Render) ou AGENDEI_EMAIL_HOST, _USUARIO e _SENHA (SMTP). Sem isso, os avisos ficam por sua conta e a recuperacao de senha so funciona em desenvolvimento.'
+                ? 'Cadastro de empresa, aprovação e recuperação de senha avisam por e-mail a partir de ' . $config['remetente'] . '. Use o teste abaixo para confirmar a entrega.'
+                : 'Defina AGENDEI_EMAIL_API_CHAVE e AGENDEI_EMAIL_REMETENTE (Brevo, funciona no Render) ou AGENDEI_EMAIL_HOST, _USUARIO e _SENHA (SMTP). Sem isso, os avisos ficam por sua conta e a recuperação de senha só funciona em desenvolvimento.'
         )];
     }
 
@@ -225,8 +225,8 @@ class Saude
             (string) $masters,
             match (true) {
                 $masters >= 2 => 'Ha mais de uma pessoa capaz de administrar a plataforma.',
-                $masters === 1 => 'Com uma conta so, perder a senha deixa a plataforma sem administracao.',
-                default => 'Nenhuma conta master ativa: ninguem consegue administrar a plataforma.',
+                $masters === 1 => 'Com uma conta só, perder a senha deixa a plataforma sem administração.',
+                default => 'Nenhuma conta master ativa: ninguém consegue administrar a plataforma.',
             }
         );
 
@@ -239,7 +239,7 @@ class Saude
                 AMBIENTE === 'producao' ? self::AVISO : self::OK,
                 'presente',
                 AMBIENTE === 'producao'
-                    ? 'Em producao ele responde 404 depois da instalacao, mas o ideal e apagar instalar.php do servidor.'
+                    ? 'Em produção ele responde 404 depois da instalação, mas o ideal e apagar instalar.php do servidor.'
                     : 'Util enquanto o ambiente e de desenvolvimento.'
             );
         }
@@ -258,10 +258,10 @@ class Saude
                 (string) $semAdmin,
                 $semAdmin === 0
                     ? 'Toda empresa ativa tem quem abra o painel dela.'
-                    : 'Ha empresa ativa sem nenhuma conta administrativa ativa: ninguem consegue entrar no painel.'
+                    : 'Ha empresa ativa sem nenhuma conta administrativa ativa: ninguém consegue entrar no painel.'
             );
         } catch (Throwable $erro) {
-            $itens[] = self::item('Empresas sem administrador', self::AVISO, 'nao verificado', 'A consulta falhou: ' . $erro->getMessage());
+            $itens[] = self::item('Empresas sem administrador', self::AVISO, 'não verificado', 'A consulta falhou: ' . $erro->getMessage());
         }
 
         return $itens;
@@ -280,7 +280,7 @@ class Saude
     {
         return match ($estado) {
             self::OK    => 'Tudo certo',
-            self::AVISO => 'Atencao',
+            self::AVISO => 'Atenção',
             default     => 'Problema',
         };
     }

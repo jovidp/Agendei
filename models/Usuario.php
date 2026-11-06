@@ -183,7 +183,7 @@ class Usuario
     {
         $email = mb_strtolower(trim((string) ($dados['email'] ?? '')));
         if (self::emailEmUso($email)) {
-            throw new DomainException('Ja existe uma conta cadastrada com este e-mail.');
+            throw new DomainException('Já existe uma conta cadastrada com este e-mail.');
         }
 
         $sql = 'INSERT INTO usuarios (nome, email, senha_hash, telefone, status,
@@ -247,7 +247,7 @@ class Usuario
     {
         $email = mb_strtolower(trim((string) ($dados['email'] ?? '')));
         if (self::emailEmUso($email, $idUsuario)) {
-            throw new DomainException('Ja existe uma conta cadastrada com este e-mail.');
+            throw new DomainException('Já existe uma conta cadastrada com este e-mail.');
         }
 
         $sql = 'UPDATE usuarios SET nome = :nome, email = :email, telefone = :telefone

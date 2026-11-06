@@ -29,7 +29,7 @@ bloquearSeLogado();
 
 if (!Google::configurado()) {
     http_response_code(404);
-    exit('A entrada com o Google nao esta configurada.');
+    exit('A entrada com o Google não está configurada.');
 }
 
 /** Tempo entre sair para o Google e voltar; depois disso o pedido e refeito. */
@@ -174,7 +174,7 @@ if ($contas === []) {
         // vira adesao, sem senha e sem repetir dados que ela ja informou.
         pedirLembrarDispositivo(false);
         Google::guardarVinculo($email, $slug);
-        definirFlash('info', 'E-mail confirmado pelo Google. Sua conta ja existe: complete so o que este estabelecimento precisa.');
+        definirFlash('info', 'E-mail confirmado pelo Google. Sua conta já existe: complete só o que este estabelecimento precisa.');
         redirecionar('vincular.php?estabelecimento=' . rawurlencode($slug));
     }
 

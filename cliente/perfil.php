@@ -14,7 +14,7 @@ $idUsuario = usuarioId();
 $cliente   = Cliente::porId($idCliente);
 
 if (!$cliente) {
-    definirFlash('erro', 'Perfil nao encontrado.');
+    definirFlash('erro', 'Perfil não encontrado.');
     redirecionar('cliente/dashboard.php');
 }
 
@@ -38,22 +38,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $erros[] = 'Informe seu nome completo.';
         }
         if (!validarEmail($email)) {
-            $erros[] = 'Informe um e-mail valido.';
+            $erros[] = 'Informe um e-mail válido.';
         } elseif (Usuario::emailEmUso($email, $idUsuario)) {
-            $erros[] = 'Este e-mail ja esta em uso por outra conta.';
+            $erros[] = 'Este e-mail já está em uso por outra conta.';
         }
         if (!in_array(strlen($telefone), [10, 11], true)) {
-            $erros[] = 'Informe um telefone valido com DDD.';
+            $erros[] = 'Informe um telefone válido com DDD.';
         }
         if ($cpf !== '') {
             if (!validarCpf($cpf)) {
-                $erros[] = 'Informe um CPF valido.';
+                $erros[] = 'Informe um CPF válido.';
             } elseif (Cliente::cpfEmUso($cpf, $idCliente)) {
-                $erros[] = 'Este CPF ja esta cadastrado em outra conta.';
+                $erros[] = 'Este CPF já está cadastrado em outra conta.';
             }
         }
         if ($nascimento !== '' && (!validarData($nascimento) || strtotime($nascimento) > time())) {
-            $erros[] = 'Informe uma data de nascimento valida.';
+            $erros[] = 'Informe uma data de nascimento válida.';
         }
 
         if ($erros === []) {
@@ -147,7 +147,7 @@ require_once RAIZ . '/includes/painel_header.php';
                     </div>
                 </div>
 
-                <button type="submit" class="btn">Salvar alteracoes</button>
+                <button type="submit" class="btn">Salvar alterações</button>
             </form>
         </div>
     </div>
@@ -171,7 +171,7 @@ require_once RAIZ . '/includes/painel_header.php';
                         <input type="password" id="nova_senha" name="nova_senha" autocomplete="new-password"
                                minlength="8" maxlength="8" required>
                         <span class="mensagem-campo"></span>
-                        <span class="ajuda-campo">Exatamente 8 caracteres alfabeticos.</span>
+                        <span class="ajuda-campo">Exatamente 8 caracteres alfabéticos.</span>
                     </div>
 
                     <div class="campo">
@@ -187,11 +187,11 @@ require_once RAIZ . '/includes/painel_header.php';
         </div>
 
         <div class="cartao">
-            <div class="cartao-cabecalho"><h3>Informacoes da conta</h3></div>
+            <div class="cartao-cabecalho"><h3>Informações da conta</h3></div>
             <div class="cartao-corpo">
                 <dl class="lista-detalhes">
                     <div><dt>Cliente desde</dt><dd><?= formatarData($cliente['data_cadastro']) ?></dd></div>
-                    <div><dt>Situacao</dt><dd><?= badgeStatus($cliente['status']) ?></dd></div>
+                    <div><dt>Situação</dt><dd><?= badgeStatus($cliente['status']) ?></dd></div>
                     <div><dt>Total de agendamentos</dt><dd><?= Agendamento::totalPorCliente($idCliente) ?></dd></div>
                 </dl>
             </div>

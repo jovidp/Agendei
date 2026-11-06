@@ -69,6 +69,23 @@ class Bloqueio
         return $consulta->fetchAll();
     }
 
+    /** Bloqueios do profissional entre duas datas, agrupados por data (Y-m-d). */
+    public static function porPeriodo(int $idProfissional, string $inicio, string $fim): array
+    {
+        $consulta = bd()->prepare(
+            'SELECT data_bloqueio, hora_inicio, hora_fim FROM bloqueios_agenda
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :profissional
+               AND data_bloqueio BETWEEN :inicio AND :fim'
+        );
+        $consulta->execute([':profissional' => $idProfissional, ':inicio' => $inicio, ':fim' => $fim]);
+
+        $porData = [];
+        foreach ($consulta->fetchAll() as $linha) {
+            $porData[substr((string) $linha['data_bloqueio'], 0, 10)][] = $linha;
+        }
+        return $porData;
+    }
+
     /** Existe bloqueio cobrindo o intervalo informado? */
     public static function conflita(int $idProfissional, string $data, string $horaInicio, string $horaFim): bool
     {

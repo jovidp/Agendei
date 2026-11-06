@@ -445,7 +445,7 @@ CREATE TABLE pagamentos (
         tipo ENUM('sinal','integral') NOT NULL DEFAULT 'sinal',
         valor DECIMAL(10,2) NOT NULL,
         metodo ENUM('pix','dinheiro','cartao','outro') NOT NULL DEFAULT 'pix',
-        status ENUM('pendente','pago','cancelado','estornado') NOT NULL DEFAULT 'pendente',
+        status ENUM('pendente','pago','cancelado','estornado','credito','retido') NOT NULL DEFAULT 'pendente',
         referencia VARCHAR(80) NULL,
         data_pagamento DATETIME NULL,
         data_criacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -668,7 +668,7 @@ VALUES
 INSERT INTO `configuracoes` (`id_estabelecimento`,`chave`,`valor`,`descricao`) VALUES
   (1, 'antecedencia_minima_horas', '2',  'Antecedencia minima, em horas, para o cliente agendar'),
   (1, 'antecedencia_maxima_dias',  '60', 'Quantos dias no futuro o cliente pode agendar'),
-  (1, 'cancelamento_limite_horas', '4',  'Ate quantas horas antes o cliente pode cancelar'),
+  (1, 'cancelamento_limite_minutos', '30', 'Ate quantos minutos antes o cliente cancela sem perder o sinal'),
   (1, 'intervalo_slots_minutos',   '30', 'Intervalo padrao entre horarios exibidos'),
   (1, 'permitir_bloqueio_profissional', '1', 'Profissional pode bloquear a propria agenda (1=sim, 0=nao)'),
   (1, 'confirmar_automaticamente', '0',  'Agendamentos nascem confirmados (1=sim, 0=nao)');

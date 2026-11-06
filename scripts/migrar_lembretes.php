@@ -46,5 +46,5 @@ foreach ($colunas as $coluna => $definicao) {
 }
 
 echo $adicionadas > 0
-    ? "Lembretes: fila preparada para o envio automatico ($adicionadas coluna(s) nova(s)).\n"
-    : "Lembretes: fila ja estava preparada.\n";
+    ? "Lembretes: fila preparada para o envio automático ($adicionadas coluna(s) nova(s)).\n"
+    : "Lembretes: fila já estava preparada.\n";

@@ -14,7 +14,7 @@ $idServico = (int) get('id_servico');
 $idFilial  = (int) get('id_filial');
 
 if ($idServico <= 0 || !Servico::estaAtivo($idServico)) {
-    jsonResposta(['sucesso' => false, 'mensagem' => 'Servico invalido ou indisponivel.', 'profissionais' => []], 400);
+    jsonResposta(['sucesso' => false, 'mensagem' => 'Serviço inválido ou indisponível.', 'profissionais' => []], 400);
 }
 
 // Com a unidade escolhida, so entram os profissionais dela; sem ela, todos que fazem o servico.

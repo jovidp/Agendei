@@ -44,7 +44,7 @@ $lista = LogMaster::listar($filtros + [
 $empresas = Estabelecimento::listarTodos();
 
 $tituloPagina  = 'Auditoria';
-$subtituloTopo = $total . ' acao(oes) registrada(s) na administracao master';
+$subtituloTopo = $total . ' acao(oes) registrada(s) na administração master';
 require RAIZ . '/includes/painel_header.php';
 ?>
 <div class="cartao">
@@ -86,7 +86,7 @@ require RAIZ . '/includes/painel_header.php';
     <?php if ($lista === []): ?>
         <div class="estado-vazio">
             <strong>Nenhuma acao registrada.</strong>
-            <p>Entradas na area master, criacao de empresas e alteracoes de acesso aparecem aqui.</p>
+            <p>Entradas na área master, criação de empresas e alterações de acesso aparecem aqui.</p>
         </div>
     <?php else: ?>
         <div class="tabela-area">

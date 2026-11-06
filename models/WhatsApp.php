@@ -28,9 +28,9 @@ class WhatsApp
 {
     /** Provedores que a empresa pode escolher no painel. */
     public const PROVEDORES = [
-        'plataforma' => 'Padrao da plataforma',
+        'plataforma' => 'Padrão da plataforma',
         'manual'     => 'Somente manual (abrir o WhatsApp pelo link)',
-        'evolution'  => 'Evolution API (numero proprio)',
+        'evolution'  => 'Evolution API (número próprio)',
         'meta'       => 'WhatsApp Cloud API (Meta, oficial)',
     ];
 
@@ -131,8 +131,8 @@ class WhatsApp
 
         return match ($escolha) {
             'evolution'  => 'Informe a URL, a instancia e a chave (apikey) da Evolution API.',
-            'meta'       => 'Informe o ID do numero, o token de acesso e o nome do modelo aprovado.',
-            'plataforma' => 'A hospedagem nao tem um provedor configurado. Escolha um provedor proprio ou peca ao responsavel pela plataforma.',
+            'meta'       => 'Informe o ID do número, o token de acesso e o nome do modelo aprovado.',
+            'plataforma' => 'A hospedagem não tem um provedor configurado. Escolha um provedor próprio ou peca ao responsável pela plataforma.',
             default      => '',
         };
     }
@@ -196,7 +196,7 @@ class WhatsApp
 
         match ($config['provedor']) {
             'evolution' => self::enviarTextoEvolution($config, $numero, $texto),
-            'meta'      => throw new RuntimeException('A API oficial da Meta so envia texto livre em resposta ao cliente. Use um modelo aprovado.'),
+            'meta'      => throw new RuntimeException('A API oficial da Meta só envia texto livre em resposta ao cliente. Use um modelo aprovado.'),
             default     => throw new RuntimeException('Nenhum provedor de WhatsApp configurado.'),
         };
     }

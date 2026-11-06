@@ -181,7 +181,7 @@ class Database
                                 self::$conexao->rollBack();
                             }
                         } catch (Throwable $erro) {
-                            error_log('Falha ao encerrar transacao: ' . $erro->getMessage());
+                            error_log('Falha ao encerrar transação: ' . $erro->getMessage());
                         }
                     });
                 }
@@ -196,15 +196,15 @@ class Database
                 }
             } catch (PDOException $erro) {
                 if (PHP_SAPI === 'cli') {
-                    fwrite(STDERR, 'Falha na conexao com o banco: ' . $erro->getMessage() . "\n");
+                    fwrite(STDERR, 'Falha na conexão com o banco: ' . $erro->getMessage() . "\n");
                     exit(1);
                 }
                 http_response_code(503);
                 if (defined('AMBIENTE') && AMBIENTE === 'desenvolvimento') {
-                    exit('Erro de conexao com o banco de dados: ' . $erro->getMessage());
+                    exit('Erro de conexão com o banco de dados: ' . $erro->getMessage());
                 }
-                error_log('Falha na conexao com o banco: ' . $erro->getMessage());
-                exit('Nao foi possivel conectar ao banco de dados. Tente novamente mais tarde.');
+                error_log('Falha na conexão com o banco: ' . $erro->getMessage());
+                exit('Não foi possível conectar ao banco de dados. Tente novamente mais tarde.');
             }
         }
 

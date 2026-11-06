@@ -73,7 +73,7 @@ function migrarDiferenciais(PDO $db): void
         tipo ENUM('sinal','integral') NOT NULL DEFAULT 'sinal',
         valor DECIMAL(10,2) NOT NULL,
         metodo ENUM('pix','dinheiro','cartao','outro') NOT NULL DEFAULT 'pix',
-        status ENUM('pendente','pago','cancelado','estornado') NOT NULL DEFAULT 'pendente',
+        status ENUM('pendente','pago','cancelado','estornado','credito','retido') NOT NULL DEFAULT 'pendente',
         referencia VARCHAR(80) NULL,
         data_pagamento DATETIME NULL,
         data_criacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

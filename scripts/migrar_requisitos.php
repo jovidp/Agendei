@@ -99,10 +99,10 @@ if (PHP_SAPI === 'cli' && realpath($_SERVER['SCRIPT_FILENAME'] ?? '') === realpa
 if (Database::ehPostgres()) {
     fwrite(STDERR, "Este script atualiza apenas bancos MySQL/MariaDB.
 "
-        . "No PostgreSQL, importe banco_postgres.sql: ele ja traz o esquema completo.
+        . "No PostgreSQL, importe banco_postgres.sql: ele já traz o esquema completo.
 ");
     exit(1);
 }
     migrarRequisitos(bd());
-    echo "Requisitos aplicados: campos de cadastro, login proprio e log de autenticacao.\n";
+    echo "Requisitos aplicados: campos de cadastro, login próprio e log de autenticação.\n";
 }

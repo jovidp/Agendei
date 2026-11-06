@@ -14,7 +14,7 @@ bloquearSeLogado();
 // Sem desafio pendente nao ha o que responder: o fluxo recomeca pelo login.
 $pendente = segundoFatorPendente();
 if ($pendente === null) {
-    definirFlash('aviso', 'Faca login para continuar.');
+    definirFlash('aviso', 'Faça login para continuar.');
     redirecionar('login.php');
 }
 
@@ -24,7 +24,7 @@ $usuario = !empty($pendente['vinculo_id'])
     : Usuario::porId((int) $pendente['usuario_id']);
 if ($usuario === null || $usuario['status'] !== 'ativo') {
     cancelarSegundoFator();
-    definirFlash('erro', 'Nao foi possivel continuar a autenticacao. Faca login novamente.');
+    definirFlash('erro', 'Não foi possível continuar a autenticação. Faça login novamente.');
     redirecionar('login.php');
 }
 
@@ -35,10 +35,10 @@ $ehCodigo = segundoFatorEhCodigo($fator);
 // cadastrais, previstas na especificacao, atendem quem ainda nao cadastrou o
 // aplicativo autenticador.
 $pergunta = match ($fator) {
-    'totp'            => 'Digite o codigo do seu aplicativo autenticador',
+    'totp'            => 'Digite o código do seu aplicativo autenticador',
     'nome_materno'    => 'Qual o nome da sua mae?',
     'data_nascimento' => 'Qual a data do seu nascimento?',
-    'cep'             => 'Qual o CEP do seu endereco?',
+    'cep'             => 'Qual o CEP do seu endereço?',
     default           => 'Confirme seus dados cadastrais.',
 };
 
@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($bloqueio !== '') {
         $erros[] = $bloqueio;
     } elseif ($resposta === '') {
-        $erros[] = $ehCodigo ? 'Informe o codigo do aplicativo.' : 'Informe a resposta.';
+        $erros[] = $ehCodigo ? 'Informe o código do aplicativo.' : 'Informe a resposta.';
     } elseif (conferirSegundoFator($fator, $resposta, $usuario)) {
         LogAutenticacao::registrar('2fa_sucesso', (string) $pendente['identificador'], $usuario, $fator, cpfDoUsuario($usuario));
         cancelarSegundoFator();
@@ -84,14 +84,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         $restantes = tentativasRestantesSegundoFator();
-        $erros[] = ($ehCodigo ? 'Codigo incorreto ou ja utilizado.' : 'Resposta incorreta.')
-            . ' Voce ainda tem ' . $restantes . ($restantes === 1 ? ' tentativa.' : ' tentativas.');
+        $erros[] = ($ehCodigo ? 'Código incorreto ou já utilizado.' : 'Resposta incorreta.')
+            . ' Você ainda tem ' . $restantes . ($restantes === 1 ? ' tentativa.' : ' tentativas.');
     }
 }
 
 $estabelecimento = Estabelecimento::dados();
 // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
-$tituloPagina = 'Verificacao em duas etapas | ' . $estabelecimento['nome'];
+$tituloPagina = 'Verificação em duas etapas | ' . $estabelecimento['nome'];
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -115,21 +115,21 @@ $tituloPagina = 'Verificacao em duas etapas | ' . $estabelecimento['nome'];
             </span>
             <?php if ($ehCodigo): ?>
                 <h2>Confirme com seu aplicativo</h2>
-                <p>Abra o aplicativo autenticador no seu celular e digite o codigo que aparece para o Agendei.</p>
+                <p>Abra o aplicativo autenticador no seu celular e digite o código que aparece para o Agendei.</p>
 
                 <ul class="lista-beneficios">
-                    <li>O codigo muda a cada 30 segundos</li>
+                    <li>O código muda a cada 30 segundos</li>
                     <li>Funciona sem internet no celular</li>
-                    <li>Cada codigo vale uma unica vez</li>
+                    <li>Cada código vale uma única vez</li>
                 </ul>
             <?php else: ?>
-                <h2>Mais uma confirmacao</h2>
-                <p>Para proteger sua conta, confirmamos um dado que so voce informou no cadastro.</p>
+                <h2>Mais uma confirmação</h2>
+                <p>Para proteger sua conta, confirmamos um dado que só você informou no cadastro.</p>
 
                 <ul class="lista-beneficios">
                     <li>A pergunta muda a cada acesso</li>
-                    <li>Nenhum codigo por e-mail ou SMS</li>
-                    <li>Sua sessao so abre apos a confirmacao</li>
+                    <li>Nenhum código por e-mail ou SMS</li>
+                    <li>Sua sessão só abre após a confirmação</li>
                 </ul>
             <?php endif; ?>
         </div>
@@ -137,10 +137,10 @@ $tituloPagina = 'Verificacao em duas etapas | ' . $estabelecimento['nome'];
         <div class="autenticacao-formulario">
             <a href="<?= url('login.php') ?>" class="voltar-site">&larr; Voltar ao login</a>
 
-            <h1>Verificacao em duas etapas</h1>
+            <h1>Verificação em duas etapas</h1>
             <p class="subtitulo">
-                Ola, <?= e(explode(' ', $usuario['nome'])[0]) ?>.
-                <?= $ehCodigo ? 'Informe o codigo para concluir a entrada.' : 'Responda para concluir a entrada.' ?>
+                Olá, <?= e(explode(' ', $usuario['nome'])[0]) ?>.
+                <?= $ehCodigo ? 'Informe o código para concluir a entrada.' : 'Responda para concluir a entrada.' ?>
             </p>
 
             <?php if ($erros !== []): ?>
@@ -172,7 +172,7 @@ $tituloPagina = 'Verificacao em duas etapas | ' . $estabelecimento['nome'];
                     <span class="mensagem-campo"></span>
                     <span class="ajuda-campo">
                         <?php if ($ehCodigo): ?>
-                            Seis digitos, sem espacos. Tentativas restantes:
+                            Seis dígitos, sem espaços. Tentativas restantes:
                             <?= (int) tentativasRestantesSegundoFator() ?> de 3.
                         <?php else: ?>
                             Tentativas restantes: <?= (int) tentativasRestantesSegundoFator() ?> de 3.
@@ -188,7 +188,7 @@ $tituloPagina = 'Verificacao em duas etapas | ' . $estabelecimento['nome'];
                     Perdeu o acesso ao aplicativo? Procure o administrador do estabelecimento.
                     <a href="<?= url('logout.php') ?>">Cancelar e sair</a>
                 <?php else: ?>
-                    Nao reconhece esta pergunta? <a href="<?= url('logout.php') ?>">Cancelar e sair</a>
+                    Não reconhece esta pergunta? <a href="<?= url('logout.php') ?>">Cancelar e sair</a>
                 <?php endif; ?>
             </p>
         </div>
