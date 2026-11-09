@@ -394,6 +394,29 @@ class Plano
         return $planos;
     }
 
+    /**
+     * O que o plano inclui, na ordem das telas: limites e depois cada beneficio,
+     * marcado como incluso ou nao. Usado na pagina inicial e em Assinatura.
+     * @return array<int, array{texto: string, incluso: bool}>
+     */
+    public static function itensDe(array $plano): array
+    {
+        $limite = fn($valor, string $unidade) => $valor === null || $valor === ''
+            ? ['texto' => ucfirst($unidade) . ' ilimitados', 'incluso' => true]
+            : ['texto' => 'Até ' . (int) $valor . ' ' . $unidade, 'incluso' => true];
+
+        $itens = [
+            $limite($plano['limite_profissionais'] ?? null, 'profissionais'),
+            $limite($plano['limite_servicos'] ?? null, 'serviços'),
+            $limite($plano['limite_agendamentos_mes'] ?? null, 'agendamentos por mês'),
+        ];
+        $recursos = self::recursosDe($plano);
+        foreach (self::BENEFICIOS as $chave => $rotulo) {
+            $itens[] = ['texto' => $rotulo, 'incluso' => in_array($chave, $recursos, true)];
+        }
+        return $itens;
+    }
+
     /** Menor mensalidade entre os planos contrataveis, para o "a partir de" das paginas publicas. */
     public static function menorPreco(): float
     {

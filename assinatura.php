@@ -69,9 +69,6 @@ $tituloPagina = 'Assinatura';
 $subtituloTopo = $planoAtual ? 'Plano ' . $planoAtual['nome'] . ' — ' . formatarMoeda($preco) . ' por mês' : 'Escolha o plano da sua empresa';
 $cssExtra = ['agendamento.css'];
 require RAIZ . '/includes/painel_header.php';
-
-/** Limite em texto: numero ou "ilimitado". */
-$limiteTexto = fn($valor, string $unidade) => $valor === null || $valor === '' ? ucfirst($unidade) . ' ilimitados' : 'Até ' . (int) $valor . ' ' . $unidade;
 ?>
 <div class="cartao"><div class="cartao-cabecalho"><div><h3><?= $emDia ? 'Assinatura ativa' : 'Continue usando o Agendei' ?></h3><small><?= $planoAtual ? e($planoAtual['nome']) . ' · ' : '' ?><?= formatarMoeda($preco) ?> por mês</small></div><?= badgeStatus($assinatura['status']) ?></div>
 <div class="cartao-corpo">
@@ -94,7 +91,7 @@ $limiteTexto = fn($valor, string $unidade) => $valor === null || $valor === '' ?
     <div class="cartao-cabecalho"><h3><?= $emDia ? 'Trocar de plano' : 'Escolha o plano' ?></h3></div>
     <div class="cartao-corpo">
         <div class="lista-opcoes planos-opcoes">
-            <?php foreach ($planos as $plano): $id = (int) $plano['id_plano']; $recursos = Plano::recursosDe($plano); ?>
+            <?php foreach ($planos as $plano): $id = (int) $plano['id_plano']; ?>
                 <div class="opcao">
                     <input type="radio" name="id_plano" id="plano<?= $id ?>" value="<?= $id ?>" required
                         <?= ($planoAtual && (int) $planoAtual['id_plano'] === $id) ? 'checked' : '' ?>>
@@ -104,11 +101,8 @@ $limiteTexto = fn($valor, string $unidade) => $valor === null || $valor === '' ?
                             <span class="plano-preco"><?= formatarMoeda($plano['preco_mensal']) ?><small>/mês</small></span>
                             <p><?= e($plano['descricao'] ?? '') ?></p>
                             <ul class="plano-beneficios">
-                                <li><?= e($limiteTexto($plano['limite_profissionais'], 'profissionais')) ?></li>
-                                <li><?= e($limiteTexto($plano['limite_servicos'], 'serviços')) ?></li>
-                                <li><?= e($limiteTexto($plano['limite_agendamentos_mes'], 'agendamentos por mês')) ?></li>
-                                <?php foreach (Plano::BENEFICIOS as $chave => $rotulo): $tem = in_array($chave, $recursos, true); ?>
-                                    <li class="<?= $tem ? 'incluso' : 'fora' ?>"><span class="sr-only"><?= $tem ? 'Inclui:' : 'Não inclui:' ?></span><?= e($rotulo) ?></li>
+                                <?php foreach (Plano::itensDe($plano) as $item): ?>
+                                    <li class="<?= $item['incluso'] ? 'incluso' : 'fora' ?>"><span class="sr-only"><?= $item['incluso'] ? 'Inclui:' : 'Não inclui:' ?></span><?= e($item['texto']) ?></li>
                                 <?php endforeach; ?>
                             </ul>
                         </span>

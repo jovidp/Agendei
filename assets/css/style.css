@@ -1629,3 +1629,9 @@ legend {
 @media (max-width: 520px) {
   .aviso-cookies { flex-direction: column; align-items: stretch; }
 }
+
+/* Texto so para leitor de tela. */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}

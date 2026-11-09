@@ -504,3 +504,44 @@
 .cadastros-detalhe a {
   font-weight: 600;
 }
+
+/* Planos na pagina inicial (index.php, #planos). */
+.grade-planos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 18px;
+  align-items: stretch;
+}
+.plano-home {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 26px 22px 22px;
+  background-color: var(--branco);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+}
+.plano-home h3 { margin: 0 0 6px; font-size: 18px; }
+.plano-destaque {
+  border: 2px solid var(--cor-primaria);
+  box-shadow: 0 10px 30px rgba(31, 78, 95, 0.12);
+}
+.plano-selo {
+  position: absolute;
+  top: -12px;
+  left: 22px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background-color: var(--cor-primaria);
+  color: var(--branco);
+  font-size: 12px;
+  font-weight: 600;
+}
+.plano-valor { margin: 0; font-size: 30px; font-weight: 700; color: var(--cor-primaria); }
+.plano-valor small { font-size: 14px; font-weight: 400; color: var(--texto-secundario); }
+.plano-resumo { margin: 8px 0 14px; color: var(--texto-secundario); font-size: 14px; }
+.plano-itens { list-style: none; margin: 0 0 20px; padding: 14px 0 0; border-top: 1px solid var(--borda); font-size: 14px; flex: 1; }
+.plano-itens li { position: relative; padding-left: 22px; margin-bottom: 8px; }
+.plano-itens li::before { content: "✓"; position: absolute; left: 0; color: var(--cor-secundaria); font-weight: 700; }
+.plano-itens li.fora { color: var(--texto-secundario); opacity: 0.65; }
+.plano-itens li.fora::before { content: "–"; color: var(--texto-secundario); }

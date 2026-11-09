@@ -65,6 +65,7 @@ $recursos = [
             <a href="#como-funciona">Como funciona</a>
             <a href="#para-quem-marca">Para quem marca</a>
             <a href="#cadastros">Cadastros</a>
+            <a href="#planos">Planos</a>
             <a href="#recursos">Recursos</a>
         </nav>
 
@@ -228,6 +229,35 @@ $recursos = [
     </div>
 </section>
 
+<?php /* Planos: os mesmos que a empresa escolhe em Assinatura, com o preco que o master definiu. */ ?>
+<?php // Sem planos com preco no banco (instalacao nova), mostra os padroes para a secao nunca sumir.
+$planosHome = Plano::contrataveis() ?: array_map(fn($p) => ['recursos' => implode(',', $p['recursos'])] + $p, Plano::PADRAO); ?>
+<section class="secao secao-clara" id="planos">
+    <div class="container">
+        <div class="secao-titulo">
+            <h2>Planos para cada tamanho de negócio</h2>
+            <p>Comece com <?= Assinatura::DIAS_DEMO ?> dias grátis, sem cartão. Escolha o plano depois, troque quando quiser e cancele sem multa.</p>
+        </div>
+        <div class="grade-planos">
+            <?php foreach ($planosHome as $plano): $destaque = $plano['nome'] === Plano::PADRAO_CADASTRO; ?>
+                <article class="plano-home<?= $destaque ? ' plano-destaque' : '' ?>">
+                    <?php if ($destaque): ?><span class="plano-selo">Recomendado</span><?php endif; ?>
+                    <h3><?= e($plano['nome']) ?></h3>
+                    <p class="plano-valor"><?= formatarMoeda($plano['preco_mensal']) ?><small>/mês</small></p>
+                    <p class="plano-resumo"><?= e($plano['descricao'] ?? '') ?></p>
+                    <ul class="plano-itens">
+                        <?php foreach (Plano::itensDe($plano) as $item): ?>
+                            <li class="<?= $item['incluso'] ? 'incluso' : 'fora' ?>"><span class="sr-only"><?= $item['incluso'] ? 'Inclui:' : 'Não inclui:' ?></span><?= e($item['texto']) ?></li>
+                        <?php endforeach; ?>
+                    </ul>
+                    <a href="<?= url('cadastro_empresa.php') ?>" class="btn btn-bloco<?= $destaque ? '' : ' btn-contorno' ?>">Testar <?= Assinatura::DIAS_DEMO ?> dias grátis</a>
+                </article>
+            <?php endforeach; ?>
+        </div>
+        <p class="cadastros-detalhe">Preços mensais, sem fidelidade. Veja <a href="<?= url('legal.php?pagina=reembolso') ?>">cancelamento e reembolso</a>.</p>
+    </div>
+</section>
+
 <?php /* Recursos opcionais, para mostrar ate onde o sistema vai. */ ?>
 <section class="secao" id="recursos">
     <div class="container">
@@ -292,6 +322,7 @@ $recursos = [
                     <li><a href="#como-funciona">Como funciona</a></li>
                     <li><a href="#para-quem-marca">Para quem marca</a></li>
                     <li><a href="#cadastros">Cadastros</a></li>
+                    <li><a href="#planos">Planos</a></li>
                     <li><a href="#recursos">Recursos</a></li>
                 </ul>
             </div>
