@@ -76,3 +76,7 @@ $cssExtra        = $cssExtra ?? [];
 
         <div class="area-conteudo">
             <?php exibirFlash(); ?>
+            <?php /* Lembrete de confirmar o e-mail ate a pessoa digitar o codigo (VerificacaoEmail). */ ?>
+            <?php if (!ehSimulacao() && empty($ocultarAvisoEmail) && VerificacaoEmail::precisaConfirmar()): ?>
+                <div class="alerta alerta-info aviso-confirmar-email"><span class="alerta-texto"><strong>Confirme seu e-mail.</strong> Enviamos um código para <?= e(VerificacaoEmail::mascarar((string) ($_SESSION['usuario_email'] ?? ''))) ?>. <a href="<?= url('verificar_email.php') ?>">Digitar o código</a></span></div>
+            <?php endif; ?>

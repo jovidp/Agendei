@@ -111,6 +111,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'detalhe' => 'demonstração de 7 dias',
             ]);
             Legal::registrarAceite($dados['email']);
+            // Conta nova: manda o codigo para confirmar o e-mail. Quem ja tinha conta continua como estava.
+            if ($pessoaExistente === null) VerificacaoEmail::aposCadastro($dados['email'], $confirmadoPeloGoogle);
             // Na demonstracao a empresa experimenta o plano padrao; escolhe o dela em Assinatura.
             try {
                 $planoInicial = Plano::porNome(Plano::PADRAO_CADASTRO);

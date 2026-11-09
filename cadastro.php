@@ -160,6 +160,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
 
             Legal::registrarAceite($dados['email']);
+            // Conta criada: manda o codigo para confirmar o e-mail (quem veio do Google ja nasce confirmado).
+            VerificacaoEmail::aposCadastro($dados['email'], is_array($googleCadastro) && ($googleCadastro['email'] ?? '') === $dados['email']);
             Google::limparCadastro();
             // A especificacao encerra o cadastro na tela de login.
             definirFlash('sucesso', 'Cadastro realizado com sucesso. Faça login para continuar.');

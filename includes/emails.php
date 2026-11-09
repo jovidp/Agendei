@@ -28,42 +28,91 @@ function urlAbsoluta(string $caminho = ''): string
     return ($https ? 'https://' : 'http://') . $host . url($caminho);
 }
 
-/** Veste o texto com a marca. Os paragrafos vem em texto simples, um por linha em branco. */
-function emailLayout(string $titulo, array $paragrafos, ?array $botao = null): string
+/**
+ * Veste o texto com a marca. Os paragrafos vem em texto simples, um por linha
+ * em branco. $codigo, quando vem, aparece num quadro grande (codigo de
+ * confirmacao). Tudo em tabela e estilo inline: e o que Gmail e Outlook leem.
+ */
+function emailLayout(string $titulo, array $paragrafos, ?array $botao = null, ?string $codigo = null): string
 {
+    $fonte = "'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
     $corpo = '';
-    foreach ($paragrafos as $paragrafo) {
-        $corpo .= '<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#2e3438">' . nl2br(e($paragrafo)) . '</p>';
+    foreach ($paragrafos as $i => $paragrafo) {
+        $corpo .= '<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:' . ($i === 0 ? '#1d2a30' : '#46545b') . '">' . nl2br(e($paragrafo)) . '</p>';
+        if ($i === 0 && $codigo !== null) {
+            $corpo .= '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:8px 0 22px"><tr><td align="center" style="background:#eef6f2;border:1px dashed #5faf8b;border-radius:12px;padding:22px 12px">'
+                . '<div style="font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#46807f;font-weight:600;margin-bottom:8px">Seu código</div>'
+                . '<div style="font-family:Consolas,Menlo,monospace;font-size:36px;letter-spacing:10px;font-weight:700;color:#1f4e5f;padding-left:10px">' . e($codigo) . '</div>'
+                . '</td></tr></table>';
+        }
     }
     if ($botao !== null) {
-        $corpo .= '<p style="margin:22px 0 6px"><a href="' . e($botao['url']) . '" style="display:inline-block;padding:12px 22px;border-radius:6px;background:#1f4e5f;color:#ffffff;font-weight:600;text-decoration:none">' . e($botao['rotulo']) . '</a></p>'
-            . '<p style="margin:0 0 14px;font-size:13px;color:#636d72;word-break:break-all">' . e($botao['url']) . '</p>';
+        $corpo .= '<table role="presentation" cellspacing="0" cellpadding="0" style="margin:24px 0 8px"><tr><td style="border-radius:8px;background:#1f4e5f">'
+            . '<a href="' . e($botao['url']) . '" style="display:inline-block;padding:13px 26px;font-size:15px;color:#ffffff;font-weight:600;text-decoration:none;border-radius:8px">' . e($botao['rotulo']) . ' &rarr;</a></td></tr></table>'
+            . '<p style="margin:0 0 14px;font-size:12.5px;color:#7a868c;word-break:break-all">Se o botão não abrir, copie o link: ' . e($botao['url']) . '</p>';
     }
+    // Primeira linha do texto aparece como previa na caixa de entrada.
+    $previa = mb_substr($codigo !== null ? 'Seu código: ' . $codigo : (string) ($paragrafos[1] ?? $paragrafos[0] ?? ''), 0, 120);
 
-    return '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>' . e($titulo) . '</title></head>'
-        . '<body style="margin:0;padding:0;background:#f5f1ea;font-family:Segoe UI,Roboto,Arial,sans-serif">'
-        . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f1ea;padding:28px 12px"><tr><td align="center">'
-        . '<table role="presentation" width="560" cellspacing="0" cellpadding="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:8px;overflow:hidden">'
-        . '<tr><td style="background:#1f4e5f;padding:18px 26px;color:#ffffff;font-size:20px;font-weight:700">' . e(NOME_SISTEMA) . '</td></tr>'
-        . '<tr><td style="padding:26px"><h1 style="margin:0 0 16px;font-size:21px;line-height:1.25;color:#1f4e5f">' . e($titulo) . '</h1>' . $corpo . '</td></tr>'
-        . '<tr><td style="padding:14px 26px;border-top:1px solid #e6e1d8;font-size:12.5px;color:#636d72">' . e(NOME_SISTEMA) . ' &middot; ' . e(MARCA_SLOGAN) . '</td></tr>'
+    return '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' . e($titulo) . '</title></head>'
+        . '<body style="margin:0;padding:0;background:#f5f1ea;font-family:' . $fonte . '">'
+        . '<div style="display:none;max-height:0;overflow:hidden;opacity:0">' . e($previa) . '</div>'
+        . '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f1ea;padding:32px 12px"><tr><td align="center">'
+        . '<table role="presentation" width="560" cellspacing="0" cellpadding="0" style="max-width:560px;width:100%">'
+        . '<tr><td style="padding:0 4px 16px;font-size:22px;font-weight:700;color:#1f4e5f;letter-spacing:-0.3px">&#128197; ' . e(NOME_SISTEMA) . '</td></tr>'
+        . '<tr><td style="background:#ffffff;border-radius:14px;border:1px solid #e6e1d8;overflow:hidden">'
+        . '<div style="height:6px;background:#1f4e5f;background-image:linear-gradient(90deg,#1f4e5f,#5faf8b);border-radius:14px 14px 0 0"></div>'
+        . '<div style="padding:30px 32px 26px"><h1 style="margin:0 0 18px;font-size:23px;line-height:1.3;color:#1f4e5f;font-weight:700">' . e($titulo) . '</h1>' . $corpo . '</div>'
+        . '</td></tr>'
+        . '<tr><td align="center" style="padding:18px 12px 0;font-size:12.5px;line-height:1.6;color:#7a868c">'
+        . '<strong style="color:#46545b">' . e(NOME_SISTEMA) . '</strong> &middot; ' . e(MARCA_SLOGAN) . '<br>Você recebeu este e-mail por causa de uma ação na sua conta.'
+        . '</td></tr>'
         . '</table></td></tr></table></body></html>';
 }
 
-/** Versao em texto: titulo, paragrafos e, se houver, o link do botao. */
-function emailTexto(string $titulo, array $paragrafos, ?array $botao = null): string
+/** Versao em texto: titulo, paragrafos, o codigo e, se houver, o link do botao. */
+function emailTexto(string $titulo, array $paragrafos, ?array $botao = null, ?string $codigo = null): string
 {
-    $texto = $titulo . "\n\n" . implode("\n\n", $paragrafos);
-    if ($botao !== null) {
-        $texto .= "\n\n" . $botao['rotulo'] . ': ' . $botao['url'];
+    if ($codigo !== null) {
+        array_splice($paragrafos, 1, 0, ['Seu código: ' . $codigo]);
     }
-    return $texto . "\n\n-- \n" . NOME_SISTEMA . ' - ' . MARCA_SLOGAN;
+    $texto = $titulo . "
+
+" . implode("
+
+", $paragrafos);
+    if ($botao !== null) {
+        $texto .= "
+
+" . $botao['rotulo'] . ': ' . $botao['url'];
+    }
+    return $texto . "
+
+-- 
+" . NOME_SISTEMA . ' - ' . MARCA_SLOGAN;
 }
 
 /** Monta os tres formatos de uma vez. */
-function emailMensagem(string $assunto, string $titulo, array $paragrafos, ?array $botao = null): array
+function emailMensagem(string $assunto, string $titulo, array $paragrafos, ?array $botao = null, ?string $codigo = null): array
 {
-    return [$assunto, emailTexto($titulo, $paragrafos, $botao), emailLayout($titulo, $paragrafos, $botao)];
+    return [$assunto, emailTexto($titulo, $paragrafos, $botao, $codigo), emailLayout($titulo, $paragrafos, $botao, $codigo)];
+}
+
+/** Codigo de 6 digitos que confirma o e-mail da conta (VerificacaoEmail). */
+function emailCodigoConfirmacao(string $nome, string $codigo): array
+{
+    $primeiroNome = explode(' ', trim($nome))[0] ?: $nome;
+    return emailMensagem(
+        $codigo . ' é o seu código de confirmação - ' . NOME_SISTEMA,
+        'Confirme seu e-mail',
+        [
+            'Olá, ' . $primeiroNome . '! Sua conta no ' . NOME_SISTEMA . ' está criada. Falta só confirmar que este e-mail é seu: digite o código abaixo no aviso do seu painel.',
+            'O código vale por ' . VerificacaoEmail::VALIDADE_MINUTOS . ' minutos. Se expirar, é só pedir outro no painel.',
+            'Não foi você que criou a conta? Pode ignorar este e-mail.',
+        ],
+        ['rotulo' => 'Confirmar no painel', 'url' => urlAbsoluta('verificar_email.php')],
+        $codigo
+    );
 }
 
 // ---------------------------------------------------------------------
@@ -136,18 +185,22 @@ function emailCadastroRecusado(array $solicitacao): array
 // Contas
 // ---------------------------------------------------------------------
 
-/** Link de redefinicao de senha. */
-function emailRecuperacaoSenha(string $nome, string $link, string $empresa): array
+/** Codigo e link de redefinicao de senha: o codigo serve na mesma tela, o link em qualquer aparelho. */
+function emailRecuperacaoSenha(string $nome, string $link, string $empresa, ?string $codigo = null): array
 {
+    $primeiroNome = explode(' ', trim($nome))[0] ?: $nome;
     return emailMensagem(
-        'Redefinição de senha - ' . $empresa,
+        ($codigo !== null ? $codigo . ' é o seu código para redefinir a senha' : 'Redefinição de senha') . ' - ' . $empresa,
         'Redefinir sua senha',
         [
-            'Olá, ' . $nome . '.',
-            'Recebemos um pedido para redefinir a senha da sua conta em ' . $empresa . '. Use o botão abaixo para escolher uma senha nova. O link vale por tempo limitado.',
-            'Se não foi você, ignore este e-mail. A senha atual continua valendo.',
+            'Olá, ' . $primeiroNome . '. Recebemos um pedido para redefinir a senha da sua conta em ' . $empresa . '.'
+                . ($codigo !== null ? ' Digite o código abaixo na tela de recuperação:' : ''),
+            ($codigo !== null ? 'Está em outro aparelho? Use o botão abaixo. ' : 'Use o botão abaixo para escolher uma senha nova. ')
+                . 'O código e o link valem por tempo limitado e só funcionam uma vez.',
+            'Não foi você? Ignore este e-mail. Sua senha atual continua valendo e ninguém entra sem o código.',
         ],
-        ['rotulo' => 'Redefinir senha', 'url' => $link]
+        ['rotulo' => 'Redefinir senha', 'url' => $link],
+        $codigo
     );
 }
 

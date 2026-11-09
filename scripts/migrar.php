@@ -167,6 +167,11 @@ require_once __DIR__ . '/../models/Plano.php';
 Plano::garantirEstrutura();
 echo "Planos: preco, beneficios e planos padrao prontos.\n";
 
+// Confirmacao do e-mail da conta (usuarios.email_confirmado_em).
+require_once __DIR__ . '/../models/VerificacaoEmail.php';
+VerificacaoEmail::garantirEstrutura();
+echo "Confirmacao de e-mail: coluna pronta.\n";
+
 // Conversas do bot de WhatsApp.
 require_once __DIR__ . '/../models/Bot.php';
 foreach (Bot::ddl() as $comando) {

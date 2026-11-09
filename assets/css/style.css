@@ -1635,3 +1635,19 @@ legend {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }
+
+/* Codigo de confirmacao do e-mail (verificar_email.php e recuperar_senha.php). */
+.codigo-email { text-align: center; }
+.codigo-email .campo { text-align: left; }
+.codigo-email-icone {
+  width: 64px; height: 64px; margin: 8px auto 14px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background-color: rgba(95, 175, 139, 0.15); color: var(--cor-primaria); font-size: 30px;
+}
+.codigo-email-campo {
+  text-align: center; font-size: 28px !important; letter-spacing: 10px; font-weight: 700;
+  font-family: Consolas, Menlo, monospace; padding: 14px 10px !important;
+}
+.codigo-email-dica { margin-top: 18px; }
+.codigo-email-acoes { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+.cartao-estreito { max-width: 480px; margin-left: auto; margin-right: auto; }

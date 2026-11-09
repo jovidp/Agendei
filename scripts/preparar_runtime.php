@@ -17,6 +17,7 @@ try {
         Diferencial::garantirStatusSinal();
         Legal::garantirEstrutura();
         Plano::garantirEstrutura();
+        VerificacaoEmail::garantirEstrutura();
     } catch (Throwable $erroSinal) {
         fwrite(STDERR, 'Aviso: estrutura do sinal e do aceite não atualizada: ' . $erroSinal->getMessage() . "\n");
     }

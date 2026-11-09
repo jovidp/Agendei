@@ -18,6 +18,21 @@ $linkGerado = null;
 $erro = '';
 $emailDisponivel = Email::configurado();
 
+// Codigo que chegou junto com o link: certo, leva direto para a troca de senha.
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array(post('acao'), ['codigo', 'outro'], true)) {
+    exigirCsrf();
+    if (post('acao') === 'outro') {
+        VerificacaoEmail::cancelarRecuperacao();
+        redirecionar('recuperar_senha.php');
+    }
+    $resultado = VerificacaoEmail::conferirRecuperacao((string) post('codigo'));
+    if (isset($resultado['token']) && $resultado['token'] !== '') {
+        redirecionar('redefinir_senha.php?token=' . rawurlencode($resultado['token']));
+    }
+    definirFlash('erro', $resultado['erro'] ?? 'Código incorreto.');
+    redirecionar('recuperar_senha.php');
+}
+
 // Processa o formulário enviado antes de montar o HTML da página.
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Confere o token da sessão antes de aceitar alterações enviadas pelo formulário.
@@ -39,14 +54,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         anotarFalha('recuperar_ip', ipCliente());
 
         $usuario = Usuario::porEmail($email);
+        $ativo = $usuario && $usuario['status'] === 'ativo';
+        // Com ou sem conta a tela pede o codigo; sem conta ele nunca confere.
+        $token = $ativo ? Usuario::gerarTokenRecuperacao((int) $usuario['id_usuario']) : null;
+        $codigo = VerificacaoEmail::codigoRecuperacao($ativo ? (int) $usuario['id_usuario'] : null, $email, $token);
 
-        if ($usuario && $usuario['status'] === 'ativo') {
-            $token = Usuario::gerarTokenRecuperacao((int) $usuario['id_usuario']);
+        if ($ativo) {
             $link  = urlAbsoluta('redefinir_senha.php?token=' . $token);
 
             $entregue = false;
             if ($emailDisponivel) {
-                [$assunto, $texto, $html] = emailRecuperacaoSenha((string) $usuario['nome'], $link, (string) Estabelecimento::dados()['nome']);
+                [$assunto, $texto, $html] = emailRecuperacaoSenha((string) $usuario['nome'], $link, (string) Estabelecimento::dados()['nome'], $codigo);
                 $entregue = Email::enviar($email, $assunto, $texto, $html, (string) $usuario['nome']);
             }
 
@@ -59,10 +77,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Mantém a mesma confirmação para e-mails existentes ou ausentes, evitando revelar cadastros.
         $enviado = true;
+        if ($emailDisponivel) {
+            redirecionar('recuperar_senha.php');
+        }
     }
 }
 
 $estabelecimento = Estabelecimento::dados();
+$emailPendente = $emailDisponivel ? VerificacaoEmail::recuperacaoPendente() : null;
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -82,8 +104,30 @@ $estabelecimento = Estabelecimento::dados();
             <div class="marca"><?= Tema::marca($estabelecimento) ?> <?= e($estabelecimento['nome']) ?></div>
             <a href="<?= url('login.php') ?>" class="voltar-site">&larr; Voltar para o login</a>
 
+            <?php if ($emailPendente !== null && !$enviado): ?>
+                <div class="codigo-email">
+                    <div class="codigo-email-icone" aria-hidden="true">&#128273;</div>
+                    <h1>Digite o código</h1>
+                    <p class="subtitulo">Se <strong><?= e(VerificacaoEmail::mascarar($emailPendente)) ?></strong> tiver conta aqui, enviamos um código de 6 dígitos e um link. Use o que for mais fácil.</p>
+                    <?php exibirFlash(); ?>
+                    <form method="post">
+                        <?= campoCsrf() ?>
+                        <div class="campo">
+                            <label for="codigo">Código recebido por e-mail</label>
+                            <input type="text" id="codigo" name="codigo" class="codigo-email-campo" inputmode="numeric" pattern="[0-9 ]{6,7}" maxlength="7"
+                                   autocomplete="one-time-code" placeholder="000000" required autofocus>
+                        </div>
+                        <button type="submit" name="acao" value="codigo" class="btn btn-bloco btn-grande">Continuar</button>
+                    </form>
+                    <p class="ajuda-campo codigo-email-dica">Não chegou? Olhe a caixa de spam. O código vale por <?= VerificacaoEmail::VALIDADE_MINUTOS ?> minutos.</p>
+                    <form method="post" class="codigo-email-acoes">
+                        <?= campoCsrf() ?>
+                        <button type="submit" name="acao" value="outro" class="btn btn-contorno" formnovalidate>Pedir de novo ou usar outro e-mail</button>
+                    </form>
+                </div>
+            <?php else: ?>
             <h1>Recuperar senha</h1>
-            <p class="subtitulo">Informe o e-mail cadastrado para receber o link de redefinição.</p>
+            <p class="subtitulo">Informe o e-mail cadastrado para receber o código e o link de redefinição.</p>
 
             <?php if ($erro !== ''): ?>
                 <div class="alerta alerta-erro"><span class="alerta-texto"><?= e($erro) ?></span></div>
@@ -121,8 +165,10 @@ $estabelecimento = Estabelecimento::dados();
                         <span class="mensagem-campo"></span>
                     </div>
 
-                    <button type="submit" class="btn btn-bloco btn-grande">Enviar link de recuperação</button>
+                    <button type="submit" class="btn btn-bloco btn-grande">Enviar código de recuperação</button>
                 </form>
+            <?php endif; ?>
+
             <?php endif; ?>
 
             <p class="autenticacao-rodape">

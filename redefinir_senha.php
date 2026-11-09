@@ -34,6 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $usuario !== null) {
         SessaoLembrada::apagarDoUsuario((int) $usuario['id_usuario']);
         // Consome o token após a troca de senha para que o link não possa ser usado novamente.
         Usuario::limparTokenRecuperacao((int) $usuario['id_usuario']);
+        // O link (ou o codigo) chegou no e-mail: isso tambem prova que o e-mail e dela.
+        VerificacaoEmail::marcarConfirmado((int) $usuario['id_usuario']);
 
         definirFlash('sucesso', 'Senha redefinida com sucesso. Faça login com a nova senha.');
         redirecionar('login.php');
