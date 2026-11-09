@@ -40,6 +40,17 @@ class Plano
      */
     private const SO_COM_PLANO = ['bot_whatsapp'];
 
+    /** O que todo plano tem (nada disso passa por temRecurso), listado nas telas de plano. */
+    public const EM_TODOS = [
+        'Agenda on-line com link próprio da empresa',
+        'Cadastro e histórico de clientes',
+        'Folgas, férias e bloqueios na agenda',
+        'Várias unidades (filiais)',
+        'Relatórios e painel de indicadores',
+        'Página com a marca da empresa',
+        'Agenda do profissional no Google Agenda e Outlook',
+    ];
+
     /** Planos criados na instalacao, se ainda nao existir um com o mesmo nome. */
     public const PADRAO = [
         ['nome' => 'Básico', 'preco_mensal' => 79.00, 'descricao' => 'Para quem está começando: agenda on-line, link próprio e lembretes pelo painel.',
@@ -410,7 +421,13 @@ class Plano
             $limite($plano['limite_servicos'] ?? null, 'serviços'),
             $limite($plano['limite_agendamentos_mes'] ?? null, 'agendamentos por mês'),
         ];
+        foreach (self::EM_TODOS as $texto) {
+            $itens[] = ['texto' => $texto, 'incluso' => true];
+        }
         $recursos = self::recursosDe($plano);
+        // A tela Diferenciais (lista de espera, recorrentes) abre com qualquer um destes; mesma regra de admin/diferenciais.php.
+        $itens[] = ['texto' => 'Lista de espera e horários recorrentes',
+                    'incluso' => array_intersect(['diferenciais', 'lembretes_whatsapp', 'sinal_pix'], $recursos) !== []];
         foreach (self::BENEFICIOS as $chave => $rotulo) {
             $itens[] = ['texto' => $rotulo, 'incluso' => in_array($chave, $recursos, true)];
         }

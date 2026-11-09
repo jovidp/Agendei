@@ -4,7 +4,9 @@
  *
  * A empresa escolhe o plano (preco e beneficios vem da tabela planos, que o
  * master edita) e a forma de pagamento. O pagamento ainda e confirmado pelo
- * financeiro (Assinatura::confirmarPagamento): nao ha gateway.
+ * financeiro (Assinatura::confirmarPagamento): nao ha gateway. Pix e boleto
+ * sao gerados por Cobranca (demonstracao); do cartao so chegam os 4 ultimos
+ * digitos, porque os campos do cartao nao tem name e nunca saem do navegador.
  */
 require_once __DIR__ . '/config/config.php';
 
@@ -54,9 +56,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         definirFlash('erro', 'Escolha Pix, boleto ou cartão para continuar.');
         redirecionar('assinatura.php');
     }
+    if (post('metodo') === 'cartao' && !preg_match('/^\d{4}$/', (string) post('cartao_final'))) {
+        definirFlash('erro', 'Preencha os dados do cartão para continuar.');
+        redirecionar('assinatura.php');
+    }
     Plano::atribuir($idEstabelecimento, (int) $plano['id_plano'], 'Escolhido pela empresa');
     Assinatura::solicitarPagamento($idEstabelecimento, post('metodo'));
-    definirFlash('sucesso', 'Plano ' . $plano['nome'] . ' escolhido. O financeiro emitirá a cobrança de ' . formatarMoeda($plano['preco_mensal']) . ' por ' . Assinatura::rotuloMetodo(post('metodo')) . '.');
+    $valor = formatarMoeda($plano['preco_mensal']);
+    definirFlash('sucesso', 'Plano ' . $plano['nome'] . ' escolhido. ' . match (post('metodo')) {
+        'pix'    => 'Pague ' . $valor . ' pelo QR code Pix abaixo.',
+        'boleto' => 'O boleto de ' . $valor . ' está logo abaixo.',
+        default  => 'O pagamento de ' . $valor . ' no cartão final ' . post('cartao_final') . ' está em análise.',
+    });
     redirecionar('assinatura.php');
 }
 
@@ -66,8 +77,9 @@ $emDia = $assinatura['status'] === 'ativa' && empty($assinatura['data_cancelamen
 $preco = Plano::precoDe($idEstabelecimento);
 
 $tituloPagina = 'Assinatura';
-$subtituloTopo = $planoAtual ? 'Plano ' . $planoAtual['nome'] . ' — ' . formatarMoeda($preco) . ' por mês' : 'Escolha o plano da sua empresa';
+$subtituloTopo = $planoAtual ? 'Plano ' . $planoAtual['nome'] : 'Escolha o plano da sua empresa';
 $cssExtra = ['agendamento.css'];
+$jsExtra = ['assinatura.js'];
 require RAIZ . '/includes/painel_header.php';
 ?>
 <div class="cartao"><div class="cartao-cabecalho"><div><h3><?= $emDia ? 'Assinatura ativa' : 'Continue usando o Agendei' ?></h3><small><?= $planoAtual ? e($planoAtual['nome']) . ' · ' : '' ?><?= formatarMoeda($preco) ?> por mês</small></div><?= badgeStatus($assinatura['status']) ?></div>
@@ -80,6 +92,24 @@ require RAIZ . '/includes/painel_header.php';
     <p>O acesso da empresa está liberado. Você pode trocar de plano abaixo quando quiser.</p>
 <?php elseif ($assinatura['status'] === 'pendente'): ?>
     <p>Recebemos sua escolha de pagamento por <strong><?= e(Assinatura::rotuloMetodo($assinatura['metodo_pagamento'] ?? null)) ?></strong>. O acesso é liberado assim que o pagamento for confirmado.</p>
+    <?php if (($assinatura['metodo_pagamento'] ?? '') === 'pix'): $codigoPix = Cobranca::pix($preco, 'AGD' . $idEstabelecimento); ?>
+        <div class="autenticador-configuracao">
+            <div class="autenticador-qr"><?= QrCode::svg($codigoPix, 'QR code Pix de ' . formatarMoeda($preco)) ?></div>
+            <div class="autenticador-chave">
+                <p><strong>Abra o app do banco, escolha Pix e leia o QR code.</strong> Valor: <?= formatarMoeda($preco) ?>.</p>
+                <label for="pix-copia" class="ajuda-campo">Ou use o Pix copia e cola:</label>
+                <textarea id="pix-copia" rows="3" readonly><?= e($codigoPix) ?></textarea>
+                <button type="button" class="btn btn-contorno margem-topo" data-copiar="pix-copia">Copiar código</button>
+            </div>
+        </div>
+    <?php elseif (($assinatura['metodo_pagamento'] ?? '') === 'boleto'): $boleto = Cobranca::boleto($preco, $idEstabelecimento, strtotime((string) ($assinatura['data_solicitacao'] ?? 'now')) ?: null); ?>
+        <p>Boleto de <strong><?= formatarMoeda($preco) ?></strong>, vencimento <strong><?= e(formatarData($boleto['vencimento'])) ?></strong>.</p>
+        <label for="boleto-linha" class="ajuda-campo">Linha digitável:</label>
+        <input type="text" id="boleto-linha" value="<?= e($boleto['linha']) ?>" readonly>
+        <button type="button" class="btn btn-contorno margem-topo" data-copiar="boleto-linha">Copiar linha digitável</button>
+    <?php elseif (($assinatura['metodo_pagamento'] ?? '') === 'cartao'): ?>
+        <p>O pagamento no cartão está em análise pela operadora. Você não precisa fazer mais nada.</p>
+    <?php endif; ?>
 <?php else: ?>
     <p>A demonstração de <?= Assinatura::DIAS_DEMO ?> dias terminou. Escolha um plano e a forma de pagamento para reativar sua empresa.</p>
 <?php endif; ?>
@@ -114,7 +144,20 @@ require RAIZ . '/includes/painel_header.php';
         <?php if (!$emDia): ?>
             <fieldset class="grupo-campos margem-topo"><legend>Como você quer pagar?</legend>
                 <div class="linha-campos"><label class="campo"><input type="radio" name="metodo" value="pix" required> <strong>Pix</strong><span class="ajuda-campo">Pagamento instantâneo.</span></label><label class="campo"><input type="radio" name="metodo" value="boleto"> <strong>Boleto</strong><span class="ajuda-campo">Pague pela internet ou banco.</span></label><label class="campo"><input type="radio" name="metodo" value="cartao"> <strong>Cartão</strong><span class="ajuda-campo">Crédito ou débito.</span></label></div>
-                <p class="ajuda-campo">Os dados financeiros não são coletados nesta aplicação. A forma escolhida fica registrada para o financeiro emitir a cobrança.</p>
+                <div id="dados-cartao" class="margem-topo" hidden>
+                    <?php /* Sem name: estes campos nunca sao enviados. O script so manda os 4 ultimos digitos. */ ?>
+                    <div class="linha-campos">
+                        <div class="campo"><label for="cartao-numero">Número do cartão</label><input type="text" id="cartao-numero" inputmode="numeric" autocomplete="cc-number" maxlength="23" placeholder="0000 0000 0000 0000"></div>
+                        <div class="campo"><label for="cartao-nome">Nome impresso no cartão</label><input type="text" id="cartao-nome" autocomplete="cc-name"></div>
+                    </div>
+                    <div class="linha-campos">
+                        <div class="campo"><label for="cartao-validade">Validade</label><input type="text" id="cartao-validade" inputmode="numeric" autocomplete="cc-exp" maxlength="5" placeholder="MM/AA"></div>
+                        <div class="campo"><label for="cartao-cvv">CVV</label><input type="text" id="cartao-cvv" inputmode="numeric" autocomplete="cc-csc" maxlength="4" placeholder="123"></div>
+                    </div>
+                    <input type="hidden" name="cartao_final" id="cartao-final">
+                    <p class="mensagem-campo" id="cartao-erro" role="alert"></p>
+                </div>
+                <p class="ajuda-campo">Ambiente de demonstração: os dados do cartão são conferidos no seu navegador e não são enviados nem guardados. Só os 4 últimos dígitos ficam registrados.</p>
             </fieldset>
         <?php endif; ?>
 

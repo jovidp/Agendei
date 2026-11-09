@@ -102,8 +102,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'senha'           => $senha,
                 'telefone'        => $telefone,
                 'mensagem'        => $dados['mensagem'],
-                // Autonomo: a mesma pessoa administra e atende, com agenda propria.
-                'autonomo'        => post('autonomo') === '1',
                 'iniciar_demo'    => true,
             ]);
             LogMaster::registrar('estabelecimento_criado', [
@@ -252,14 +250,6 @@ $tituloPagina = 'Cadastrar empresa | ' . NOME_SISTEMA;
                             <input type="password" id="confirmar_senha" name="confirmar_senha" minlength="6" autocomplete="new-password" required>
                             <span class="mensagem-campo"></span>
                         </div>
-                    </div>
-
-                    <div class="campo">
-                        <div class="campo-checkbox">
-                            <input type="checkbox" id="autonomo" name="autonomo" value="1" <?= post('autonomo') === '1' ? 'checked' : '' ?>>
-                            <label for="autonomo">Sou autônomo(a): eu mesmo(a) atendo os clientes</label>
-                        </div>
-                        <span class="ajuda-campo">Você entra como administrador(a) e também como profissional, com agenda própria, no mesmo estabelecimento. No nome da empresa pode usar o seu nome ou o nome fantasia.</span>
                     </div>
 
                     <div class="campo">
