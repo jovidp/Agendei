@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guia de preparação para a banca — Agendei</title>
+  <style>
+    :root {
+      --primaria: #1f4e5f;
+      --destaque: #5faf8b;
+      --fundo: #f5f1ea;
+      --texto: #243139;
+      --suave: #64737b;
+      --borda: #d9e0dc;
+      --alerta: #9a542d;
+    }
+    * { box-sizing: border-box; }
+    html { font-family: Arial, Helvetica, sans-serif; color: var(--texto); font-size: 10.5pt; line-height: 1.45; }
+    body { margin: 0; background: #fff; }
+    main { max-width: 900px; margin: 0 auto; padding: 32px 44px 60px; }
+    .capa {
+      min-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border-top: 12px solid var(--destaque);
+      padding: 52px;
+      background: linear-gradient(145deg, var(--fundo), #fff 72%);
+    }
+    .marca { color: var(--primaria); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .capa h1 { font-size: 34pt; line-height: 1.05; color: var(--primaria); margin: 20px 0 12px; }
+    .capa h2 { margin: 0; font-size: 17pt; font-weight: 400; color: var(--suave); }
+    .capa .linha { width: 90px; height: 6px; background: var(--destaque); margin: 34px 0; }
+    .capa p { max-width: 580px; font-size: 13pt; }
+    .capa .rodape-capa { margin-top: 80px; color: var(--suave); font-size: 9.5pt; }
+    h1, h2, h3 { color: var(--primaria); page-break-after: avoid; }
+    h1 { font-size: 24pt; margin: 0 0 16px; }
+    h2 { font-size: 17pt; border-bottom: 2px solid var(--destaque); padding-bottom: 6px; margin: 28px 0 14px; }
+    h3 { font-size: 12.5pt; margin: 0 0 6px; }
+    p { margin: 5px 0 10px; }
+    ul, ol { margin: 7px 0 12px 22px; padding: 0; }
+    li { margin-bottom: 4px; }
+    code { font-family: Consolas, monospace; font-size: 9.5pt; }
+    .resumo, .atencao, .resposta-chave {
+      border-left: 5px solid var(--destaque);
+      background: #f3f8f5;
+      padding: 13px 16px;
+      margin: 14px 0;
+      page-break-inside: avoid;
+    }
+    .atencao { border-color: var(--alerta); background: #fff6ef; }
+    .fluxo {
+      font-family: Consolas, monospace;
+      white-space: pre-wrap;
+      color: #fff;
+      background: var(--primaria);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin: 14px 0 20px;
+      page-break-inside: avoid;
+    }
+    .pergunta {
+      border: 1px solid var(--borda);
+      border-left: 4px solid var(--primaria);
+      border-radius: 6px;
+      padding: 12px 15px;
+      margin: 0 0 12px;
+      page-break-inside: avoid;
+    }
+    .pergunta p:last-child { margin-bottom: 0; }
+    .numero { color: var(--destaque); font-weight: 800; margin-right: 5px; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 9.5pt; }
+    th, td { border: 1px solid var(--borda); padding: 7px 9px; text-align: left; vertical-align: top; }
+    th { background: var(--primaria); color: #fff; }
+    tr:nth-child(even) td { background: #f8faf9; }
+    .checklist li::marker { color: var(--destaque); }
+    .pequeno { color: var(--suave); font-size: 9pt; }
+    .quebra { break-before: page; }
+    @page { size: A4; margin: 16mm 17mm 17mm; }
+    @media print {
+      main { max-width: none; padding: 0; }
+      .capa { min-height: 250mm; margin: -16mm -17mm -17mm; padding: 32mm 25mm; break-after: page; }
+      a { color: inherit; text-decoration: none; }
+    }
+  </style>
+</head>
+<body>
+  <section class="capa">
+    <div class="marca">Agendei · Marcou, confirmou.</div>
+    <h1>Guia de preparação<br>para a banca</h1>
+    <h2>Análise do sistema, perguntas prováveis e respostas sugeridas</h2>
+    <div class="linha"></div>
+    <p>Material de estudo baseado na implementação atual do projeto acadêmico Agendei.</p>
+    <div class="rodape-capa">Projeto desenvolvido em PHP, HTML, CSS, JavaScript e banco de dados relacional.</div>
+  </section>
+
+  <main>
+    <h1>1. Visão geral do projeto</h1>
+    <div class="resumo">
+      <strong>Apresentação em 30 segundos:</strong><br>
+      O Agendei é um sistema web para gerenciamento de agendamentos. O cliente escolhe serviço, unidade, profissional, data e horário. O sistema calcula a disponibilidade com base no expediente, duração do serviço, bloqueios e reservas existentes. O administrador gerencia usuários, profissionais, serviços e relatórios. A aplicação foi desenvolvida em PHP, HTML, CSS e JavaScript, com PDO para comunicação com MySQL/MariaDB ou PostgreSQL.
+    </div>
+
+    <h2>Fluxo técnico</h2>
+    <div class="fluxo">Navegador
+    ↓
+Página PHP ou endpoint da API
+    ↓
+Autenticação e contexto do estabelecimento
+    ↓
+Model responsável pela regra de negócio
+    ↓
+PDO com consulta preparada
+    ↓
+Banco de dados</div>
+
+    <h2>Perfis do sistema</h2>
+    <table>
+      <thead><tr><th>Perfil</th><th>Responsabilidade</th><th>Escopo acadêmico</th></tr></thead>
+      <tbody>
+        <tr><td>Cliente</td><td>Realiza, consulta e cancela os próprios agendamentos.</td><td>Usuário comum.</td></tr>
+        <tr><td>Administrador local</td><td>Gerencia o estabelecimento, equipe, serviços, agenda e relatórios.</td><td>Usuário master.</td></tr>
+        <tr><td>Profissional</td><td>Consulta sua agenda, define horários e bloqueios.</td><td>Recurso adicional.</td></tr>
+        <tr><td>Master global</td><td>Administra empresas, planos, segurança e saúde da plataforma.</td><td>Recurso adicional.</td></tr>
+      </tbody>
+    </table>
+
+    <h1 class="quebra">2. Perguntas prováveis e respostas</h1>
+
+    <div class="pergunta"><h3><span class="numero">1.</span> Qual problema o sistema resolve?</h3><p>Centraliza os agendamentos de um estabelecimento, reduz o controle manual por papel ou mensagens e permite que o cliente consulte horários realmente disponíveis, faça reservas e acompanhe seu histórico.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">2.</span> Quem utiliza o sistema?</h3><p>Cliente, administrador local, profissional e master global. Para a especificação da faculdade, cliente representa o usuário comum e administrador local representa o usuário master.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">3.</span> Quais tecnologias foram utilizadas?</h3><p>PHP 8 no servidor, HTML e CSS na interface, JavaScript para interações dinâmicas e PDO para comunicação com o banco. O banco padrão é MySQL/MariaDB, com suporte adicional a PostgreSQL/Supabase. Não foram utilizados frameworks como Laravel ou React.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">4.</span> O sistema utiliza MVC?</h3><p>Possui separação em camadas inspirada em MVC, mas não é um MVC formal. As páginas PHP exercem o papel de controlador e view, enquanto os models concentram regras de negócio e acesso ao banco.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">5.</span> Como o banco interage com o sistema?</h3><p>A classe <code>Database</code> cria uma conexão PDO. As páginas chamam os models, e os models executam consultas preparadas. Em um agendamento, por exemplo, o servidor recebe os identificadores, consulta as entidades, valida a disponibilidade, executa o <code>INSERT</code> e confirma a transação.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">6.</span> Por que utilizar PDO?</h3><p>PDO oferece uma interface padronizada de conexão, consultas preparadas, erros por exceções e suporte a mais de um banco. As consultas preparadas reduzem o risco de SQL Injection ao separar os dados do comando SQL.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">7.</span> Quais são as principais tabelas?</h3><p><code>usuarios</code>, <code>clientes</code>, <code>profissionais</code>, <code>servicos</code>, <code>profissional_servico</code>, <code>horarios_profissionais</code>, <code>bloqueios_agenda</code>, <code>agendamentos</code>, <code>filiais</code> e <code>logs_autenticacao</code>. O arquivo MySQL atual cria 26 tabelas.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">8.</span> Por que existe a tabela profissional_servico?</h3><p>Porque um profissional pode executar vários serviços e um serviço pode ser executado por vários profissionais. É um relacionamento muitos-para-muitos, resolvido por uma tabela associativa.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">9.</span> Como o sistema identifica a empresa?</h3><p>Cada estabelecimento possui um <code>id_estabelecimento</code> e um endereço exclusivo, chamado <code>slug</code>. A classe <code>Contexto</code> resolve a empresa pela URL ou pela sessão. Depois do login, a empresa da sessão não pode ser trocada simplesmente alterando a URL.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">10.</span> Como os dados de empresas diferentes ficam separados?</h3><p>As tabelas operacionais carregam <code>id_estabelecimento</code>. As consultas filtram por esse identificador e existem chaves estrangeiras compostas para impedir associações entre registros de empresas diferentes. Esse modelo é multi-tenancy com banco compartilhado.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">11.</span> Como funciona o processo de agendamento?</h3><p>O cliente escolhe serviço, filial, profissional, data e horário. A interface consulta os horários livres por uma API interna. Na confirmação, o servidor revalida tudo e grava a reserva em uma transação.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">12.</span> Como os horários livres são calculados?</h3><p>O sistema consulta a duração do serviço, expediente do profissional, intervalo dos horários, reservas existentes, bloqueios, antecedência mínima e máxima. Em seguida, percorre o expediente e elimina os intervalos com conflito.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">13.</span> Por que a duração do serviço é importante?</h3><p>Porque não basta conferir o horário inicial. Um serviço iniciado às 10h e com duração de 60 minutos ocupa todo o período até 11h. A verificação compara a sobreposição entre os intervalos.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">14.</span> O que acontece se duas pessoas tentarem reservar o mesmo horário?</h3><p>O sistema inicia uma transação e revalida o conflito com <code>SELECT ... FOR UPDATE</code>. Se detectar ocupação, executa <code>rollback</code>; se estiver livre, insere e executa <code>commit</code>. A ideia principal é não confiar apenas no horário que apareceu anteriormente na tela.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">15.</span> Para que serve uma transação?</h3><p>Para tratar operações relacionadas como uma unidade: ou todas são concluídas ou nenhuma permanece parcialmente gravada. <code>beginTransaction()</code> inicia, <code>commit()</code> confirma e <code>rollBack()</code> desfaz.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">16.</span> O usuário pode alterar o preço pelo navegador?</h3><p>Ele pode tentar manipular o formulário, mas o servidor não confia nesse valor. Preço e duração são novamente consultados no banco, e a disponibilidade também é recalculada antes da gravação.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">17.</span> Por que validar no JavaScript e novamente no PHP?</h3><p>O JavaScript melhora a experiência e mostra erros rapidamente, mas pode ser desativado ou alterado. O PHP executa a validação definitiva. Frase para memorizar: <strong>“JavaScript ajuda o usuário; PHP protege o sistema.”</strong></p></div>
+
+    <div class="pergunta"><h3><span class="numero">18.</span> Como funciona o login?</h3><p>O sistema localiza a conta por login ou e-mail, verifica o hash da senha, o estado da conta e do estabelecimento e, quando necessário, inicia o segundo fator. A sessão autenticada só é aberta depois da conclusão dessas etapas.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">19.</span> Como as senhas são armazenadas?</h3><p>Com <code>password_hash()</code>. A conferência é feita por <code>password_verify()</code>. Hash não é criptografia reversível: o sistema não recupera a senha original.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">20.</span> Como funciona o segundo fator?</h3><p>O caminho mais forte utiliza TOTP, com códigos temporários de aplicativo autenticador. O segredo é protegido com AES-256-GCM. Existe também o caminho acadêmico por pergunta cadastral. Depois de três erros, o desafio é encerrado.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">21.</span> Qual segundo fator é mais seguro?</h3><p>O TOTP é mais seguro. Perguntas sobre nome materno, nascimento e CEP foram mantidas como alternativa da especificação, mas essas informações podem ser conhecidas por terceiros.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">22.</span> Como o acesso por perfil é controlado?</h3><p>As páginas restritas chamam <code>exigirLogin()</code> com os perfis aceitos. Ocultar itens do menu não é a proteção principal; o servidor também bloqueia quem digita diretamente um endereço que não pertence ao seu perfil.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">23.</span> Quais proteções de segurança foram implementadas?</h3><p>Hash de senhas, consultas preparadas, tokens CSRF, escape contra XSS, controle de acesso por perfil, limite de tentativas, 2FA, cookies protegidos, renovação de sessão, logs, validação no servidor e isolamento entre empresas.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">24.</span> O que é CSRF?</h3><p>É quando outro site tenta enviar uma ação usando a sessão da vítima. O sistema gera um token aleatório para os formulários e o confere no servidor antes de aceitar alterações.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">25.</span> O que é XSS e como foi tratado?</h3><p>XSS ocorre quando uma entrada do usuário é exibida como HTML ou JavaScript. O projeto usa escape de saída com <code>htmlspecialchars()</code>, por meio da função <code>e()</code>.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">26.</span> Por que um agendamento cancelado não é apagado?</h3><p>Porque o histórico é útil para relatórios, auditoria e atendimento. O registro permanece e muda para o status <code>cancelado</code>, guardando motivo e responsável. Os outros status são <code>agendado</code>, <code>confirmado</code> e <code>concluido</code>.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">27.</span> Como os horários são carregados sem atualizar a página?</h3><p>O JavaScript chama endpoints da pasta <code>api/</code>, que devolvem JSON. A resposta serve para montar a interface; a validação definitiva é repetida no servidor na confirmação.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">28.</span> Como funciona o login com Google?</h3><p>Usa OpenID Connect. O sistema guarda um <code>state</code> aleatório, envia o usuário ao Google, recebe um código, troca pelo <code>id_token</code> e usa o e-mail verificado para localizar a conta. O Google não cria sozinho o cadastro completo porque não fornece todos os dados exigidos.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">29.</span> Para que servem os logs?</h3><p>Para registrar login, falha, segundo fator, bloqueio e logout. Nome e CPF ficam copiados no log para o histórico continuar compreensível mesmo se o usuário for excluído. Essa é uma desnormalização intencional.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">30.</span> O que acontece se uma integração externa falhar?</h3><p>O projeto possui alternativas: endereço manual quando o ViaCEP falha; orientação quando e-mail não está configurado; fila ou envio manual para WhatsApp; e ocultação do botão Google quando as credenciais não existem.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">31.</span> Como o sistema foi testado?</h3><p>Há testes de validação, autenticação, segurança, Google, multiestabelecimento, cadastros, lembretes, filiais e administração master. Quatro conjuntos independentes do banco principal foram executados nesta análise, totalizando 221 verificações aprovadas.</p></div>
+
+    <h1 class="quebra">3. Perguntas críticas e respostas honestas</h1>
+
+    <div class="atencao"><h3>Quantas tabelas existem?</h3><p>O arquivo <code>banco.sql</code> atual cria <strong>26 tabelas</strong>. O relatório informa 20 e a documentação do Supabase informa 25, portanto esses documentos precisam ser atualizados.</p></div>
+
+    <div class="atencao"><h3>O sistema garante 100% que nunca haverá duas reservas simultâneas?</h3><p>No MySQL/InnoDB, a transação e o bloqueio reduzem a condição de corrida. Para uma garantia uniforme em todos os bancos, especialmente PostgreSQL, seria adequado acrescentar um bloqueio específico por agenda ou uma restrição própria do banco. No PostgreSQL, <code>FOR UPDATE</code> não bloqueia uma linha que ainda não existe.</p></div>
+
+    <div class="atencao"><h3>Por que a senha possui exatamente oito letras?</h3><p>Essa regra veio da especificação acadêmica. Para produção, uma senha mais longa ou frase-senha seria mais segura. Também deve ser padronizada a recuperação de senha, que atualmente aceita uma regra diferente.</p></div>
+
+    <div class="atencao"><h3>Existe alguma limitação no login Google?</h3><p>A implementação verifica <code>state</code>, emissor, público, validade e e-mail confirmado. Uma implementação OpenID Connect mais rigorosa também deve validar criptograficamente a assinatura do <code>id_token</code>, usar <code>nonce</code> e considerar PKCE.</p></div>
+
+    <div class="resposta-chave"><h3>Qual melhoria você faria primeiro?</h3><p>“Eu começaria padronizando as regras de senha e a documentação. Depois reforçaria a concorrência dos agendamentos no PostgreSQL e a validação completa do token do Google. Em seguida ampliaria os testes de integração e automatizaria sua execução.”</p></div>
+
+    <h1 class="quebra">4. Checklist antes da apresentação</h1>
+    <ul class="checklist">
+      <li>Corrigir “20 tabelas” para <strong>26</strong> no relatório.</li>
+      <li>Corrigir “25 tabelas” na documentação do Supabase.</li>
+      <li>Atualizar o relatório para mencionar o suporte a PostgreSQL.</li>
+      <li>Atualizar a descrição e a quantidade das suítes de teste.</li>
+      <li>Atualizar o trecho que trata o WhatsApp automático como recurso futuro.</li>
+      <li>Padronizar a regra de senha da recuperação.</li>
+      <li>Saber explicar que a arquitetura é em camadas, mas não MVC formal.</li>
+      <li>Não afirmar que um mecanismo é “100% inviolável”.</li>
+      <li>Demonstrar o fluxo completo: login, serviço, filial, profissional, data, horário e confirmação.</li>
+      <li>Ter dados de demonstração preparados antes de iniciar a apresentação.</li>
+    </ul>
+
+    <h2>O que você precisa dominar</h2>
+    <ol>
+      <li>Fluxo completo do agendamento.</li>
+      <li>Relacionamento entre as principais tabelas.</li>
+      <li>Interação entre página, model, PDO e banco.</li>
+      <li>Diferença entre validação no JavaScript e no servidor.</li>
+      <li>Transação e prevenção de conflito de horário.</li>
+      <li>Login, sessão, perfis e segundo fator.</li>
+      <li>Principais limitações e melhorias futuras.</li>
+    </ol>
+
+    <div class="resumo"><strong>Frase final sugerida:</strong><br>“O principal diferencial técnico do projeto é que o horário exibido na interface não é tratado como garantia. No momento da confirmação, o servidor consulta novamente o banco, revalida as regras e só então grava o agendamento dentro de uma transação.”</div>
+
+    <p class="pequeno">Documento preparado a partir da implementação do projeto Agendei em setembro de 2026.</p>
+  </main>
+</body>
+</html>
