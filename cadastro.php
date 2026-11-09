@@ -121,6 +121,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($senha !== $confirmacao) {
         $erros[] = 'As senhas não conferem.';
     }
+    // Aceite dos Termos e da Politica: sem ele a conta nao e criada (o aceite e gravado com a versao).
+    if (post('aceite') !== '1') {
+        $erros[] = 'Para criar a conta, aceite os Termos de Uso e a Política de Privacidade.';
+    }
     if ($erros === [] && Usuario::loginEmUso($dados['login'])) {
         $erros[] = 'Este usuário já está em uso. Escolha outro.';
     }
@@ -155,6 +159,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'uf'              => $dados['uf'],
             ]);
 
+            Legal::registrarAceite($dados['email']);
             Google::limparCadastro();
             // A especificacao encerra o cadastro na tela de login.
             definirFlash('sucesso', 'Cadastro realizado com sucesso. Faça login para continuar.');
@@ -415,6 +420,14 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
                         </div>
                     </div>
                 </fieldset>
+
+                <div class="campo campo-aceite">
+                    <div class="campo-checkbox">
+                        <input type="checkbox" id="aceite" name="aceite" value="1" <?= post('aceite') === '1' ? 'checked' : '' ?> required>
+                        <label for="aceite">Li e aceito os <a href="<?= url('legal.php?pagina=termos') ?>" target="_blank" rel="noopener">Termos de Uso</a> e a <a href="<?= url('legal.php?pagina=privacidade') ?>" target="_blank" rel="noopener">Política de Privacidade</a> <span class="obrigatorio">*</span></label>
+                    </div>
+                    <span class="mensagem-campo"></span>
+                </div>
 
                 <div class="acoes-formulario">
                     <button type="submit" class="btn btn-bloco btn-grande">Enviar</button>

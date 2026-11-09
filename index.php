@@ -256,7 +256,7 @@ $recursos = [
         <div class="chamada-final margem-topo">
             <div>
                 <h2><?= e(MARCA_SLOGAN) ?></h2>
-                <p>Cadastre sua empresa e comece agora com 7 dias grátis. Depois, R$ 149 por mês.</p>
+                <p>Cadastre sua empresa e comece agora com 7 dias grátis. Depois, planos a partir de <?= formatarMoeda(Plano::menorPreco()) ?> por mês.</p>
             </div>
             <div class="chamada-acoes">
                 <a href="<?= url('cadastro_empresa.php') ?>" class="btn btn-grande">Cadastrar minha empresa</a>
@@ -300,6 +300,7 @@ $recursos = [
             <span>&copy; <?= date('Y') ?> <?= e(NOME_SISTEMA) ?>. Todos os direitos reservados.</span>
             <span class="rodape-credito">Sistema de agendamento <?= marcaSistema(18, true, 'marca-sistema-discreta') ?></span>
         </div>
+        <?php require RAIZ . '/includes/rodape_legal.php'; ?>
     </div>
 </footer>
 

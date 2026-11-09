@@ -154,6 +154,13 @@
         "As senhas não conferem.",
       ) && valido;
 
+    valido =
+      verificar(
+        "aceite",
+        campo("aceite") ? campo("aceite").checked : true,
+        "Aceite os Termos de Uso e a Política de Privacidade.",
+      ) && valido;
+
     if (!valido) {
       evento.preventDefault();
       var invalido = formulario.querySelector(".invalido");

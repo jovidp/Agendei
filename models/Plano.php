@@ -23,6 +23,36 @@ class Plano
         'agendamentos_mes' => 'Agendamentos por mês',
     ];
 
+    /**
+     * Beneficios que um plano liga ou desliga, com o rotulo das telas. Ficam
+     * gravados em planos.recursos, separados por virgula.
+     */
+    public const BENEFICIOS = [
+        'lembretes_whatsapp' => 'Lembretes automáticos por WhatsApp',
+        'sinal_pix'          => 'Sinal por Pix no agendamento',
+        'diferenciais'       => 'Fidelidade, pacotes, avaliações e comissões',
+        'bot_whatsapp'       => 'Bot de atendimento no WhatsApp (agenda pela conversa)',
+    ];
+
+    /**
+     * Beneficio novo que empresa sem plano nao ganha. As demais seguem a regra
+     * de sempre (sem plano, sem teto), para nada mudar para quem ja usa o sistema.
+     */
+    private const SO_COM_PLANO = ['bot_whatsapp'];
+
+    /** Planos criados na instalacao, se ainda nao existir um com o mesmo nome. */
+    public const PADRAO = [
+        ['nome' => 'Básico', 'preco_mensal' => 79.00, 'descricao' => 'Para quem está começando: agenda on-line, link próprio e lembretes pelo painel.',
+         'limite_profissionais' => 2, 'limite_servicos' => 15, 'limite_agendamentos_mes' => null, 'recursos' => []],
+        ['nome' => 'Profissional', 'preco_mensal' => 149.00, 'descricao' => 'Para a equipe que cresce: lembretes automáticos, sinal por Pix e fidelização.',
+         'limite_profissionais' => 5, 'limite_servicos' => null, 'limite_agendamentos_mes' => null, 'recursos' => ['lembretes_whatsapp', 'sinal_pix', 'diferenciais']],
+        ['nome' => 'Premium', 'preco_mensal' => 249.00, 'descricao' => 'Tudo do Profissional, sem limites, e o bot que agenda pelo WhatsApp.',
+         'limite_profissionais' => null, 'limite_servicos' => null, 'limite_agendamentos_mes' => null, 'recursos' => ['lembretes_whatsapp', 'sinal_pix', 'diferenciais', 'bot_whatsapp']],
+    ];
+
+    /** Plano que a empresa recebe ao se cadastrar (durante a demonstracao). */
+    public const PADRAO_CADASTRO = 'Profissional';
+
     /** Estado das tabelas: null = ainda nao verificado, false = indisponivel. */
     private static ?bool $tabelasProntas = null;
 
@@ -75,8 +105,8 @@ class Plano
         self::exigirTabelas();
 
         $q = bd()->prepare(
-            'INSERT INTO planos (nome, descricao, limite_profissionais, limite_servicos, limite_agendamentos_mes)
-             VALUES (?, ?, ?, ?, ?)'
+            'INSERT INTO planos (nome, descricao, limite_profissionais, limite_servicos, limite_agendamentos_mes, preco_mensal, recursos)
+             VALUES (?, ?, ?, ?, ?, ?, ?)'
         );
         $q->execute([
             trim($dados['nome']),
@@ -84,6 +114,8 @@ class Plano
             self::limite($dados['limite_profissionais'] ?? null),
             self::limite($dados['limite_servicos'] ?? null),
             self::limite($dados['limite_agendamentos_mes'] ?? null),
+            self::preco($dados['preco_mensal'] ?? null),
+            self::listaRecursos($dados['recursos'] ?? []),
         ]);
 
         return (int) bd()->lastInsertId();
@@ -95,9 +127,13 @@ class Plano
 
         $q = bd()->prepare(
             'UPDATE planos
-             SET nome = ?, descricao = ?, limite_profissionais = ?, limite_servicos = ?, limite_agendamentos_mes = ?
+             SET nome = ?, descricao = ?, limite_profissionais = ?, limite_servicos = ?, limite_agendamentos_mes = ?,
+                 preco_mensal = ?, recursos = ?
              WHERE id_plano = ?'
         );
+
+        // O plano mudou: o que foi lido nesta requisicao nao vale mais.
+        self::$vinculos = [];
 
         return $q->execute([
             trim($dados['nome']),
@@ -105,6 +141,8 @@ class Plano
             self::limite($dados['limite_profissionais'] ?? null),
             self::limite($dados['limite_servicos'] ?? null),
             self::limite($dados['limite_agendamentos_mes'] ?? null),
+            self::preco($dados['preco_mensal'] ?? null),
+            self::listaRecursos($dados['recursos'] ?? []),
             $id,
         ]);
     }
@@ -315,8 +353,111 @@ class Plano
     }
 
     // -----------------------------------------------------------------
+    // Beneficios e preco
+    // -----------------------------------------------------------------
+
+    /** Beneficios ligados num plano (linha da tabela planos). */
+    public static function recursosDe(?array $plano): array
+    {
+        $lista = array_filter(array_map('trim', explode(',', (string) ($plano['recursos'] ?? ''))));
+        return array_values(array_intersect(array_keys(self::BENEFICIOS), $lista));
+    }
+
+    /**
+     * O plano da empresa inclui o beneficio? Empresa sem plano tem tudo o que
+     * ja existia antes dos planos, menos o que e SO_COM_PLANO.
+     */
+    public static function temRecurso(string $recurso, ?int $idEstabelecimento = null): bool
+    {
+        $plano = self::doEstabelecimento($idEstabelecimento ?? Contexto::id());
+        if ($plano === null) {
+            return !in_array($recurso, self::SO_COM_PLANO, true);
+        }
+        return in_array($recurso, self::recursosDe($plano), true);
+    }
+
+    /** Mensalidade da empresa: o preco do plano dela, ou o valor padrao sem plano. */
+    public static function precoDe(int $idEstabelecimento): float
+    {
+        $preco = self::doEstabelecimento($idEstabelecimento)['preco_mensal'] ?? null;
+        return $preco === null || $preco === '' ? Assinatura::VALOR_MENSAL : (float) $preco;
+    }
+
+    /** Planos ativos que a empresa pode escolher, do mais barato ao mais caro. */
+    public static function contrataveis(): array
+    {
+        $planos = array_values(array_filter(
+            self::listar(),
+            fn($p) => $p['status'] === 'ativo' && $p['preco_mensal'] !== null && $p['preco_mensal'] !== ''
+        ));
+        usort($planos, fn($a, $b) => (float) $a['preco_mensal'] <=> (float) $b['preco_mensal']);
+        return $planos;
+    }
+
+    /** Menor mensalidade entre os planos contrataveis, para o "a partir de" das paginas publicas. */
+    public static function menorPreco(): float
+    {
+        $planos = self::contrataveis();
+        return $planos === [] ? Assinatura::VALOR_MENSAL : (float) $planos[0]['preco_mensal'];
+    }
+
+    /** Plano mais barato que tem o beneficio, para o aviso "disponivel no plano X". */
+    public static function menorCom(string $recurso): ?array
+    {
+        foreach (self::contrataveis() as $plano) {
+            if (in_array($recurso, self::recursosDe($plano), true)) return $plano;
+        }
+        return null;
+    }
+
+    /** Texto do aviso de beneficio fora do plano. */
+    public static function avisoSemRecurso(string $recurso): string
+    {
+        $plano = self::menorCom($recurso);
+        return self::BENEFICIOS[$recurso] . ' não faz parte do seu plano'
+            . ($plano ? '. Está disponível a partir do plano ' . $plano['nome'] . ', em Assinatura.' : '.');
+    }
+
+    /**
+     * Colunas de preco e beneficios em bancos criados antes delas, e os planos
+     * padrao que ainda nao existirem. Roda na subida do container e em migrar.php.
+     */
+    public static function garantirEstrutura(): void
+    {
+        foreach (self::ddl() as $comando) {
+            bd()->exec($comando);
+        }
+        Sql::garantirColuna('planos', 'preco_mensal', 'DECIMAL(10,2) NULL');
+        Sql::garantirColuna('planos', 'recursos', 'VARCHAR(255) NULL');
+        self::$tabelasProntas = true;
+
+        foreach (self::PADRAO as $plano) {
+            if (self::porNome($plano['nome']) === null) {
+                self::criar($plano);
+            }
+        }
+    }
+
+    // -----------------------------------------------------------------
     // Apoio
     // -----------------------------------------------------------------
+
+    /** Preco do formulario ("1.249,90", "149,90" ou 149.9); vazio ou zero vira null. */
+    private static function preco($valor): ?string
+    {
+        if ($valor === null || $valor === '') return null;
+        $numero = is_float($valor) || is_int($valor) || preg_match('/^\d+(\.\d+)?$/', (string) $valor)
+            ? (float) $valor
+            : (float) str_replace(',', '.', str_replace('.', '', (string) $valor));
+        return $numero > 0 ? number_format($numero, 2, '.', '') : null;
+    }
+
+    /** Lista de beneficios validos, gravada separada por virgula. */
+    private static function listaRecursos($lista): ?string
+    {
+        $validos = array_values(array_intersect(array_keys(self::BENEFICIOS), (array) $lista));
+        return $validos === [] ? null : implode(',', $validos);
+    }
 
     /** Converte o campo do formulario em teto: vazio ou zero viram "sem teto". */
     private static function limite($valor): ?int
@@ -378,6 +519,8 @@ class Plano
                     limite_profissionais    INTEGER DEFAULT NULL,
                     limite_servicos         INTEGER DEFAULT NULL,
                     limite_agendamentos_mes INTEGER DEFAULT NULL,
+                    preco_mensal            NUMERIC(10,2) DEFAULT NULL,
+                    recursos                VARCHAR(255) DEFAULT NULL,
                     status                  VARCHAR(10) NOT NULL DEFAULT 'ativo',
                     data_criacao            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     CONSTRAINT pk_planos PRIMARY KEY (id_plano),
@@ -405,6 +548,8 @@ class Plano
                 limite_profissionais    INT UNSIGNED DEFAULT NULL,
                 limite_servicos         INT UNSIGNED DEFAULT NULL,
                 limite_agendamentos_mes INT UNSIGNED DEFAULT NULL,
+                preco_mensal            DECIMAL(10,2) DEFAULT NULL,
+                recursos                VARCHAR(255) DEFAULT NULL,
                 status                  ENUM('ativo','inativo') NOT NULL DEFAULT 'ativo',
                 data_criacao            DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (id_plano),

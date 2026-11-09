@@ -6,6 +6,12 @@
 require_once __DIR__ . '/../config/config.php';
 exigirLogin('cliente');
 
+if (!Plano::temRecurso('diferenciais')) {
+    $recursoFaltante = 'diferenciais';
+    $tituloPagina = 'Meus benefícios';
+    require RAIZ . '/includes/fora_do_plano.php';
+}
+
 $idCliente = (int) perfilId();
 $erros = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

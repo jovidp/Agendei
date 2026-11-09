@@ -249,7 +249,7 @@ class Estabelecimento
                 'administradores', 'clientes', 'profissionais', 'servicos',
                 // filiais so depois de profissionais e agendamentos, que a referenciam.
                 'filiais',
-                'logs_autenticacao', 'sessoes_lembradas', 'vinculos', 'configuracoes', 'estabelecimento_plano',
+                'logs_autenticacao', 'sessoes_lembradas', 'whatsapp_conversas', 'vinculos', 'configuracoes', 'estabelecimento_plano',
             ] as $tabela) {
                 $q = $db->prepare('DELETE FROM ' . $tabela . ' WHERE id_estabelecimento = ?');
                 $q->execute([$id]);

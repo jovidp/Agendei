@@ -40,12 +40,15 @@ limparFalhas('tarefas_ip', ipCliente());
 try {
     $inicio = microtime(true);
     $resumo = Lembrete::processarTodas();
+    // Retencao de dados (LGPD): uma vez por dia basta; a tarefa roda a cada 10 ou 15 minutos.
+    $retencao = (int) date('G') === 3 ? Legal::limparDadosAntigos() : null;
 
     jsonResposta([
         'sucesso'      => true,
         'executado_em' => date('Y-m-d H:i:s'),
         'duracao_s'    => round(microtime(true) - $inicio, 2),
         'empresas'     => $resumo,
+        'retencao'     => $retencao,
     ]);
 } catch (Throwable $erro) {
     error_log('Tarefa de lembretes falhou: ' . $erro->getMessage());

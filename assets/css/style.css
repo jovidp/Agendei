@@ -1588,3 +1588,44 @@ legend {
 }
 .botao-olho:hover, .botao-olho:focus-visible { color: var(--cor-primaria); }
 .botao-olho[aria-pressed="false"] .olho-risco { display: none; }
+
+/* Links legais e identificacao do fornecedor no rodape (includes/rodape_legal.php). */
+.rodape-legal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 8px;
+  margin: 12px auto 20px;
+  font-size: 13px;
+  color: var(--texto-secundario);
+}
+.rodape-legal a { color: inherit; }
+.rodape-legal a:hover { color: var(--cor-primaria); }
+.rodape-fornecedor { flex-basis: 100%; text-align: center; }
+.rodape-site .rodape-legal { color: rgba(255, 255, 255, 0.75); margin-bottom: 0; }
+.area-conteudo > .rodape-legal { margin-top: 28px; }
+
+/* Aviso de cookies (main.js, iniciarAvisoCookies). */
+.aviso-cookies {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 12px 16px;
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+  background-color: var(--branco);
+  box-shadow: 0 6px 24px rgba(46, 52, 56, 0.18);
+  font-size: 14px;
+}
+.aviso-cookies p { margin: 0; }
+@media (max-width: 520px) {
+  .aviso-cookies { flex-direction: column; align-items: stretch; }
+}

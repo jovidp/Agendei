@@ -924,3 +924,19 @@
   .topo-painel > div:not([class]) { flex: 1 1 auto; min-width: 0; }
   .topo-painel h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
+
+/* Texto so para leitor de tela. */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* Cartoes de plano na tela Assinatura (reaproveitam .opcao de agendamento.css). */
+.planos-opcoes { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.plano-preco { display: block; margin: 4px 0 8px; font-size: 24px; font-weight: 700; color: var(--cor-primaria); }
+.plano-preco small { font-size: 13px; font-weight: 400; color: var(--texto-secundario); }
+.plano-beneficios { list-style: none; margin: 10px 0 0; padding: 10px 0 0; border-top: 1px solid var(--borda); font-size: 13px; }
+.plano-beneficios li { position: relative; padding-left: 20px; margin-bottom: 6px; }
+.plano-beneficios li::before { content: "✓"; position: absolute; left: 0; color: var(--cor-secundaria); font-weight: 700; }
+.plano-beneficios li.fora { color: var(--texto-secundario); text-decoration: line-through; opacity: 0.7; }
+.plano-beneficios li.fora::before { content: "–"; color: var(--texto-secundario); }

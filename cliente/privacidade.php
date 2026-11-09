@@ -62,4 +62,11 @@ require RAIZ . '/includes/painel_header.php';
         </div>
     </div>
 </div>
+<div class="cartao">
+    <div class="cartao-cabecalho"><h3>Seus direitos e o encarregado de dados</h3></div>
+    <div class="cartao-corpo">
+        <p>Pela LGPD você pode acessar, corrigir, levar para outro serviço ou pedir a eliminação dos seus dados. Os dois primeiros você faz aqui e em <a href="<?= url('cliente/perfil.php') ?>">Meu perfil</a>; para o resto, ou para qualquer dúvida, escreva para o encarregado: <strong><?= e(Legal::campo('dpo_email')) ?></strong>. Respondemos em até 15 dias.</p>
+        <p>Veja como tratamos seus dados na <a href="<?= url('legal.php?pagina=privacidade') ?>">Política de Privacidade</a> e quais cookies usamos na <a href="<?= url('legal.php?pagina=cookies') ?>">Política de Cookies</a>.</p>
+    </div>
+</div>
 <?php require RAIZ . '/includes/painel_footer.php'; ?>

@@ -33,3 +33,10 @@ foreach ($resumo as $id => $empresa) {
 if ($resumo === []) {
     echo "Nenhuma empresa ativa.\n";
 }
+
+// Retencao de dados (LGPD): uma vez por dia, na hora das 3h (ou com --retencao).
+if ((int) date('G') === 3 || in_array('--retencao', $argv, true)) {
+    foreach (Legal::limparDadosAntigos() as $tabela => $apagadas) {
+        echo "Retencao: $apagadas linha(s) antiga(s) apagada(s) de $tabela.\n";
+    }
+}

@@ -28,6 +28,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'limite_profissionais'    => post('limite_profissionais'),
                 'limite_servicos'         => post('limite_servicos'),
                 'limite_agendamentos_mes' => post('limite_agendamentos_mes'),
+                'preco_mensal'            => post('preco_mensal'),
+                'recursos'                => (array) ($_POST['recursos'] ?? []),
             ];
 
             if (mb_strlen($nome) < 2 || mb_strlen($nome) > 60) {
@@ -37,6 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $existente = Plano::porNome($nome);
             if ($existente && (int) $existente['id_plano'] !== $id) {
                 $erros[] = 'Já existe um plano com esse nome.';
+            }
+
+            if (post('preco_mensal') !== '' && !preg_match('/^\d{1,6}([.,]\d{1,2})?$/', post('preco_mensal'))) {
+                $erros[] = 'Informe o preço mensal com até duas casas decimais, por exemplo 149,90. Em branco, o plano não aparece para as empresas escolherem.';
             }
 
             foreach (['limite_profissionais', 'limite_servicos', 'limite_agendamentos_mes'] as $campo) {
@@ -168,6 +174,23 @@ require RAIZ . '/includes/painel_header.php';
                         <input type="number" min="0" id="limite_agendamentos_mes" name="limite_agendamentos_mes" value="<?= e((string) ($plano['limite_agendamentos_mes'] ?? '')) ?>" placeholder="ilimitado">
                     </div>
                 </div>
+                <div class="linha-campos">
+                    <div class="campo">
+                        <label for="preco_mensal">Preço mensal (R$)</label>
+                        <input id="preco_mensal" name="preco_mensal" inputmode="decimal" value="<?= e(isset($plano['preco_mensal']) && $plano['preco_mensal'] !== null ? number_format((float) $plano['preco_mensal'], 2, ',', '') : '') ?>" placeholder="ex.: 149,90">
+                        <span class="ajuda-campo">Em branco, o plano não aparece na tela Assinatura das empresas.</span>
+                    </div>
+                </div>
+                <fieldset class="grupo-campos">
+                    <legend>Benefícios incluídos</legend>
+                    <?php $ligados = Plano::recursosDe($plano); ?>
+                    <?php foreach (Plano::BENEFICIOS as $chave => $rotulo): ?>
+                        <div class="campo-checkbox">
+                            <input type="checkbox" id="recurso_<?= e($chave) ?>" name="recursos[]" value="<?= e($chave) ?>" <?= in_array($chave, $ligados, true) ? 'checked' : '' ?>>
+                            <label for="recurso_<?= e($chave) ?>"><?= e($rotulo) ?></label>
+                        </div>
+                    <?php endforeach; ?>
+                </fieldset>
                 <p class="ajuda-campo">
                     O teto e conferido na hora de criar. Baixar um plano não apaga o que a empresa já tem: ela apenas para de crescer até voltar para dentro do limite.
                 </p>
@@ -187,11 +210,13 @@ require RAIZ . '/includes/painel_header.php';
     <?php else: ?>
         <div class="tabela-area">
             <table class="tabela">
-                <thead><tr><th>Plano</th><th>Profissionais</th><th>Serviços</th><th>Agendamentos/mes</th><th>Empresas</th><th>Status</th><th class="coluna-acoes">Acoes</th></tr></thead>
+                <thead><tr><th>Plano</th><th>Preço</th><th>Benefícios</th><th>Profissionais</th><th>Serviços</th><th>Agendamentos/mes</th><th>Empresas</th><th>Status</th><th class="coluna-acoes">Acoes</th></tr></thead>
                 <tbody>
                 <?php foreach ($planos as $plano): ?>
                     <tr>
                         <td class="celula-principal"><?= e($plano['nome']) ?><span class="celula-secundaria"><?= e((string) ($plano['descricao'] ?? '')) ?></span></td>
+                        <td><?= $plano['preco_mensal'] === null ? 'sem preço' : formatarMoeda($plano['preco_mensal']) ?></td>
+                        <td><?= e(implode(', ', array_map(fn($r) => Plano::BENEFICIOS[$r], Plano::recursosDe($plano))) ?: '-') ?></td>
                         <td><?= $plano['limite_profissionais'] === null ? 'ilimitado' : (int) $plano['limite_profissionais'] ?></td>
                         <td><?= $plano['limite_servicos'] === null ? 'ilimitado' : (int) $plano['limite_servicos'] ?></td>
                         <td><?= $plano['limite_agendamentos_mes'] === null ? 'ilimitado' : (int) $plano['limite_agendamentos_mes'] ?></td>

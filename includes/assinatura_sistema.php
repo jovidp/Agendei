@@ -16,3 +16,4 @@
     <span aria-hidden="true">&middot;</span>
     <a href="<?= e(urlInicio()) ?>">Página inicial</a>
 </p>
+<?php require RAIZ . '/includes/rodape_legal.php'; ?>

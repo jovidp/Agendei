@@ -376,6 +376,10 @@ class Diferencial
         if (!$agendamento || self::usarCreditoSinal($agendamento)) {
             return;
         }
+        // O credito de quem ja pagou vale sempre; cobrar sinal novo depende do plano.
+        if (!Plano::temRecurso('sinal_pix')) {
+            return;
+        }
         $percentual = max(0, min(100, Configuracao::obterInteiro('sinal_percentual', 0)));
         $chave = Configuracao::obter('pix_chave');
         if ($percentual < 1 || $chave === '') {

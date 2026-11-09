@@ -453,3 +453,49 @@
 form + .aviso-tipo-cadastro {
   margin-top: 20px;
 }
+
+/* Paginas legais (legal.php): leitura longa, uma coluna. */
+.pagina-legal {
+  max-width: 820px;
+  margin: 32px auto;
+  padding: 28px 32px;
+  background-color: var(--branco);
+  border: 1px solid var(--borda);
+  border-radius: var(--raio);
+}
+.abas-legais {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 20px 0 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--borda);
+}
+.abas-legais a {
+  padding: 6px 12px;
+  border-radius: var(--raio-pequeno);
+  color: var(--texto-secundario);
+  font-size: 14px;
+  text-decoration: none;
+}
+.abas-legais a:hover { color: var(--cor-primaria); }
+.abas-legais a[aria-current="page"] {
+  background-color: var(--cor-primaria);
+  color: var(--branco);
+}
+.texto-legal { line-height: 1.65; }
+.texto-legal h1 { margin: 16px 0 4px; }
+.texto-legal h2 { margin: 28px 0 8px; font-size: 17px; }
+.texto-legal ul { padding-left: 20px; }
+.texto-legal li { margin-bottom: 6px; }
+.tabela-legal { margin: 12px 0; font-size: 14px; }
+.tabela-legal td, .tabela-legal th { vertical-align: top; }
+@media (max-width: 640px) {
+  .pagina-legal { margin: 0; padding: 20px 16px; border-radius: 0; border-left: 0; border-right: 0; }
+  .tabela-legal { display: block; overflow-x: auto; }
+}
+
+/* Aceite dos Termos e da Politica nos cadastros. */
+.campo-aceite { margin-top: 4px; }
+.campo-aceite a { font-weight: 600; }
+.pagina-legal > .voltar-site { display: flex; width: fit-content; }

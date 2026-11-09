@@ -26,6 +26,7 @@ DROP TABLE IF EXISTS cliente_pacotes CASCADE;
 DROP TABLE IF EXISTS pacotes CASCADE;
 DROP TABLE IF EXISTS fidelidade_movimentos CASCADE;
 DROP TABLE IF EXISTS pagamentos CASCADE;
+DROP TABLE IF EXISTS whatsapp_conversas CASCADE;
 DROP TABLE IF EXISTS notificacoes CASCADE;
 DROP TABLE IF EXISTS lista_espera CASCADE;
 DROP TABLE IF EXISTS configuracoes CASCADE;
@@ -90,6 +91,7 @@ CREATE TABLE assinaturas (
   metodo_pagamento VARCHAR(12) DEFAULT NULL,
   data_solicitacao TIMESTAMP DEFAULT NULL,
   data_pagamento TIMESTAMP DEFAULT NULL,
+  data_cancelamento TIMESTAMP DEFAULT NULL,
   CONSTRAINT pk_assinaturas PRIMARY KEY (id_estabelecimento),
   CONSTRAINT ck_assinaturas_status CHECK (status IN ('demo','pendente','ativa','bloqueada')),
   CONSTRAINT ck_assinaturas_metodo CHECK (metodo_pagamento IS NULL OR metodo_pagamento IN ('pix','boleto','cartao')),
@@ -138,6 +140,8 @@ CREATE TABLE usuarios (
   senha_hash         VARCHAR(255) NOT NULL,
   telefone           VARCHAR(20) DEFAULT NULL,
   telefone_fixo      VARCHAR(20) DEFAULT NULL,
+  termos_versao      VARCHAR(20) DEFAULT NULL,
+  termos_aceitos_em  TIMESTAMP DEFAULT NULL,
   sexo               VARCHAR(1) DEFAULT NULL,
   nome_materno       VARCHAR(120) DEFAULT NULL,
   data_nascimento    DATE DEFAULT NULL,
@@ -630,6 +634,8 @@ CREATE TABLE planos (
   limite_profissionais    INTEGER DEFAULT NULL,
   limite_servicos         INTEGER DEFAULT NULL,
   limite_agendamentos_mes INTEGER DEFAULT NULL,
+  preco_mensal            NUMERIC(10,2) DEFAULT NULL,
+  recursos                VARCHAR(255) DEFAULT NULL,
   status                  VARCHAR(10) NOT NULL DEFAULT 'ativo',
   data_criacao            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT pk_planos PRIMARY KEY (id_plano),
@@ -818,3 +824,14 @@ CREATE TABLE sessoes_lembradas (
 CREATE INDEX idx_sessoes_lembradas_usuario ON sessoes_lembradas (id_estabelecimento, id_usuario);
 CREATE INDEX idx_sessoes_lembradas_vinculo ON sessoes_lembradas (id_vinculo);
 CREATE INDEX idx_sessoes_lembradas_expira ON sessoes_lembradas (expira_em);
+
+-- Conversas do bot de WhatsApp (models/Bot.php): a etapa do menu de cada numero.
+CREATE TABLE whatsapp_conversas (
+  id_estabelecimento INTEGER NOT NULL,
+  numero             VARCHAR(20) NOT NULL,
+  etapa              VARCHAR(30) NOT NULL DEFAULT 'menu',
+  dados              TEXT NULL,
+  atualizado_em      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT pk_whatsapp_conversas PRIMARY KEY (id_estabelecimento, numero),
+  CONSTRAINT fk_whatsapp_conversas_empresa FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento (id_estabelecimento) ON DELETE CASCADE
+);

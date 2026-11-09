@@ -25,3 +25,6 @@ scripts/*
 *.md
 # Prints da documentacao nao precisam ir para o servidor.
 docs
+
+# Copias do banco geradas por scripts/backup.php
+backups/

@@ -21,6 +21,8 @@ nada para lembrar de chamar em cada tela.
 | `AGENDEI_CHAVE_TOTP` | segredo longo | Protege os segredos do segundo fator gravados no banco. Defina **antes** de alguem cadastrar o primeiro aplicativo: trocar depois invalida os aplicativos ja cadastrados, que precisarao ser cadastrados de novo (use `scripts/liberar_2fa.php` para destravar). Sem ela, o sistema cifra com uma chave derivada e avisa no log. |
 | `AGENDEI_TOKEN_INSTALACAO` | segredo longo | Chave de acesso a `instalar.php`. Sem ela definida, o instalador **nao existe** em producao (responde 404). |
 | `AGENDEI_DB_*` | credenciais | Banco. Nunca versione senha: veja `config/database.php`. |
+| `AGENDEI_FORNECEDOR_NOME`, `_DOCUMENTO`, `_ENDERECO`, `_EMAIL` | dados da empresa | Identificam o fornecedor no rodapé e nos documentos legais (`legal.php`). Sem elas, os textos mostram "a informar". |
+| `AGENDEI_DPO_NOME`, `AGENDEI_DPO_EMAIL` | encarregado de dados | Contato para os pedidos dos titulares (LGPD). Sem o e-mail do DPO, vale o `AGENDEI_FORNECEDOR_EMAIL`. |
 
 No Dockerfile, `AGENDEI_AMBIENTE` e `AGENDEI_PROXY_CONFIAVEL` ja vem definidas.
 
@@ -331,6 +333,7 @@ Itens que exigem decisao de produto ou infraestrutura, e nao mudanca de codigo:
    desenvolvimento. Em producao, o fluxo nao se completa.
 4. **`style-src` com `unsafe-inline`.** Fecha quando os atributos `style=` das
    telas virarem classes de CSS.
-5. **Backup e restauracao.** Nao ha rotina definida.
+5. **Backup e restauracao.** O script existe (`scripts/backup.php`, ver BACKUP.md), mas a rotina
+   diaria fora da hospedagem e o teste mensal de restauracao dependem de agendar quem roda.
 6. **Firewall de aplicacao (WAF)** e limite de requisicoes por segundo ficam a
    cargo da hospedagem (Cloudflare, por exemplo).

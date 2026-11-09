@@ -153,3 +153,22 @@ echo $feitoVinculos === []
 require_once __DIR__ . '/../models/Diferencial.php';
 Diferencial::garantirStatusSinal();
 echo "Sinal: status de crédito e retido disponíveis.\n";
+
+// Aceite dos termos (usuarios) e cancelamento da assinatura (assinaturas).
+require_once __DIR__ . '/../models/Assinatura.php';
+require_once __DIR__ . '/../models/Sql.php';
+require_once __DIR__ . '/../models/Legal.php';
+Assinatura::garantirEstrutura();
+Legal::garantirEstrutura();
+echo "Aceite dos termos e cancelamento da assinatura: colunas prontas.\n";
+
+// Planos com preco e beneficios, e os tres planos padrao.
+require_once __DIR__ . '/../models/Plano.php';
+Plano::garantirEstrutura();
+echo "Planos: preco, beneficios e planos padrao prontos.\n";
+
+// Conversas do bot de WhatsApp.
+require_once __DIR__ . '/../models/Bot.php';
+foreach (Bot::ddl() as $comando) {
+    $db->exec($comando);
+}

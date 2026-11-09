@@ -84,6 +84,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $erros[] = 'As senhas não conferem.';
         }
     }
+    // Aceite dos Termos e da Politica: sem ele a conta nao e criada (o aceite e gravado com a versao).
+    if (post('aceite') !== '1') {
+        $erros[] = 'Para criar a conta, aceite os Termos de Uso e a Política de Privacidade.';
+    }
     if ($erros === [] && Solicitacao::slugEmUso($dados['slug'])) {
         $erros[] = 'Este endereço já está em uso. Escolha outro.';
     }
@@ -108,6 +112,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'alvo' => $dados['email'],
                 'detalhe' => 'demonstração de 7 dias',
             ]);
+            Legal::registrarAceite($dados['email']);
+            // Na demonstracao a empresa experimenta o plano padrao; escolhe o dela em Assinatura.
+            try {
+                $planoInicial = Plano::porNome(Plano::PADRAO_CADASTRO);
+                if ($planoInicial !== null) Plano::atribuir($idEmpresa, (int) $planoInicial['id_plano'], 'Plano da demonstração');
+            } catch (Throwable $erroPlano) {
+                error_log('Plano inicial não atribuído: ' . $erroPlano->getMessage());
+            }
             limparFalhas('cadastro_empresa_ip', ipCliente());
             Google::limparCadastro();
             definirFlash('sucesso', 'Sua empresa foi criada. Você tem 7 dias de demonstração grátis.');
@@ -151,7 +163,7 @@ $tituloPagina = 'Cadastrar empresa | ' . NOME_SISTEMA;
                 <a href="<?= e(urlInicio()) ?>" class="voltar-site">&larr; Voltar ao início</a>
 
                 <h1>Cadastrar minha empresa</h1>
-                <p class="subtitulo">Comece agora com 7 dias grátis. Depois, R$ 149 por mês.</p>
+                <p class="subtitulo">Comece agora com 7 dias grátis. Depois, planos a partir de <?= formatarMoeda(Plano::menorPreco()) ?> por mês.</p>
 
                 <?php /* Os dois cadastros do Agendei se confundem; este diz qual e e aponta o outro. */ ?>
                 <p class="aviso-tipo-cadastro">
@@ -253,6 +265,14 @@ $tituloPagina = 'Cadastrar empresa | ' . NOME_SISTEMA;
                     <div class="campo">
                         <label for="mensagem">Conte um pouco sobre a empresa <span class="opcional">(opcional)</span></label>
                         <textarea id="mensagem" name="mensagem" rows="3" maxlength="255"><?= e($dados['mensagem']) ?></textarea>
+                        <span class="mensagem-campo"></span>
+                    </div>
+
+                    <div class="campo campo-aceite">
+                        <div class="campo-checkbox">
+                            <input type="checkbox" id="aceite" name="aceite" value="1" <?= post('aceite') === '1' ? 'checked' : '' ?> required>
+                            <label for="aceite">Li e aceito os <a href="<?= url('legal.php?pagina=termos') ?>" target="_blank" rel="noopener">Termos de Uso</a> e a <a href="<?= url('legal.php?pagina=privacidade') ?>" target="_blank" rel="noopener">Política de Privacidade</a> <span class="obrigatorio">*</span></label>
+                        </div>
                         <span class="mensagem-campo"></span>
                     </div>
 

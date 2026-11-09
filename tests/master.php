@@ -414,18 +414,18 @@ verificar('empresa sem plano não tem teto', Plano::limiteDe('servicos', $idEmpr
 verificar('empresa sem plano nunca bloqueia', Plano::bloqueio('servicos', $idEmpresa), null);
 
 $idPlano = Plano::criar([
-    'nome'                    => 'Basico',
+    'nome'                    => 'Plano Teste',
     'descricao'               => 'Plano de teste',
     'limite_profissionais'    => 1,
     'limite_servicos'         => 2,
     'limite_agendamentos_mes' => 1,
 ]);
-verificar('o plano foi criado', Plano::porId($idPlano)['nome'], 'Basico');
+verificar('o plano foi criado', Plano::porId($idPlano)['nome'], 'Plano Teste');
 verificar('campo em branco vira ilimitado', Plano::criar(['nome' => 'Sem teto']) > 0, true);
 verificar('plano sem limite devolve nulo na coluna', Plano::porNome('Sem teto')['limite_servicos'], null);
 
 Plano::atribuir($idEmpresa, $idPlano);
-verificar('o plano fica vinculado a empresa', Plano::doEstabelecimento($idEmpresa)['nome'], 'Basico');
+verificar('o plano fica vinculado a empresa', Plano::doEstabelecimento($idEmpresa)['nome'], 'Plano Teste');
 verificar('o teto passa a valer', Plano::limiteDe('servicos', $idEmpresa), 2);
 verificar('o mapa de vínculos traz a empresa', isset(Plano::porEstabelecimento()[$idEmpresa]), true);
 verificar('dentro do teto não ha bloqueio', Plano::bloqueio('servicos', $idEmpresa), null);
@@ -441,7 +441,7 @@ $insercao->execute([$idEmpresa, 'Barba']);
 
 verificar('o consumo acompanha os cadastros', Plano::uso($idEmpresa)['servicos'], 2);
 verificar('no teto, a criação e recusada', is_string(Plano::bloqueio('servicos', $idEmpresa)), true);
-verificar('a mensagem recusada cita o plano', str_contains((string) Plano::bloqueio('servicos', $idEmpresa), 'Basico'), true);
+verificar('a mensagem recusada cita o plano', str_contains((string) Plano::bloqueio('servicos', $idEmpresa), 'Plano Teste'), true);
 verificar('a situação marca o recurso como excedido', Plano::situacao($idEmpresa)['servicos']['excedido'], true);
 
 // Servico desativado nao ocupa vaga: quem desfez volta a caber no teto.

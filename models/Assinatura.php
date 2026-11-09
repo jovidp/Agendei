@@ -10,6 +10,10 @@ class Assinatura
 {
     public const VALOR_MENSAL = 149.00;
     public const DIAS_DEMO = 7;
+    /** Cada pagamento libera um periodo deste tamanho. */
+    public const DIAS_PERIODO = 30;
+    /** Direito de arrependimento (art. 49 do CDC): cancelando ate aqui, o reembolso e integral. */
+    public const DIAS_ARREPENDIMENTO = 7;
 
     private static bool $estruturaConferida = false;
 
@@ -31,6 +35,7 @@ class Assinatura
                     metodo_pagamento VARCHAR(12) NULL,
                     data_solicitacao TIMESTAMP NULL,
                     data_pagamento TIMESTAMP NULL,
+                    data_cancelamento TIMESTAMP NULL,
                     CONSTRAINT ck_assinaturas_status CHECK (status IN (\'demo\',\'pendente\',\'ativa\',\'bloqueada\')),
                     CONSTRAINT ck_assinaturas_metodo CHECK (metodo_pagamento IS NULL OR metodo_pagamento IN (\'pix\',\'boleto\',\'cartao\')),
                     CONSTRAINT fk_assinaturas_estabelecimento FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento(id_estabelecimento) ON DELETE CASCADE
@@ -43,6 +48,7 @@ class Assinatura
                     metodo_pagamento ENUM(\'pix\',\'boleto\',\'cartao\') NULL,
                     data_solicitacao DATETIME NULL,
                     data_pagamento DATETIME NULL,
+                    data_cancelamento DATETIME NULL,
                     PRIMARY KEY (id_estabelecimento),
                     CONSTRAINT fk_assinaturas_estabelecimento FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento(id_estabelecimento) ON DELETE CASCADE
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci';
@@ -81,7 +87,49 @@ class Assinatura
             $assinatura['status'] = 'bloqueada';
         }
 
+        // Assinatura cancelada vale ate o fim do periodo ja pago.
+        if ($assinatura['status'] === 'ativa' && !empty($assinatura['data_cancelamento'])
+            && ($fim = self::acessoAte($assinatura)) !== null && strtotime($fim) <= time()) {
+            $q = bd()->prepare("UPDATE assinaturas SET status = 'bloqueada' WHERE id_estabelecimento = ? AND status = 'ativa'");
+            $q->execute([$idEstabelecimento]);
+            $assinatura['status'] = 'bloqueada';
+        }
+
         return $assinatura;
+    }
+
+    /** Fim do periodo pago (Y-m-d H:i:s), ou null quando nao ha pagamento registrado. */
+    public static function acessoAte(array $assinatura): ?string
+    {
+        if (empty($assinatura['data_pagamento'])) return null;
+        return date('Y-m-d H:i:s', strtotime((string) $assinatura['data_pagamento'] . ' +' . self::DIAS_PERIODO . ' days'));
+    }
+
+    /**
+     * Cancela a assinatura. Devolve o que aconteceu:
+     *  - 'imediato': demonstracao ou pagamento pendente, nada foi cobrado; o acesso encerra agora;
+     *  - 'reembolso': pago ha ate DIAS_ARREPENDIMENTO dias; encerra agora e o valor volta inteiro;
+     *  - 'fim_periodo': o acesso segue ate acessoAte() e nao renova;
+     *  - '': nada a cancelar.
+     */
+    public static function cancelar(int $idEstabelecimento): string
+    {
+        $assinatura = self::situacao($idEstabelecimento);
+        if (!empty($assinatura['legado']) || $assinatura['status'] === 'bloqueada' || !empty($assinatura['data_cancelamento'])) {
+            return '';
+        }
+
+        $pagoEm = !empty($assinatura['data_pagamento']) ? strtotime((string) $assinatura['data_pagamento']) : null;
+        $resultado = match (true) {
+            $assinatura['status'] !== 'ativa' => 'imediato',
+            $pagoEm !== null && $pagoEm > strtotime('-' . self::DIAS_ARREPENDIMENTO . ' days') => 'reembolso',
+            default => 'fim_periodo',
+        };
+
+        $status = $resultado === 'fim_periodo' ? 'ativa' : 'bloqueada';
+        $q = bd()->prepare('UPDATE assinaturas SET status = ?, data_cancelamento = CURRENT_TIMESTAMP WHERE id_estabelecimento = ?');
+        $q->execute([$status, $idEstabelecimento]);
+        return $resultado;
     }
 
     public static function acessoBloqueado(int $idEstabelecimento): bool
@@ -95,7 +143,7 @@ class Assinatura
         if (!in_array($metodo, ['pix', 'boleto', 'cartao'], true)) return false;
         self::garantirEstrutura();
         $q = bd()->prepare("UPDATE assinaturas
-                            SET status = 'pendente', metodo_pagamento = ?, data_solicitacao = CURRENT_TIMESTAMP
+                            SET status = 'pendente', metodo_pagamento = ?, data_solicitacao = CURRENT_TIMESTAMP, data_cancelamento = NULL
                             WHERE id_estabelecimento = ? AND status IN ('demo', 'pendente', 'bloqueada')");
         return $q->execute([$metodo, $idEstabelecimento]);
     }
@@ -105,7 +153,7 @@ class Assinatura
     {
         self::garantirEstrutura();
         $q = bd()->prepare("UPDATE assinaturas
-                            SET status = 'ativa', data_pagamento = CURRENT_TIMESTAMP
+                            SET status = 'ativa', data_pagamento = CURRENT_TIMESTAMP, data_cancelamento = NULL
                             WHERE id_estabelecimento = ?");
         return $q->execute([$idEstabelecimento]);
     }

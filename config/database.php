@@ -141,6 +141,19 @@ class Database
         return self::ehPostgres() && self::valor('porta', self::PORTAS['pgsql']) === '6543';
     }
 
+    /** Credenciais resolvidas, na mesma ordem da conexão. Usado pelo script de backup (scripts/backup.php). */
+    public static function parametros(): array
+    {
+        return [
+            'driver'  => self::driver(),
+            'host'    => self::valor('host', self::HOST),
+            'porta'   => self::valor('porta', self::PORTAS[self::driver()]),
+            'banco'   => getenv('AGENDEI_DB_NAME') ?: self::valor('banco', self::BANCO),
+            'usuario' => self::valor('usuario', self::USUARIO),
+            'senha'   => self::valor('senha', self::SENHA),
+        ];
+    }
+
     /** Abre a conexão PDO no primeiro uso e reutiliza a mesma instância na requisição. */
     public static function conexao(): PDO
     {

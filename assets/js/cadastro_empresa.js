@@ -85,6 +85,8 @@
     valido = verificar("senha", formulario.elements.senha.value.length >= 6, "A senha deve ter pelo menos 6 caracteres.") && valido;
     valido = verificar("confirmar_senha", formulario.elements.confirmar_senha.value === formulario.elements.senha.value, "As senhas não conferem.") && valido;
 
+    valido = verificar("aceite", !formulario.elements.aceite || formulario.elements.aceite.checked, "Aceite os Termos de Uso e a Política de Privacidade.") && valido;
+
     if (!valido) {
       evento.preventDefault();
       var primeiroErro = formulario.querySelector(".campo-invalido input, .campo-invalido textarea, .invalido");

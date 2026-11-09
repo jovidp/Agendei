@@ -242,6 +242,7 @@ class Tentativa
             'cadastro_ip'   => 'Cadastro público',
             'instalador_ip' => 'Chave do instalador',
             'tarefas_ip'    => 'Chave das tarefas agendadas',
+            'bot_whatsapp_ip' => 'Chave do bot de WhatsApp',
             default         => $escopo,
         };
     }

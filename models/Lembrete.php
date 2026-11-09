@@ -71,8 +71,10 @@ class Lembrete
     /** Gera a fila e envia o que estiver pronto, para a empresa do contexto. */
     public static function processar(): array
     {
+        // Plano sem lembrete automatico: a fila continua, para o envio manual pelo painel.
+        $automatico = Plano::temRecurso('lembretes_whatsapp');
         $resultado = [
-            'provedor'   => WhatsApp::provedor(),
+            'provedor'   => $automatico ? WhatsApp::provedor() : 'manual',
             'geradas'    => Diferencial::gerarLembretes(),
             // Quem recebeu o lembrete e nao respondeu a tempo perde o horario
             // (Confirmacao). Vale tambem na fila manual: la "enviado" e o que o

@@ -18,6 +18,7 @@ DROP TABLE IF EXISTS `cliente_pacotes`;
 DROP TABLE IF EXISTS `pacotes`;
 DROP TABLE IF EXISTS `fidelidade_movimentos`;
 DROP TABLE IF EXISTS `pagamentos`;
+DROP TABLE IF EXISTS `whatsapp_conversas`;
 DROP TABLE IF EXISTS `notificacoes`;
 DROP TABLE IF EXISTS `lista_espera`;
 DROP TABLE IF EXISTS `configuracoes`;
@@ -77,6 +78,7 @@ CREATE TABLE `assinaturas` (
   `metodo_pagamento` enum('pix','boleto','cartao') DEFAULT NULL,
   `data_solicitacao` datetime DEFAULT NULL,
   `data_pagamento` datetime DEFAULT NULL,
+  `data_cancelamento` datetime DEFAULT NULL,
   PRIMARY KEY (`id_estabelecimento`),
   CONSTRAINT `fk_assinaturas_estabelecimento` FOREIGN KEY (`id_estabelecimento`) REFERENCES `estabelecimento` (`id_estabelecimento`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -119,6 +121,8 @@ CREATE TABLE `usuarios` (
   `senha_hash` varchar(255) NOT NULL,
   `telefone` varchar(20) DEFAULT NULL,
   `telefone_fixo` varchar(20) DEFAULT NULL,
+  `termos_versao` varchar(20) DEFAULT NULL,
+  `termos_aceitos_em` datetime DEFAULT NULL,
   `sexo` enum('F','M','O') DEFAULT NULL,
   `nome_materno` varchar(120) DEFAULT NULL,
   `data_nascimento` date DEFAULT NULL,
@@ -566,6 +570,8 @@ CREATE TABLE `planos` (
   `limite_profissionais` int(10) unsigned DEFAULT NULL,
   `limite_servicos` int(10) unsigned DEFAULT NULL,
   `limite_agendamentos_mes` int(10) unsigned DEFAULT NULL,
+  `preco_mensal` decimal(10,2) DEFAULT NULL,
+  `recursos` varchar(255) DEFAULT NULL,
   `status` enum('ativo','inativo') NOT NULL DEFAULT 'ativo',
   `data_criacao` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id_plano`),
@@ -748,4 +754,15 @@ CREATE TABLE `sessoes_lembradas` (
   KEY `idx_sessoes_lembradas_vinculo` (`id_vinculo`),
   CONSTRAINT `fk_sessoes_lembradas_usuario` FOREIGN KEY (`id_usuario`) REFERENCES `usuarios` (`id_usuario`) ON DELETE CASCADE,
   CONSTRAINT `fk_sessoes_lembradas_vinculo` FOREIGN KEY (`id_vinculo`) REFERENCES `vinculos` (`id_vinculo`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Conversas do bot de WhatsApp (models/Bot.php): a etapa do menu de cada numero.
+CREATE TABLE `whatsapp_conversas` (
+  `id_estabelecimento` int(10) unsigned NOT NULL,
+  `numero` varchar(20) NOT NULL,
+  `etapa` varchar(30) NOT NULL DEFAULT 'menu',
+  `dados` text DEFAULT NULL,
+  `atualizado_em` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_estabelecimento`,`numero`),
+  CONSTRAINT `fk_whatsapp_conversas_empresa` FOREIGN KEY (`id_estabelecimento`) REFERENCES `estabelecimento` (`id_estabelecimento`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

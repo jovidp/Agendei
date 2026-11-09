@@ -46,7 +46,7 @@ foreach (['profissionais', 'agendamentos'] as $alterada) {
     bd()->exec('ALTER TABLE ' . $alterada . ' ADD COLUMN id_filial INTEGER DEFAULT NULL REFERENCES filiais (id_filial)');
 }
 // usuarios (a pessoa) deixou de apontar para estabelecimento; vinculos entrou no lugar dela.
-verificar(count($tabelasLocais) === 21, 'Cobertura das tabelas locais mudou; atualize o teste.');
+verificar(count($tabelasLocais) === 22, 'Cobertura das tabelas locais mudou; atualize o teste.');
 
 function inserir(string $tabela, array $dados): int
 {
@@ -85,6 +85,7 @@ foreach (['empresa-a', 'empresa-b'] as $slug) {
     inserir('lista_espera', $vinculo + ['id_cliente' => $cliente, 'id_servico' => $servico, 'id_profissional' => $profissional, 'data_desejada' => '2026-10-02']);
     inserir('logs_autenticacao', $vinculo + ['id_usuario' => $idClienteUsuario, 'login_informado' => 'cliente@teste.local', 'evento' => 'login_sucesso']);
     inserir('configuracoes', $vinculo + ['chave' => 'teste', 'valor' => '1']);
+    inserir('whatsapp_conversas', $vinculo + ['numero' => '551199990000' . $sufixo, 'etapa' => 'menu', 'dados' => '{}']);
     inserir('estabelecimento_plano', $vinculo + ['id_plano' => $plano]);
     inserir('logs_master', $vinculo + ['id_master' => $master, 'acao' => 'estabelecimento_criado', 'estabelecimento_nome' => $slug]);
 }

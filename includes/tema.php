@@ -8,5 +8,6 @@ $dadosTema = Estabelecimento::dados();
 <link rel="stylesheet" href="<?= url('assets/css/projeto.css') ?>">
 <style id="tema-estabelecimento">:root{<?= Tema::estilo($dadosTema) ?>}</style>
 <meta name="estabelecimento" content="<?= e(Contexto::slug()) ?>">
+<meta name="politica-cookies" content="<?= e(url('legal.php?pagina=cookies')) ?>">
 <?php /* Monta a barra de acessibilidade em todas as telas que carregam o tema. */ ?>
 <script src="<?= url('assets/js/acessibilidade.js') ?>" defer></script>

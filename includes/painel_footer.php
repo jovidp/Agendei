@@ -6,6 +6,7 @@
 // Completa o layout e prepara os scripts específicos solicitados pela tela atual.
 $jsExtra = $jsExtra ?? [];
 ?>
+            <?php require RAIZ . '/includes/rodape_legal.php'; ?>
         </div><!-- /area-conteudo -->
     </div><!-- /painel-conteudo -->
 </div><!-- /painel -->

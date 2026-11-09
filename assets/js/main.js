@@ -354,6 +354,48 @@
   }
 
   // -----------------------------------------------------------------
+  // Aviso de cookies
+  // -----------------------------------------------------------------
+
+  /**
+   * Avisa uma vez que o sistema so usa cookies essenciais. Sem cookie de
+   * terceiros nao ha o que aceitar ou recusar: o botao so dispensa o aviso,
+   * e a dispensa fica no navegador (localStorage), nao num cookie.
+   */
+  function iniciarAvisoCookies() {
+    var meta = document.querySelector('meta[name="politica-cookies"]');
+    var chave = "agendei_aviso_cookies";
+    if (!meta) {
+      return;
+    }
+    try {
+      if (window.localStorage.getItem(chave)) {
+        return;
+      }
+    } catch (erro) {
+      return;
+    }
+
+    var aviso = document.createElement("div");
+    aviso.className = "aviso-cookies";
+    aviso.setAttribute("role", "region");
+    aviso.setAttribute("aria-label", "Aviso de cookies");
+    aviso.innerHTML =
+      "<p>Usamos só cookies essenciais, para manter você conectado e proteger os formulários. " +
+      '<a href="' + meta.content.replace(/"/g, "&quot;") + '">Saiba mais</a>.</p>' +
+      '<button type="button" class="btn btn-pequeno">Entendi</button>';
+    aviso.querySelector("button").addEventListener("click", function () {
+      try {
+        window.localStorage.setItem(chave, "1");
+      } catch (erro) {
+        // sem armazenamento o aviso volta na proxima pagina; nada se perde
+      }
+      aviso.remove();
+    });
+    document.body.appendChild(aviso);
+  }
+
+  // -----------------------------------------------------------------
   // Relogio de prazo
   // -----------------------------------------------------------------
 
@@ -664,6 +706,7 @@
     iniciarMascaras();
     iniciarMostrarSenha();
     iniciarContagens();
+    iniciarAvisoCookies();
     iniciarBuscaCep();
     iniciarBuscaTabela();
     iniciarFiltrosAutomaticos();

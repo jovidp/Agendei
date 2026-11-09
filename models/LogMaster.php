@@ -20,6 +20,7 @@ class LogMaster
         'login'                  => 'Entrada na área master',
         'logout'                 => 'Saida da área master',
         'estabelecimento_criado' => 'Estabelecimento criado',
+        'assinatura_cancelada'   => 'Assinatura cancelada pela empresa',
         'estabelecimento_status' => 'Acesso do estabelecimento alterado',
         'estabelecimento_excluido' => 'Estabelecimento excluído',
         'cadastro_solicitado'    => 'Cadastro de empresa solicitado',

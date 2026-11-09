@@ -8,15 +8,17 @@ spl_autoload_register(static function (string $classe): void {
 });
 try {
     $db = bd();
-    foreach ([Tentativa::class, LogMaster::class, Plano::class, Solicitacao::class] as $classe) {
+    foreach ([Tentativa::class, LogMaster::class, Plano::class, Solicitacao::class, Bot::class] as $classe) {
         foreach ($classe::ddl() as $comando) $db->exec($comando);
     }
     Assinatura::garantirEstrutura();
-    // Se falhar, o site sobe mesmo assim: so o destino do sinal cancelado fica sem gravar (o erro vai ao log).
+    // Se falhar, o site sobe mesmo assim: o sinal, o aceite e os planos novos ficam sem atualizar (o erro vai ao log).
     try {
         Diferencial::garantirStatusSinal();
+        Legal::garantirEstrutura();
+        Plano::garantirEstrutura();
     } catch (Throwable $erroSinal) {
-        fwrite(STDERR, 'Aviso: status do sinal não atualizado: ' . $erroSinal->getMessage() . "\n");
+        fwrite(STDERR, 'Aviso: estrutura do sinal e do aceite não atualizada: ' . $erroSinal->getMessage() . "\n");
     }
     echo "Estrutura auxiliar pronta para atender requisições.\n";
 } catch (Throwable $erro) {

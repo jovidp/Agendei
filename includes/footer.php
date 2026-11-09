@@ -54,6 +54,7 @@ $jsExtra = $jsExtra ?? [];
                 <?= marcaSistema(18, true, 'marca-sistema-discreta') ?>
             </span>
         </div>
+        <?php require RAIZ . '/includes/rodape_legal.php'; ?>
     </div>
 </footer>
 

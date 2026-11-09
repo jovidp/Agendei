@@ -5,6 +5,13 @@
 require_once __DIR__ . '/../config/config.php';
 exigirLogin('admin');
 
+// Plano sem nenhum dos recursos desta tela (Basico): mostra o que falta e para aqui.
+if (!Plano::temRecurso('diferenciais') && !Plano::temRecurso('lembretes_whatsapp') && !Plano::temRecurso('sinal_pix')) {
+    $recursoFaltante = 'diferenciais';
+    $tituloPagina = 'Diferenciais';
+    require RAIZ . '/includes/fora_do_plano.php';
+}
+
 $erros = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exigirCsrf();
@@ -90,6 +97,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             redirecionar('admin/diferenciais.php#mensagens');
         }
 
+        if ($acao === 'bot') {
+            if (!Plano::temRecurso('bot_whatsapp')) {
+                definirFlash('erro', Plano::avisoSemRecurso('bot_whatsapp'));
+            } elseif (post('operacao') === 'nova_chave') {
+                Bot::chave(true);
+                definirFlash('sucesso', 'Chave nova gerada. Atualize a URL do webhook na Evolution: a antiga parou de funcionar.');
+            } else {
+                $ligar = post('operacao') === 'ligar';
+                Configuracao::definir('whatsapp_bot_ativo', $ligar ? '1' : '0', 'Bot de atendimento no WhatsApp ligado');
+                Bot::chave();
+                definirFlash('sucesso', $ligar ? 'Bot ligado. Ele responde assim que a Evolution chamar o webhook abaixo.' : 'Bot desligado.');
+            }
+            redirecionar('admin/diferenciais.php#bot');
+        }
+
         if ($acao === 'whatsapp_teste') {
             Lembrete::enviarTeste(post('telefone_teste'));
             definirFlash('sucesso', 'Mensagem de teste enviada para ' . formatarTelefone(post('telefone_teste')) . '.');
@@ -155,6 +177,34 @@ require RAIZ . '/includes/painel_header.php';
 <div class="linha-campos"><div class="campo"><label for="liberar_sem_confirmacao_horas">Liberar horário sem confirmação (horas antes)</label><input type="number" id="liberar_sem_confirmacao_horas" name="liberar_sem_confirmacao_horas" min="0" max="72" value="<?= Configuracao::obterInteiro('liberar_sem_confirmacao_horas', 0) ?>"><span class="ajuda-campo">0 desliga. Vale para quem recebeu o lembrete e não respondeu pelo link; reserva com sinal pago nunca é liberada. Precisa ser menor que "Gerar lembrete até".</span></div></div>
 <button class="btn" type="submit">Salvar configurações</button>
 </form></div></div>
+
+<?php $botNoPlano = Plano::temRecurso('bot_whatsapp'); $botLigado = Configuracao::ativa('whatsapp_bot_ativo'); ?>
+<div class="cartao" id="bot"><div class="cartao-cabecalho"><h3>Bot de atendimento no WhatsApp</h3><?= $botNoPlano ? badgeStatus($botLigado && Bot::ligado() ? 'ativo' : 'inativo') : '' ?></div>
+<div class="cartao-corpo">
+<?php if (!$botNoPlano): ?>
+    <p><?= e(Plano::avisoSemRecurso('bot_whatsapp')) ?></p>
+    <a class="btn btn-contorno" href="<?= url('assinatura.php') ?>">Ver planos</a>
+<?php else: ?>
+    <p>O bot responde no número da empresa: o cliente marca, consulta e cancela horários pela conversa, com as mesmas regras do site (horários livres, sinal e prazo de cancelamento). Ele reconhece o cliente pelo celular do cadastro e, para "Falar com a equipe", fica em silêncio por 2 horas para alguém responder.</p>
+    <?php if ($whatsapp['provedor'] !== 'evolution'): ?>
+        <div class="alerta alerta-aviso"><span class="alerta-texto">O bot precisa da <strong>Evolution API</strong> configurada abaixo, em "Provedor de envio".</span></div>
+    <?php endif; ?>
+    <?php if ($botLigado): ?>
+        <div class="campo"><label for="bot_webhook">URL do webhook (cole na Evolution, evento MESSAGES_UPSERT)</label>
+            <input type="text" id="bot_webhook" readonly value="<?= e(urlAbsoluta('api/whatsapp.php?chave=' . Bot::chave())) ?>">
+            <span class="ajuda-campo">Na Evolution: Webhook &rarr; ativar, colar esta URL e marcar o evento MESSAGES_UPSERT. A chave na URL é o que autoriza a Evolution; não divulgue.</span>
+        </div>
+    <?php endif; ?>
+    <div class="grupo-botoes">
+        <form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="bot"><input type="hidden" name="operacao" value="<?= $botLigado ? 'desligar' : 'ligar' ?>">
+            <button class="btn<?= $botLigado ? ' btn-contorno' : '' ?>" type="submit"><?= $botLigado ? 'Desligar bot' : 'Ligar bot' ?></button></form>
+        <?php if ($botLigado): ?>
+        <form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="bot"><input type="hidden" name="operacao" value="nova_chave">
+            <button class="btn btn-contorno" type="submit" data-confirmar="A URL atual para de funcionar e você precisa colar a nova na Evolution." data-confirmar-titulo="Gerar chave nova" data-confirmar-rotulo="Gerar">Gerar chave nova</button></form>
+        <?php endif; ?>
+    </div>
+<?php endif; ?>
+</div></div>
 
 <div class="cartao" id="mensagens"><div class="cartao-cabecalho"><h3>Lembretes por WhatsApp</h3><form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="lembretes"><button class="btn btn-pequeno" type="submit"><?= $whatsappAtivo ? 'Enviar agora' : 'Atualizar fila' ?></button></form></div>
 <div class="cartao-corpo">

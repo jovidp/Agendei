@@ -132,4 +132,27 @@ class Sql
 
         return ' ON DUPLICATE KEY UPDATE ' . implode(', ', $atribuicoes);
     }
+    /**
+     * Acrescenta a coluna quando a tabela existe e ainda nao a tem. Serve as
+     * atualizacoes que rodam na subida do container: no dialeto que for, sem
+     * depender de ADD COLUMN IF NOT EXISTS (o MySQL 8 nao tem).
+     */
+    public static function garantirColuna(string $tabela, string $coluna, string $definicao): void
+    {
+        $esquema = Database::ehPostgres() ? 'current_schema()' : 'DATABASE()';
+        $q = bd()->prepare("SELECT
+            (SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = $esquema AND table_name = ?),
+            (SELECT COUNT(*) FROM information_schema.columns WHERE table_schema = $esquema AND table_name = ? AND column_name = ?)");
+        $q->execute([$tabela, $tabela, $coluna]);
+        [$tabelaExiste, $colunaExiste] = array_map('intval', $q->fetch(PDO::FETCH_NUM));
+        if ($tabelaExiste && !$colunaExiste) {
+            bd()->exec("ALTER TABLE $tabela ADD COLUMN $coluna $definicao");
+        }
+    }
+
+    /** Tipo de data e hora anulavel de cada dialeto, para as colunas novas. */
+    public static function tipoDataHora(): string
+    {
+        return Database::ehPostgres() ? 'TIMESTAMP NULL' : 'DATETIME NULL';
+    }
 }
