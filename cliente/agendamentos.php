@@ -83,6 +83,9 @@ foreach (Diferencial::pagamentos($idCliente) as $pagamento) {
     }
 }
 
+// Pagamento avulso online faz parte dos diferenciais do plano.
+$pagarOnline = Plano::temRecurso('diferenciais');
+
 // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Meus agendamentos';
 $subtituloTopo = 'Acompanhe e gerencie seus atendimentos';
@@ -186,6 +189,9 @@ require_once RAIZ . '/includes/painel_header.php';
                                 <?php endif; ?>
                             </td>
                             <td class="coluna-acoes">
+                                <?php if ($pagarOnline && PagamentoAvulso::pagavel($agendamento, $idCliente)): ?>
+                                    <a class="btn btn-pequeno" href="<?= url('cliente/pagar.php?agendamento=' . (int) $agendamento['id_agendamento']) ?>">Pagar agora</a>
+                                <?php endif; ?>
                                 <button type="button" class="btn btn-contorno btn-pequeno"
                                         data-modal="modalDetalhes"
                                         data-campo-servico="<?= e($agendamento['nome_servico']) ?>"
@@ -208,7 +214,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                     </form>
                                 <?php endif; ?>
 
-                                <?php if ($sinal !== null && $sinal['status'] === 'pendente' && Agendamento::clientePodeCancelar($agendamento)): ?>
+                                <?php if (AMBIENTE === 'desenvolvimento' && $sinal !== null && $sinal['status'] === 'pendente' && Agendamento::clientePodeCancelar($agendamento)): ?>
                                     <form method="post" class="formulario-inline">
                                         <?= campoCsrf() ?>
                                         <input type="hidden" name="acao" value="pagar_sinal">

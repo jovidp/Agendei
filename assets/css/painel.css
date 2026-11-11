@@ -760,11 +760,12 @@
 
 /* Ajusta a disposição dos componentes para janelas de até 1080 pixels. */
 @media (max-width: 1080px) {
+  /* minmax(0, ...) deixa a coluna menor que a tabela de dentro: quem rola e a .tabela-area, nao a pagina. */
   .grade-painel {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .grade-painel-igual {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -923,6 +924,13 @@
   /* O titulo encolhe e corta com reticencias: logo, acoes e Sair cabem na largura do celular. */
   .topo-painel > div:not([class]) { flex: 1 1 auto; min-width: 0; }
   .topo-painel h1 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Sem espaco para tudo numa linha, as acoes descem para uma segunda linha em vez de empurrar o Sair para fora da tela. */
+  .topo-painel { flex-wrap: wrap; height: auto; min-height: 60px; padding-top: 8px; padding-bottom: 8px; gap: 8px; }
+  .usuario-topo .avatar { display: none; }
+  .agenda-data-atual { min-width: 0; }
+  /* Quem encolhe e o filtro de profissional, nao o seletor Dia/Semana. */
+  .agenda-visoes { flex-shrink: 0; }
+  .agenda-navegacao select { flex: 1 1 auto; min-width: 0; }
 }
 
 /* Cartoes de plano na tela Assinatura (reaproveitam .opcao de agendamento.css). */
@@ -934,3 +942,6 @@
 .plano-beneficios li::before { content: "✓"; position: absolute; left: 0; color: var(--cor-secundaria); font-weight: 700; }
 .plano-beneficios li.fora { color: var(--texto-secundario); text-decoration: line-through; opacity: 0.7; }
 .plano-beneficios li.fora::before { content: "–"; color: var(--texto-secundario); }
+
+/* Previa do menu do bot (admin/bot.php): balao como no WhatsApp, quebrando links longos. */
+.previa-bot { margin: 8px 0 0; padding: 12px 14px; background: #e7f6e9; border-radius: var(--raio); font-family: inherit; font-size: 13.5px; line-height: 1.45; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--texto-principal); }

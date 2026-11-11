@@ -120,13 +120,16 @@ require_once RAIZ . '/includes/painel_header.php';
         </dl>
 
         <div class="grupo-botoes" style="justify-content:center">
-            <?php if ($sinal !== null && $sinal['status'] === 'pendente'): ?>
+            <?php if (AMBIENTE === 'desenvolvimento' && $sinal !== null && $sinal['status'] === 'pendente'): ?>
                 <form method="post" action="<?= url('cliente/agendamentos.php') ?>" class="formulario-inline">
                     <?= campoCsrf() ?>
                     <input type="hidden" name="acao" value="pagar_sinal">
                     <input type="hidden" name="id_agendamento" value="<?= (int) $agendamentoConfirmado['id_agendamento'] ?>">
                     <button type="submit" class="btn btn-secundario">Pagar sinal (simulação)</button>
                 </form>
+            <?php endif; ?>
+            <?php if (Plano::temRecurso('diferenciais') && PagamentoAvulso::pagavel($agendamentoConfirmado, $idCliente)): ?>
+                <a href="<?= url('cliente/pagar.php?agendamento=' . (int) $agendamentoConfirmado['id_agendamento']) ?>" class="btn btn-secundario">Pagar agora (Pix, boleto ou cartão)</a>
             <?php endif; ?>
             <a href="<?= url('cliente/agendamentos.php') ?>" class="btn">Ver meus agendamentos</a>
             <a href="<?= url('cliente/agendar.php') ?>" class="btn btn-contorno">Fazer novo agendamento</a>

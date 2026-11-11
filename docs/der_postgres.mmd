@@ -32,6 +32,7 @@ erDiagram
         varchar metodo_pagamento "NULL"
         timestamp data_solicitacao "NULL"
         timestamp data_pagamento "NULL"
+        timestamp data_cancelamento "NULL"
     }
     administradores_master {
         integer id_master PK "NOT NULL"
@@ -58,6 +59,8 @@ erDiagram
         varchar senha_hash "NOT NULL"
         varchar telefone "NULL"
         varchar telefone_fixo "NULL"
+        varchar termos_versao "NULL"
+        timestamp termos_aceitos_em "NULL"
         varchar sexo "NULL"
         varchar nome_materno "NULL"
         date data_nascimento "NULL"
@@ -177,6 +180,7 @@ erDiagram
         timestamp data_atualizacao "NULL"
         varchar grupo_recorrencia "NULL"
         integer id_cliente_pacote "NULL"
+        integer id_cliente_assinatura "NULL"
         integer id_estabelecimento FK,UK "NOT NULL"
         integer id_filial FK "NULL"
     }
@@ -217,6 +221,7 @@ erDiagram
         varchar metodo "NOT NULL"
         varchar status "NOT NULL"
         varchar referencia "NULL"
+        char cartao_final "NULL"
         timestamp data_pagamento "NULL"
         timestamp data_criacao "NOT NULL"
     }
@@ -251,6 +256,45 @@ erDiagram
         date data_expiracao "NOT NULL"
         timestamp data_criacao "NOT NULL"
     }
+    planos_clientes {
+        integer id_plano_cliente PK,UK "NOT NULL"
+        integer id_estabelecimento FK,UK "NOT NULL"
+        varchar nome "NOT NULL"
+        varchar descricao "NULL"
+        numeric preco_mensal "NOT NULL"
+        smallint desconto_percentual "NOT NULL"
+        varchar status "NOT NULL"
+        timestamp data_criacao "NOT NULL"
+    }
+    plano_cliente_servicos {
+        integer id_estabelecimento PK,FK "NOT NULL"
+        integer id_plano_cliente PK,FK "NOT NULL"
+        integer id_servico PK,FK "NOT NULL"
+        smallint quantidade_mes "NULL"
+    }
+    cliente_assinaturas {
+        integer id_cliente_assinatura PK,UK "NOT NULL"
+        integer id_estabelecimento FK,UK "NOT NULL"
+        integer id_cliente FK "NOT NULL"
+        integer id_plano_cliente FK "NOT NULL"
+        varchar status "NOT NULL"
+        date periodo_inicio "NULL"
+        date periodo_fim "NULL"
+        timestamp data_cancelamento "NULL"
+        timestamp data_criacao "NOT NULL"
+    }
+    cobrancas_assinatura_cliente {
+        integer id_cobranca PK "NOT NULL"
+        integer id_estabelecimento FK "NOT NULL"
+        integer id_cliente_assinatura FK "NOT NULL"
+        numeric valor "NOT NULL"
+        varchar status "NOT NULL"
+        varchar referencia "NULL"
+        varchar metodo "NULL"
+        char cartao_final "NULL"
+        timestamp data_pagamento "NULL"
+        timestamp data_criacao "NOT NULL"
+    }
     avaliacoes {
         integer id_avaliacao PK "NOT NULL"
         integer id_estabelecimento FK,UK "NOT NULL"
@@ -282,6 +326,8 @@ erDiagram
         integer limite_profissionais "NULL"
         integer limite_servicos "NULL"
         integer limite_agendamentos_mes "NULL"
+        numeric preco_mensal "NULL"
+        varchar recursos "NULL"
         varchar status "NOT NULL"
         timestamp data_criacao "NOT NULL"
     }
@@ -345,6 +391,23 @@ erDiagram
         timestamp criado_em "NOT NULL"
         timestamp ultimo_uso "NOT NULL"
     }
+    whatsapp_conversas {
+        integer id_estabelecimento PK,FK "NOT NULL"
+        varchar numero PK "NOT NULL"
+        varchar etapa "NOT NULL"
+        text dados "NULL"
+        timestamp atualizado_em "NOT NULL"
+    }
+    bot_opcoes {
+        integer id_bot_opcao PK "NOT NULL"
+        integer id_estabelecimento FK "NOT NULL"
+        varchar tipo "NOT NULL"
+        varchar rotulo "NOT NULL"
+        varchar resposta "NULL"
+        smallint ordem "NOT NULL"
+        smallint ativo "NOT NULL"
+        timestamp data_criacao "NOT NULL"
+    }
     estabelecimento ||--o| assinaturas : "id_estabelecimento"
     estabelecimento ||..o{ vinculos : "id_estabelecimento"
     usuarios ||..o{ vinculos : "id_usuario"
@@ -390,6 +453,14 @@ erDiagram
     estabelecimento ||..o{ cliente_pacotes : "id_estabelecimento"
     clientes ||..o{ cliente_pacotes : "id_estabelecimento + id_cliente"
     pacotes ||..o{ cliente_pacotes : "id_estabelecimento + id_pacote"
+    estabelecimento ||..o{ planos_clientes : "id_estabelecimento"
+    planos_clientes ||--o{ plano_cliente_servicos : "id_estabelecimento + id_plano_cliente"
+    servicos ||--o{ plano_cliente_servicos : "id_estabelecimento + id_servico"
+    estabelecimento ||..o{ cliente_assinaturas : "id_estabelecimento"
+    clientes ||..o{ cliente_assinaturas : "id_estabelecimento + id_cliente"
+    planos_clientes ||..o{ cliente_assinaturas : "id_estabelecimento + id_plano_cliente"
+    estabelecimento ||..o{ cobrancas_assinatura_cliente : "id_estabelecimento"
+    cliente_assinaturas ||..o{ cobrancas_assinatura_cliente : "id_estabelecimento + id_cliente_assinatura"
     estabelecimento ||..o{ avaliacoes : "id_estabelecimento"
     agendamentos ||..o| avaliacoes : "id_estabelecimento + id_agendamento"
     clientes ||..o{ avaliacoes : "id_estabelecimento + id_cliente"
@@ -401,3 +472,5 @@ erDiagram
     estabelecimento ||..o{ filiais : "id_estabelecimento"
     usuarios ||..o{ sessoes_lembradas : "id_usuario"
     vinculos ||..o{ sessoes_lembradas : "id_vinculo"
+    estabelecimento ||--o{ whatsapp_conversas : "id_estabelecimento"
+    estabelecimento ||..o{ bot_opcoes : "id_estabelecimento"

@@ -45,7 +45,11 @@ require RAIZ . '/includes/painel_header.php';
     <div class="cartao-corpo codigo-email">
         <div class="codigo-email-icone" aria-hidden="true">&#9993;</div>
         <h2>Confirme seu e-mail</h2>
-        <p>Enviamos um código de 6 dígitos para <strong><?= e(VerificacaoEmail::mascarar($email)) ?></strong>. Ele vale por <?= VerificacaoEmail::VALIDADE_MINUTOS ?> minutos.</p>
+        <?php if (VerificacaoEmail::codigoAtivo($idUsuario)): ?>
+            <p>Enviamos um código de 6 dígitos para <strong><?= e(VerificacaoEmail::mascarar($email)) ?></strong>. Ele vale por <?= VerificacaoEmail::VALIDADE_MINUTOS ?> minutos.</p>
+        <?php else: ?>
+            <p>Ainda não conseguimos enviar o código para <strong><?= e(VerificacaoEmail::mascarar($email)) ?></strong>. Toque em <strong>Reenviar código</strong> daqui a pouco.</p>
+        <?php endif; ?>
 
         <form method="post">
             <?= campoCsrf() ?>

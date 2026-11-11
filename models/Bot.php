@@ -94,56 +94,63 @@ class Bot
 
     private static function menu(string $numero, ?array $cliente, array $dados): string
     {
-        $empresa = Estabelecimento::dados()['nome'];
         self::salvar($numero, 'menu', ['ultima_mensagem' => $dados['ultima_mensagem'] ?? '']);
+        return BotMenu::menu($cliente !== null, self::variaveis($cliente));
+    }
 
-        if ($cliente === null) {
-            return "Olá! Sou o assistente virtual de *{$empresa}*.\n\n"
-                . "Não encontrei um cadastro com este número. Para marcar horário por aqui, crie sua conta usando este mesmo celular:\n"
-                . urlAbsoluta('cadastro.php') . "\n\n"
-                . "Enquanto isso, responda com o número:\n4. Serviços e preços\n5. Falar com a equipe";
-        }
+    /** Variaveis dos textos personalizados ({nome}, {empresa}, {link_cadastro}). */
+    private static function variaveis(?array $cliente): array
+    {
+        return [
+            'nome'          => $cliente ? explode(' ', trim((string) $cliente['nome']))[0] : '',
+            'empresa'       => Estabelecimento::dados()['nome'],
+            'link_cadastro' => urlAbsoluta('cadastro.php'),
+        ];
+    }
 
-        $nome = explode(' ', trim((string) $cliente['nome']))[0];
-        return "Olá, {$nome}! Sou o assistente virtual de *{$empresa}*. Responda com o número:\n\n"
-            . "1. Marcar horário\n2. Meus agendamentos\n3. Cancelar um agendamento\n4. Serviços e preços\n5. Falar com a equipe\n\n"
-            . 'A qualquer momento, mande *menu* para voltar aqui.';
+    /** " Mande *N* ..." com o numero atual da opcao, ou nada se o cliente nao a ve. */
+    private static function indicar(string $tipo, ?array $cliente, string $frase): string
+    {
+        $n = BotMenu::numeroDe($tipo, $cliente !== null);
+        return $n === null ? '' : ' ' . str_replace('{n}', (string) $n, $frase);
     }
 
     private static function noMenu(string $numero, ?array $cliente, int $escolha, array $dados): string
     {
-        if ($escolha === 4) {
-            return self::servicosEPrecos() . "\n\nMande *menu* para ver as opções.";
+        $opcao = BotMenu::escolha($escolha, $cliente !== null);
+        if ($opcao === null) {
+            // Sem cadastro, escolha invalida so repete o menu, como antes.
+            return $cliente === null
+                ? self::menu($numero, null, $dados)
+                : BotMenu::texto('nao_entendi', self::variaveis($cliente)) . "\n\n" . self::menu($numero, $cliente, $dados);
         }
-        if ($escolha === 5) {
-            self::salvar($numero, 'humano', $dados);
-            return 'Certo! Avisei a equipe, e alguém vai te responder por aqui. Quando quiser falar com o assistente de novo, mande *menu*.';
+        switch ($opcao['tipo']) {
+            case 'resposta':
+                return $opcao['resposta'] . "\n\nMande *menu* para ver as opções.";
+            case 'servicos':
+                return self::servicosEPrecos() . "\n\nMande *menu* para ver as opções.";
+            case 'equipe':
+                self::salvar($numero, 'humano', $dados);
+                return BotMenu::texto('equipe', self::variaveis($cliente));
+            case 'marcar':
+                return self::listarServicos($numero, $cliente, $dados);
+            case 'meus':
+                $proximos = self::proximos($cliente);
+                if ($proximos === []) {
+                    return 'Você não tem horários marcados.' . self::indicar('marcar', $cliente, 'Responda *{n}* para marcar um.');
+                }
+                $linhas = array_map(fn($a) => '• ' . self::descreverAgendamento($a), $proximos);
+                return "Seus próximos horários:\n\n" . implode("\n", $linhas) . "\n\nMande *menu* para ver as opções.";
+            default: // cancelar
+                return self::listarParaCancelar($numero, $cliente, $dados);
         }
-        if ($cliente === null) {
-            return self::menu($numero, null, $dados);
-        }
-        if ($escolha === 1) {
-            return self::listarServicos($numero, $dados);
-        }
-        if ($escolha === 2) {
-            $proximos = self::proximos($cliente);
-            if ($proximos === []) {
-                return "Você não tem horários marcados. Responda *1* para marcar um.";
-            }
-            $linhas = array_map(fn($a) => '• ' . self::descreverAgendamento($a), $proximos);
-            return "Seus próximos horários:\n\n" . implode("\n", $linhas) . "\n\nMande *menu* para ver as opções.";
-        }
-        if ($escolha === 3) {
-            return self::listarParaCancelar($numero, $cliente, $dados);
-        }
-        return "Não entendi. Responda com um dos números do menu.\n\n" . self::menu($numero, $cliente, $dados);
     }
 
-    private static function listarServicos(string $numero, array $dados): string
+    private static function listarServicos(string $numero, ?array $cliente, array $dados): string
     {
         $servicos = Servico::ativosComProfissional();
         if ($servicos === []) {
-            return 'No momento não há serviços disponíveis para agendamento. Mande *5* para falar com a equipe.';
+            return 'No momento não há serviços disponíveis para agendamento.' . self::indicar('equipe', $cliente, 'Mande *{n}* para falar com a equipe.');
         }
         $dados['opcoes'] = array_map(fn($s) => (int) $s['id_servico'], $servicos);
         self::salvar($numero, 'servico', $dados);
@@ -353,7 +360,7 @@ class Bot
         self::salvar($numero, 'menu', ['ultima_mensagem' => $dados['ultima_mensagem'] ?? '']);
 
         if (!$agendamento || (int) $agendamento['id_cliente'] !== (int) $cliente['id_cliente'] || !Agendamento::clientePodeCancelar($agendamento)) {
-            return 'Esse horário não pode mais ser cancelado por aqui. Mande *5* no menu para falar com a equipe.';
+            return 'Esse horário não pode mais ser cancelado por aqui.' . self::indicar('equipe', $cliente, 'Mande *{n}* no menu para falar com a equipe.');
         }
 
         Agendamento::cancelar($id, (int) $cliente['id_usuario'], 'Cancelado pelo WhatsApp', true);
@@ -433,13 +440,17 @@ class Bot
              WHERE c.id_estabelecimento = ? AND v.status = \'ativo\' AND u.telefone LIKE ?'
         );
         $q->execute([Contexto::id(), Contexto::id(), '%' . $final]);
+        $achados = [];
         foreach ($q->fetchAll() as $linha) {
             $telefone = preg_replace('/\D/', '', (string) $linha['telefone']);
             if (substr($telefone, 0, 2) === $ddd) {
-                return $linha;
+                $achados[(int) $linha['id_cliente']] = $linha;
             }
         }
-        return null;
+        // Telefone dividido por duas contas (familia): nao da para saber quem escreve,
+        // e responder pela primeira mostraria e cancelaria os horarios da outra pessoa.
+        // shortcut: as duas caem no menu sem cadastro; perguntar o CPF resolveria se isso for comum.
+        return count($achados) === 1 ? reset($achados) : null;
     }
 
     /** Conversa salva (etapa, dados e hora da ultima mensagem) ou uma vazia. */
@@ -470,8 +481,46 @@ class Bot
         }
     }
 
-    /** Tabela das conversas. Roda na subida do container e em migrar.php. */
+    /** Tabelas das conversas e do menu personalizado. Roda na subida do container e em migrar.php. */
     public static function ddl(): array
+    {
+        return [...self::ddlConversas(), Database::ehPostgres()
+            ? "CREATE TABLE IF NOT EXISTS bot_opcoes (
+                id_bot_opcao       INTEGER GENERATED BY DEFAULT AS IDENTITY,
+                id_estabelecimento INTEGER NOT NULL,
+                tipo               VARCHAR(10) NOT NULL,
+                rotulo             VARCHAR(60) NOT NULL,
+                resposta           VARCHAR(1000) DEFAULT NULL,
+                ordem              SMALLINT NOT NULL DEFAULT 0,
+                ativo              SMALLINT NOT NULL DEFAULT 1,
+                data_criacao       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT pk_bot_opcoes PRIMARY KEY (id_bot_opcao),
+                CONSTRAINT ck_bot_opcao_tipo CHECK (tipo IN ('marcar','meus','cancelar','servicos','equipe','resposta')),
+                CONSTRAINT fk_bot_opcao_empresa FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento (id_estabelecimento) ON DELETE CASCADE
+            )"
+            : "CREATE TABLE IF NOT EXISTS bot_opcoes (
+                id_bot_opcao       INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                id_estabelecimento INT UNSIGNED NOT NULL,
+                tipo               ENUM('marcar','meus','cancelar','servicos','equipe','resposta') NOT NULL,
+                rotulo             VARCHAR(60) NOT NULL,
+                resposta           VARCHAR(1000) DEFAULT NULL,
+                ordem              SMALLINT NOT NULL DEFAULT 0,
+                ativo              TINYINT(1) NOT NULL DEFAULT 1,
+                data_criacao       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id_bot_opcao),
+                KEY idx_bot_opcoes_empresa (id_estabelecimento, ordem),
+                CONSTRAINT fk_bot_opcao_empresa FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento (id_estabelecimento) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+            // Os textos do bot ficam em configuracoes e passam dos 255 da coluna antiga.
+            // RLS: a API publica do Supabase nao le a tabela; o app conecta como dono e nao e afetado.
+            ...(Database::ehPostgres()
+                ? ['CREATE INDEX IF NOT EXISTS idx_bot_opcoes_empresa ON bot_opcoes (id_estabelecimento, ordem)',
+                   'ALTER TABLE bot_opcoes ENABLE ROW LEVEL SECURITY',
+                   'ALTER TABLE configuracoes ALTER COLUMN valor TYPE VARCHAR(1000)']
+                : ['ALTER TABLE configuracoes MODIFY valor VARCHAR(1000) NOT NULL'])];
+    }
+
+    private static function ddlConversas(): array
     {
         return [Database::ehPostgres()
             ? 'CREATE TABLE IF NOT EXISTS whatsapp_conversas (

@@ -244,7 +244,9 @@ class Estabelecimento
             // Filhos antes dos pais: as FKs de empresa nao usam ON DELETE CASCADE.
             foreach ([
                 'notificacoes', 'pagamentos', 'fidelidade_movimentos', 'avaliacoes',
-                'cliente_pacotes', 'pacotes', 'lista_espera', 'agendamentos',
+                'cliente_pacotes', 'pacotes',
+                'cobrancas_assinatura_cliente', 'cliente_assinaturas', 'plano_cliente_servicos', 'planos_clientes',
+                'lista_espera', 'agendamentos',
                 'bloqueios_agenda', 'horarios_profissionais', 'profissional_servico',
                 'administradores', 'clientes', 'profissionais', 'servicos',
                 // filiais so depois de profissionais e agendamentos, que a referenciam.

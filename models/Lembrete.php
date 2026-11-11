@@ -152,13 +152,17 @@ class Lembrete
                 continue;
             }
 
+            // Reserva a linha antes de enviar: outra execucao simultanea da tarefa a pula, e o cliente nao recebe em dobro.
+            if (!self::marcarEnviada($id)) {
+                continue;
+            }
+
             try {
                 if (str_starts_with((string) $item['tipo'], 'lembrete_')) {
                     WhatsApp::enviarLembrete($numero, (string) $item['mensagem'], self::parametros($item));
                 } else {
                     WhatsApp::enviarTexto($numero, (string) $item['mensagem']);
                 }
-                self::marcarEnviada($id);
                 $totais['enviadas']++;
             } catch (Throwable $erro) {
                 self::registrarFalha($id, $erro->getMessage());
@@ -215,19 +219,22 @@ class Lembrete
     // Estado da notificacao
     // -----------------------------------------------------------------
 
-    private static function marcarEnviada(int $id): void
+    /** Passa de pendente a enviada; false quando outra execucao ja pegou a linha. */
+    private static function marcarEnviada(int $id): bool
     {
         $q = bd()->prepare(
             'UPDATE notificacoes SET status = \'enviada\', data_envio = NOW(), erro = NULL
-             WHERE id_estabelecimento = ? AND id_notificacao = ?'
+             WHERE id_estabelecimento = ? AND id_notificacao = ? AND status = \'pendente\''
         );
         $q->execute([Contexto::id(), $id]);
+        return $q->rowCount() > 0;
     }
 
+    /** O envio falhou: a linha volta para a fila com mais uma tentativa. */
     private static function registrarFalha(int $id, string $erro): void
     {
         $q = bd()->prepare(
-            'UPDATE notificacoes SET tentativas = tentativas + 1, erro = ?
+            'UPDATE notificacoes SET status = \'pendente\', data_envio = NULL, tentativas = tentativas + 1, erro = ?
              WHERE id_estabelecimento = ? AND id_notificacao = ?'
         );
         $q->execute([mb_substr($erro, 0, 255), Contexto::id(), $id]);

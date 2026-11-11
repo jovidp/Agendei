@@ -42,6 +42,8 @@ $menus = [
         ['separador' => 'Gestão'],
         ['rotulo' => 'Relatórios',    'arquivo' => 'admin/relatorios.php',    'icone' => 'relatorios'],
         ['rotulo' => 'Diferenciais',  'arquivo' => 'admin/diferenciais.php',  'icone' => 'novo'],
+        ['rotulo' => 'Assinaturas de clientes', 'arquivo' => 'admin/assinaturas_clientes.php', 'icone' => 'novo'],
+        ['rotulo' => 'Bot do WhatsApp', 'arquivo' => 'admin/bot.php', 'icone' => 'novo'],
         ['rotulo' => 'Assinatura',    'arquivo' => 'assinatura.php',          'icone' => 'configuracoes'],
         ['rotulo' => 'Aparência', 'arquivo' => 'admin/aparencia.php', 'icone' => 'configuracoes'],
         ['rotulo' => 'Configurações', 'arquivo' => 'admin/configuracoes.php', 'icone' => 'configuracoes'],

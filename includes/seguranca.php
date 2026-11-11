@@ -53,6 +53,8 @@ function politicaLimites(): array
         'tarefas_ip'     => ['limite' => 5,  'janela' => 3600, 'espera' => 3600],
         // Chave do webhook do bot de WhatsApp: a origem e o servidor da Evolution, por isso mais folga.
         'bot_whatsapp_ip' => ['limite' => 20, 'janela' => 3600, 'espera' => 900],
+        // Link de confirmacao de presenca (confirmar.php): link errado em sequencia e adivinhacao.
+        'confirmacao_ip' => ['limite' => 20, 'janela' => 900,  'espera' => 900],
     ];
 }
 

@@ -87,8 +87,9 @@ class Assinatura
             $assinatura['status'] = 'bloqueada';
         }
 
-        // Assinatura cancelada vale ate o fim do periodo ja pago.
-        if ($assinatura['status'] === 'ativa' && !empty($assinatura['data_cancelamento'])
+        // Assinatura paga vale ate o fim do periodo; sem novo pagamento confirmado, bloqueia.
+        // Conta sem data_pagamento (legado) nao tem fim calculado e segue ativa.
+        if ($assinatura['status'] === 'ativa'
             && ($fim = self::acessoAte($assinatura)) !== null && strtotime($fim) <= time()) {
             $q = bd()->prepare("UPDATE assinaturas SET status = 'bloqueada' WHERE id_estabelecimento = ? AND status = 'ativa'");
             $q->execute([$idEstabelecimento]);

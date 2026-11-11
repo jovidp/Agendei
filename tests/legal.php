@@ -97,6 +97,12 @@ verificar(substr((string) Assinatura::acessoAte($assinatura()), 0, 10) === date(
 bd()->prepare('UPDATE assinaturas SET data_pagamento = ? WHERE id_estabelecimento = ?')->execute([$quando(31), $idEmpresa]);
 verificar($assinatura()['status'] === 'bloqueada', 'Passado o período pago, a assinatura cancelada deveria bloquear.');
 
+Assinatura::confirmarPagamento($idEmpresa);
+bd()->prepare('UPDATE assinaturas SET data_pagamento = ? WHERE id_estabelecimento = ?')->execute([$quando(29), $idEmpresa]);
+verificar($assinatura()['status'] === 'ativa', 'Dentro do período pago a assinatura deveria seguir ativa.');
+bd()->prepare('UPDATE assinaturas SET data_pagamento = ? WHERE id_estabelecimento = ?')->execute([$quando(31), $idEmpresa]);
+verificar($assinatura()['status'] === 'bloqueada', 'Sem novo pagamento, a assinatura não cancelada também deveria vencer.');
+
 // 4. Retenção
 $inserirLog = bd()->prepare("INSERT INTO logs_autenticacao (id_estabelecimento, login_informado, evento, data_hora) VALUES (?, 'x', 'login_falha', ?)");
 $inserirLog->execute([$idEmpresa, $quando(400)]);
@@ -108,5 +114,13 @@ $apagadas = Legal::limparDadosAntigos();
 verificar($apagadas['logs_autenticacao'] === 1, 'Só o registro de acesso com mais de 12 meses deveria sair: ' . json_encode($apagadas));
 verificar($apagadas['logs_master'] === 1, 'Só a auditoria com mais de 5 anos deveria sair: ' . json_encode($apagadas));
 verificar((int) bd()->query("SELECT COUNT(*) FROM logs_autenticacao WHERE login_informado = 'x'")->fetchColumn() === 1, 'O registro recente de acesso sumiu.');
+
+// 5. Código de confirmação que não saiu não fica valendo (a tela não diz "enviamos")
+foreach (['AGENDEI_EMAIL_HOST', 'AGENDEI_EMAIL_API_CHAVE'] as $variavel) putenv($variavel);
+$_SESSION['codigos_email'] = [];
+verificar(VerificacaoEmail::reenviar(1, 'admin@legal.local', 'Responsável') !== '', 'Envio sem provedor deveria falhar.');
+verificar(!VerificacaoEmail::codigoAtivo(1), 'Código que não foi enviado não deveria ficar ativo.');
+verificar(str_starts_with(VerificacaoEmail::reenviar(1, 'admin@legal.local', 'Responsável'), 'Aguarde'), 'Falha também respeita o intervalo de reenvio.');
+verificar(VerificacaoEmail::conferir(1, 'admin@legal.local', '123456') !== '', 'Código não enviado não pode ser confirmado.');
 
 echo "OK: {$checagens} verificações dos requisitos legais.\n";

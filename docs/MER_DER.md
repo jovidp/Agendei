@@ -64,6 +64,10 @@ Agendamento.php copia o preço para valor e calcula hora_fim com a duração do 
 
 agendamentos.id_cliente_pacote é anulável e não tem FOREIGN KEY em nenhum dos dois scripts. Diferencial::usarCreditoPacote seleciona uma compra paga, válida, com saldo, do cliente, serviço e estabelecimento da reserva. A aplicação consome o crédito e grava o identificador; o cancelamento devolve o crédito e limpa o vínculo. Esta relação deve aparecer separadamente como lógica, sem marcação FK.
 
+### Assinaturas de clientes
+
+planos_clientes é o plano que a empresa vende; plano_cliente_servicos lista os serviços incluídos (quantidade_mes nula = ilimitado). cliente_assinaturas guarda pendente, ativa ou cancelada e o período pago; suspensa e encerrada são derivadas das datas por AssinaturaCliente::situacao. cobrancas_assinatura_cliente registra cada mensalidade. agendamentos.id_cliente_assinatura é anulável e sem FOREIGN KEY: marca a reserva coberta, e o uso do mês é contado pelas reservas não canceladas, sem saldo guardado.
+
 ### Benefícios e pagamentos
 
 cliente_pacotes registra compras de pacotes de serviços. pagamentos registra sinal ou integral por agendamento, com unicidade por estabelecimento, agendamento e tipo. fidelidade_movimentos admite no máximo um movimento por agendamento quando informado. avaliacoes admite no máximo uma avaliação por agendamento; a aplicação verifica cliente, conclusão e nota. Saldo de fidelidade fica em clientes.pontos_fidelidade.
@@ -121,6 +125,7 @@ erDiagram
         enum metodo_pagamento "NULL"
         datetime data_solicitacao "NULL"
         datetime data_pagamento "NULL"
+        datetime data_cancelamento "NULL"
     }
     administradores_master {
         int_unsigned id_master PK "NOT NULL"
@@ -147,6 +152,8 @@ erDiagram
         varchar senha_hash "NOT NULL"
         varchar telefone "NULL"
         varchar telefone_fixo "NULL"
+        varchar termos_versao "NULL"
+        datetime termos_aceitos_em "NULL"
         enum sexo "NULL"
         varchar nome_materno "NULL"
         date data_nascimento "NULL"
@@ -266,6 +273,7 @@ erDiagram
         datetime data_atualizacao "NULL"
         char grupo_recorrencia "NULL"
         int_unsigned id_cliente_pacote "NULL"
+        int_unsigned id_cliente_assinatura "NULL"
         int_unsigned id_estabelecimento FK,UK "NOT NULL"
         int_unsigned id_filial FK "NULL"
     }
@@ -306,6 +314,7 @@ erDiagram
         enum metodo "NOT NULL"
         enum status "NOT NULL"
         varchar referencia "NULL"
+        char cartao_final "NULL"
         datetime data_pagamento "NULL"
         datetime data_criacao "NOT NULL"
     }
@@ -340,6 +349,45 @@ erDiagram
         date data_expiracao "NOT NULL"
         datetime data_criacao "NOT NULL"
     }
+    planos_clientes {
+        int_unsigned id_plano_cliente PK,UK "NOT NULL"
+        int_unsigned id_estabelecimento FK,UK "NOT NULL"
+        varchar nome "NOT NULL"
+        varchar descricao "NULL"
+        decimal preco_mensal "NOT NULL"
+        tinyint_unsigned desconto_percentual "NOT NULL"
+        enum status "NOT NULL"
+        datetime data_criacao "NOT NULL"
+    }
+    plano_cliente_servicos {
+        int_unsigned id_estabelecimento PK,FK "NOT NULL"
+        int_unsigned id_plano_cliente PK,FK "NOT NULL"
+        int_unsigned id_servico PK,FK "NOT NULL"
+        smallint_unsigned quantidade_mes "NULL"
+    }
+    cliente_assinaturas {
+        int_unsigned id_cliente_assinatura PK,UK "NOT NULL"
+        int_unsigned id_estabelecimento FK,UK "NOT NULL"
+        int_unsigned id_cliente FK "NOT NULL"
+        int_unsigned id_plano_cliente FK "NOT NULL"
+        enum status "NOT NULL"
+        date periodo_inicio "NULL"
+        date periodo_fim "NULL"
+        datetime data_cancelamento "NULL"
+        datetime data_criacao "NOT NULL"
+    }
+    cobrancas_assinatura_cliente {
+        int_unsigned id_cobranca PK "NOT NULL"
+        int_unsigned id_estabelecimento FK "NOT NULL"
+        int_unsigned id_cliente_assinatura FK "NOT NULL"
+        decimal valor "NOT NULL"
+        enum status "NOT NULL"
+        varchar referencia "NULL"
+        varchar metodo "NULL"
+        char cartao_final "NULL"
+        datetime data_pagamento "NULL"
+        datetime data_criacao "NOT NULL"
+    }
     avaliacoes {
         int_unsigned id_avaliacao PK "NOT NULL"
         int_unsigned id_estabelecimento FK,UK "NOT NULL"
@@ -371,6 +419,8 @@ erDiagram
         int_unsigned limite_profissionais "NULL"
         int_unsigned limite_servicos "NULL"
         int_unsigned limite_agendamentos_mes "NULL"
+        decimal preco_mensal "NULL"
+        varchar recursos "NULL"
         enum status "NOT NULL"
         datetime data_criacao "NOT NULL"
     }
@@ -434,6 +484,23 @@ erDiagram
         datetime criado_em "NOT NULL"
         datetime ultimo_uso "NOT NULL"
     }
+    whatsapp_conversas {
+        int_unsigned id_estabelecimento PK,FK "NOT NULL"
+        varchar numero PK "NOT NULL"
+        varchar etapa "NOT NULL"
+        text dados "NULL"
+        datetime atualizado_em "NOT NULL"
+    }
+    bot_opcoes {
+        int_unsigned id_bot_opcao PK "NOT NULL"
+        int_unsigned id_estabelecimento FK "NOT NULL"
+        enum tipo "NOT NULL"
+        varchar rotulo "NOT NULL"
+        varchar resposta "NULL"
+        smallint ordem "NOT NULL"
+        tinyint ativo "NOT NULL"
+        datetime data_criacao "NOT NULL"
+    }
     estabelecimento ||--o| assinaturas : "id_estabelecimento"
     estabelecimento ||..o{ vinculos : "id_estabelecimento"
     usuarios ||..o{ vinculos : "id_usuario"
@@ -479,6 +546,14 @@ erDiagram
     estabelecimento ||..o{ cliente_pacotes : "id_estabelecimento"
     clientes ||..o{ cliente_pacotes : "id_estabelecimento + id_cliente"
     pacotes ||..o{ cliente_pacotes : "id_estabelecimento + id_pacote"
+    estabelecimento ||..o{ planos_clientes : "id_estabelecimento"
+    planos_clientes ||--o{ plano_cliente_servicos : "id_estabelecimento + id_plano_cliente"
+    servicos ||--o{ plano_cliente_servicos : "id_estabelecimento + id_servico"
+    estabelecimento ||..o{ cliente_assinaturas : "id_estabelecimento"
+    clientes ||..o{ cliente_assinaturas : "id_estabelecimento + id_cliente"
+    planos_clientes ||..o{ cliente_assinaturas : "id_estabelecimento + id_plano_cliente"
+    estabelecimento ||..o{ cobrancas_assinatura_cliente : "id_estabelecimento"
+    cliente_assinaturas ||..o{ cobrancas_assinatura_cliente : "id_estabelecimento + id_cliente_assinatura"
     estabelecimento ||..o{ avaliacoes : "id_estabelecimento"
     agendamentos ||..o| avaliacoes : "id_estabelecimento + id_agendamento"
     clientes ||..o{ avaliacoes : "id_estabelecimento + id_cliente"
@@ -490,6 +565,8 @@ erDiagram
     estabelecimento ||..o{ filiais : "id_estabelecimento"
     usuarios ||..o{ sessoes_lembradas : "id_usuario"
     vinculos ||..o{ sessoes_lembradas : "id_vinculo"
+    estabelecimento ||--o{ whatsapp_conversas : "id_estabelecimento"
+    estabelecimento ||..o{ bot_opcoes : "id_estabelecimento"
 ```
 
 ## Referências lógicas sem FOREIGN KEY
@@ -509,7 +586,7 @@ flowchart LR
 
 ## Dicionário e restrições — MySQL/MariaDB
 
-28 tabelas; 63 chaves estrangeiras declaradas.
+34 tabelas; 73 chaves estrangeiras declaradas.
 
 ### `estabelecimento`
 
@@ -582,6 +659,7 @@ CREATE TABLE `estabelecimento` (
 | `metodo_pagamento` | `enum('pix','boleto','cartao')` | Sim | — |
 | `data_solicitacao` | `datetime` | Sim | — |
 | `data_pagamento` | `datetime` | Sim | — |
+| `data_cancelamento` | `datetime` | Sim | — |
 
 Definição literal (inclui defaults, chaves compostas e CHECKs):
 
@@ -594,6 +672,7 @@ CREATE TABLE `assinaturas` (
   `metodo_pagamento` enum('pix','boleto','cartao') DEFAULT NULL,
   `data_solicitacao` datetime DEFAULT NULL,
   `data_pagamento` datetime DEFAULT NULL,
+  `data_cancelamento` datetime DEFAULT NULL,
   PRIMARY KEY (`id_estabelecimento`),
   CONSTRAINT `fk_assinaturas_estabelecimento` FOREIGN KEY (`id_estabelecimento`) REFERENCES `estabelecimento` (`id_estabelecimento`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -655,6 +734,8 @@ CREATE TABLE `administradores_master` (
 | `senha_hash` | `varchar(255)` | Não | — |
 | `telefone` | `varchar(20)` | Sim | — |
 | `telefone_fixo` | `varchar(20)` | Sim | — |
+| `termos_versao` | `varchar(20)` | Sim | — |
+| `termos_aceitos_em` | `datetime` | Sim | — |
 | `sexo` | `enum('F','M','O')` | Sim | — |
 | `nome_materno` | `varchar(120)` | Sim | — |
 | `data_nascimento` | `date` | Sim | — |
@@ -684,6 +765,8 @@ CREATE TABLE `usuarios` (
   `senha_hash` varchar(255) NOT NULL,
   `telefone` varchar(20) DEFAULT NULL,
   `telefone_fixo` varchar(20) DEFAULT NULL,
+  `termos_versao` varchar(20) DEFAULT NULL,
+  `termos_aceitos_em` datetime DEFAULT NULL,
   `sexo` enum('F','M','O') DEFAULT NULL,
   `nome_materno` varchar(120) DEFAULT NULL,
   `data_nascimento` date DEFAULT NULL,
@@ -1034,6 +1117,7 @@ CREATE TABLE `bloqueios_agenda` (
 | `data_atualizacao` | `datetime` | Sim | — |
 | `grupo_recorrencia` | `char(36)` | Sim | — |
 | `id_cliente_pacote` | `int(10) unsigned` | Sim | — |
+| `id_cliente_assinatura` | `int(10) unsigned` | Sim | — |
 | `id_estabelecimento` | `int(10) unsigned` | Não | FK, UK |
 | `id_filial` | `int(10) unsigned` | Sim | FK |
 
@@ -1058,6 +1142,7 @@ CREATE TABLE `agendamentos` (
   `data_atualizacao` datetime DEFAULT NULL ON UPDATE current_timestamp(),
   `grupo_recorrencia` char(36) DEFAULT NULL,
   `id_cliente_pacote` int(10) unsigned DEFAULT NULL,
+  `id_cliente_assinatura` int(10) unsigned DEFAULT NULL,
   `id_estabelecimento` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id_agendamento`),
   UNIQUE KEY `uk_estabelecimento_registro` (`id_estabelecimento`,`id_agendamento`),
@@ -1179,9 +1264,10 @@ CREATE TABLE notificacoes (
 | `id_agendamento` | `INT UNSIGNED` | Não | FK, UK |
 | `tipo` | `ENUM('sinal','integral')` | Não | UK |
 | `valor` | `DECIMAL(10,2)` | Não | — |
-| `metodo` | `ENUM('pix','dinheiro','cartao','outro')` | Não | — |
-| `status` | `ENUM('pendente','pago','cancelado','estornado')` | Não | — |
+| `metodo` | `ENUM('pix','dinheiro','cartao','outro','boleto')` | Não | — |
+| `status` | `ENUM('pendente','pago','cancelado','estornado','credito','retido')` | Não | — |
 | `referencia` | `VARCHAR(80)` | Sim | — |
+| `cartao_final` | `CHAR(4)` | Sim | — |
 | `data_pagamento` | `DATETIME` | Sim | — |
 | `data_criacao` | `DATETIME` | Não | — |
 
@@ -1194,9 +1280,10 @@ CREATE TABLE pagamentos (
         id_agendamento INT UNSIGNED NOT NULL,
         tipo ENUM('sinal','integral') NOT NULL DEFAULT 'sinal',
         valor DECIMAL(10,2) NOT NULL,
-        metodo ENUM('pix','dinheiro','cartao','outro') NOT NULL DEFAULT 'pix',
-        status ENUM('pendente','pago','cancelado','estornado') NOT NULL DEFAULT 'pendente',
+        metodo ENUM('pix','dinheiro','cartao','outro','boleto') NOT NULL DEFAULT 'pix',
+        status ENUM('pendente','pago','cancelado','estornado','credito','retido') NOT NULL DEFAULT 'pendente',
         referencia VARCHAR(80) NULL,
+        cartao_final CHAR(4) NULL,
         data_pagamento DATETIME NULL,
         data_criacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id_pagamento),
@@ -1310,6 +1397,132 @@ CREATE TABLE cliente_pacotes (
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
+### `planos_clientes`
+
+| Coluna | Tipo SQL | Nulo | Chaves |
+|---|---|---|---|
+| `id_plano_cliente` | `INT UNSIGNED` | Não | PK, UK |
+| `id_estabelecimento` | `INT UNSIGNED` | Não | FK, UK |
+| `nome` | `VARCHAR(120)` | Não | — |
+| `descricao` | `VARCHAR(500)` | Sim | — |
+| `preco_mensal` | `DECIMAL(10,2)` | Não | — |
+| `desconto_percentual` | `TINYINT UNSIGNED` | Não | — |
+| `status` | `ENUM('ativo','inativo')` | Não | — |
+| `data_criacao` | `DATETIME` | Não | — |
+
+Definição literal (inclui defaults, chaves compostas e CHECKs):
+
+```sql
+CREATE TABLE planos_clientes (
+        id_plano_cliente INT UNSIGNED NOT NULL AUTO_INCREMENT,
+        id_estabelecimento INT UNSIGNED NOT NULL,
+        nome VARCHAR(120) NOT NULL,
+        descricao VARCHAR(500) NULL,
+        preco_mensal DECIMAL(10,2) NOT NULL,
+        desconto_percentual TINYINT UNSIGNED NOT NULL DEFAULT 0,
+        status ENUM('ativo','inativo') NOT NULL DEFAULT 'ativo',
+        data_criacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id_plano_cliente),
+        UNIQUE KEY uk_estabelecimento_plano_cliente (id_estabelecimento,id_plano_cliente),
+        CONSTRAINT fk_plano_cliente_empresa FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento(id_estabelecimento)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+### `plano_cliente_servicos`
+
+| Coluna | Tipo SQL | Nulo | Chaves |
+|---|---|---|---|
+| `id_estabelecimento` | `INT UNSIGNED` | Não | PK, FK |
+| `id_plano_cliente` | `INT UNSIGNED` | Não | PK, FK |
+| `id_servico` | `INT UNSIGNED` | Não | PK, FK |
+| `quantidade_mes` | `SMALLINT UNSIGNED` | Sim | — |
+
+Definição literal (inclui defaults, chaves compostas e CHECKs):
+
+```sql
+CREATE TABLE plano_cliente_servicos (
+        id_estabelecimento INT UNSIGNED NOT NULL,
+        id_plano_cliente INT UNSIGNED NOT NULL,
+        id_servico INT UNSIGNED NOT NULL,
+        quantidade_mes SMALLINT UNSIGNED NULL,
+        PRIMARY KEY (id_estabelecimento,id_plano_cliente,id_servico),
+        CONSTRAINT fk_pcs_plano_tenant FOREIGN KEY (id_estabelecimento,id_plano_cliente) REFERENCES planos_clientes(id_estabelecimento,id_plano_cliente) ON DELETE CASCADE,
+        CONSTRAINT fk_pcs_servico_tenant FOREIGN KEY (id_estabelecimento,id_servico) REFERENCES servicos(id_estabelecimento,id_servico)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+### `cliente_assinaturas`
+
+| Coluna | Tipo SQL | Nulo | Chaves |
+|---|---|---|---|
+| `id_cliente_assinatura` | `INT UNSIGNED` | Não | PK, UK |
+| `id_estabelecimento` | `INT UNSIGNED` | Não | FK, UK |
+| `id_cliente` | `INT UNSIGNED` | Não | FK |
+| `id_plano_cliente` | `INT UNSIGNED` | Não | FK |
+| `status` | `ENUM('pendente','ativa','cancelada')` | Não | — |
+| `periodo_inicio` | `DATE` | Sim | — |
+| `periodo_fim` | `DATE` | Sim | — |
+| `data_cancelamento` | `DATETIME` | Sim | — |
+| `data_criacao` | `DATETIME` | Não | — |
+
+Definição literal (inclui defaults, chaves compostas e CHECKs):
+
+```sql
+CREATE TABLE cliente_assinaturas (
+        id_cliente_assinatura INT UNSIGNED NOT NULL AUTO_INCREMENT,
+        id_estabelecimento INT UNSIGNED NOT NULL,
+        id_cliente INT UNSIGNED NOT NULL,
+        id_plano_cliente INT UNSIGNED NOT NULL,
+        status ENUM('pendente','ativa','cancelada') NOT NULL DEFAULT 'pendente',
+        periodo_inicio DATE NULL,
+        periodo_fim DATE NULL,
+        data_cancelamento DATETIME NULL,
+        data_criacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id_cliente_assinatura),
+        UNIQUE KEY uk_estabelecimento_cliente_assinatura (id_estabelecimento,id_cliente_assinatura),
+        KEY idx_cliente_assinaturas (id_estabelecimento,id_cliente,status),
+        CONSTRAINT fk_cliente_assinatura_empresa FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento(id_estabelecimento),
+        CONSTRAINT fk_cliente_assinatura_cliente_tenant FOREIGN KEY (id_estabelecimento,id_cliente) REFERENCES clientes(id_estabelecimento,id_cliente) ON DELETE CASCADE,
+        CONSTRAINT fk_cliente_assinatura_plano_tenant FOREIGN KEY (id_estabelecimento,id_plano_cliente) REFERENCES planos_clientes(id_estabelecimento,id_plano_cliente)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+### `cobrancas_assinatura_cliente`
+
+| Coluna | Tipo SQL | Nulo | Chaves |
+|---|---|---|---|
+| `id_cobranca` | `INT UNSIGNED` | Não | PK |
+| `id_estabelecimento` | `INT UNSIGNED` | Não | FK |
+| `id_cliente_assinatura` | `INT UNSIGNED` | Não | FK |
+| `valor` | `DECIMAL(10,2)` | Não | — |
+| `status` | `ENUM('pendente','pago','cancelado')` | Não | — |
+| `referencia` | `VARCHAR(40)` | Sim | — |
+| `metodo` | `VARCHAR(6)` | Sim | — |
+| `cartao_final` | `CHAR(4)` | Sim | — |
+| `data_pagamento` | `DATETIME` | Sim | — |
+| `data_criacao` | `DATETIME` | Não | — |
+
+Definição literal (inclui defaults, chaves compostas e CHECKs):
+
+```sql
+CREATE TABLE cobrancas_assinatura_cliente (
+        id_cobranca INT UNSIGNED NOT NULL AUTO_INCREMENT,
+        id_estabelecimento INT UNSIGNED NOT NULL,
+        id_cliente_assinatura INT UNSIGNED NOT NULL,
+        valor DECIMAL(10,2) NOT NULL,
+        status ENUM('pendente','pago','cancelado') NOT NULL DEFAULT 'pendente',
+        referencia VARCHAR(40) NULL,
+        metodo VARCHAR(6) NULL,
+        cartao_final CHAR(4) NULL,
+        data_pagamento DATETIME NULL,
+        data_criacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id_cobranca),
+        KEY idx_cobrancas_assinatura (id_estabelecimento,id_cliente_assinatura,status),
+        CONSTRAINT fk_cobranca_assinatura_empresa FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento(id_estabelecimento),
+        CONSTRAINT fk_cobranca_assinatura_tenant FOREIGN KEY (id_estabelecimento,id_cliente_assinatura) REFERENCES cliente_assinaturas(id_estabelecimento,id_cliente_assinatura) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
 ### `avaliacoes`
 
 | Coluna | Tipo SQL | Nulo | Chaves |
@@ -1397,6 +1610,8 @@ CREATE TABLE `logs_autenticacao` (
 | `limite_profissionais` | `int(10) unsigned` | Sim | — |
 | `limite_servicos` | `int(10) unsigned` | Sim | — |
 | `limite_agendamentos_mes` | `int(10) unsigned` | Sim | — |
+| `preco_mensal` | `decimal(10,2)` | Sim | — |
+| `recursos` | `varchar(255)` | Sim | — |
 | `status` | `enum('ativo','inativo')` | Não | — |
 | `data_criacao` | `datetime` | Não | — |
 
@@ -1410,6 +1625,8 @@ CREATE TABLE `planos` (
   `limite_profissionais` int(10) unsigned DEFAULT NULL,
   `limite_servicos` int(10) unsigned DEFAULT NULL,
   `limite_agendamentos_mes` int(10) unsigned DEFAULT NULL,
+  `preco_mensal` decimal(10,2) DEFAULT NULL,
+  `recursos` varchar(255) DEFAULT NULL,
   `status` enum('ativo','inativo') NOT NULL DEFAULT 'ativo',
   `data_criacao` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id_plano`),
@@ -1507,7 +1724,7 @@ CREATE TABLE `tentativas_acesso` (
 |---|---|---|---|
 | `id_configuracao` | `int(10) unsigned` | Não | PK, UK |
 | `chave` | `varchar(60)` | Não | UK |
-| `valor` | `varchar(255)` | Não | — |
+| `valor` | `varchar(1000)` | Não | — |
 | `descricao` | `varchar(255)` | Sim | — |
 | `id_estabelecimento` | `int(10) unsigned` | Não | FK, UK |
 
@@ -1517,7 +1734,7 @@ Definição literal (inclui defaults, chaves compostas e CHECKs):
 CREATE TABLE `configuracoes` (
   `id_configuracao` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `chave` varchar(60) NOT NULL,
-  `valor` varchar(255) NOT NULL,
+  `valor` varchar(1000) NOT NULL,
   `descricao` varchar(255) DEFAULT NULL,
   `id_estabelecimento` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id_configuracao`),
@@ -1611,6 +1828,61 @@ CREATE TABLE `sessoes_lembradas` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
+### `whatsapp_conversas`
+
+| Coluna | Tipo SQL | Nulo | Chaves |
+|---|---|---|---|
+| `id_estabelecimento` | `int(10) unsigned` | Não | PK, FK |
+| `numero` | `varchar(20)` | Não | PK |
+| `etapa` | `varchar(30)` | Não | — |
+| `dados` | `text` | Sim | — |
+| `atualizado_em` | `datetime` | Não | — |
+
+Definição literal (inclui defaults, chaves compostas e CHECKs):
+
+```sql
+CREATE TABLE `whatsapp_conversas` (
+  `id_estabelecimento` int(10) unsigned NOT NULL,
+  `numero` varchar(20) NOT NULL,
+  `etapa` varchar(30) NOT NULL DEFAULT 'menu',
+  `dados` text DEFAULT NULL,
+  `atualizado_em` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_estabelecimento`,`numero`),
+  CONSTRAINT `fk_whatsapp_conversas_empresa` FOREIGN KEY (`id_estabelecimento`) REFERENCES `estabelecimento` (`id_estabelecimento`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
+### `bot_opcoes`
+
+| Coluna | Tipo SQL | Nulo | Chaves |
+|---|---|---|---|
+| `id_bot_opcao` | `INT UNSIGNED` | Não | PK |
+| `id_estabelecimento` | `INT UNSIGNED` | Não | FK |
+| `tipo` | `ENUM('marcar','meus','cancelar','servicos','equipe','resposta')` | Não | — |
+| `rotulo` | `VARCHAR(60)` | Não | — |
+| `resposta` | `VARCHAR(1000)` | Sim | — |
+| `ordem` | `SMALLINT` | Não | — |
+| `ativo` | `TINYINT(1)` | Não | — |
+| `data_criacao` | `DATETIME` | Não | — |
+
+Definição literal (inclui defaults, chaves compostas e CHECKs):
+
+```sql
+CREATE TABLE `bot_opcoes` (
+  id_bot_opcao       INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  id_estabelecimento INT UNSIGNED NOT NULL,
+  tipo               ENUM('marcar','meus','cancelar','servicos','equipe','resposta') NOT NULL,
+  rotulo             VARCHAR(60) NOT NULL,
+  resposta           VARCHAR(1000) DEFAULT NULL,
+  ordem              SMALLINT NOT NULL DEFAULT 0,
+  ativo              TINYINT(1) NOT NULL DEFAULT 1,
+  data_criacao       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_bot_opcao),
+  KEY idx_bot_opcoes_empresa (id_estabelecimento, ordem),
+  CONSTRAINT fk_bot_opcao_empresa FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento (id_estabelecimento) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
 ### Cardinalidades das FKs — MySQL/MariaDB
 
 | Restrição | Pai | Filha | Colunas da FK | Pais por filha | Filhas por pai |
@@ -1667,6 +1939,14 @@ CREATE TABLE `sessoes_lembradas` (
 | `fk_cliente_pacote_empresa` | `estabelecimento` | `cliente_pacotes` | `id_estabelecimento` | 1 | 0..N |
 | `fk_cliente_pacote_cliente_tenant` | `clientes` | `cliente_pacotes` | `id_estabelecimento, id_cliente` | 1 | 0..N |
 | `fk_cliente_pacote_pacote_tenant` | `pacotes` | `cliente_pacotes` | `id_estabelecimento, id_pacote` | 1 | 0..N |
+| `fk_plano_cliente_empresa` | `estabelecimento` | `planos_clientes` | `id_estabelecimento` | 1 | 0..N |
+| `fk_pcs_plano_tenant` | `planos_clientes` | `plano_cliente_servicos` | `id_estabelecimento, id_plano_cliente` | 1 | 0..N |
+| `fk_pcs_servico_tenant` | `servicos` | `plano_cliente_servicos` | `id_estabelecimento, id_servico` | 1 | 0..N |
+| `fk_cliente_assinatura_empresa` | `estabelecimento` | `cliente_assinaturas` | `id_estabelecimento` | 1 | 0..N |
+| `fk_cliente_assinatura_cliente_tenant` | `clientes` | `cliente_assinaturas` | `id_estabelecimento, id_cliente` | 1 | 0..N |
+| `fk_cliente_assinatura_plano_tenant` | `planos_clientes` | `cliente_assinaturas` | `id_estabelecimento, id_plano_cliente` | 1 | 0..N |
+| `fk_cobranca_assinatura_empresa` | `estabelecimento` | `cobrancas_assinatura_cliente` | `id_estabelecimento` | 1 | 0..N |
+| `fk_cobranca_assinatura_tenant` | `cliente_assinaturas` | `cobrancas_assinatura_cliente` | `id_estabelecimento, id_cliente_assinatura` | 1 | 0..N |
 | `fk_avaliacao_empresa` | `estabelecimento` | `avaliacoes` | `id_estabelecimento` | 1 | 0..N |
 | `fk_avaliacao_agendamento_tenant` | `agendamentos` | `avaliacoes` | `id_estabelecimento, id_agendamento` | 1 | 0..1 |
 | `fk_avaliacao_cliente_tenant` | `clientes` | `avaliacoes` | `id_estabelecimento, id_cliente` | 1 | 0..N |
@@ -1678,10 +1958,12 @@ CREATE TABLE `sessoes_lembradas` (
 | `fk_filiais_estabelecimento` | `estabelecimento` | `filiais` | `id_estabelecimento` | 1 | 0..N |
 | `fk_sessoes_lembradas_usuario` | `usuarios` | `sessoes_lembradas` | `id_usuario` | 1 | 0..N |
 | `fk_sessoes_lembradas_vinculo` | `vinculos` | `sessoes_lembradas` | `id_vinculo` | 1 | 0..N |
+| `fk_whatsapp_conversas_empresa` | `estabelecimento` | `whatsapp_conversas` | `id_estabelecimento` | 1 | 0..N |
+| `fk_bot_opcao_empresa` | `estabelecimento` | `bot_opcoes` | `id_estabelecimento` | 1 | 0..N |
 
 ## Dicionário e restrições — PostgreSQL
 
-28 tabelas; 63 chaves estrangeiras declaradas.
+34 tabelas; 73 chaves estrangeiras declaradas.
 
 ### `estabelecimento`
 
@@ -1755,6 +2037,7 @@ CREATE TABLE estabelecimento (
 | `metodo_pagamento` | `VARCHAR(12)` | Sim | — |
 | `data_solicitacao` | `TIMESTAMP` | Sim | — |
 | `data_pagamento` | `TIMESTAMP` | Sim | — |
+| `data_cancelamento` | `TIMESTAMP` | Sim | — |
 
 Definição literal (inclui defaults, chaves compostas e CHECKs):
 
@@ -1767,6 +2050,7 @@ CREATE TABLE assinaturas (
   metodo_pagamento VARCHAR(12) DEFAULT NULL,
   data_solicitacao TIMESTAMP DEFAULT NULL,
   data_pagamento TIMESTAMP DEFAULT NULL,
+  data_cancelamento TIMESTAMP DEFAULT NULL,
   CONSTRAINT pk_assinaturas PRIMARY KEY (id_estabelecimento),
   CONSTRAINT ck_assinaturas_status CHECK (status IN ('demo','pendente','ativa','bloqueada')),
   CONSTRAINT ck_assinaturas_metodo CHECK (metodo_pagamento IS NULL OR metodo_pagamento IN ('pix','boleto','cartao')),
@@ -1831,6 +2115,8 @@ CREATE TABLE administradores_master (
 | `senha_hash` | `VARCHAR(255)` | Não | — |
 | `telefone` | `VARCHAR(20)` | Sim | — |
 | `telefone_fixo` | `VARCHAR(20)` | Sim | — |
+| `termos_versao` | `VARCHAR(20)` | Sim | — |
+| `termos_aceitos_em` | `TIMESTAMP` | Sim | — |
 | `sexo` | `VARCHAR(1)` | Sim | — |
 | `nome_materno` | `VARCHAR(120)` | Sim | — |
 | `data_nascimento` | `DATE` | Sim | — |
@@ -1860,6 +2146,8 @@ CREATE TABLE usuarios (
   senha_hash         VARCHAR(255) NOT NULL,
   telefone           VARCHAR(20) DEFAULT NULL,
   telefone_fixo      VARCHAR(20) DEFAULT NULL,
+  termos_versao      VARCHAR(20) DEFAULT NULL,
+  termos_aceitos_em  TIMESTAMP DEFAULT NULL,
   sexo               VARCHAR(1) DEFAULT NULL,
   nome_materno       VARCHAR(120) DEFAULT NULL,
   data_nascimento    DATE DEFAULT NULL,
@@ -2194,6 +2482,7 @@ CREATE TABLE bloqueios_agenda (
 | `data_atualizacao` | `TIMESTAMP` | Sim | — |
 | `grupo_recorrencia` | `VARCHAR(36)` | Sim | — |
 | `id_cliente_pacote` | `INTEGER` | Sim | — |
+| `id_cliente_assinatura` | `INTEGER` | Sim | — |
 | `id_estabelecimento` | `INTEGER` | Não | FK, UK |
 | `id_filial` | `INTEGER` | Sim | FK |
 
@@ -2218,6 +2507,7 @@ CREATE TABLE agendamentos (
   data_atualizacao    TIMESTAMP DEFAULT NULL,
   grupo_recorrencia   VARCHAR(36) DEFAULT NULL,
   id_cliente_pacote   INTEGER DEFAULT NULL,
+  id_cliente_assinatura INTEGER DEFAULT NULL,
   id_estabelecimento  INTEGER NOT NULL,
   CONSTRAINT pk_agendamentos PRIMARY KEY (id_agendamento),
   CONSTRAINT uk_agendamentos_registro UNIQUE (id_estabelecimento, id_agendamento),
@@ -2336,6 +2626,7 @@ CREATE TABLE notificacoes (
 | `metodo` | `VARCHAR(8)` | Não | — |
 | `status` | `VARCHAR(9)` | Não | — |
 | `referencia` | `VARCHAR(80)` | Sim | — |
+| `cartao_final` | `CHAR(4)` | Sim | — |
 | `data_pagamento` | `TIMESTAMP` | Sim | — |
 | `data_criacao` | `TIMESTAMP` | Não | — |
 
@@ -2351,13 +2642,14 @@ CREATE TABLE pagamentos (
   metodo             VARCHAR(8) NOT NULL DEFAULT 'pix',
   status             VARCHAR(9) NOT NULL DEFAULT 'pendente',
   referencia         VARCHAR(80) NULL,
+  cartao_final       CHAR(4) NULL,
   data_pagamento     TIMESTAMP NULL,
   data_criacao       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT pk_pagamentos PRIMARY KEY (id_pagamento),
   CONSTRAINT uk_pagamento_agendamento_tipo UNIQUE (id_estabelecimento, id_agendamento, tipo),
   CONSTRAINT ck_pagamento_tipo CHECK (tipo IN ('sinal','integral')),
-  CONSTRAINT ck_pagamento_metodo CHECK (metodo IN ('pix','dinheiro','cartao','outro')),
-  CONSTRAINT ck_pagamento_status CHECK (status IN ('pendente','pago','cancelado','estornado')),
+  CONSTRAINT ck_pagamento_metodo CHECK (metodo IN ('pix','dinheiro','cartao','outro','boleto')),
+  CONSTRAINT ck_pagamento_status CHECK (status IN ('pendente','pago','cancelado','estornado','credito','retido')),
   CONSTRAINT fk_pagamento_empresa FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento (id_estabelecimento),
   CONSTRAINT fk_pagamento_agendamento_tenant FOREIGN KEY (id_estabelecimento, id_agendamento) REFERENCES agendamentos (id_estabelecimento, id_agendamento) ON DELETE CASCADE
 );
@@ -2469,6 +2761,135 @@ CREATE TABLE cliente_pacotes (
 );
 ```
 
+### `planos_clientes`
+
+| Coluna | Tipo SQL | Nulo | Chaves |
+|---|---|---|---|
+| `id_plano_cliente` | `INTEGER` | Não | PK, UK |
+| `id_estabelecimento` | `INTEGER` | Não | FK, UK |
+| `nome` | `VARCHAR(120)` | Não | — |
+| `descricao` | `VARCHAR(500)` | Sim | — |
+| `preco_mensal` | `NUMERIC(10,2)` | Não | — |
+| `desconto_percentual` | `SMALLINT` | Não | — |
+| `status` | `VARCHAR(7)` | Não | — |
+| `data_criacao` | `TIMESTAMP` | Não | — |
+
+Definição literal (inclui defaults, chaves compostas e CHECKs):
+
+```sql
+CREATE TABLE planos_clientes (
+  id_plano_cliente    INTEGER GENERATED BY DEFAULT AS IDENTITY,
+  id_estabelecimento  INTEGER NOT NULL,
+  nome                VARCHAR(120) NOT NULL,
+  descricao           VARCHAR(500) DEFAULT NULL,
+  preco_mensal        NUMERIC(10,2) NOT NULL,
+  desconto_percentual SMALLINT NOT NULL DEFAULT 0,
+  status              VARCHAR(7) NOT NULL DEFAULT 'ativo',
+  data_criacao        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT pk_planos_clientes PRIMARY KEY (id_plano_cliente),
+  CONSTRAINT uk_estabelecimento_plano_cliente UNIQUE (id_estabelecimento, id_plano_cliente),
+  CONSTRAINT ck_plano_cliente_status CHECK (status IN ('ativo','inativo')),
+  CONSTRAINT ck_plano_cliente_desconto CHECK (desconto_percentual BETWEEN 0 AND 100),
+  CONSTRAINT fk_plano_cliente_empresa FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento (id_estabelecimento)
+);
+```
+
+### `plano_cliente_servicos`
+
+| Coluna | Tipo SQL | Nulo | Chaves |
+|---|---|---|---|
+| `id_estabelecimento` | `INTEGER` | Não | PK, FK |
+| `id_plano_cliente` | `INTEGER` | Não | PK, FK |
+| `id_servico` | `INTEGER` | Não | PK, FK |
+| `quantidade_mes` | `SMALLINT` | Sim | — |
+
+Definição literal (inclui defaults, chaves compostas e CHECKs):
+
+```sql
+CREATE TABLE plano_cliente_servicos (
+  id_estabelecimento INTEGER NOT NULL,
+  id_plano_cliente   INTEGER NOT NULL,
+  id_servico         INTEGER NOT NULL,
+  quantidade_mes     SMALLINT DEFAULT NULL,
+  CONSTRAINT pk_plano_cliente_servicos PRIMARY KEY (id_estabelecimento, id_plano_cliente, id_servico),
+  CONSTRAINT ck_plano_cliente_quantidade CHECK (quantidade_mes IS NULL OR quantidade_mes >= 0),
+  CONSTRAINT fk_pcs_plano_tenant FOREIGN KEY (id_estabelecimento, id_plano_cliente) REFERENCES planos_clientes (id_estabelecimento, id_plano_cliente) ON DELETE CASCADE,
+  CONSTRAINT fk_pcs_servico_tenant FOREIGN KEY (id_estabelecimento, id_servico) REFERENCES servicos (id_estabelecimento, id_servico)
+);
+```
+
+### `cliente_assinaturas`
+
+| Coluna | Tipo SQL | Nulo | Chaves |
+|---|---|---|---|
+| `id_cliente_assinatura` | `INTEGER` | Não | PK, UK |
+| `id_estabelecimento` | `INTEGER` | Não | FK, UK |
+| `id_cliente` | `INTEGER` | Não | FK |
+| `id_plano_cliente` | `INTEGER` | Não | FK |
+| `status` | `VARCHAR(9)` | Não | — |
+| `periodo_inicio` | `DATE` | Sim | — |
+| `periodo_fim` | `DATE` | Sim | — |
+| `data_cancelamento` | `TIMESTAMP` | Sim | — |
+| `data_criacao` | `TIMESTAMP` | Não | — |
+
+Definição literal (inclui defaults, chaves compostas e CHECKs):
+
+```sql
+CREATE TABLE cliente_assinaturas (
+  id_cliente_assinatura INTEGER GENERATED BY DEFAULT AS IDENTITY,
+  id_estabelecimento    INTEGER NOT NULL,
+  id_cliente            INTEGER NOT NULL,
+  id_plano_cliente      INTEGER NOT NULL,
+  status                VARCHAR(9) NOT NULL DEFAULT 'pendente',
+  periodo_inicio        DATE DEFAULT NULL,
+  periodo_fim           DATE DEFAULT NULL,
+  data_cancelamento     TIMESTAMP DEFAULT NULL,
+  data_criacao          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT pk_cliente_assinaturas PRIMARY KEY (id_cliente_assinatura),
+  CONSTRAINT uk_estabelecimento_cliente_assinatura UNIQUE (id_estabelecimento, id_cliente_assinatura),
+  CONSTRAINT ck_cliente_assinatura_status CHECK (status IN ('pendente','ativa','cancelada')),
+  CONSTRAINT fk_cliente_assinatura_empresa FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento (id_estabelecimento),
+  CONSTRAINT fk_cliente_assinatura_cliente_tenant FOREIGN KEY (id_estabelecimento, id_cliente) REFERENCES clientes (id_estabelecimento, id_cliente) ON DELETE CASCADE,
+  CONSTRAINT fk_cliente_assinatura_plano_tenant FOREIGN KEY (id_estabelecimento, id_plano_cliente) REFERENCES planos_clientes (id_estabelecimento, id_plano_cliente)
+);
+```
+
+### `cobrancas_assinatura_cliente`
+
+| Coluna | Tipo SQL | Nulo | Chaves |
+|---|---|---|---|
+| `id_cobranca` | `INTEGER` | Não | PK |
+| `id_estabelecimento` | `INTEGER` | Não | FK |
+| `id_cliente_assinatura` | `INTEGER` | Não | FK |
+| `valor` | `NUMERIC(10,2)` | Não | — |
+| `status` | `VARCHAR(9)` | Não | — |
+| `referencia` | `VARCHAR(40)` | Sim | — |
+| `metodo` | `VARCHAR(6)` | Sim | — |
+| `cartao_final` | `CHAR(4)` | Sim | — |
+| `data_pagamento` | `TIMESTAMP` | Sim | — |
+| `data_criacao` | `TIMESTAMP` | Não | — |
+
+Definição literal (inclui defaults, chaves compostas e CHECKs):
+
+```sql
+CREATE TABLE cobrancas_assinatura_cliente (
+  id_cobranca           INTEGER GENERATED BY DEFAULT AS IDENTITY,
+  id_estabelecimento    INTEGER NOT NULL,
+  id_cliente_assinatura INTEGER NOT NULL,
+  valor                 NUMERIC(10,2) NOT NULL,
+  status                VARCHAR(9) NOT NULL DEFAULT 'pendente',
+  referencia            VARCHAR(40) DEFAULT NULL,
+  metodo                VARCHAR(6) DEFAULT NULL,
+  cartao_final          CHAR(4) DEFAULT NULL,
+  data_pagamento        TIMESTAMP DEFAULT NULL,
+  data_criacao          TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT pk_cobrancas_assinatura_cliente PRIMARY KEY (id_cobranca),
+  CONSTRAINT ck_cobranca_assinatura_status CHECK (status IN ('pendente','pago','cancelado')),
+  CONSTRAINT fk_cobranca_assinatura_empresa FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento (id_estabelecimento),
+  CONSTRAINT fk_cobranca_assinatura_tenant FOREIGN KEY (id_estabelecimento, id_cliente_assinatura) REFERENCES cliente_assinaturas (id_estabelecimento, id_cliente_assinatura) ON DELETE CASCADE
+);
+```
+
 ### `avaliacoes`
 
 | Coluna | Tipo SQL | Nulo | Chaves |
@@ -2555,6 +2976,8 @@ CREATE TABLE logs_autenticacao (
 | `limite_profissionais` | `INTEGER` | Sim | — |
 | `limite_servicos` | `INTEGER` | Sim | — |
 | `limite_agendamentos_mes` | `INTEGER` | Sim | — |
+| `preco_mensal` | `NUMERIC(10,2)` | Sim | — |
+| `recursos` | `VARCHAR(255)` | Sim | — |
 | `status` | `VARCHAR(10)` | Não | — |
 | `data_criacao` | `TIMESTAMP` | Não | — |
 
@@ -2568,6 +2991,8 @@ CREATE TABLE planos (
   limite_profissionais    INTEGER DEFAULT NULL,
   limite_servicos         INTEGER DEFAULT NULL,
   limite_agendamentos_mes INTEGER DEFAULT NULL,
+  preco_mensal            NUMERIC(10,2) DEFAULT NULL,
+  recursos                VARCHAR(255) DEFAULT NULL,
   status                  VARCHAR(10) NOT NULL DEFAULT 'ativo',
   data_criacao            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT pk_planos PRIMARY KEY (id_plano),
@@ -2661,7 +3086,7 @@ CREATE TABLE tentativas_acesso (
 |---|---|---|---|
 | `id_configuracao` | `INTEGER` | Não | PK, UK |
 | `chave` | `VARCHAR(60)` | Não | UK |
-| `valor` | `VARCHAR(255)` | Não | — |
+| `valor` | `VARCHAR(1000)` | Não | — |
 | `descricao` | `VARCHAR(255)` | Sim | — |
 | `id_estabelecimento` | `INTEGER` | Não | FK, UK |
 
@@ -2671,7 +3096,7 @@ Definição literal (inclui defaults, chaves compostas e CHECKs):
 CREATE TABLE configuracoes (
   id_configuracao    INTEGER GENERATED BY DEFAULT AS IDENTITY,
   chave              VARCHAR(60) NOT NULL,
-  valor              VARCHAR(255) NOT NULL,
+  valor              VARCHAR(1000) NOT NULL,
   descricao          VARCHAR(255) DEFAULT NULL,
   id_estabelecimento INTEGER NOT NULL,
   CONSTRAINT pk_configuracoes PRIMARY KEY (id_configuracao),
@@ -2761,6 +3186,61 @@ CREATE TABLE sessoes_lembradas (
 );
 ```
 
+### `whatsapp_conversas`
+
+| Coluna | Tipo SQL | Nulo | Chaves |
+|---|---|---|---|
+| `id_estabelecimento` | `INTEGER` | Não | PK, FK |
+| `numero` | `VARCHAR(20)` | Não | PK |
+| `etapa` | `VARCHAR(30)` | Não | — |
+| `dados` | `TEXT` | Sim | — |
+| `atualizado_em` | `TIMESTAMP` | Não | — |
+
+Definição literal (inclui defaults, chaves compostas e CHECKs):
+
+```sql
+CREATE TABLE whatsapp_conversas (
+  id_estabelecimento INTEGER NOT NULL,
+  numero             VARCHAR(20) NOT NULL,
+  etapa              VARCHAR(30) NOT NULL DEFAULT 'menu',
+  dados              TEXT NULL,
+  atualizado_em      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT pk_whatsapp_conversas PRIMARY KEY (id_estabelecimento, numero),
+  CONSTRAINT fk_whatsapp_conversas_empresa FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento (id_estabelecimento) ON DELETE CASCADE
+);
+```
+
+### `bot_opcoes`
+
+| Coluna | Tipo SQL | Nulo | Chaves |
+|---|---|---|---|
+| `id_bot_opcao` | `INTEGER` | Não | PK |
+| `id_estabelecimento` | `INTEGER` | Não | FK |
+| `tipo` | `VARCHAR(10)` | Não | — |
+| `rotulo` | `VARCHAR(60)` | Não | — |
+| `resposta` | `VARCHAR(1000)` | Sim | — |
+| `ordem` | `SMALLINT` | Não | — |
+| `ativo` | `SMALLINT` | Não | — |
+| `data_criacao` | `TIMESTAMP` | Não | — |
+
+Definição literal (inclui defaults, chaves compostas e CHECKs):
+
+```sql
+CREATE TABLE bot_opcoes (
+  id_bot_opcao       INTEGER GENERATED BY DEFAULT AS IDENTITY,
+  id_estabelecimento INTEGER NOT NULL,
+  tipo               VARCHAR(10) NOT NULL,
+  rotulo             VARCHAR(60) NOT NULL,
+  resposta           VARCHAR(1000) DEFAULT NULL,
+  ordem              SMALLINT NOT NULL DEFAULT 0,
+  ativo              SMALLINT NOT NULL DEFAULT 1,
+  data_criacao       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT pk_bot_opcoes PRIMARY KEY (id_bot_opcao),
+  CONSTRAINT ck_bot_opcao_tipo CHECK (tipo IN ('marcar','meus','cancelar','servicos','equipe','resposta')),
+  CONSTRAINT fk_bot_opcao_empresa FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento (id_estabelecimento) ON DELETE CASCADE
+);
+```
+
 ### Cardinalidades das FKs — PostgreSQL
 
 | Restrição | Pai | Filha | Colunas da FK | Pais por filha | Filhas por pai |
@@ -2817,6 +3297,14 @@ CREATE TABLE sessoes_lembradas (
 | `fk_cliente_pacote_empresa` | `estabelecimento` | `cliente_pacotes` | `id_estabelecimento` | 1 | 0..N |
 | `fk_cliente_pacote_cliente_tenant` | `clientes` | `cliente_pacotes` | `id_estabelecimento, id_cliente` | 1 | 0..N |
 | `fk_cliente_pacote_pacote_tenant` | `pacotes` | `cliente_pacotes` | `id_estabelecimento, id_pacote` | 1 | 0..N |
+| `fk_plano_cliente_empresa` | `estabelecimento` | `planos_clientes` | `id_estabelecimento` | 1 | 0..N |
+| `fk_pcs_plano_tenant` | `planos_clientes` | `plano_cliente_servicos` | `id_estabelecimento, id_plano_cliente` | 1 | 0..N |
+| `fk_pcs_servico_tenant` | `servicos` | `plano_cliente_servicos` | `id_estabelecimento, id_servico` | 1 | 0..N |
+| `fk_cliente_assinatura_empresa` | `estabelecimento` | `cliente_assinaturas` | `id_estabelecimento` | 1 | 0..N |
+| `fk_cliente_assinatura_cliente_tenant` | `clientes` | `cliente_assinaturas` | `id_estabelecimento, id_cliente` | 1 | 0..N |
+| `fk_cliente_assinatura_plano_tenant` | `planos_clientes` | `cliente_assinaturas` | `id_estabelecimento, id_plano_cliente` | 1 | 0..N |
+| `fk_cobranca_assinatura_empresa` | `estabelecimento` | `cobrancas_assinatura_cliente` | `id_estabelecimento` | 1 | 0..N |
+| `fk_cobranca_assinatura_tenant` | `cliente_assinaturas` | `cobrancas_assinatura_cliente` | `id_estabelecimento, id_cliente_assinatura` | 1 | 0..N |
 | `fk_avaliacao_empresa` | `estabelecimento` | `avaliacoes` | `id_estabelecimento` | 1 | 0..N |
 | `fk_avaliacao_agendamento_tenant` | `agendamentos` | `avaliacoes` | `id_estabelecimento, id_agendamento` | 1 | 0..1 |
 | `fk_avaliacao_cliente_tenant` | `clientes` | `avaliacoes` | `id_estabelecimento, id_cliente` | 1 | 0..N |
@@ -2828,3 +3316,5 @@ CREATE TABLE sessoes_lembradas (
 | `fk_filiais_estabelecimento` | `estabelecimento` | `filiais` | `id_estabelecimento` | 1 | 0..N |
 | `fk_sessoes_lembradas_usuario` | `usuarios` | `sessoes_lembradas` | `id_usuario` | 1 | 0..N |
 | `fk_sessoes_lembradas_vinculo` | `vinculos` | `sessoes_lembradas` | `id_vinculo` | 1 | 0..N |
+| `fk_whatsapp_conversas_empresa` | `estabelecimento` | `whatsapp_conversas` | `id_estabelecimento` | 1 | 0..N |
+| `fk_bot_opcao_empresa` | `estabelecimento` | `bot_opcoes` | `id_estabelecimento` | 1 | 0..N |

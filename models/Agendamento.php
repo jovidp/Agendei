@@ -335,6 +335,11 @@ class Agendamento
         $conexao->beginTransaction();
 
         try {
+            // Trava o profissional: no PostgreSQL o FOR UPDATE de existeConflito nao trava
+            // horario livre (nao ha linha), e duas reservas simultaneas passariam juntas.
+            $trava = $conexao->prepare('SELECT id_profissional FROM profissionais WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_profissional = :id FOR UPDATE');
+            $trava->execute([':id' => $idProfissional]);
+
             // Revalida a disponibilidade dentro da transação, pois a consulta da interface pode estar desatualizada.
             $erros = Disponibilidade::validar(
                 [
@@ -358,6 +363,8 @@ class Agendamento
             // Obtém preço e duração no servidor para calcular o horário final e registrar o valor da reserva.
             $servico = Servico::porId($idServico);
             $horaFim = somarMinutos($horaInicio, (int) $servico['duracao_minutos']);
+            // Assinatura do cliente: servico incluido sai a zero; os demais, com o desconto do plano.
+            $beneficio = AssinaturaCliente::beneficio($idCliente, $idServico, $data, (float) $servico['preco']);
 
             if (self::clientePossuiConflito($idCliente, $data, $horaInicio, $horaFim)) {
                 $conexao->rollBack();
@@ -381,9 +388,9 @@ class Agendamento
             $consulta = $conexao->prepare(
                 'INSERT INTO agendamentos
                     (id_estabelecimento, id_cliente, id_profissional, id_servico, id_filial, data_agendamento, hora_inicio, hora_fim,
-                     valor, status, observacao, origem, grupo_recorrencia)
+                     valor, status, observacao, origem, grupo_recorrencia, id_cliente_assinatura)
                  VALUES (' . Contexto::id() . ', :cliente, :profissional, :servico, :filial, :data, :inicio, :fim,
-                     :valor, :status, :observacao, :origem, :grupo_recorrencia)'
+                     :valor, :status, :observacao, :origem, :grupo_recorrencia, :assinatura)'
             );
 
             $consulta->execute([
@@ -394,7 +401,8 @@ class Agendamento
                 ':data'         => $data,
                 ':inicio'       => $horaInicio,
                 ':fim'          => $horaFim,
-                ':valor'        => $servico['preco'],
+                ':valor'        => $beneficio['valor'],
+                ':assinatura'   => $beneficio['id_cliente_assinatura'],
                 ':status'       => $status,
                 ':observacao'   => $dados['observacao'] ?: null,
                 ':origem'       => in_array($dados['origem'] ?? '', ['cliente', 'admin', 'profissional'], true)
@@ -407,7 +415,8 @@ class Agendamento
             // Confirma as alterações depois que todas as operações da transação terminam.
             $conexao->commit();
             try {
-                if (!Diferencial::usarCreditoPacote($idAgendamento)) {
+                // Coberto pela assinatura: ja saiu a zero, nao gasta pacote nem cobra sinal.
+                if ($beneficio['id_cliente_assinatura'] === null && !Diferencial::usarCreditoPacote($idAgendamento)) {
                     Diferencial::criarPagamentoSinal($idAgendamento);
                 }
             } catch (Throwable $erroRecurso) {
@@ -437,10 +446,11 @@ class Agendamento
 
         $consulta = bd()->prepare(
             'UPDATE agendamentos SET status = :status, motivo_cancelamento = NULL, id_usuario_cancelou = NULL
-             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_agendamento = :id'
+             WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_agendamento = :id AND status <> \'cancelado\''
         );
 
-        $alterado = $consulta->execute([':status' => $status, ':id' => $idAgendamento]);
+        // Cancelado nao volta: a vaga pode ja ter ido para outro cliente e o sinal, virado credito.
+        $alterado = $consulta->execute([':status' => $status, ':id' => $idAgendamento]) && $consulta->rowCount() > 0;
         if ($alterado && $status === 'concluido') {
             try {
                 Diferencial::pontuar($idAgendamento);

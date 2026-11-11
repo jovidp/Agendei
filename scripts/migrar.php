@@ -172,6 +172,14 @@ require_once __DIR__ . '/../models/VerificacaoEmail.php';
 VerificacaoEmail::garantirEstrutura();
 echo "Confirmacao de e-mail: coluna pronta.\n";
 
+// Assinaturas que o estabelecimento vende aos clientes.
+require_once __DIR__ . '/../models/AssinaturaCliente.php';
+AssinaturaCliente::garantirEstrutura();
+echo "Assinaturas de clientes: tabelas prontas.\n";
+require_once __DIR__ . '/../models/Cobranca.php';
+Cobranca::garantirEstrutura();
+echo "Pagamentos: cartao, boleto e avulso prontos.\n";
+
 // Conversas do bot de WhatsApp.
 require_once __DIR__ . '/../models/Bot.php';
 foreach (Bot::ddl() as $comando) {

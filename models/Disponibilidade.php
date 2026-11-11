@@ -209,7 +209,8 @@ class Disponibilidade
         }
 
         // Precisa caber inteiro dentro de uma faixa de expediente.
-        if (!self::dentroDoExpediente($idProfissional, $data, $horaInicio, $horaFim)) {
+        // O cliente so marca nos horarios oferecidos; a equipe pode encaixar fora da grade.
+        if (!self::dentroDoExpediente($idProfissional, $data, $horaInicio, $horaFim, empty($opcoes['ignorar_antecedencia']))) {
             $erros[] = 'O horário selecionado está fora do expediente do profissional.';
         }
 
@@ -232,14 +233,19 @@ class Disponibilidade
     }
 
     /** O intervalo cabe inteiro em alguma faixa ativa de expediente? */
-    public static function dentroDoExpediente(int $idProfissional, string $data, string $horaInicio, string $horaFim): bool
+    public static function dentroDoExpediente(int $idProfissional, string $data, string $horaInicio, string $horaFim, bool $exigirGrade = false): bool
     {
         $diaSemana = (int) date('w', strtotime($data));
         $inicio    = horaParaMinutos($horaInicio);
         $fim       = horaParaMinutos($horaFim);
 
         foreach (Horario::faixasAtivas($idProfissional, $diaSemana) as $faixa) {
-            if ($inicio >= horaParaMinutos($faixa['hora_inicio']) && $fim <= horaParaMinutos($faixa['hora_fim'])) {
+            $inicioFaixa = horaParaMinutos($faixa['hora_inicio']);
+            if ($inicio < $inicioFaixa || $fim > horaParaMinutos($faixa['hora_fim'])) {
+                continue;
+            }
+            // Mesmo passo de calcular(): so os inicios que a grade da faixa oferece.
+            if (!$exigirGrade || ($inicio - $inicioFaixa) % max(5, (int) $faixa['intervalo_minutos']) === 0) {
                 return true;
             }
         }

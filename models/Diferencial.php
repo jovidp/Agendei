@@ -329,6 +329,10 @@ class Diferencial
     /** Simulação do pagamento do sinal pelo cliente: o pendente passa a pago. */
     public static function pagarSinalSimulado(int $idAgendamento): bool
     {
+        // Sem gateway, em producao o cliente marcaria o proprio sinal como pago (e ganharia credito ao cancelar).
+        if (AMBIENTE !== 'desenvolvimento') {
+            return false;
+        }
         $q = bd()->prepare(
             'UPDATE pagamentos SET status=\'pago\', data_pagamento=NOW()
              WHERE id_estabelecimento=? AND id_agendamento=? AND tipo=\'sinal\' AND status=\'pendente\''
@@ -399,7 +403,7 @@ class Diferencial
 
     public static function pagamentos(?int $idCliente = null): array
     {
-        $sql = 'SELECT pg.*,a.data_agendamento,a.hora_inicio,s.nome nome_servico,u.nome nome_cliente
+        $sql = 'SELECT pg.*,a.data_agendamento,a.hora_inicio,a.status status_agendamento,s.nome nome_servico,u.nome nome_cliente
                 FROM pagamentos pg
                 JOIN agendamentos a ON a.id_agendamento=pg.id_agendamento
                 JOIN servicos s ON s.id_servico=a.id_servico
@@ -686,6 +690,16 @@ class Diferencial
                                  AND a.id_estabelecimento=pagamentos.id_estabelecimento
                                  AND a.id_cliente=?)'
             );
+            $q->execute([Contexto::id(), $idCliente]);
+            // A assinatura do cliente com a empresa acaba junto: sem isso a tarefa
+            // diaria seguiria gerando mensalidade para a conta anonimizada.
+            $q = $db->prepare('UPDATE cobrancas_assinatura_cliente SET status=\'cancelado\'
+                               WHERE id_estabelecimento=? AND status=\'pendente\'
+                                 AND id_cliente_assinatura IN (SELECT id_cliente_assinatura FROM cliente_assinaturas
+                                                               WHERE id_estabelecimento=? AND id_cliente=?)');
+            $q->execute([Contexto::id(), Contexto::id(), $idCliente]);
+            $q = $db->prepare('UPDATE cliente_assinaturas SET status=\'cancelada\',data_cancelamento=CURRENT_TIMESTAMP
+                               WHERE id_estabelecimento=? AND id_cliente=? AND status<>\'cancelada\'');
             $q->execute([Contexto::id(), $idCliente]);
             $q = $db->prepare('UPDATE agendamentos SET status=\'cancelado\',motivo_cancelamento=\'Conta encerrada\'
                                WHERE id_estabelecimento=? AND id_cliente=? AND status IN (\'agendado\',\'confirmado\')');

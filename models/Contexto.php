@@ -52,6 +52,11 @@ class Contexto
         if (!$registro && $slug !== '' && Solicitacao::pendentePorSlug($slug)) {
             self::falhar(403, 'Este estabelecimento ainda aguarda a aprovação do cadastro. O responsável será avisado quando o acesso for liberado.');
         }
+        // Empresa da sessao desativada: sem encerrar, toda pagina (ate o logout) daria 404 ate fechar o navegador.
+        if (!$registro && $idSessao > 0) {
+            encerrarSessao();
+            self::falhar(401, 'Este estabelecimento não está mais ativo. Sua sessão foi encerrada.');
+        }
         if (!$registro) self::falhar(404, 'O link aberto não corresponde a nenhuma empresa ativa. Confira o endereço com quem o enviou.');
         if ($idSessao > 0 && $slug !== '' && $slug !== $registro['slug']) {
             self::falhar(403, 'Sua sessão pertence a outro estabelecimento. Saia da conta antes de acessar outro link.');

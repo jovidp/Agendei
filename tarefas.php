@@ -42,6 +42,8 @@ try {
     $resumo = Lembrete::processarTodas();
     // Retencao de dados (LGPD): uma vez por dia basta; a tarefa roda a cada 10 ou 15 minutos.
     $retencao = (int) date('G') === 3 ? Legal::limparDadosAntigos() : null;
+    // Mensalidades das assinaturas de clientes que vencem em ate 3 dias, na mesma janela diaria.
+    $renovacoes = (int) date('G') === 3 ? AssinaturaCliente::renovarTodas() : null;
 
     jsonResposta([
         'sucesso'      => true,
@@ -49,6 +51,7 @@ try {
         'duracao_s'    => round(microtime(true) - $inicio, 2),
         'empresas'     => $resumo,
         'retencao'     => $retencao,
+        'renovacoes'   => $renovacoes,
     ]);
 } catch (Throwable $erro) {
     error_log('Tarefa de lembretes falhou: ' . $erro->getMessage());

@@ -492,7 +492,10 @@ form + .aviso-tipo-cadastro {
 .tabela-legal td, .tabela-legal th { vertical-align: top; }
 @media (max-width: 640px) {
   .pagina-legal { margin: 0; padding: 20px 16px; border-radius: 0; border-left: 0; border-right: 0; }
-  .tabela-legal { display: block; overflow-x: auto; }
+  /* Duas colunas de texto cabem no celular quebrando a linha; o min-width de .tabela e que forcava a rolagem. */
+  .tabela-legal { min-width: 0; }
+  .tabela-legal thead th { white-space: normal; }
+  .tabela-legal tbody td, .tabela-legal thead th { padding-left: 10px; padding-right: 10px; }
 }
 
 /* Aceite dos Termos e da Politica nos cadastros. */

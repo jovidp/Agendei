@@ -15,11 +15,69 @@ class Cobranca
 {
     private const CHAVE_DEMO = '00000000-0000-0000-0000-000000000000';
 
-    /** Codigo "copia e cola" do Pix (BR Code estatico com valor). */
-    public static function pix(float $valor, string $identificador): string
+    /** Formas que o cliente escolhe na mensalidade e no avulso. */
+    public const METODOS = ['pix' => 'Pix', 'boleto' => 'Boleto', 'cartao' => 'Cartão'];
+
+    /** Formas oferecidas pela empresa: Pix so com chave cadastrada. */
+    public static function metodosDisponiveis(): array
     {
-        $chave  = trim((string) getenv('AGENDEI_PIX_CHAVE')) ?: self::CHAVE_DEMO;
-        $nome   = self::ascii(getenv('AGENDEI_PIX_NOME') ?: 'AGENDEI', 25);
+        $metodos = self::METODOS;
+        if (Configuracao::obter('pix_chave') === '') unset($metodos['pix']);
+        return $metodos;
+    }
+
+    /** "Pix", "Boleto", "Cartão final 1234"; "-" sem escolha. */
+    public static function rotuloPagamento(?string $metodo, ?string $final): string
+    {
+        if ($metodo === null || $metodo === '') return '-';
+        $rotulo = self::METODOS[$metodo] ?? ucfirst($metodo);
+        return $metodo === 'cartao' && $final ? "$rotulo final $final" : $rotulo;
+    }
+
+    /** Confere a escolha do cliente; devolve o final do cartao (ou null fora do cartao). */
+    public static function validarEscolha(string $metodo, ?string $cartaoFinal): ?string
+    {
+        if (!isset(self::metodosDisponiveis()[$metodo])) {
+            throw new InvalidArgumentException('Escolha uma forma de pagamento disponível.');
+        }
+        if ($metodo !== 'cartao') return null;
+        if (!preg_match('/^\d{4}$/', (string) $cartaoFinal)) {
+            throw new InvalidArgumentException('Preencha os dados do cartão para continuar.');
+        }
+        return $cartaoFinal;
+    }
+
+    /** Colunas da forma escolhida e 'boleto' nos pagamentos; pode rodar de novo. */
+    public static function garantirEstrutura(): void
+    {
+        Sql::garantirColuna('cobrancas_assinatura_cliente', 'metodo', 'VARCHAR(6) DEFAULT NULL');
+        Sql::garantirColuna('cobrancas_assinatura_cliente', 'cartao_final', 'CHAR(4) DEFAULT NULL');
+        Sql::garantirColuna('pagamentos', 'cartao_final', 'CHAR(4) DEFAULT NULL');
+        $db = bd();
+        if (Database::ehPostgres()) {
+            $definicao = (string) $db->query("SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = 'ck_pagamento_metodo'")->fetchColumn();
+            if ($definicao !== '' && !str_contains($definicao, 'boleto')) {
+                $db->exec('ALTER TABLE pagamentos DROP CONSTRAINT ck_pagamento_metodo');
+                $db->exec("ALTER TABLE pagamentos ADD CONSTRAINT ck_pagamento_metodo CHECK (metodo IN ('pix','dinheiro','cartao','outro','boleto'))");
+            }
+            return;
+        }
+        $ddl = $db->query('SHOW CREATE TABLE pagamentos')->fetch(PDO::FETCH_NUM)[1] ?? '';
+        if (!str_contains($ddl, "'boleto'")) {
+            $db->exec("ALTER TABLE pagamentos MODIFY metodo ENUM('pix','dinheiro','cartao','outro','boleto') NOT NULL DEFAULT 'pix'");
+        }
+    }
+
+    /** Codigo "copia e cola" do Pix (BR Code estatico com valor). */
+    /** Sem $chave/$nome recebe o Agendei; a mensalidade de cliente passa os da empresa. */
+    public static function pix(float $valor, string $identificador, ?string $chave = null, ?string $nome = null): string
+    {
+        if ($chave !== null) {
+            // Chave salva antes da validacao pode estar com mascara: normaliza se der.
+            try { $chave = self::normalizarChavePix($chave); } catch (InvalidArgumentException) {}
+        }
+        $chave  = trim((string) ($chave ?? getenv('AGENDEI_PIX_CHAVE'))) ?: self::CHAVE_DEMO;
+        $nome   = self::ascii($nome ?? (getenv('AGENDEI_PIX_NOME') ?: 'AGENDEI'), 25);
         $cidade = self::ascii(getenv('AGENDEI_PIX_CIDADE') ?: 'SAO PAULO', 15);
         $txid   = substr(preg_replace('/[^A-Za-z0-9]/', '', $identificador), 0, 25) ?: '***';
 
@@ -35,6 +93,47 @@ class Cobranca
             . '6304';
 
         return $codigo . self::crc16($codigo);
+    }
+
+    /**
+     * Poe a chave Pix digitada na forma que o banco procura: e-mail em
+     * minusculas, CPF/CNPJ so com digitos, celular como +55DDDNUMERO e chave
+     * aleatoria em minusculas. Com mascara, o QR teria CRC valido e o banco
+     * nao acharia a chave. 11 digitos soltos: CPF se o digito verificador
+     * fechar, senao celular. Lanca InvalidArgumentException se nao reconhecer.
+     */
+    public static function normalizarChavePix(string $chave): string
+    {
+        $chave = trim($chave);
+        if ($chave === '') return '';
+        if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $chave)) {
+            return strtolower($chave);
+        }
+        if (str_contains($chave, '@')) {
+            $email = mb_strtolower(preg_replace('/\s+/', '', $chave));
+            if (strlen($email) > 77 || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                throw new InvalidArgumentException('Chave Pix de e-mail inválida (até 77 caracteres).');
+            }
+            return $email;
+        }
+        $digitos = preg_replace('/\D/', '', $chave);
+        $pareceTelefone = str_starts_with($chave, '+') || str_contains($chave, '(');
+        if (!$pareceTelefone && strlen($digitos) === 11 && self::cpfValido($digitos)) return $digitos;
+        if (!$pareceTelefone && strlen($digitos) === 14) return $digitos;
+        if (in_array(strlen($digitos), [12, 13], true) && str_starts_with($digitos, '55')) return '+' . $digitos;
+        if (in_array(strlen($digitos), [10, 11], true)) return '+55' . $digitos;
+        throw new InvalidArgumentException('Chave Pix não reconhecida. Use e-mail, CPF, CNPJ, celular com DDD ou a chave aleatória.');
+    }
+
+    private static function cpfValido(string $cpf): bool
+    {
+        if (preg_match('/^(\d)\1{10}$/', $cpf)) return false;
+        for ($t = 9; $t < 11; $t++) {
+            $soma = 0;
+            for ($i = 0; $i < $t; $i++) $soma += (int) $cpf[$i] * ($t + 1 - $i);
+            if ((int) $cpf[$t] !== ((10 * $soma) % 11) % 10) return false;
+        }
+        return true;
     }
 
     /**

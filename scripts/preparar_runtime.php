@@ -12,6 +12,10 @@ try {
         foreach ($classe::ddl() as $comando) $db->exec($comando);
     }
     Assinatura::garantirEstrutura();
+    // Fora do try de baixo: sem agendamentos.id_cliente_assinatura nenhum agendamento grava.
+    AssinaturaCliente::garantirEstrutura();
+    // Forma de pagamento da mensalidade e do avulso (colunas novas e 'boleto').
+    Cobranca::garantirEstrutura();
     // Se falhar, o site sobe mesmo assim: o sinal, o aceite e os planos novos ficam sem atualizar (o erro vai ao log).
     try {
         Diferencial::garantirStatusSinal();

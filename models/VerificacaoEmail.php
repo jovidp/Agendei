@@ -88,7 +88,12 @@ class VerificacaoEmail
     {
         $codigo = self::novoCodigo('conta' . $idUsuario, $idUsuario, $email);
         [$assunto, $texto, $html] = emailCodigoConfirmacao($nome, $codigo);
-        return Email::enviar($email, $assunto, $texto, $html, $nome);
+        if (Email::enviar($email, $assunto, $texto, $html, $nome)) {
+            return true;
+        }
+        // Codigo que nao saiu nao vale: a tela deixa de dizer "enviamos". O intervalo de reenvio continua.
+        $_SESSION['codigos_email']['conta' . $idUsuario]['expira'] = 0;
+        return false;
     }
 
     /** Novo codigo, respeitando o intervalo entre envios. Devolve a mensagem de erro, ou '' se enviou. */

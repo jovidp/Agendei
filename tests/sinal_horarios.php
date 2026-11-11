@@ -130,7 +130,8 @@ $agora = Agendamento::prazoSemPerda(['data_agendamento' => date('Y-m-d'), 'hora_
 verificar($agora < time(), 'O prazo de quem marcou para daqui a 10 min deveria ter passado.');
 $c = $reservar('10:00');
 Diferencial::pagarSinalSimulado($c);
-bd()->exec("UPDATE agendamentos SET data_agendamento = CURRENT_DATE, hora_inicio = '" . date('H:i:s', time() + 600) . "' WHERE id_agendamento = $c");
+// hora_fim muda junto: depois das 10h20 o inicio passaria do fim antigo (10:30) e a constraint recusaria.
+bd()->exec("UPDATE agendamentos SET data_agendamento = CURRENT_DATE, hora_inicio = '" . date('H:i:s', time() + 600) . "', hora_fim = '" . date('H:i:s', time() + 600 + 1800) . "' WHERE id_agendamento = $c");
 verificar(Agendamento::clientePodeCancelar(Agendamento::porId($c)), 'Até o horário começar o cliente ainda cancela.');
 Agendamento::cancelar($c, null, 'teste', true);
 verificar($statusSinal($c) === 'retido', 'Cancelar a menos de 30 min deveria reter o sinal.');
@@ -140,6 +141,17 @@ $d = $reservar('11:00');
 Diferencial::pagarSinalSimulado($d);
 Agendamento::cancelar($d, (int) $admin['id_usuario'], 'empresa cancelou');
 verificar($statusSinal($d) === 'credito', 'Cancelamento da empresa deveria devolver o sinal como crédito.');
+
+// Reserva cancelada nao volta a valer nem vira concluida (a vaga pode ja ser de outro).
+verificar(!Agendamento::alterarStatus($d, 'confirmado') && Agendamento::porId($d)['status'] === 'cancelado', 'Reserva cancelada foi reativada.');
+verificar(!Agendamento::alterarStatus($d, 'concluido') && Agendamento::porId($d)['status'] === 'cancelado', 'Reserva cancelada foi concluída.');
+
+// Cliente so marca nos inicios da grade (faixa 08:00, passo padrao); a equipe encaixa fora dela.
+$foraDaGrade = Disponibilidade::validar(['id_profissional' => $profissional, 'id_servico' => $servico, 'data' => $obtido[2], 'hora_inicio' => '08:07']);
+verificar($foraDaGrade !== [], 'O cliente marcou fora da grade de horários.');
+verificar(Disponibilidade::validar(['id_profissional' => $profissional, 'id_servico' => $servico, 'data' => $obtido[2], 'hora_inicio' => '08:00']) === [], 'O início da grade deveria valer para o cliente.');
+$encaixe = Disponibilidade::validar(['id_profissional' => $profissional, 'id_servico' => $servico, 'data' => $obtido[2], 'hora_inicio' => '08:07'], ['ignorar_antecedencia' => true]);
+verificar($encaixe === [], 'A equipe deveria poder encaixar fora da grade: ' . json_encode($encaixe));
 
 // Sinal pendente continua so cancelado.
 $e = $reservar('13:00');

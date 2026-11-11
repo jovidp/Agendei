@@ -99,9 +99,10 @@ class Email
 
     private static function valor(string $chave, string $padrao): string
     {
-        $ambiente = getenv(self::ENV[$chave]);
-        if ($ambiente !== false && $ambiente !== '') {
-            return (string) $ambiente;
+        // trim: um Enter colado junto com a chave no painel da hospedagem quebra o cabecalho api-key.
+        $ambiente = trim((string) getenv(self::ENV[$chave]));
+        if ($ambiente !== '') {
+            return $ambiente;
         }
 
         if (self::$local === null) {
@@ -110,7 +111,8 @@ class Email
             self::$local = is_array($valores) ? $valores : [];
         }
 
-        return isset(self::$local[$chave]) && (string) self::$local[$chave] !== '' ? (string) self::$local[$chave] : $padrao;
+        $local = trim((string) (self::$local[$chave] ?? ''));
+        return $local !== '' ? $local : $padrao;
     }
 
     // -----------------------------------------------------------------

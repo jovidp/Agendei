@@ -83,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Confere o registro e as regras aplicáveis antes da exclusão.
     if ($acao === 'excluir' && $idServico > 0) {
         if (!Servico::podeExcluir($idServico)) {
-            definirFlash('erro', 'Este serviço já possui agendamentos e não pode ser excluído. Desative-o para retirar da lista.');
+            definirFlash('erro', 'Este serviço já possui agendamentos ou faz parte de um plano de assinatura e não pode ser excluído. Desative-o para retirar da lista.');
         } else {
             Servico::excluir($idServico);
             definirFlash('sucesso', 'Serviço excluído.');

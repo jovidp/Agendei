@@ -30,6 +30,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($acao === 'cancelar_lista') {
             Diferencial::cancelarLista((int) post('id_lista'), $idCliente);
             definirFlash('sucesso', 'Pedido de encaixe cancelado.');
+        } elseif ($acao === 'assinar') {
+            AssinaturaCliente::assinar($idCliente, (int) post('id_plano_cliente'));
+            definirFlash('sucesso', 'Assinatura solicitada. Pague a primeira mensalidade pelo Pix abaixo; ela começa quando o estabelecimento confirmar.');
+        } elseif ($acao === 'cancelar_assinatura') {
+            AssinaturaCliente::cancelar((int) post('id_cliente_assinatura'), $idCliente)
+                ? definirFlash('sucesso', 'Assinatura cancelada. Os benefícios valem até o fim do período pago.')
+                : definirFlash('erro', 'Não foi possível cancelar esta assinatura.');
         } elseif ($acao === 'pacote') {
             Diferencial::adquirirPacote($idCliente, (int) post('id_pacote'));
             definirFlash('sucesso', 'Pacote solicitado. Aguarde a confirmação do estabelecimento.');
@@ -54,9 +61,14 @@ $movimentos = Diferencial::movimentos($idCliente);
 $paraAvaliar = Diferencial::atendimentosParaAvaliar($idCliente);
 $avaliacoes = Diferencial::avaliacoes($idCliente);
 $pix = Configuracao::obter('pix_chave');
+// A pagina tambem gera a mensalidade que vence, para nao depender so da tarefa diaria.
+AssinaturaCliente::gerarRenovacoes();
+$minhaAssinatura = AssinaturaCliente::daCliente($idCliente);
+$planosAssinatura = AssinaturaCliente::planos(true);
+$nomeEmpresa = (string) (Contexto::dados()['nome'] ?? '');
 
 $tituloPagina = 'Meus benefícios';
-$subtituloTopo = 'Encaixes, pontos, pacotes, pagamentos e avaliações';
+$subtituloTopo = 'Assinaturas, encaixes, pontos, pacotes, pagamentos e avaliações';
 require RAIZ . '/includes/painel_header.php';
 ?>
 <?php if ($erros): ?><div class="alerta alerta-erro">
@@ -122,6 +134,66 @@ require RAIZ . '/includes/painel_header.php';
             </div><?php endif; ?>
     </div>
 </div>
+
+<?php $mostrarVitrine = $planosAssinatura && (!$minhaAssinatura || $minhaAssinatura['situacao'] === 'encerrada'); ?>
+<?php if ($minhaAssinatura && $minhaAssinatura['situacao'] !== 'encerrada'): $a = $minhaAssinatura; $cob = $a['cobranca_pendente']; ?>
+    <div class="cartao">
+        <div class="cartao-cabecalho"><h3>Minha assinatura: <?= e($a['plano']['nome'] ?? '') ?></h3><?= AssinaturaCliente::badgeSituacao($a['situacao']) ?></div>
+        <div class="cartao-corpo">
+            <?php if ($a['situacao'] === 'pendente'): ?>
+                <p>Sua assinatura começa quando o estabelecimento confirmar o pagamento da primeira mensalidade.</p>
+            <?php elseif ($a['situacao'] === 'suspensa'): ?>
+                <p>O período pago terminou em <?= formatarData($a['periodo_fim']) ?>. Pague a mensalidade para voltar a usar os benefícios.</p>
+            <?php elseif ($a['situacao'] === 'cancelada'): ?>
+                <p>Assinatura cancelada. Os benefícios valem até <strong><?= formatarData($a['periodo_fim']) ?></strong>.</p>
+            <?php else: ?>
+                <p>Mês atual: <?= formatarData($a['mes_atual'][0]) ?> a <?= formatarData($a['mes_atual'][1]) ?>. Pago até <?= formatarData($a['periodo_fim']) ?>.</p>
+            <?php endif; ?>
+            <?php if (!empty($a['plano'])): ?>
+                <ul>
+                    <?php foreach ($a['plano']['servicos'] as $s): $usado = $a['uso'][$s['id_servico']] ?? 0; ?>
+                        <li><?= e($s['nome']) ?>: <?= $s['quantidade_mes'] === null ? 'ilimitado' : (int) $usado . ' de ' . (int) $s['quantidade_mes'] . ' usados neste mês' ?></li>
+                    <?php endforeach; ?>
+                    <?php if ((int) $a['plano']['desconto_percentual'] > 0): ?><li><?= (int) $a['plano']['desconto_percentual'] ?>% de desconto nos demais serviços</li><?php endif; ?>
+                </ul>
+            <?php endif; ?>
+            <?php if ($cob): ?>
+                <h4 class="margem-topo">Mensalidade de <?= formatarMoeda($cob['valor']) ?></h4>
+                <p><?= $cob['metodo'] ? 'Forma escolhida: ' . e(Cobranca::rotuloPagamento($cob['metodo'], $cob['cartao_final'])) . '.' : 'Pague por Pix, boleto ou cartão.' ?></p>
+                <a class="btn btn-pequeno" href="<?= url('cliente/pagar.php?mensalidade=' . (int) $cob['id_cobranca']) ?>"><?= $cob['metodo'] ? 'Ver pagamento' : 'Pagar mensalidade' ?></a>
+            <?php endif; ?>
+            <?php if ($a['situacao'] !== 'cancelada'): ?>
+                <form method="post" class="margem-topo"><?= campoCsrf() ?>
+                    <input type="hidden" name="acao" value="cancelar_assinatura"><input type="hidden" name="id_cliente_assinatura" value="<?= (int) $a['id_cliente_assinatura'] ?>">
+                    <button class="btn btn-contorno btn-pequeno" data-confirmar="Cancelar sua assinatura? Os benefícios valem até o fim do período já pago." data-confirmar-titulo="Cancelar assinatura" data-confirmar-rotulo="Cancelar assinatura">Cancelar assinatura</button>
+                </form>
+            <?php endif; ?>
+        </div>
+    </div>
+<?php endif; ?>
+
+<?php if ($mostrarVitrine): ?>
+    <div class="cartao">
+        <div class="cartao-cabecalho"><h3>Assinaturas</h3></div>
+        <div class="grade-painel-igual cartao-corpo"><?php foreach ($planosAssinatura as $p): ?><div class="cartao">
+            <div class="cartao-corpo">
+                <h3><?= e($p['nome']) ?></h3>
+                <?php if ($p['descricao']): ?><p><?= e($p['descricao']) ?></p><?php endif; ?>
+                <ul>
+                    <?php foreach ($p['servicos'] as $s): ?><li><?= e($s['nome']) ?>: <?= $s['quantidade_mes'] === null ? 'ilimitado' : (int) $s['quantidade_mes'] . 'x por mês' ?></li><?php endforeach; ?>
+                    <?php if ((int) $p['desconto_percentual'] > 0): ?><li><?= (int) $p['desconto_percentual'] ?>% de desconto nos demais serviços</li><?php endif; ?>
+                </ul>
+                <strong><?= formatarMoeda($p['preco_mensal']) ?> por mês</strong>
+                <form method="post" class="margem-topo"><?= campoCsrf() ?><input type="hidden" name="acao" value="assinar"><input type="hidden" name="id_plano_cliente" value="<?= (int) $p['id_plano_cliente'] ?>"><button class="btn btn-pequeno">Assinar</button></form>
+            </div>
+        </div><?php endforeach; ?>
+        <div class="cartao"><div class="cartao-corpo">
+            <h3>Sem plano</h3>
+            <p>Pague só quando usar: cada atendimento pelo valor normal, no local ou online por Pix, boleto ou cartão.</p>
+            <a class="btn btn-contorno btn-pequeno margem-topo" href="<?= url('cliente/agendar.php') ?>">Marcar horário</a>
+        </div></div></div>
+    </div>
+<?php endif; ?>
 
 <div class="cartao">
     <div class="cartao-cabecalho">

@@ -211,6 +211,10 @@ html[data-contraste="alto"] .barra-acessibilidade {
   .acoes-formulario {
     flex-direction: column;
   }
+  /* Em coluna, o flex: 1 (base 0) mandava na altura e achatava o botao. */
+  .acoes-formulario .btn {
+    flex: none;
+  }
 }
 
 /* ---------------------------------------------------------------------

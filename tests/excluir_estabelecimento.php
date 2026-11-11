@@ -46,7 +46,7 @@ foreach (['profissionais', 'agendamentos'] as $alterada) {
     bd()->exec('ALTER TABLE ' . $alterada . ' ADD COLUMN id_filial INTEGER DEFAULT NULL REFERENCES filiais (id_filial)');
 }
 // usuarios (a pessoa) deixou de apontar para estabelecimento; vinculos entrou no lugar dela.
-verificar(count($tabelasLocais) === 22, 'Cobertura das tabelas locais mudou; atualize o teste.');
+verificar(count($tabelasLocais) === 26,'Cobertura das tabelas locais mudou; atualize o teste.');
 
 function inserir(string $tabela, array $dados): int
 {
@@ -82,9 +82,14 @@ foreach (['empresa-a', 'empresa-b'] as $slug) {
     inserir('avaliacoes', $vinculo + ['id_agendamento' => $agendamento, 'id_cliente' => $cliente, 'id_profissional' => $profissional, 'nota' => 5]);
     $pacote = inserir('pacotes', $vinculo + ['id_servico' => $servico, 'nome' => 'Pacote', 'quantidade' => 5, 'preco' => 100]);
     inserir('cliente_pacotes', $vinculo + ['id_cliente' => $cliente, 'id_pacote' => $pacote, 'creditos_total' => 5, 'creditos_restantes' => 4, 'data_expiracao' => '2026-12-31']);
-    inserir('lista_espera', $vinculo + ['id_cliente' => $cliente, 'id_servico' => $servico, 'id_profissional' => $profissional, 'data_desejada' => '2026-10-02']);
+    $planoCliente = inserir('planos_clientes', $vinculo + ['nome' => 'Clube', 'preco_mensal' => 99]);
+    inserir('plano_cliente_servicos', $vinculo + ['id_plano_cliente' => $planoCliente, 'id_servico' => $servico, 'quantidade_mes' => 4]);
+    $assinaturaCliente = inserir('cliente_assinaturas', $vinculo + ['id_cliente' => $cliente, 'id_plano_cliente' => $planoCliente, 'status' => 'ativa']);
+    inserir('cobrancas_assinatura_cliente', $vinculo + ['id_cliente_assinatura' => $assinaturaCliente, 'valor' => 99]);
+    inserir('lista_espera', $vinculo +['id_cliente' => $cliente, 'id_servico' => $servico, 'id_profissional' => $profissional, 'data_desejada' => '2026-10-02']);
     inserir('logs_autenticacao', $vinculo + ['id_usuario' => $idClienteUsuario, 'login_informado' => 'cliente@teste.local', 'evento' => 'login_sucesso']);
     inserir('configuracoes', $vinculo + ['chave' => 'teste', 'valor' => '1']);
+    inserir('bot_opcoes', $vinculo + ['tipo' => 'resposta', 'rotulo' => 'Endereço', 'resposta' => 'Rua A']);
     inserir('whatsapp_conversas', $vinculo + ['numero' => '551199990000' . $sufixo, 'etapa' => 'menu', 'dados' => '{}']);
     inserir('estabelecimento_plano', $vinculo + ['id_plano' => $plano]);
     inserir('logs_master', $vinculo + ['id_master' => $master, 'acao' => 'estabelecimento_criado', 'estabelecimento_nome' => $slug]);

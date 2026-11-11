@@ -128,7 +128,11 @@ class Servico
     /** Servico so pode ser excluido se nunca foi agendado. */
     public static function podeExcluir(int $idServico): bool
     {
-        return self::totalAgendamentos($idServico) === 0;
+        if (self::totalAgendamentos($idServico) > 0) return false;
+        // Servico incluido num plano de assinatura de clientes tambem fica (a FK do plano barraria).
+        $q = bd()->prepare('SELECT COUNT(*) FROM plano_cliente_servicos WHERE id_estabelecimento = ' . Contexto::id() . ' AND id_servico = ?');
+        $q->execute([$idServico]);
+        return (int) $q->fetchColumn() === 0;
     }
 
     /** Conta as reservas vinculadas ao serviço, inclusive as do histórico. */

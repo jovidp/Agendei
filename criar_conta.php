@@ -36,7 +36,9 @@ function enderecoDaEmpresa(string $informado): string
 $empresaInformada = get('empresa');
 $erroEmpresa = '';
 
-if ($empresaInformada !== '') {
+if (isset($_GET['empresa']) && $empresaInformada === '') {
+    $erroEmpresa = 'Informe o link ou o endereço da empresa onde você quer marcar.';
+} elseif ($empresaInformada !== '') {
     $slug = enderecoDaEmpresa($empresaInformada);
 
     if (!preg_match('/^[a-z0-9](?:[a-z0-9-]{1,78}[a-z0-9])$/D', $slug)) {
@@ -93,7 +95,7 @@ $tituloPagina = 'Criar conta | ' . NOME_SISTEMA;
                     <div><dt>Depois</dt><dd>A mesma conta serve em qualquer empresa que use o Agendei.</dd></div>
                 </dl>
 
-                <form method="get" action="<?= url('criar_conta.php') ?>#cliente" class="cartao-cadastro-acao" novalidate>
+                <form method="get" action="<?= url('criar_conta.php') ?>#cliente" class="cartao-cadastro-acao" novalidate data-sem-bloqueio>
                     <div class="campo">
                         <label for="empresa">Onde você quer marcar?</label>
                         <input type="text" id="empresa" name="empresa" value="<?= e($empresaInformada) ?>"

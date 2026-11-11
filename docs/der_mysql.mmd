@@ -32,6 +32,7 @@ erDiagram
         enum metodo_pagamento "NULL"
         datetime data_solicitacao "NULL"
         datetime data_pagamento "NULL"
+        datetime data_cancelamento "NULL"
     }
     administradores_master {
         int_unsigned id_master PK "NOT NULL"
@@ -58,6 +59,8 @@ erDiagram
         varchar senha_hash "NOT NULL"
         varchar telefone "NULL"
         varchar telefone_fixo "NULL"
+        varchar termos_versao "NULL"
+        datetime termos_aceitos_em "NULL"
         enum sexo "NULL"
         varchar nome_materno "NULL"
         date data_nascimento "NULL"
@@ -177,6 +180,7 @@ erDiagram
         datetime data_atualizacao "NULL"
         char grupo_recorrencia "NULL"
         int_unsigned id_cliente_pacote "NULL"
+        int_unsigned id_cliente_assinatura "NULL"
         int_unsigned id_estabelecimento FK,UK "NOT NULL"
         int_unsigned id_filial FK "NULL"
     }
@@ -217,6 +221,7 @@ erDiagram
         enum metodo "NOT NULL"
         enum status "NOT NULL"
         varchar referencia "NULL"
+        char cartao_final "NULL"
         datetime data_pagamento "NULL"
         datetime data_criacao "NOT NULL"
     }
@@ -251,6 +256,45 @@ erDiagram
         date data_expiracao "NOT NULL"
         datetime data_criacao "NOT NULL"
     }
+    planos_clientes {
+        int_unsigned id_plano_cliente PK,UK "NOT NULL"
+        int_unsigned id_estabelecimento FK,UK "NOT NULL"
+        varchar nome "NOT NULL"
+        varchar descricao "NULL"
+        decimal preco_mensal "NOT NULL"
+        tinyint_unsigned desconto_percentual "NOT NULL"
+        enum status "NOT NULL"
+        datetime data_criacao "NOT NULL"
+    }
+    plano_cliente_servicos {
+        int_unsigned id_estabelecimento PK,FK "NOT NULL"
+        int_unsigned id_plano_cliente PK,FK "NOT NULL"
+        int_unsigned id_servico PK,FK "NOT NULL"
+        smallint_unsigned quantidade_mes "NULL"
+    }
+    cliente_assinaturas {
+        int_unsigned id_cliente_assinatura PK,UK "NOT NULL"
+        int_unsigned id_estabelecimento FK,UK "NOT NULL"
+        int_unsigned id_cliente FK "NOT NULL"
+        int_unsigned id_plano_cliente FK "NOT NULL"
+        enum status "NOT NULL"
+        date periodo_inicio "NULL"
+        date periodo_fim "NULL"
+        datetime data_cancelamento "NULL"
+        datetime data_criacao "NOT NULL"
+    }
+    cobrancas_assinatura_cliente {
+        int_unsigned id_cobranca PK "NOT NULL"
+        int_unsigned id_estabelecimento FK "NOT NULL"
+        int_unsigned id_cliente_assinatura FK "NOT NULL"
+        decimal valor "NOT NULL"
+        enum status "NOT NULL"
+        varchar referencia "NULL"
+        varchar metodo "NULL"
+        char cartao_final "NULL"
+        datetime data_pagamento "NULL"
+        datetime data_criacao "NOT NULL"
+    }
     avaliacoes {
         int_unsigned id_avaliacao PK "NOT NULL"
         int_unsigned id_estabelecimento FK,UK "NOT NULL"
@@ -282,6 +326,8 @@ erDiagram
         int_unsigned limite_profissionais "NULL"
         int_unsigned limite_servicos "NULL"
         int_unsigned limite_agendamentos_mes "NULL"
+        decimal preco_mensal "NULL"
+        varchar recursos "NULL"
         enum status "NOT NULL"
         datetime data_criacao "NOT NULL"
     }
@@ -345,6 +391,23 @@ erDiagram
         datetime criado_em "NOT NULL"
         datetime ultimo_uso "NOT NULL"
     }
+    whatsapp_conversas {
+        int_unsigned id_estabelecimento PK,FK "NOT NULL"
+        varchar numero PK "NOT NULL"
+        varchar etapa "NOT NULL"
+        text dados "NULL"
+        datetime atualizado_em "NOT NULL"
+    }
+    bot_opcoes {
+        int_unsigned id_bot_opcao PK "NOT NULL"
+        int_unsigned id_estabelecimento FK "NOT NULL"
+        enum tipo "NOT NULL"
+        varchar rotulo "NOT NULL"
+        varchar resposta "NULL"
+        smallint ordem "NOT NULL"
+        tinyint ativo "NOT NULL"
+        datetime data_criacao "NOT NULL"
+    }
     estabelecimento ||--o| assinaturas : "id_estabelecimento"
     estabelecimento ||..o{ vinculos : "id_estabelecimento"
     usuarios ||..o{ vinculos : "id_usuario"
@@ -390,6 +453,14 @@ erDiagram
     estabelecimento ||..o{ cliente_pacotes : "id_estabelecimento"
     clientes ||..o{ cliente_pacotes : "id_estabelecimento + id_cliente"
     pacotes ||..o{ cliente_pacotes : "id_estabelecimento + id_pacote"
+    estabelecimento ||..o{ planos_clientes : "id_estabelecimento"
+    planos_clientes ||--o{ plano_cliente_servicos : "id_estabelecimento + id_plano_cliente"
+    servicos ||--o{ plano_cliente_servicos : "id_estabelecimento + id_servico"
+    estabelecimento ||..o{ cliente_assinaturas : "id_estabelecimento"
+    clientes ||..o{ cliente_assinaturas : "id_estabelecimento + id_cliente"
+    planos_clientes ||..o{ cliente_assinaturas : "id_estabelecimento + id_plano_cliente"
+    estabelecimento ||..o{ cobrancas_assinatura_cliente : "id_estabelecimento"
+    cliente_assinaturas ||..o{ cobrancas_assinatura_cliente : "id_estabelecimento + id_cliente_assinatura"
     estabelecimento ||..o{ avaliacoes : "id_estabelecimento"
     agendamentos ||..o| avaliacoes : "id_estabelecimento + id_agendamento"
     clientes ||..o{ avaliacoes : "id_estabelecimento + id_cliente"
@@ -401,3 +472,5 @@ erDiagram
     estabelecimento ||..o{ filiais : "id_estabelecimento"
     usuarios ||..o{ sessoes_lembradas : "id_usuario"
     vinculos ||..o{ sessoes_lembradas : "id_vinculo"
+    estabelecimento ||--o{ whatsapp_conversas : "id_estabelecimento"
+    estabelecimento ||..o{ bot_opcoes : "id_estabelecimento"

@@ -14,10 +14,15 @@ DROP TABLE IF EXISTS `assinaturas`;
 DROP TABLE IF EXISTS `estabelecimento_plano`;
 DROP TABLE IF EXISTS `planos`;
 DROP TABLE IF EXISTS `avaliacoes`;
+DROP TABLE IF EXISTS `cobrancas_assinatura_cliente`;
+DROP TABLE IF EXISTS `cliente_assinaturas`;
+DROP TABLE IF EXISTS `plano_cliente_servicos`;
+DROP TABLE IF EXISTS `planos_clientes`;
 DROP TABLE IF EXISTS `cliente_pacotes`;
 DROP TABLE IF EXISTS `pacotes`;
 DROP TABLE IF EXISTS `fidelidade_movimentos`;
 DROP TABLE IF EXISTS `pagamentos`;
+DROP TABLE IF EXISTS `bot_opcoes`;
 DROP TABLE IF EXISTS `whatsapp_conversas`;
 DROP TABLE IF EXISTS `notificacoes`;
 DROP TABLE IF EXISTS `lista_espera`;
@@ -373,6 +378,7 @@ CREATE TABLE `agendamentos` (
   `data_atualizacao` datetime DEFAULT NULL ON UPDATE current_timestamp(),
   `grupo_recorrencia` char(36) DEFAULT NULL,
   `id_cliente_pacote` int(10) unsigned DEFAULT NULL,
+  `id_cliente_assinatura` int(10) unsigned DEFAULT NULL,
   `id_estabelecimento` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id_agendamento`),
   UNIQUE KEY `uk_estabelecimento_registro` (`id_estabelecimento`,`id_agendamento`),
@@ -448,9 +454,10 @@ CREATE TABLE pagamentos (
         id_agendamento INT UNSIGNED NOT NULL,
         tipo ENUM('sinal','integral') NOT NULL DEFAULT 'sinal',
         valor DECIMAL(10,2) NOT NULL,
-        metodo ENUM('pix','dinheiro','cartao','outro') NOT NULL DEFAULT 'pix',
+        metodo ENUM('pix','dinheiro','cartao','outro','boleto') NOT NULL DEFAULT 'pix',
         status ENUM('pendente','pago','cancelado','estornado','credito','retido') NOT NULL DEFAULT 'pendente',
         referencia VARCHAR(80) NULL,
+        cartao_final CHAR(4) NULL,
         data_pagamento DATETIME NULL,
         data_criacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id_pagamento),
@@ -509,6 +516,66 @@ CREATE TABLE cliente_pacotes (
         CONSTRAINT fk_cliente_pacote_empresa FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento(id_estabelecimento),
         CONSTRAINT fk_cliente_pacote_cliente_tenant FOREIGN KEY (id_estabelecimento,id_cliente) REFERENCES clientes(id_estabelecimento,id_cliente) ON DELETE CASCADE,
         CONSTRAINT fk_cliente_pacote_pacote_tenant FOREIGN KEY (id_estabelecimento,id_pacote) REFERENCES pacotes(id_estabelecimento,id_pacote)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Assinaturas que o estabelecimento vende aos clientes (AssinaturaCliente).
+CREATE TABLE planos_clientes (
+        id_plano_cliente INT UNSIGNED NOT NULL AUTO_INCREMENT,
+        id_estabelecimento INT UNSIGNED NOT NULL,
+        nome VARCHAR(120) NOT NULL,
+        descricao VARCHAR(500) NULL,
+        preco_mensal DECIMAL(10,2) NOT NULL,
+        desconto_percentual TINYINT UNSIGNED NOT NULL DEFAULT 0,
+        status ENUM('ativo','inativo') NOT NULL DEFAULT 'ativo',
+        data_criacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id_plano_cliente),
+        UNIQUE KEY uk_estabelecimento_plano_cliente (id_estabelecimento,id_plano_cliente),
+        CONSTRAINT fk_plano_cliente_empresa FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento(id_estabelecimento)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE plano_cliente_servicos (
+        id_estabelecimento INT UNSIGNED NOT NULL,
+        id_plano_cliente INT UNSIGNED NOT NULL,
+        id_servico INT UNSIGNED NOT NULL,
+        quantidade_mes SMALLINT UNSIGNED NULL,
+        PRIMARY KEY (id_estabelecimento,id_plano_cliente,id_servico),
+        CONSTRAINT fk_pcs_plano_tenant FOREIGN KEY (id_estabelecimento,id_plano_cliente) REFERENCES planos_clientes(id_estabelecimento,id_plano_cliente) ON DELETE CASCADE,
+        CONSTRAINT fk_pcs_servico_tenant FOREIGN KEY (id_estabelecimento,id_servico) REFERENCES servicos(id_estabelecimento,id_servico)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE cliente_assinaturas (
+        id_cliente_assinatura INT UNSIGNED NOT NULL AUTO_INCREMENT,
+        id_estabelecimento INT UNSIGNED NOT NULL,
+        id_cliente INT UNSIGNED NOT NULL,
+        id_plano_cliente INT UNSIGNED NOT NULL,
+        status ENUM('pendente','ativa','cancelada') NOT NULL DEFAULT 'pendente',
+        periodo_inicio DATE NULL,
+        periodo_fim DATE NULL,
+        data_cancelamento DATETIME NULL,
+        data_criacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id_cliente_assinatura),
+        UNIQUE KEY uk_estabelecimento_cliente_assinatura (id_estabelecimento,id_cliente_assinatura),
+        KEY idx_cliente_assinaturas (id_estabelecimento,id_cliente,status),
+        CONSTRAINT fk_cliente_assinatura_empresa FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento(id_estabelecimento),
+        CONSTRAINT fk_cliente_assinatura_cliente_tenant FOREIGN KEY (id_estabelecimento,id_cliente) REFERENCES clientes(id_estabelecimento,id_cliente) ON DELETE CASCADE,
+        CONSTRAINT fk_cliente_assinatura_plano_tenant FOREIGN KEY (id_estabelecimento,id_plano_cliente) REFERENCES planos_clientes(id_estabelecimento,id_plano_cliente)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE cobrancas_assinatura_cliente (
+        id_cobranca INT UNSIGNED NOT NULL AUTO_INCREMENT,
+        id_estabelecimento INT UNSIGNED NOT NULL,
+        id_cliente_assinatura INT UNSIGNED NOT NULL,
+        valor DECIMAL(10,2) NOT NULL,
+        status ENUM('pendente','pago','cancelado') NOT NULL DEFAULT 'pendente',
+        referencia VARCHAR(40) NULL,
+        metodo VARCHAR(6) NULL,
+        cartao_final CHAR(4) NULL,
+        data_pagamento DATETIME NULL,
+        data_criacao DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id_cobranca),
+        KEY idx_cobrancas_assinatura (id_estabelecimento,id_cliente_assinatura,status),
+        CONSTRAINT fk_cobranca_assinatura_empresa FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento(id_estabelecimento),
+        CONSTRAINT fk_cobranca_assinatura_tenant FOREIGN KEY (id_estabelecimento,id_cliente_assinatura) REFERENCES cliente_assinaturas(id_estabelecimento,id_cliente_assinatura) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE avaliacoes (
@@ -644,7 +711,7 @@ CREATE TABLE `tentativas_acesso` (
 CREATE TABLE `configuracoes` (
   `id_configuracao` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `chave` varchar(60) NOT NULL,
-  `valor` varchar(255) NOT NULL,
+  `valor` varchar(1000) NOT NULL,
   `descricao` varchar(255) DEFAULT NULL,
   `id_estabelecimento` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id_configuracao`),
@@ -765,4 +832,19 @@ CREATE TABLE `whatsapp_conversas` (
   `atualizado_em` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id_estabelecimento`,`numero`),
   CONSTRAINT `fk_whatsapp_conversas_empresa` FOREIGN KEY (`id_estabelecimento`) REFERENCES `estabelecimento` (`id_estabelecimento`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Menu personalizado do bot de WhatsApp (BotMenu).
+CREATE TABLE `bot_opcoes` (
+  id_bot_opcao       INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  id_estabelecimento INT UNSIGNED NOT NULL,
+  tipo               ENUM('marcar','meus','cancelar','servicos','equipe','resposta') NOT NULL,
+  rotulo             VARCHAR(60) NOT NULL,
+  resposta           VARCHAR(1000) DEFAULT NULL,
+  ordem              SMALLINT NOT NULL DEFAULT 0,
+  ativo              TINYINT(1) NOT NULL DEFAULT 1,
+  data_criacao       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_bot_opcao),
+  KEY idx_bot_opcoes_empresa (id_estabelecimento, ordem),
+  CONSTRAINT fk_bot_opcao_empresa FOREIGN KEY (id_estabelecimento) REFERENCES estabelecimento (id_estabelecimento) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

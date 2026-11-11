@@ -211,6 +211,17 @@ verificar('o destinatario leva nome e e-mail', $captura['corpo']['to'][0] ?? nul
 verificar('o assunto vai como esta', $captura['corpo']['subject'] ?? null, 'Assunto pela API');
 verificar('as duas versões vão no corpo', ($captura['corpo']['textContent'] ?? '') === 'texto puro' && ($captura['corpo']['htmlContent'] ?? '') === '<p>html</p>', true);
 
+// Enter colado no fim da chave, no painel da hospedagem: a Brevo respondia "Input must be a valid JSON object".
+@unlink($capturaApi);
+putenv("AGENDEI_EMAIL_API_CHAVE=xkeysib-chave-de-teste\n");
+putenv("AGENDEI_EMAIL_REMETENTE= avisos@agendei.test \n");
+verificar('chave com quebra de linha no fim ainda envia', Email::enviar('ana@teste.local', 'Assunto', 'texto', null, 'Ana'), true);
+$captura = json_decode((string) @file_get_contents($capturaApi), true) ?: [];
+verificar('a chave chega sem a quebra de linha', $captura['chave'] ?? null, 'xkeysib-chave-de-teste');
+verificar('o remetente chega sem espaços', $captura['corpo']['sender']['email'] ?? null, 'avisos@agendei.test');
+putenv('AGENDEI_EMAIL_API_CHAVE=xkeysib-chave-de-teste');
+putenv('AGENDEI_EMAIL_REMETENTE=avisos@agendei.test');
+
 @unlink($capturaApi);
 putenv('AGENDEI_EMAIL_API_CHAVE=chave-errada');
 $enviou = Email::enviar('ana@teste.local', 'Assunto', 'texto');
