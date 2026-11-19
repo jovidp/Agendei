@@ -30,6 +30,31 @@ erDiagram
         integer id_agendamento FK,UK
         integer pontos
     }
+    planos_clientes {
+        integer id_plano_cliente PK,UK
+        integer id_estabelecimento FK,UK
+        varchar nome
+        varchar status
+    }
+    plano_cliente_servicos {
+        integer id_estabelecimento PK,FK
+        integer id_plano_cliente PK,FK
+        integer id_servico PK,FK
+    }
+    cliente_assinaturas {
+        integer id_cliente_assinatura PK,UK
+        integer id_estabelecimento FK,UK
+        integer id_cliente FK
+        integer id_plano_cliente FK
+        varchar status
+    }
+    cobrancas_assinatura_cliente {
+        integer id_cobranca PK
+        integer id_estabelecimento FK
+        integer id_cliente_assinatura FK
+        numeric valor
+        varchar status
+    }
     clientes {
         integer id_cliente PK,UK
         integer id_vinculo FK,UK
@@ -79,3 +104,11 @@ erDiagram
     estabelecimento ||..o{ cliente_pacotes : "id_estabelecimento"
     clientes ||..o{ cliente_pacotes : "id_estabelecimento + id_cliente"
     pacotes ||..o{ cliente_pacotes : "id_estabelecimento + id_pacote"
+    estabelecimento ||..o{ planos_clientes : "id_estabelecimento"
+    planos_clientes ||--o{ plano_cliente_servicos : "id_estabelecimento + id_plano_cliente"
+    servicos ||--o{ plano_cliente_servicos : "id_estabelecimento + id_servico"
+    estabelecimento ||..o{ cliente_assinaturas : "id_estabelecimento"
+    clientes ||..o{ cliente_assinaturas : "id_estabelecimento + id_cliente"
+    planos_clientes ||..o{ cliente_assinaturas : "id_estabelecimento + id_plano_cliente"
+    estabelecimento ||..o{ cobrancas_assinatura_cliente : "id_estabelecimento"
+    cliente_assinaturas ||..o{ cobrancas_assinatura_cliente : "id_estabelecimento + id_cliente_assinatura"

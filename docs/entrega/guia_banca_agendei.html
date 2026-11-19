@@ -98,7 +98,7 @@
     <h1>1. Visão geral do projeto</h1>
     <div class="resumo">
       <strong>Apresentação em 30 segundos:</strong><br>
-      O Agendei é um sistema web para gerenciamento de agendamentos. O cliente escolhe serviço, unidade, profissional, data e horário. O sistema calcula a disponibilidade com base no expediente, duração do serviço, bloqueios e reservas existentes. O administrador gerencia usuários, profissionais, serviços e relatórios. A aplicação foi desenvolvida em PHP, HTML, CSS e JavaScript, com PDO para comunicação com MySQL/MariaDB ou PostgreSQL.
+      O Agendei é um sistema web para gerenciamento de agendamentos. O cliente escolhe serviço, unidade, profissional, data e horário. O sistema calcula a disponibilidade com base no expediente, duração do serviço, bloqueios e reservas existentes. O administrador gerencia usuários, profissionais, serviços e relatórios. A empresa contrata um plano da plataforma e pode vender assinaturas aos próprios clientes, com pagamento por Pix, boleto ou cartão em modo de demonstração. A aplicação foi desenvolvida em PHP, HTML, CSS e JavaScript, com PDO para comunicação com MySQL/MariaDB ou PostgreSQL.
     </div>
 
     <h2>Fluxo técnico</h2>
@@ -119,7 +119,7 @@ Banco de dados</div>
       <thead><tr><th>Perfil</th><th>Responsabilidade</th><th>Escopo acadêmico</th></tr></thead>
       <tbody>
         <tr><td>Cliente</td><td>Realiza, consulta e cancela os próprios agendamentos.</td><td>Usuário comum.</td></tr>
-        <tr><td>Administrador local</td><td>Gerencia o estabelecimento, equipe, serviços, agenda e relatórios.</td><td>Usuário master.</td></tr>
+        <tr><td>Administrador local</td><td>Gerencia o estabelecimento, equipe, serviços, agenda, relatórios, assinaturas de clientes e bot do WhatsApp.</td><td>Usuário master.</td></tr>
         <tr><td>Profissional</td><td>Consulta sua agenda, define horários e bloqueios.</td><td>Recurso adicional.</td></tr>
         <tr><td>Master global</td><td>Administra empresas, planos, segurança e saúde da plataforma.</td><td>Recurso adicional.</td></tr>
       </tbody>
@@ -139,7 +139,7 @@ Banco de dados</div>
 
     <div class="pergunta"><h3><span class="numero">6.</span> Por que utilizar PDO?</h3><p>PDO oferece uma interface padronizada de conexão, consultas preparadas, erros por exceções e suporte a mais de um banco. As consultas preparadas reduzem o risco de SQL Injection ao separar os dados do comando SQL.</p></div>
 
-    <div class="pergunta"><h3><span class="numero">7.</span> Quais são as principais tabelas?</h3><p><code>usuarios</code>, <code>clientes</code>, <code>profissionais</code>, <code>servicos</code>, <code>profissional_servico</code>, <code>horarios_profissionais</code>, <code>bloqueios_agenda</code>, <code>agendamentos</code>, <code>filiais</code> e <code>logs_autenticacao</code>. O arquivo MySQL atual cria 26 tabelas.</p></div>
+    <div class="pergunta"><h3><span class="numero">7.</span> Quais são as principais tabelas?</h3><p><code>usuarios</code>, <code>clientes</code>, <code>profissionais</code>, <code>servicos</code>, <code>profissional_servico</code>, <code>horarios_profissionais</code>, <code>bloqueios_agenda</code>, <code>agendamentos</code>, <code>filiais</code>, <code>vinculos</code> e <code>logs_autenticacao</code>. Os dois scripts, <code>banco.sql</code> e <code>banco_postgres.sql</code>, criam 34 tabelas, com 341 colunas e 73 chaves estrangeiras.</p></div>
 
     <div class="pergunta"><h3><span class="numero">8.</span> Por que existe a tabela profissional_servico?</h3><p>Porque um profissional pode executar vários serviços e um serviço pode ser executado por vários profissionais. É um relacionamento muitos-para-muitos, resolvido por uma tabela associativa.</p></div>
 
@@ -187,32 +187,46 @@ Banco de dados</div>
 
     <div class="pergunta"><h3><span class="numero">30.</span> O que acontece se uma integração externa falhar?</h3><p>O projeto possui alternativas: endereço manual quando o ViaCEP falha; orientação quando e-mail não está configurado; fila ou envio manual para WhatsApp; e ocultação do botão Google quando as credenciais não existem.</p></div>
 
-    <div class="pergunta"><h3><span class="numero">31.</span> Como o sistema foi testado?</h3><p>Há testes de validação, autenticação, segurança, Google, multiestabelecimento, cadastros, lembretes, filiais e administração master. Quatro conjuntos independentes do banco principal foram executados nesta análise, totalizando 221 verificações aprovadas.</p></div>
+    <div class="pergunta"><h3><span class="numero">31.</span> Como o sistema foi testado?</h3><p>A pasta <code>tests/</code> tem 25 suítes: validação, autenticação, 2FA, segurança, Google, multiestabelecimento, cadastros, lembretes, filiais, master, assinaturas de clientes, pagamento avulso, bot e e-mail. Em 19/11/2026 todas passaram num banco MariaDB local descartável: 2.259 verificações contadas, além de duas suítes que informam apenas OK.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">32.</span> Como funcionam os planos e o pagamento da empresa?</h3><p>Há três planos (Básico R$ 79, Profissional R$ 149 e Premium R$ 249), editados pelo master. A empresa nova começa a demonstração no Profissional e, ao contratar, escolhe Pix, boleto ou cartão. Recursos fora do plano ficam travados, com aviso do plano que os inclui.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">33.</span> O que é a assinatura de clientes?</h3><p>O estabelecimento cria planos com serviços incluídos por mês e desconto nos demais. O cliente assina em Meus benefícios; o agendamento coberto sai com valor zero e os outros com desconto. A renovação é feita pela tarefa diária (<code>tarefas.php</code>).</p></div>
+
+    <div class="pergunta"><h3><span class="numero">34.</span> Como funciona o bot do WhatsApp?</h3><p>No plano Premium, <code>api/whatsapp.php</code> recebe as mensagens da Evolution API e o <code>Bot</code> responde com um menu numerado: marcar, listar e cancelar horários com as mesmas regras do site, consultar serviços e preços e falar com a equipe. O administrador personaliza textos e opções. O cliente é reconhecido pelo celular do cadastro.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">35.</span> Como o e-mail é confirmado e a senha recuperada?</h3><p>Por um código de seis dígitos válido por 15 minutos, com cinco tentativas, uso único e reenvio a cada 60 segundos. Só o HMAC do código fica na sessão. A recuperação manda código e link e não revela se o e-mail tem conta.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">36.</span> O que o sistema faz pela LGPD e pelos requisitos legais?</h3><p>Publica Política de Privacidade, Termos de Uso, Cookies e Cancelamento e reembolso; grava o aceite dos termos com versão e data; mostra aviso de cookies; permite arrependimento em sete dias na assinatura; aplica retenção de dados na tarefa diária; e tem rotina de backup.</p></div>
+
+    <div class="pergunta"><h3><span class="numero">37.</span> Como o banco de produção é protegido no Supabase?</h3><p>O RLS (Row Level Security) está ligado em todas as tabelas e não há políticas. Assim, a API pública do Supabase não acessa nenhum dado. O sistema conecta como dono das tabelas, pelo PDO, e continua funcionando normalmente.</p></div>
 
     <h1 class="quebra">3. Perguntas críticas e respostas honestas</h1>
 
-    <div class="atencao"><h3>Quantas tabelas existem?</h3><p>O arquivo <code>banco.sql</code> atual cria <strong>26 tabelas</strong>. O relatório informa 20 e a documentação do Supabase informa 25, portanto esses documentos precisam ser atualizados.</p></div>
+    <div class="atencao"><h3>Quantas tabelas existem?</h3><p><strong>34 tabelas</strong>, tanto no <code>banco.sql</code> (MySQL/MariaDB) quanto no <code>banco_postgres.sql</code>, com 341 colunas e 73 chaves estrangeiras. A documentação e o dicionário de dados foram atualizados em 19/11/2026 com esses números.</p></div>
 
-    <div class="atencao"><h3>O sistema garante 100% que nunca haverá duas reservas simultâneas?</h3><p>No MySQL/InnoDB, a transação e o bloqueio reduzem a condição de corrida. Para uma garantia uniforme em todos os bancos, especialmente PostgreSQL, seria adequado acrescentar um bloqueio específico por agenda ou uma restrição própria do banco. No PostgreSQL, <code>FOR UPDATE</code> não bloqueia uma linha que ainda não existe.</p></div>
+    <div class="atencao"><h3>O sistema garante 100% que nunca haverá duas reservas simultâneas?</h3><p>A reserva roda numa transação que primeiro trava a linha do profissional com <code>SELECT ... FOR UPDATE</code> e só depois revalida o conflito. Isso foi necessário porque, no PostgreSQL, <code>FOR UPDATE</code> não bloqueia um horário livre (não existe linha para travar). Com a trava no profissional, duas reservas simultâneas para a mesma agenda são processadas uma de cada vez, em qualquer um dos bancos. Mesmo assim, não diga “100%”: diga que o conflito é revalidado dentro da transação, com a agenda travada.</p></div>
 
-    <div class="atencao"><h3>Por que a senha possui exatamente oito letras?</h3><p>Essa regra veio da especificação acadêmica. Para produção, uma senha mais longa ou frase-senha seria mais segura. Também deve ser padronizada a recuperação de senha, que atualmente aceita uma regra diferente.</p></div>
+    <div class="atencao"><h3>Por que a senha possui exatamente oito letras?</h3><p>Essa regra veio da especificação acadêmica. Para produção, uma senha mais longa ou frase-senha seria mais segura. Atenção: a redefinição pelo e-mail e as senhas criadas pelo master aceitam qualquer senha com seis caracteres ou mais, enquanto o cadastro do cliente exige exatamente oito letras. Se perguntarem, admita que essa padronização ainda está pendente.</p></div>
 
     <div class="atencao"><h3>Existe alguma limitação no login Google?</h3><p>A implementação verifica <code>state</code>, emissor, público, validade e e-mail confirmado. Uma implementação OpenID Connect mais rigorosa também deve validar criptograficamente a assinatura do <code>id_token</code>, usar <code>nonce</code> e considerar PKCE.</p></div>
 
-    <div class="resposta-chave"><h3>Qual melhoria você faria primeiro?</h3><p>“Eu começaria padronizando as regras de senha e a documentação. Depois reforçaria a concorrência dos agendamentos no PostgreSQL e a validação completa do token do Google. Em seguida ampliaria os testes de integração e automatizaria sua execução.”</p></div>
+    <div class="atencao"><h3>Os pagamentos são reais?</h3><p>Não, estão em modo de demonstração. O Pix gera um BR Code e um QR válidos, mas só recebe dinheiro com uma chave real configurada em <code>AGENDEI_PIX_CHAVE</code>. O boleto usa o banco fictício 999 e o cartão não é cobrado: o navegador confere número, validade e CVV, e só os quatro últimos dígitos chegam ao servidor. A confirmação do pagamento é manual. Para produção, seria preciso integrar um gateway de pagamento.</p></div>
+
+    <div class="atencao"><h3>O bot e os e-mails funcionam na apresentação?</h3><p>Dependem de serviços externos: o bot precisa de uma instância da Evolution API, e os e-mails, de um SMTP configurado. Sem eles, o sistema mostra orientação, e os lembretes ficam no modo manual. Não prometa uma demonstração ao vivo sem ter testado antes.</p></div>
+
+    <div class="resposta-chave"><h3>Qual melhoria você faria primeiro?</h3><p>“Eu começaria padronizando as regras de senha. Depois integraria um gateway de pagamento real e completaria a validação do token do Google com assinatura, <code>nonce</code> e PKCE. Em seguida automatizaria os testes de integração também no PostgreSQL.”</p></div>
 
     <h1 class="quebra">4. Checklist antes da apresentação</h1>
     <ul class="checklist">
-      <li>Corrigir “20 tabelas” para <strong>26</strong> no relatório.</li>
-      <li>Corrigir “25 tabelas” na documentação do Supabase.</li>
-      <li>Atualizar o relatório para mencionar o suporte a PostgreSQL.</li>
-      <li>Atualizar a descrição e a quantidade das suítes de teste.</li>
-      <li>Atualizar o trecho que trata o WhatsApp automático como recurso futuro.</li>
-      <li>Padronizar a regra de senha da recuperação.</li>
-      <li>Saber explicar que a arquitetura é em camadas, mas não MVC formal.</li>
-      <li>Não afirmar que um mecanismo é “100% inviolável”.</li>
+      <li>Abrir o site alguns minutos antes: o Render gratuito “dorme” e a primeira página levou cerca de 18 segundos.</li>
+      <li>Ter dados de demonstração preparados (clientes, serviços, horários livres) antes de começar.</li>
       <li>Demonstrar o fluxo completo: login, serviço, filial, profissional, data, horário e confirmação.</li>
-      <li>Ter dados de demonstração preparados antes de iniciar a apresentação.</li>
+      <li>Mostrar a contratação do plano com o QR do Pix, avisando que o pagamento é de demonstração.</li>
+      <li>Saber explicar que a arquitetura é em camadas, mas não MVC formal.</li>
+      <li>Saber explicar a trava do profissional na reserva e por que ela existe no PostgreSQL.</li>
+      <li>Não afirmar que um mecanismo é “100% inviolável”.</li>
+      <li>Lembrar a pendência da regra de senha na redefinição pelo e-mail.</li>
     </ul>
 
     <h2>O que você precisa dominar</h2>
@@ -228,7 +242,7 @@ Banco de dados</div>
 
     <div class="resumo"><strong>Frase final sugerida:</strong><br>“O principal diferencial técnico do projeto é que o horário exibido na interface não é tratado como garantia. No momento da confirmação, o servidor consulta novamente o banco, revalida as regras e só então grava o agendamento dentro de uma transação.”</div>
 
-    <p class="pequeno">Documento preparado a partir da implementação do projeto Agendei em setembro de 2026.</p>
+    <p class="pequeno">Documento preparado a partir da implementação do projeto Agendei em setembro de 2026 e atualizado em 19/11/2026.</p>
   </main>
 </body>
 </html>

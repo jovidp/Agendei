@@ -1,5 +1,6 @@
 """Gera DERs a partir do esquema extraído e captura somente telas públicas."""
 import json
+import sys
 import urllib.request
 from pathlib import Path
 from playwright.sync_api import sync_playwright
@@ -13,8 +14,8 @@ GROUPS = [
     ('01_nucleo', 'Núcleo, empresas e perfis', ['estabelecimento','usuarios','vinculos','clientes','profissionais','administradores','filiais','configuracoes']),
     ('02_disponibilidade', 'Catálogo e disponibilidade', ['servicos','profissional_servico','horarios_profissionais','bloqueios_agenda','profissionais','usuarios','estabelecimento']),
     ('03_reservas', 'Reserva e seus participantes', ['agendamentos','clientes','profissionais','servicos','usuarios','estabelecimento','filiais']),
-    ('04_atendimento', 'Espera, notificações e avaliações', ['lista_espera','notificacoes','avaliacoes','agendamentos','clientes','profissionais','servicos','usuarios','estabelecimento']),
-    ('05_beneficios', 'Pacotes, pagamentos e fidelidade', ['pacotes','cliente_pacotes','pagamentos','fidelidade_movimentos','clientes','servicos','agendamentos','estabelecimento']),
+    ('04_atendimento', 'Espera, notificações, avaliações e bot', ['lista_espera','notificacoes','avaliacoes','bot_opcoes','whatsapp_conversas','agendamentos','clientes','profissionais','servicos','usuarios','estabelecimento']),
+    ('05_beneficios', 'Pacotes, pagamentos, fidelidade e assinaturas de clientes', ['pacotes','cliente_pacotes','pagamentos','fidelidade_movimentos','planos_clientes','plano_cliente_servicos','cliente_assinaturas','cobrancas_assinatura_cliente','clientes','servicos','agendamentos','estabelecimento']),
     ('06_plataforma', 'Planos e assinatura da empresa', ['planos','estabelecimento_plano','assinaturas','estabelecimento']),
     ('07_seguranca', 'Acesso, sessões e auditoria', ['administradores_master','logs_master','tentativas_acesso','logs_autenticacao','sessoes_lembradas','usuarios','vinculos','estabelecimento']),
 ]
@@ -64,6 +65,8 @@ with sync_playwright() as p:
         (ROOT / f'der_{name}.mmd').write_text(text,encoding='utf-8')
         render(page,text,f'der_{name}')
     render(page,(ROOT/'der_pgsql_completo.mmd').read_text(encoding='utf-8'),'der_postgres_completo')
+    if '--so-der' in sys.argv:  # recria só os diagramas, sem servidor local para as capturas
+        b.close(); raise SystemExit
     shots=[]
     for name,path in [('inicio','index.php'),('entrada','entrar.php'),('cadastro','cadastro.php'),('cadastro_empresa','cadastro_empresa.php')]:
         for mode,w,h in [('desktop',1366,900),('celular',390,844)]:

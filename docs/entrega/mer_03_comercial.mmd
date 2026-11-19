@@ -28,13 +28,31 @@ flowchart TB
     R8 ---|0..N| D
     E ---|1| R9{"Possui estado comercial"}
     R9 ---|0..1| T
+    K["PLANO DO CLIENTE"]
+    M["ASSINATURA DO CLIENTE"]
+    B["COBRANÇA DA ASSINATURA"]
+    E ---|1| R10{"Oferece"}
+    R10 ---|0..N| K
+    K ---|0..N| R11{"Inclui por mês"}
+    R11 ---|0..N| S
+    C ---|1| R12{"Assina"}
+    R12 ---|0..N| M
+    K ---|1| R13{"É assinado em"}
+    R13 ---|0..N| M
+    M ---|1| R14{"Gera"}
+    R14 ---|0..N| B
+    M ---|0..1| R15{"Cobre"}
+    R15 ---|0..N| A
     Q --- AQ(["Créditos • validade • pagamento"])
     G --- AG(["Tipo • método • valor • situação"])
     F --- AF(["Pontos • descrição"])
-    L --- AL(["Nome • limites de utilização"])
-    class C,S,P,Q,A,G,F,E,L,D,T entity
-    class R1,R2,R3,R4,R5,R6,R7,R8,R9 relationship
-    class AQ,AG,AF,AL attribute
+    L --- AL(["Nome • preço • limites • benefícios"])
+    K --- AK(["Nome • preço mensal • desconto"])
+    M --- AM(["Situação • período"])
+    B --- AB(["Referência • método • valor • situação"])
+    class C,S,P,Q,A,G,F,E,L,D,T,K,M,B entity
+    class R1,R2,R3,R4,R5,R6,R7,R8,R9,R10,R11,R12,R13,R14,R15 relationship
+    class AQ,AG,AF,AL,AK,AM,AB attribute
 
     classDef entity fill:#e9f3fa,stroke:#27617f,stroke-width:2px,color:#153b50;
     classDef relationship fill:#fff3d6,stroke:#ad8031,stroke-width:1.5px,color:#533b12;

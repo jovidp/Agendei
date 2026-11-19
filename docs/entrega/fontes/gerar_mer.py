@@ -32,13 +32,21 @@ MODELS = [
     R6 ---|0..N| F
     E ---|1| R7{"Define"}
     R7 ---|0..N| Q
-    U --- AU(["Nome • e-mail • contatos"])
+    O["OPÇÃO DO BOT"]
+    W["CONVERSA DO WHATSAPP"]
+    E ---|1| R8{"Personaliza"}
+    R8 ---|0..N| O
+    E ---|1| R9{"Atende pelo bot"}
+    R9 ---|0..N| W
+    U --- AU(["Nome • e-mail • contatos • e-mail confirmado"])
     V --- AV(["Tipo • situação • login local"])
     E --- AE(["Nome • endereço • identidade visual"])
     Q --- AQ(["Chave • valor"])
-    class U,E,V,C,P,A,F,Q entity
-    class R1,R2,R3,R4,R5,R6,R7 relationship
-    class AU,AV,AE,AQ attribute
+    O --- AO(["Rótulo • resposta • ordem"])
+    W --- AW(["Número • etapa"])
+    class U,E,V,C,P,A,F,Q,O,W entity
+    class R1,R2,R3,R4,R5,R6,R7,R8,R9 relationship
+    class AU,AV,AE,AQ,AO,AW attribute
 '''),
     ('mer_02_agendamento', 'Serviços, agenda e atendimento', '''flowchart TB
     C["CLIENTE"]
@@ -108,13 +116,31 @@ MODELS = [
     R8 ---|0..N| D
     E ---|1| R9{"Possui estado comercial"}
     R9 ---|0..1| T
+    K["PLANO DO CLIENTE"]
+    M["ASSINATURA DO CLIENTE"]
+    B["COBRANÇA DA ASSINATURA"]
+    E ---|1| R10{"Oferece"}
+    R10 ---|0..N| K
+    K ---|0..N| R11{"Inclui por mês"}
+    R11 ---|0..N| S
+    C ---|1| R12{"Assina"}
+    R12 ---|0..N| M
+    K ---|1| R13{"É assinado em"}
+    R13 ---|0..N| M
+    M ---|1| R14{"Gera"}
+    R14 ---|0..N| B
+    M ---|0..1| R15{"Cobre"}
+    R15 ---|0..N| A
     Q --- AQ(["Créditos • validade • pagamento"])
     G --- AG(["Tipo • método • valor • situação"])
     F --- AF(["Pontos • descrição"])
-    L --- AL(["Nome • limites de utilização"])
-    class C,S,P,Q,A,G,F,E,L,D,T entity
-    class R1,R2,R3,R4,R5,R6,R7,R8,R9 relationship
-    class AQ,AG,AF,AL attribute
+    L --- AL(["Nome • preço • limites • benefícios"])
+    K --- AK(["Nome • preço mensal • desconto"])
+    M --- AM(["Situação • período"])
+    B --- AB(["Referência • método • valor • situação"])
+    class C,S,P,Q,A,G,F,E,L,D,T,K,M,B entity
+    class R1,R2,R3,R4,R5,R6,R7,R8,R9,R10,R11,R12,R13,R14,R15 relationship
+    class AQ,AG,AF,AL,AK,AM,AB attribute
 '''),
 ]
 

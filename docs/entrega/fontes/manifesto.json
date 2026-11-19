@@ -1,26 +1,30 @@
 {
-  "arquivos_codigo": 200,
-  "arquivos_documentacao": 63,
+  "arquivos_codigo": 231,
+  "arquivos_documentacao": 67,
   "conteudo": [
     {
       "arquivo": "Agendei/.dockerignore",
-      "sha256": "59b82880dc146652607c9008e73ad25e8961dc5aaac419e521b5d9eea4890c6a"
+      "sha256": "d5d83ef9ebf794ed610a379ea8606feabd7ca16cb39ef355bf6f519d5553ce1c"
     },
     {
       "arquivo": "Agendei/.editorconfig",
-      "sha256": "2c5c493bc55e970e1944bbee77a8ade34359e40070aa2d2e31244734df02e17a"
+      "sha256": "44b49e4b8d7604ca75caf05929c24aad136ea913f3ac9cbdb6f2ef2ace4c4cd6"
     },
     {
       "arquivo": "Agendei/.gitattributes",
-      "sha256": "bff3f3621afe2f6d8c6cd2d27a0d59edea5d37752bab470200d12101407634c5"
+      "sha256": "15758d9423bb7bc9f4db897a2c05eede2cc68623e4995cf82a814f95feb934f5"
     },
     {
       "arquivo": "Agendei/.gitignore",
-      "sha256": "d9143fc60148207a96dec3b445eeb8b813c73beecbe1cb213b5c21667b220888"
+      "sha256": "69c3e73adbef017f1b3c1eb73d44172df7dd199b3add279a5bec6bc93be9ad11"
     },
     {
       "arquivo": "Agendei/.htaccess",
-      "sha256": "a23837bcd940c7c51367997537da499189234d1af8558881103da2f01db0dc8f"
+      "sha256": "9ba2f63fde156b4c429ca392cb089168889588c2e65968270bd0c6ecb68ca006"
+    },
+    {
+      "arquivo": "Agendei/BACKUP.md",
+      "sha256": "16696ce7e9b7322b68038ba23b61068ef6cf105623bd4780d1b31178f8217429"
     },
     {
       "arquivo": "Agendei/DEPLOY.md",
@@ -35,140 +39,164 @@
       "sha256": "12cd1bb37f6551837a37ac09dc1ec2326d38f821a67e1e977091dac4ff65b9d3"
     },
     {
+      "arquivo": "Agendei/INCIDENTES.md",
+      "sha256": "fda157f801c551b65e54fa50eee9d4f609dd645ff66a8bdf8b79cc3777046122"
+    },
+    {
       "arquivo": "Agendei/LEIAME.md",
-      "sha256": "9c7499c830d56b276a8a35ebe398785819367d64c0a1d013e7d059835510a873"
+      "sha256": "1341cda755565fdf5b9ab3fe728f0d0e471f633c717eea142ed4a9321844e968"
     },
     {
       "arquivo": "Agendei/MARCA.md",
-      "sha256": "6748c13e675355e407ec7cc19b944346d9f7e511e6b4068daaae175f536f6d37"
+      "sha256": "3a63cb6efa57ce535d96a14dc076099e4baaceda81e9e6c183f172580ca2fd49"
     },
     {
       "arquivo": "Agendei/MER_DER_PROMPT.md",
-      "sha256": "f4848a6860b2e3bbf0fb84c3f83a78d543ca60cc36df15f0d54381524d9f260c"
+      "sha256": "76ed0202b21f1fdff07e1c527dd9e5ca99f84b63171a57d07a00e628408f8a7c"
+    },
+    {
+      "arquivo": "Agendei/README.md",
+      "sha256": "ceb853030c4c16a562e6d448f7aa73394bbe72962a7687d62c00b64a79d55290"
     },
     {
       "arquivo": "Agendei/RELATORIO.md",
-      "sha256": "6bc6266166c5266f53cb7ead6bf52b89235a8f4e42fe50522128f149105b410a"
+      "sha256": "b81ca7800d0b0f75ca24ef21795ef2e23544dcd913eb50b89775f6229c346a9e"
     },
     {
       "arquivo": "Agendei/SEGURANCA.md",
-      "sha256": "0ac17469380239c9e7ed747a607ddae8f47de89811e97113c426fa19ab2033e9"
+      "sha256": "0644c0c4859776598f5131b2331e25d9ff151cc43ee25868c94fc64c641cb7bc"
     },
     {
       "arquivo": "Agendei/SUPABASE.md",
       "sha256": "1d9a958bd930e02c4b996afe8b06a92331318821bc139e9f8984159ecfec4ce1"
     },
     {
+      "arquivo": "Agendei/TELAS.md",
+      "sha256": "af0a8044bbdfb332f4cb8cd501d0a69f1d017ef30fd651abc48f1997874fa8cb"
+    },
+    {
       "arquivo": "Agendei/admin/agenda.php",
-      "sha256": "5b3a5522c8b8e0d5a8a6a41627cee998f9e33563ef2dbd18353120ae1d7f43a1"
+      "sha256": "e32c682e1f955047d7e35175a5e710e75de681eaafa9b27d717f206594eb94ec"
     },
     {
       "arquivo": "Agendei/admin/agendamentos.php",
-      "sha256": "78c15e9c96b61602b86fc41e9bd97251060a3858ae1435ca81d1e9e865e49090"
+      "sha256": "1274f17c9ea8201b91d8018cc9cb2ddf6f46120f82a9cdb32908282409bf6dcb"
     },
     {
       "arquivo": "Agendei/admin/aparencia.php",
-      "sha256": "e1db95ce1275737b8e928bffec8731c7c7b448517cf6b5311c7978de13e3ad87"
+      "sha256": "3bfb7a0eb025d41c36afbad6f2ff155a5a18c27db0aeb0ab599db9721e24b318"
+    },
+    {
+      "arquivo": "Agendei/admin/assinaturas_clientes.php",
+      "sha256": "3f5e7c005479a8a6e7291858357a7bc1937095e8e990bda7579d0f1a91724ea1"
+    },
+    {
+      "arquivo": "Agendei/admin/bot.php",
+      "sha256": "87c8718ef3192b2bb7c9127d0838fe5b5228f6665f816fc18eb7104d2c29962c"
     },
     {
       "arquivo": "Agendei/admin/clientes.php",
-      "sha256": "d47d96320a8f91437bb631e57b00eaa026b8470b95547b88a28a5330ca763818"
+      "sha256": "5f44f99b84c88c2716950603ef658774028b5e95ac50298455f298f57fb5b54e"
     },
     {
       "arquivo": "Agendei/admin/configuracoes.php",
-      "sha256": "03b2cac69a8bedceb352f5f72175f6e74e60ae5ae92bb1678e8b01be6b10b72d"
+      "sha256": "0bd0e8ae49179800706b38d0362ac1bfba79427e2774c6bd485142241e54053d"
     },
     {
       "arquivo": "Agendei/admin/dashboard.php",
-      "sha256": "a1e553b4f3a68271b5828f2b5a1bc3745e8e8083a48d2cbcc563f76c8a05fcf0"
+      "sha256": "8930279ed119c3d21eadc89bbbad2a5047586a06af78a9839dc87ff14d9ae6b0"
     },
     {
       "arquivo": "Agendei/admin/diferenciais.php",
-      "sha256": "61951ed651db906ea03967cd4f916e263164fc376aaf2b126a3e08f49811c14e"
+      "sha256": "731cc06f833788e684076251519d9e76e0ef7a2e54cb42f750f620edfd9bda4e"
     },
     {
       "arquivo": "Agendei/admin/filiais.php",
-      "sha256": "6af7aa3e07388183b2564a49856a940a66fbbf6e5cb1ec7a475928dcbc0889f2"
+      "sha256": "353b13d8b2f74c3aa647f84e816968b3024b7bccaa10157a059fd73b5ba49327"
     },
     {
       "arquivo": "Agendei/admin/horarios.php",
-      "sha256": "bf90bf361765434f9a23da6d71e506f413520620fdc1dcd882f24c4693f0df00"
+      "sha256": "c9c06b208de037822878d6c8ceffcc45793af34e220a975c6aa63f298da33c66"
     },
     {
       "arquivo": "Agendei/admin/logs.php",
-      "sha256": "e4868d7c96f715cb9f787ec58af690b05b8fc11b614b4f57c79f7ee05c925794"
+      "sha256": "5d09c120ae7625417ea861eef6a1b8fd4b839ba42bfed529db1caf762c0539ff"
     },
     {
       "arquivo": "Agendei/admin/profissionais.php",
-      "sha256": "3d2726fb2f3a9a6f5d055f9598fa30a309137d78d3cb1078ce1ae94a57c06e4c"
+      "sha256": "e752ab5e08b1af81742ac03aa4846900a2e1cceaa914b4e21ba310b303c2a323"
     },
     {
       "arquivo": "Agendei/admin/relatorios.php",
-      "sha256": "b1b778b7f603c9e0c649f4e4fd5a87df1b375b3e9104821515168e6f2788b33c"
+      "sha256": "f92208645f92e6d6ba4b78cbf4c7a6bf3517627e455a3a02e132922efce6a9cb"
     },
     {
       "arquivo": "Agendei/admin/servicos.php",
-      "sha256": "c4ad9b05ad9e356b5c2d4d519b6bc559b9f7e2e131bf82720d32bbd48d3c5495"
+      "sha256": "6f922510ef445be032387555bc07d86264a6036e9d0a953a3476289533ff1f40"
     },
     {
       "arquivo": "Agendei/admin/usuarios.php",
-      "sha256": "7102992ea4c6d4f439d05f802a132941c37d1aa90ca8f7c9b91c9db6ec2d7874"
+      "sha256": "433bdf10294640a1ccc4a1abc83a5bd0b16264741ba0b4e78cca9dbf919297a3"
     },
     {
       "arquivo": "Agendei/admin/usuarios_pdf.php",
-      "sha256": "083b22b30d7d9a742820542340b96d3b4ad6731280ee5c4ffc477394eae150be"
+      "sha256": "a0e8c7dc9d39aa0c69f01b24558a3273b1488a65c4d5658f5edf825aed037a76"
     },
     {
       "arquivo": "Agendei/api/dias.php",
-      "sha256": "a76788f6f4044d158201ba5a859d390c09e28c0022f28b0a3cf27a7c19462569"
+      "sha256": "774de9935598d29bf00aa7176d29150a6fe7a17671cb7c8ed413df89352b522a"
     },
     {
       "arquivo": "Agendei/api/filiais.php",
-      "sha256": "bead3d9723b82b15f9a91cde8c51f3f494af4643be28c7a657d8747087a18ee3"
+      "sha256": "e5bd573629a3c232c02819a76b4319668641bd4b41b89078add14e84ccf46cca"
     },
     {
       "arquivo": "Agendei/api/horarios.php",
-      "sha256": "1bb5ed97012e41ec46ed3efbfcde2dcaa80b2b62b71686a8a466bf43f944dc87"
+      "sha256": "d2de12bdde7ae6e96ce4eeb9bab1c400687339cc56aad2615a9c2abc70105539"
     },
     {
       "arquivo": "Agendei/api/profissionais.php",
-      "sha256": "dee5511071945de0a80435a140bb5f87241120171cc5be412a4716b217ded1c3"
+      "sha256": "70df49932f8e5a016130a9298e2b76b13c8a2c1775a73ba0753cbb07a686f39c"
+    },
+    {
+      "arquivo": "Agendei/api/whatsapp.php",
+      "sha256": "844ea88d2f351ffb9bde726964b3daf83957fee13c27af34ab949a3808ebb92e"
     },
     {
       "arquivo": "Agendei/assets/.htaccess",
-      "sha256": "52072eadd09a29109207510050f01fcb01ae143206a5b02464169609d9f4b573"
+      "sha256": "f28f5d187984fdf887ce720b9475546ab1102b30c1f6d70738755b6af4a30266"
     },
     {
       "arquivo": "Agendei/assets/css/agendamento.css",
-      "sha256": "37d22c2812bfb4087d683da76bd220a897d4c4dd813026b1de41e52f0f04dd77"
+      "sha256": "6d86a6594ec62035b608c6a33cf939267e38cc394e5ce4eab1326df46b98c359"
     },
     {
       "arquivo": "Agendei/assets/css/inicio.css",
-      "sha256": "76e195edd47b8a942f898d5ac2c1cc8a83a14b022d6f0abce47bd6a60d230402"
+      "sha256": "3a1bed93df6404b844e54a6477f4552a45e456f581ef4dc281e0459a426f396e"
     },
     {
       "arquivo": "Agendei/assets/css/login.css",
-      "sha256": "7ad697bf565ea7b31f5ad2d9cc80860ef41563ffb11d3682a3f2533d5937bbae"
+      "sha256": "689a4f4e2b23caa2b101ad983487d49afbf5e2e82f314054b654381900c6bd86"
     },
     {
       "arquivo": "Agendei/assets/css/modelo_bd.css",
-      "sha256": "1c9ce3a5bde2cb1045a5117b49a64d98e4135abc7dcae16660eb747307422195"
+      "sha256": "864680a09ad6ac50b396abf24175931d28285d2a75c45c56041c044448b4a1cc"
     },
     {
       "arquivo": "Agendei/assets/css/painel.css",
-      "sha256": "0a14cff2f798b690d41eca8f2694d06f96a1fc72ed948cc644a6a3d17af5b39a"
+      "sha256": "ef4821bb67aaae2b956130dccc83cfcd81b5c06787e5ab7a53f742e541dd4712"
     },
     {
       "arquivo": "Agendei/assets/css/projeto.css",
-      "sha256": "b79585181887b1362aa952a09b6c771f74828e25d7d27871a84bf7961c2b0a4b"
+      "sha256": "17dc4fec4f3c9425344ca38594f75975803e9a69eb13d9aa77127e33da8a9c25"
     },
     {
       "arquivo": "Agendei/assets/css/style.css",
-      "sha256": "0b6b5de268adc017f1da0d24eb9c3e7b03883fdcd1f635bae608f6a2cf0902b2"
+      "sha256": "cef2f68bb7314c656c6886a49bc0fdbd5667bf55d860d5321b4614b59f6655c8"
     },
     {
       "arquivo": "Agendei/assets/css/tema.css",
-      "sha256": "3d996a0df2e413ee52af3af04cb0bedcc6bd7abb46f363d801d0aaf7c6d5181f"
+      "sha256": "98346cd72370f693308bb6d37fbae0fb111420fcf605327e50f353513d2b0381"
     },
     {
       "arquivo": "Agendei/assets/img/agendei-logo-claro.svg",
@@ -192,11 +220,11 @@
     },
     {
       "arquivo": "Agendei/assets/js/acessibilidade.js",
-      "sha256": "fe89cbd7d4efb71cd3e17fa28d2291d5af29e2f9d3dab363e8ec29975504d888"
+      "sha256": "c1802618b825ede432c95ac1e54009e2049b156fe3a5eb88690b2dde8816243c"
     },
     {
       "arquivo": "Agendei/assets/js/admin-agendamento.js",
-      "sha256": "623163f30d61b8a0c674b753f776d7422740a91a6cea06f00325e25776482cf6"
+      "sha256": "c26a8e843b4a4cf8e6e77df45040ed5addf5aeb55c93b4d0038b0cfeef3427e4"
     },
     {
       "arquivo": "Agendei/assets/js/agendamento.js",
@@ -204,51 +232,55 @@
     },
     {
       "arquivo": "Agendei/assets/js/aparencia.js",
-      "sha256": "800af8f94da4ab7f84421c0254cad16c063cc9815fb87e3004e2e3b914f5a353"
+      "sha256": "5be0190187971a31eb937fb41fe778a8c9de152b5fbf30d2ed8ff3edb8c3948a"
+    },
+    {
+      "arquivo": "Agendei/assets/js/assinatura.js",
+      "sha256": "04aee68fa33a0c6c74899c572786ca5f041c858f48c3693e030f6dc7d42bf014"
     },
     {
       "arquivo": "Agendei/assets/js/cadastro.js",
-      "sha256": "292901045afff8890f649ac1c5990feb077d4264e1c718c9bdd3a9a3e7b96ff5"
+      "sha256": "021bb9976afcd44b880d898861f6c0ea37b758b8f048da3ae45622259b561db5"
     },
     {
       "arquivo": "Agendei/assets/js/cadastro_empresa.js",
-      "sha256": "a147a0e7927fa83abd767e7630349b1f953e8f8f2493482ad3d319a2aa8381dd"
+      "sha256": "5d55a2fd07e4a08b39f4bb0037bddaca757bed013f51170ba56debcb578c150d"
     },
     {
       "arquivo": "Agendei/assets/js/inicio.js",
-      "sha256": "711c6ac4788dc4dc235c7625ed7258c81de4627c8cc308975225a6ebb0178fe9"
+      "sha256": "dc1dd077e26a109a1a6db703d9ef3617a8de730694a2eb3573c32cec111fcf77"
     },
     {
       "arquivo": "Agendei/assets/js/login.js",
-      "sha256": "14f44d28a0bacede4b13df23faef29808fb3fe4294ba017ffb872ef484cb7fd0"
+      "sha256": "86208189fe3e8d9a52e6835b9cccc429ab3925b382576aa58b79522cdd0dbbdf"
     },
     {
       "arquivo": "Agendei/assets/js/main.js",
-      "sha256": "63083078c352da97fe62d9e4613bb7f02485c7cb3e6b32c9f09beb2f3dd24937"
+      "sha256": "a0a33860ee761b89afcf33457744cc016c46265a965338359a7a17fc1632cb1f"
     },
     {
       "arquivo": "Agendei/assinatura.php",
-      "sha256": "1a9f26be31272259312c06168527547e24d3169368c03f9ecdc278567e20322c"
+      "sha256": "4c82ab5a77699bd70444c46d79813babfee0384b0052de46a60f17313a784e51"
     },
     {
       "arquivo": "Agendei/autenticador.php",
-      "sha256": "28da250cccfdbef03d624888da19e5fc186ea029066d6b41087b8e91c5ce4d37"
+      "sha256": "a76c9452455b38569552a4555a9efd809473d8d73cbd2723c9ba50abad1ee534"
     },
     {
       "arquivo": "Agendei/banco.sql",
-      "sha256": "6154cd4d17440e57a8da5c99fb46938815ac8d4d5abb7c0dda7227488772b7b8"
+      "sha256": "a9df059526fbdbd116c2ed6275d7af68d9117657e6e30eace23e90e2c16b9920"
     },
     {
       "arquivo": "Agendei/banco_postgres.sql",
-      "sha256": "9d83cf1f8f87da320a56a306669aecd9a34bc4968db61418a50df9a8623395fb"
+      "sha256": "016992fdfdf0bcb01a8bb8c66743985225e50094dda9320a52c75e8a00f60b0d"
     },
     {
       "arquivo": "Agendei/cadastro.php",
-      "sha256": "c0b7a15f13079a946e6b947be5201383ea02a8c9b8d5a5e6194ee9c7782158ff"
+      "sha256": "83a6fce8fb538c15cd6fd392e8a71cb3888720aa7458c2f794f9d9869469ab15"
     },
     {
       "arquivo": "Agendei/cadastro_empresa.php",
-      "sha256": "f5724e8e2931fdf2a80d46231f41299c608444d73f37580ec0e6017495b1248f"
+      "sha256": "ad118410ee8487384886f6812b1d50713d19b13c2cfcb2335330787e26f52936"
     },
     {
       "arquivo": "Agendei/calendario.php",
@@ -256,31 +288,35 @@
     },
     {
       "arquivo": "Agendei/cliente/agendamentos.php",
-      "sha256": "b72b452152abc9269db16531d9cfb7b654570f2a3c258bba48bbb0a1e8e7e388"
+      "sha256": "6c2cff84b45561ba2f47fe62d0be23b12dc1dfed08f54734746ac701eebd8074"
     },
     {
       "arquivo": "Agendei/cliente/agendar.php",
-      "sha256": "8cce9d018f0afa4b963bf0e166445bb1d75b719d2e8f120174bdb4bf70ebffe0"
+      "sha256": "85347d03bc4d20c5319959da4e35a5bef747d070da569d352530300caab58135"
     },
     {
       "arquivo": "Agendei/cliente/beneficios.php",
-      "sha256": "3087af7b86362b5d23807f6414d8393d512ba132eb756685c425e52db0ae35d9"
+      "sha256": "e4d65f2a5643b68a1ee21d86ec3e901584ea359892c0ef9eb162473c6efe2bc7"
     },
     {
       "arquivo": "Agendei/cliente/dashboard.php",
-      "sha256": "cd03df64e1b8d832839a467eeefe4e97748a31d795e327fa9ccb5a37e3c83c69"
+      "sha256": "9623af33ecf4ca285d72dc2c5426ba7c5a11fc4416a92f7f8ff337721fe243f0"
     },
     {
       "arquivo": "Agendei/cliente/historico.php",
-      "sha256": "a1fc56ad28007d234c4015bd986cb94d8ac0b2b9edee26d90571b2778c5282ca"
+      "sha256": "36101c9e73af6afb26afd409d47ab0804e65c76a2c077e93fd26beb49ae1baec"
+    },
+    {
+      "arquivo": "Agendei/cliente/pagar.php",
+      "sha256": "94f3ef5749ca02ff9c8a549f7cb0377922af9bb96e6f02ddc6a14c1058c67f3f"
     },
     {
       "arquivo": "Agendei/cliente/perfil.php",
-      "sha256": "301e11bc61b060635194925886f2855450007c7c6e78b542de1460b72155f083"
+      "sha256": "37ccd1b1537ea7aa69fe702494ab23bbb710e48bae51c65c51c6a3bd63f54d29"
     },
     {
       "arquivo": "Agendei/cliente/privacidade.php",
-      "sha256": "540ed70a39aee14acb0b99d3bf6b50b5ce072635e29b868df6e44286e16141f3"
+      "sha256": "3d427a3b564e0f70e52f34d7b7b235209d77864f9a8308f413441ce2d19aa7c8"
     },
     {
       "arquivo": "Agendei/config/.htaccess",
@@ -288,7 +324,7 @@
     },
     {
       "arquivo": "Agendei/config/config.php",
-      "sha256": "92793464ef36490f88b650460588b30cd285b6be47de981bd7568ded0c507e2d"
+      "sha256": "833165ffa323f92d034d177401d90eb8f6a3da15228610c9bf6a9cf9ee57c301"
     },
     {
       "arquivo": "Agendei/config/database.local.php.example",
@@ -296,11 +332,15 @@
     },
     {
       "arquivo": "Agendei/config/database.php",
-      "sha256": "f60178226b507bd187a9e9693ff7a8a6f407bbea238513fd95b3e351728c2253"
+      "sha256": "e86eac9be445a935ce9519a80936ebe8b2c3f8958dd2336c073bd9f6d34d49ed"
     },
     {
       "arquivo": "Agendei/confirmar.php",
-      "sha256": "e1da3322084092a6f83d6ef9307aff16c3d7e778b1308ed852c7026e6deb414a"
+      "sha256": "ef7ee08217d99b2ac1d6afdec27153d107ca47f4045638eeecb68bfcd6b732ac"
+    },
+    {
+      "arquivo": "Agendei/criar_conta.php",
+      "sha256": "061927a5490145972a1a8cabbd18678d95852a3c88a0a8eee4c17f6ccadfe2f2"
     },
     {
       "arquivo": "Agendei/docker-entrypoint.sh",
@@ -308,19 +348,19 @@
     },
     {
       "arquivo": "Agendei/dois_fatores.php",
-      "sha256": "d3e38c1eff277eacf44c1ae8753aa9d51a4287589d9b569afaf03e50e23a5578"
+      "sha256": "155cfad0decd08f6125347b1a2764d986ffc58840cec6e957a4a695a07e5b721"
     },
     {
       "arquivo": "Agendei/entrar.php",
-      "sha256": "8f5a4e4fdc0218bb09092e047693ee590dc75f8832faea41fe4a7efd58e946e3"
+      "sha256": "00db1d9b5101c4e4aa606b3fd31f5859fe2423941da888288110b96129e6697e"
     },
     {
       "arquivo": "Agendei/erro.php",
-      "sha256": "215cd67eef94b00d34c01db285d4eebb3afd219d16b98680385eb6bd3fd6e782"
+      "sha256": "0e07959e1951c0de3c592830660b653215611190d32ad7329935d2f6247b08b1"
     },
     {
       "arquivo": "Agendei/google_login.php",
-      "sha256": "17ef377f55e258575883dff2f3eeb3b8c557d57a2232355604b0a99128fcbd6c"
+      "sha256": "fae4bbc6cb8a99db594a80c6c031170eb2e737f48cb423a7143573db3247cf73"
     },
     {
       "arquivo": "Agendei/includes/.htaccess",
@@ -328,27 +368,31 @@
     },
     {
       "arquivo": "Agendei/includes/assinatura_sistema.php",
-      "sha256": "4eddd8b9f381e210a915d32ea76f8b5152b632c0e5358bb02cb5ecb654a5112c"
+      "sha256": "f926818c18d1d1d96b17b7572d57a881e0d0fc3eea160735867f2da0bc851f3a"
     },
     {
       "arquivo": "Agendei/includes/auth.php",
-      "sha256": "5f80f54dc54c773bb8e2fcae864e8f62d56fecc534d125b2d97d78f8240f8947"
+      "sha256": "b07b52b6b55976bd86be6e139c04338a5cd212d07a1f3a57abbc30284f24070d"
     },
     {
       "arquivo": "Agendei/includes/emails.php",
-      "sha256": "5af0748f010de8678226fef0073fbf0445a58e683e44ed5eaa9b90d6bd25a45c"
+      "sha256": "5408fb6058a5de67a46fe43b5670dc4452de43301c98ebf70cc94f6ba797b198"
     },
     {
       "arquivo": "Agendei/includes/footer.php",
-      "sha256": "6e4919bc987396f8026c7ee3aee46e59c641658fd0e90d30af10ecfc3c7f1336"
+      "sha256": "af7476718429ab0b979d51655f919970417dbb69ef23f26c0a42bd841e64418f"
+    },
+    {
+      "arquivo": "Agendei/includes/fora_do_plano.php",
+      "sha256": "3c857ddc65c831aff33bf0a433f1e08b88f9a9347f869ee181c338cc2c647612"
     },
     {
       "arquivo": "Agendei/includes/funcoes.php",
-      "sha256": "3cc5f6257678cc1f2365a081b50f455986e8af054c266a0f9d9fc312147e6366"
+      "sha256": "8b6e204f3653c85cb7b9046dfbeffc04f964ff624ff092444b0ca862ea2798d2"
     },
     {
       "arquivo": "Agendei/includes/header.php",
-      "sha256": "dd44007645f0c5d68a12027542db51e1a2e0966fddac17b325e257a9e6c7bd96"
+      "sha256": "122da9b551ca832025fc2db1d45b2854bd441e74855df20a32b4c833b56cd4cc"
     },
     {
       "arquivo": "Agendei/includes/icones.php",
@@ -360,55 +404,63 @@
     },
     {
       "arquivo": "Agendei/includes/painel_footer.php",
-      "sha256": "5d76e9dfaa7402a6c68c561b3682b255283b668b6ee71274d017bca8d50aa8f9"
+      "sha256": "3a083c4dedbeeaf0398bf8b7287a10019c9affafa88fa1be63fcf4aa076da732"
     },
     {
       "arquivo": "Agendei/includes/painel_header.php",
-      "sha256": "9dcefeb1d5eb74915c204a220168de1428318813bcc077b1c6f1670b1796b328"
+      "sha256": "caffbd1fb4434f574d887eaa5370c97409b1297e8b6a1da6b6934dc5c13ba45a"
+    },
+    {
+      "arquivo": "Agendei/includes/rodape_legal.php",
+      "sha256": "ec5aa926f2dec980665481400153e23327b94eac510dfcce760f7528e7685f19"
     },
     {
       "arquivo": "Agendei/includes/seguranca.php",
-      "sha256": "869b10dad20c1af3750936a1ed57d3b197f8f19b47291aee52c5a174e4a21faa"
+      "sha256": "115035b4047762d3a983463cd22c922b4a0cd2470e573fa67288c895177e59a7"
     },
     {
       "arquivo": "Agendei/includes/sidebar.php",
-      "sha256": "148e6bcacf4bc1dd5a45a578bf03e9e094254d428812fb50e9a41c1a2054bd62"
+      "sha256": "7035525d2048b41d18e2d59b85b9ae396585d92ce34de57bec930d6b93b4a3f8"
     },
     {
       "arquivo": "Agendei/includes/tema.php",
-      "sha256": "5c210dbe4851f092b579bbfb917ea2ccf89de484a5d3873bee57c17a782ea0b0"
+      "sha256": "08749131a69240ec9542823317543d24824fc9d14e3d8bd253a55008f332024f"
     },
     {
       "arquivo": "Agendei/index.php",
-      "sha256": "1adc421a03376a8a8a55ad2b55f6ce8f97d95833691cb7dd4196ad5545b35377"
+      "sha256": "37b58aeb3637b018cac1ec9e3d82653e208ca10a821a00bba2eb1c6ecc16c87d"
     },
     {
       "arquivo": "Agendei/instalar.php",
-      "sha256": "646f36693d362267d8ab2bd3f37d52e8e047524b33d0bf9911676e1912cbe9fd"
+      "sha256": "739a65af80fdc8597eb24711ab9582471560e777f765c2f6165cd94828a65567"
+    },
+    {
+      "arquivo": "Agendei/legal.php",
+      "sha256": "04ca75bfe80ae8bcf42c241b4d8acae5fcdcfd40e0d1dc5c48667d8d90d6017e"
     },
     {
       "arquivo": "Agendei/login.php",
-      "sha256": "197f6ae4a82d966ddf3f3cffb383186b6933c05122aa90559ce75b0c14821cf7"
+      "sha256": "0f098819cad07370ea05f9ab189f9cfa496120810bf726cc68dfd14dd28fc7b6"
     },
     {
       "arquivo": "Agendei/logout.php",
-      "sha256": "bb326de5c1bd0dc8e67f03afda1d6e1e694dc22328c54879ffaa7a991809d486"
+      "sha256": "0e0ca7c6f7042f6aff98b3e24b27a743afe4852d1aeac737c793d26a384983f3"
     },
     {
       "arquivo": "Agendei/master/aparencia.php",
-      "sha256": "d02f9834805ab25af3efdd22691caaa632a5af76d2fd8c57cd09ec882f5ffe5b"
+      "sha256": "98f403dbb7fd8ffee9dcd9d7a5321e3401b36878096d761184bac4ae68f0c983"
     },
     {
       "arquivo": "Agendei/master/auditoria.php",
-      "sha256": "63f6d15106fd3f1a565319e4ca808c2f083a909ee0686d9571f05dae478d1be1"
+      "sha256": "90c241b8559874917be69684f580d05c7adc4888b7afc02cc4975ef26367fbb5"
     },
     {
       "arquivo": "Agendei/master/autenticador.php",
-      "sha256": "f0ae5356cb14a2b59218849d88a51054d351aa227f1d1e63f5dfc2affa83d078"
+      "sha256": "b2cfc69abae12044276c225a403df44b99d38c469b9b5ad57eb3999ded030257"
     },
     {
       "arquivo": "Agendei/master/contas.php",
-      "sha256": "888be7773fdf79d72113a4d154f5f997e0d8b018340c76efc9c23017409df283"
+      "sha256": "5eef5e92b2ff34a6451409f666dc0528ce3972a8584868f0836179f892b6c150"
     },
     {
       "arquivo": "Agendei/master/dashboard.php",
@@ -416,11 +468,11 @@
     },
     {
       "arquivo": "Agendei/master/dois_fatores.php",
-      "sha256": "ba45c64de2887a87136d5019d8e289fc5e2334731b857c422c2c175ce9ff681e"
+      "sha256": "8fb54af7dc7f7f2dec452fd0dc6bd83ec6f74564a3eea55ec80b299f0be5d1f0"
     },
     {
       "arquivo": "Agendei/master/estabelecimentos.php",
-      "sha256": "76a5515b9c0c5cb03cf4e4c129f24499509e980effd6f61a193d542bb9ff4633"
+      "sha256": "cb4f2300c757eef086df0dadee4a084ccba5014641195379bb0dfd203940a068"
     },
     {
       "arquivo": "Agendei/master/login.php",
@@ -428,39 +480,43 @@
     },
     {
       "arquivo": "Agendei/master/logout.php",
-      "sha256": "141fad71f787cde5f9f4200b975632308de5309beb70b555e74a00b9fed5d15f"
+      "sha256": "dede1f37067f2bf5714ff46357d2c22697108eebc44d2cdc630ab6fe773e4b23"
     },
     {
       "arquivo": "Agendei/master/perfil.php",
-      "sha256": "cba76f123f75c6eb7bd917634038df70e3fec0c77e7da39887769b70e7b0741c"
+      "sha256": "d7b3dffa7bf24482e14276195c0706ce9946484749d45593c236325cb46f8b6a"
     },
     {
       "arquivo": "Agendei/master/planos.php",
-      "sha256": "970dba77f8e808e1e314f7818e8e330e8fb9c0c1439f95b68ae35ddfd9f32e34"
+      "sha256": "c6e83d4441055621715aa9d8d265889c341efa4ce02d4d65c7efeb2bfab39ddd"
     },
     {
       "arquivo": "Agendei/master/saude.php",
-      "sha256": "920daa85afcc7125fee78c1d9007170eb74fba9f3fecea333b2d1a9bd08c3334"
+      "sha256": "8e6f03b9ea88e9e167e39048c8936cedeefa17d4e2108a57de40110d68ccc9f9"
     },
     {
       "arquivo": "Agendei/master/seguranca.php",
-      "sha256": "480e3f4d64801f07d866285a109902861cbddf727ef5698517ac604680f55780"
+      "sha256": "4296d7fbf00397dd80b7012b4a4e28bf092e9d299dbb984fda83cf309a30c798"
     },
     {
       "arquivo": "Agendei/master/simular.php",
-      "sha256": "4b709104a705cb3d9ea1cfb20bb0406fe9d53f770eeaae270a2b4a96b8c099ac"
+      "sha256": "5b43ee022fd192f61d012b9731cbfcf38d399ca08dc6d96cd4d7c7eb218be015"
     },
     {
       "arquivo": "Agendei/master/uso.php",
-      "sha256": "0633a93cc590876b1bf89f67f515e467802bade309a609f946b8bdce55a491b2"
+      "sha256": "938844838df51c12739e8d14f36122c24a7ec79c431a06ffb04872da63935ecc"
     },
     {
       "arquivo": "Agendei/master/usuarios.php",
-      "sha256": "33fc26ac57b51eb057bbc6717ee4b6960d0071b4e802349af437517988635847"
+      "sha256": "ceb8aa5ddbdd8c55d932832568463f5089e7e46891bc77de7b4fa8d2b02f68de"
     },
     {
       "arquivo": "Agendei/migrations/20261008_atualizar_postgres.sql",
-      "sha256": "7469254232983b0203d70bad6aec089ec26cd681f29476ef1e8363857f632477"
+      "sha256": "3a8007dd5c4af8e85d4ad6cb0728ccf0f1a8c21e29e7bd9c12a419f6d8c8c6f3"
+    },
+    {
+      "arquivo": "Agendei/migrations/20261109_ativar_rls.sql",
+      "sha256": "6776f7d41ee2565374f825861209f333ebd2800ee5a35f0f8b44317b164fab1b"
     },
     {
       "arquivo": "Agendei/modelo_bd.php",
@@ -472,19 +528,35 @@
     },
     {
       "arquivo": "Agendei/models/Agendamento.php",
-      "sha256": "67bd39e2bd32205a208a76a51f43f60caa2414074c222c5095e2d4fd15c2dd19"
+      "sha256": "4525d307c7fb22b14aff138c725efff4eb4c5d45b699ea441ddcb32db6f2c820"
     },
     {
       "arquivo": "Agendei/models/Assinatura.php",
-      "sha256": "a34f84aaac1e7e2a95c65591becd5ad4c749847b7ec8064034026203665faf23"
+      "sha256": "3100787844417718cbb7ca0e075588fe4f0cb546ccebf214542e5124cbd9d346"
+    },
+    {
+      "arquivo": "Agendei/models/AssinaturaCliente.php",
+      "sha256": "58d7bd29278b78c402c01d3839b77b9edf5a4cc24e317ab7e58a07d4f4b7efaa"
     },
     {
       "arquivo": "Agendei/models/Bloqueio.php",
-      "sha256": "736e9d133ffa0242ea81d5b717cf4199d1a674462ccc35a8e7b19c5a8d5db83a"
+      "sha256": "fe3535de005dbd00004b8ddd6a1bb60ed77d75e8bc03e68cead1eb31bdb66198"
+    },
+    {
+      "arquivo": "Agendei/models/Bot.php",
+      "sha256": "d90c38f0babd1c800d070b84cba92103d726579683a7edcf989b25c4f6d4c765"
+    },
+    {
+      "arquivo": "Agendei/models/BotMenu.php",
+      "sha256": "fbb5548320d07bbbf0122ee43d555dd1c752c34126762773bded0c29cd03d55d"
     },
     {
       "arquivo": "Agendei/models/Cliente.php",
-      "sha256": "aadc027988cafc938befa2f2aeedce12ba90fc5dec6504a8b7cba1ec85fa1f13"
+      "sha256": "36de82c20dd6ad076236b95e578f4f185ae2cab7030936a15da2e65aa134cd03"
+    },
+    {
+      "arquivo": "Agendei/models/Cobranca.php",
+      "sha256": "366570e31dbf35ad79ad32739c6484ce5227562a81d5614f228214d457f8f625"
     },
     {
       "arquivo": "Agendei/models/Configuracao.php",
@@ -492,51 +564,55 @@
     },
     {
       "arquivo": "Agendei/models/Confirmacao.php",
-      "sha256": "30ae8e54e2cdaf9380d87b8e89b579a938d53918db2648967ff36373c3f97f2b"
+      "sha256": "7af58c4eafec26d21d34389a7975cf6bd1e63e867f5d63df4bb49c3166531a13"
     },
     {
       "arquivo": "Agendei/models/Contexto.php",
-      "sha256": "a0a622f761f96a1c760e6fd15a3753f0c638ff858e80c221034ff34b2de3ccc4"
+      "sha256": "a65ce72b9133fbef56cc5cea43c24cafa2ab4645a512799210a4a42082471250"
     },
     {
       "arquivo": "Agendei/models/Diferencial.php",
-      "sha256": "0c0bda98f730c7b32a2e566651d370398eb07e92fc326204e75be8263ea0f597"
+      "sha256": "bf62397f344968aaad3e06735dbb0f5d2574e35a71b346feaf973630b8b69352"
     },
     {
       "arquivo": "Agendei/models/Disponibilidade.php",
-      "sha256": "015671be27f15349d40ecc873d366550b344fdd381010df54b59a3038b331d85"
+      "sha256": "89a60bd1b47c29cc6e1c483e62cad7623907824b958045699a5122cf6f3e416d"
     },
     {
       "arquivo": "Agendei/models/Email.php",
-      "sha256": "962734fd5198f65d5b8ebe8c7b775288e4625defc04da7137a8475131ae96204"
+      "sha256": "e27d5f7018adbfa293b24d2301cc4c780c5c0103a5cfbaa6e2f1c87c0b51332f"
     },
     {
       "arquivo": "Agendei/models/Estabelecimento.php",
-      "sha256": "2f86dff0c6a1389b40e4d72842dac036cde0dd4bb34a2e655d2c256e2ef90afd"
+      "sha256": "06ffacb804443a7f759960ab30660d98c814df054ac76f3b1d5d41c45d11bee6"
     },
     {
       "arquivo": "Agendei/models/Filial.php",
-      "sha256": "d83b2f85312e664cf2adeac6b6e2d3c3dbfdf36d1444c45e3c2a80e5affb6666"
+      "sha256": "06bcee197c7053171c64e79595a48b8a160e064c02a1efee5e6354c6c60ef981"
     },
     {
       "arquivo": "Agendei/models/Google.php",
-      "sha256": "38a8ad5c38bb2df3241af1f68706f008c363ec8372fc759b1229378d2358ad41"
+      "sha256": "2dff4dce8f709ff8f2f73415852d188d654d122996a676094e241db80eff43b5"
     },
     {
       "arquivo": "Agendei/models/Horario.php",
-      "sha256": "319c7df52b4bd9694c3a39347a0535c18c1ccbcdea9492fd9c94406c67957128"
+      "sha256": "9098285c8696a6ab26c049bb98d081f0470efdf33b4fe1f6ad8650a5bedba7ec"
+    },
+    {
+      "arquivo": "Agendei/models/Legal.php",
+      "sha256": "0c1567ef7ca82f9c8b1ad9509431d86802b64c8ec540e8c65001ce560361851d"
     },
     {
       "arquivo": "Agendei/models/Lembrete.php",
-      "sha256": "ca013565ca4743b87f5ca17ce3d47d220ef3ccb1a9c31540458a64044a82402a"
+      "sha256": "95d5c951e4e5ff16cb81f62185a4e93d35d84110cc0977047ca1a112fc5c1dee"
     },
     {
       "arquivo": "Agendei/models/LogAutenticacao.php",
-      "sha256": "117702334d8f24fc0cc2ac7b400fd74495f4d53c8e4619353ceef437c524ccdf"
+      "sha256": "5d51d15fa508ff273c3ed4cf185f98c9f860aed86a0826e1eeedf4b7a7834b97"
     },
     {
       "arquivo": "Agendei/models/LogMaster.php",
-      "sha256": "74bfc5ebbdc3b51f827663a588c38e69e474faa99a9e95897934e0f2baf48cc5"
+      "sha256": "9d884dc555c03326076c915249f033f68daa65f42fb1265c533db7b3fe071ab2"
     },
     {
       "arquivo": "Agendei/models/Master.php",
@@ -544,23 +620,27 @@
     },
     {
       "arquivo": "Agendei/models/ModeloBanco.php",
-      "sha256": "824efa4f2adfe980d87bd37edf286483f4231a8c6fb85126e508a1d5b2e73be8"
+      "sha256": "b62d630a1b0d726f1e3e1d4b475220975a50d2d101b5f5d66e80a2d38a2742dc"
+    },
+    {
+      "arquivo": "Agendei/models/PagamentoAvulso.php",
+      "sha256": "643afce7675de3d128d63f7f18fbcb83333835b5e54332225febeb62612d5166"
     },
     {
       "arquivo": "Agendei/models/PdfSimples.php",
-      "sha256": "45ab90a263f0f057c6592051621843938476f55f2e5822072a28aae8ecfafda5"
+      "sha256": "b283f8dbfce482a845cd754bd98fd5adc6800afd314f00a41e1ee544ae511b77"
     },
     {
       "arquivo": "Agendei/models/Plano.php",
-      "sha256": "19123ce2068c0aeb72d33d56b027b767944fd8fcbb7cb5ce0780212a2c554817"
+      "sha256": "a12eeb3ea949cdccaad39c262b488152922e397acb9f6057dfb709cd81ff829e"
     },
     {
       "arquivo": "Agendei/models/Profissional.php",
-      "sha256": "cc5a5494bc77ad97bccf95142b677a6326a835d79f2579244e70824cc3b3a6bb"
+      "sha256": "29d8082e0e14867e8e03d27e7b35adb0155ed3226f9ff06388536803b864dc63"
     },
     {
       "arquivo": "Agendei/models/QrCode.php",
-      "sha256": "8ee39c3f00d1248fba80280bd76a6383dcf9632468813031058bd903f1a72f3e"
+      "sha256": "6af11da0a17ca872e5a3f6f7b8858149946ee5f68cb5116f3b8cbd31fe661202"
     },
     {
       "arquivo": "Agendei/models/Relatorio.php",
@@ -568,111 +648,119 @@
     },
     {
       "arquivo": "Agendei/models/Saude.php",
-      "sha256": "717aa872310246d21111f2eb128104fde63fdc55d51b138b5a163b18ec49b440"
+      "sha256": "364b11073b1e90f79c0d3107411461e836abcd9826d5fc30cc01255637ff99b3"
     },
     {
       "arquivo": "Agendei/models/Servico.php",
-      "sha256": "de8459e9b2a9195c2e91d32550f40492fed3ef82f646ce25556f5ab9c24f53c2"
+      "sha256": "b2d841aac2d017ccfd7b0fd17e8f33fa7b8a88927da107253f3cf2f2d772ce65"
     },
     {
       "arquivo": "Agendei/models/SessaoLembrada.php",
-      "sha256": "750494e27eaebf890b80753f0481080e9b52239648c122dd5a0e67d95f863d1e"
+      "sha256": "70793ff7396679fd884e725a9fadccfa44a1a0b270659eb26f168838f7987ef5"
     },
     {
       "arquivo": "Agendei/models/Solicitacao.php",
-      "sha256": "ebe285977cc5cb6fbe036e28301ac9ca6932cad52a33cb00c61d85fd7abc746a"
+      "sha256": "3cef3620537fe149f1cc48199bca75eee469d23899d478187256a1d27072fafd"
     },
     {
       "arquivo": "Agendei/models/Sql.php",
-      "sha256": "5e5665d0f7693c93a276970a2ac31cca54db0dd7df8a6e92e0865125d1b98819"
+      "sha256": "a71c0bb47ed9349a81771cced8452744ccffd4fac0b125812608e09535e58606"
     },
     {
       "arquivo": "Agendei/models/Tema.php",
-      "sha256": "e015a7a48305701976d6ce1104c39a053ab7ff834db6ff8346a2d9696727e715"
+      "sha256": "75093aa578335da28aa7e4a4e067a7b17f5273a0d5de5876e7b106c7c66ff086"
     },
     {
       "arquivo": "Agendei/models/Tentativa.php",
-      "sha256": "8a977663841e1a8181cfca1748999fdcee140bb03041839ee97fa91ccb909070"
+      "sha256": "06e2dff9c4b72900b26e08ff81045e73d43594338e9d69746f81ff14a20925ab"
     },
     {
       "arquivo": "Agendei/models/Totp.php",
-      "sha256": "e3402f9d0d5236b85e291b1d0c68ecb05319b37a70ec185af809c45baa62284d"
+      "sha256": "20045cd41928abb5c10a7de434bdd0ab07cf6d7662b1e42c1d14280d5a80ba72"
     },
     {
       "arquivo": "Agendei/models/Usuario.php",
-      "sha256": "a5e633974c7d399d83d65807efb9eb30bbdcfd4651ccef261a7839bac5c1c405"
+      "sha256": "464326f53f9e4b216e649f5b2820926dfac7389e8c7ca66e95d9dde5bf991843"
+    },
+    {
+      "arquivo": "Agendei/models/VerificacaoEmail.php",
+      "sha256": "7d7b5e61a790e3b2851167ae97cb4c7af36c2bb9f13fc72f8a9a99dd0937b55b"
     },
     {
       "arquivo": "Agendei/models/Vinculo.php",
-      "sha256": "e5281028c8a5b238ccc0d05cadb47da844b48064cc1c777680d840d050c311f4"
+      "sha256": "ef84303d795bf29653ab477e9a9117e5bb7e8cbe250ed92e2bbfb5c645930bf8"
     },
     {
       "arquivo": "Agendei/models/WhatsApp.php",
-      "sha256": "55cef01e05f06ae4974764dfba9093a1e79f7573964745ba0ddf5f5cd528c715"
+      "sha256": "c35d63c439723a902c6ea190ca9535ded25ddfdee383c2bbe9adc28eddf84a0b"
     },
     {
       "arquivo": "Agendei/novo_estabelecimento.php",
-      "sha256": "bba30143688952149fae62e28af0d39b2ad26d760ec99ab219e6a5865c25a77e"
+      "sha256": "9061947bb0ad107998d239ce931f9a786bd9729129e4d78413d9504c313205b2"
     },
     {
       "arquivo": "Agendei/profissional/agenda.php",
-      "sha256": "0939a996efd8ad2325d08d9b8b29210688b45da4a3d8522498295772da6c7a58"
+      "sha256": "fc2ce38da47d00dd89a0d5dd30a4ea6d550e1d1a7d41ab460494a834480b536d"
     },
     {
       "arquivo": "Agendei/profissional/bloqueios.php",
-      "sha256": "1099e0d9d7466eb5592e83c5baf492a3939774862cd31511bb5d91cf9a264013"
+      "sha256": "fe6b6871e2917236385ed1e2e38a960ca2d05bb73ee78eda6da086028e745ac7"
     },
     {
       "arquivo": "Agendei/profissional/dashboard.php",
-      "sha256": "80bd5f4deff96af81f53da57dba5b1484eb8f9ab192462c4ef018cea29149df9"
+      "sha256": "cdc0cf78c9c3d459fbde9fc6576c5ace7ec358724e4ff3100252717b9bbfd577"
     },
     {
       "arquivo": "Agendei/profissional/horarios.php",
-      "sha256": "d95a0dec84a3048da3c8ed9974753bd84e21d7bf709d60b39bcdc2783c0d3ef3"
+      "sha256": "909af9d7353032d1595309647b1f7f5bd8bcf8676aa3d6786b4aa0d755e54d6b"
     },
     {
       "arquivo": "Agendei/profissional/perfil.php",
-      "sha256": "dd1618468d60d3a1e9f8dee563d194ae39768474e2c38e773d3e3c8f1f87866e"
+      "sha256": "114fc739fe4e6c82a022662462d1680749f0d62de9728430f245229579029030"
     },
     {
       "arquivo": "Agendei/recuperar_senha.php",
-      "sha256": "98d302490deb1914f9178880a4bc71b414f8fd17d550c6c3257b42efe0db4bdc"
+      "sha256": "d2c15b8a2c1d6cc60aec09cc73fa587d12b1b6ab715f10ad25418870d4301252"
     },
     {
       "arquivo": "Agendei/redefinir_senha.php",
-      "sha256": "c3f8faff427b87cf52164dadb1632098406173b5195739540da6ebcd035e69cf"
+      "sha256": "75e011f0394e19a1a999ceb9964c3efe3090cc3143d5acb9f3b859cbc42bbd31"
     },
     {
       "arquivo": "Agendei/scripts/.htaccess",
       "sha256": "5746144f974ecce6731e0c0d972ee197a864d7ce97f322f8f5764989e0916b3b"
     },
     {
+      "arquivo": "Agendei/scripts/backup.php",
+      "sha256": "107266884cbbd300dd1d58d647f47fd35e135c7f7c51da33816c3c5c8e5ff6a4"
+    },
+    {
       "arquivo": "Agendei/scripts/enviar_lembretes.php",
-      "sha256": "62ca8efc1f91eacf77e0fcf1c473fe94962db9464ebac6dc707fe0245c06c5ff"
+      "sha256": "602add1c8d7a8c03516722949f02da9eb0696ce65bc2b6a7cc22175b5223c1f5"
     },
     {
       "arquivo": "Agendei/scripts/gerar_modelo_bd.php",
-      "sha256": "507c367b79677995b3fc48d68c677797e161c780ddfe034aa94a2984150849d3"
+      "sha256": "91a49a15b6b1e10e18f662e61d9061bccc0dc8ab132e2ea7eb8eb5417d9652ee"
     },
     {
       "arquivo": "Agendei/scripts/liberar_2fa.php",
-      "sha256": "0ea80cf69896b490df4208d0030b4ef973d2288faaa0e70340aafcee13d327e5"
+      "sha256": "4deb1437080f55fb176e9bb783657c97c831c2bb6db099342d7ce4e265e474e5"
     },
     {
       "arquivo": "Agendei/scripts/migrar.php",
-      "sha256": "5a3d62856410ce4baa95c188e140265b2d317bdd133143d52588704b913bb549"
+      "sha256": "c5d093d775f50407adba2ad1ebc34429c92009bb1c787ac21e25c0dd8b4bc68a"
     },
     {
       "arquivo": "Agendei/scripts/migrar_assinaturas.php",
-      "sha256": "2eaa31e750c4e3a2f9d0024d56ddb811fd8286251aa4d55aa40a7d1d8deb5a0f"
+      "sha256": "cbf1668abadaf56409de9616c36a4c4948e9123176d9a42d45d7b859067c8120"
     },
     {
       "arquivo": "Agendei/scripts/migrar_diferenciais.php",
-      "sha256": "f72af19a3004433e60115fc726fc8c79ab726289ec5cf55ab77c33438ad8850c"
+      "sha256": "72c473694df8ccf50976dd8928f889b0125ad1241994be568c4cf199d9e2e2d7"
     },
     {
       "arquivo": "Agendei/scripts/migrar_email_unico.php",
-      "sha256": "1197bb771f2e2181da19f5f07d7a7745a9666f0a3b841f6e997cc9183a846460"
+      "sha256": "1c44404ae6f59209a1b36d50e9bf565c4e65519365ebfd94dc0ce4ec6ec860f6"
     },
     {
       "arquivo": "Agendei/scripts/migrar_filiais.php",
@@ -680,23 +768,23 @@
     },
     {
       "arquivo": "Agendei/scripts/migrar_lembrar.php",
-      "sha256": "0bdd13f853565a18f0c6280685da747c2534aee5363235d198d0b536721c6495"
+      "sha256": "15def457dd7279874d993a9970330425c1aa0e318ef18dfb6b8bd9d03ea0c7b2"
     },
     {
       "arquivo": "Agendei/scripts/migrar_lembretes.php",
-      "sha256": "138f1c4e4de8702769d288657b468f7dbbc9e594ae7aa56e13ba2597eac35fb7"
+      "sha256": "b826647f0c6805d47cdfec7d67827e0a135cd7e01794739b83a0196096efe12d"
     },
     {
       "arquivo": "Agendei/scripts/migrar_requisitos.php",
-      "sha256": "ad40caca684e69c84cb14e9861eb46956c386cdf36840429485a7f64e35f99f9"
+      "sha256": "ff0c0a8692c84cbdbae2c44b4ee848f5525751e5bab7839e46fd26cd93ab62d4"
     },
     {
       "arquivo": "Agendei/scripts/migrar_seguranca.php",
-      "sha256": "ae68d3c62ba188731f577228503127f3c6491d788a63dc3eded8262407ea266e"
+      "sha256": "fba1973634186dd159381c892506abdfc70e92fc7d4eaf11912334685ca9e070"
     },
     {
       "arquivo": "Agendei/scripts/migrar_totp.php",
-      "sha256": "517b7843456e8c829c5a1ff997eed7ed12b98dadb923b33d6a6f54ebeb75b5f9"
+      "sha256": "17eb3b62ae35982579b42465cd5dbd0d41dd88b8158213787eb764a3be1699db"
     },
     {
       "arquivo": "Agendei/scripts/migrar_vinculos.php",
@@ -704,15 +792,15 @@
     },
     {
       "arquivo": "Agendei/scripts/preparar_hospedagem.php",
-      "sha256": "b9d3d040793f4b8b35451ceed7de3934ee5cfa21a414db427a18c3bab6b043b3"
+      "sha256": "572a3dc2770396889fc96e6473bfec5dc06e1adbc4de7f92bab904dc2cba07ff"
     },
     {
       "arquivo": "Agendei/scripts/preparar_runtime.php",
-      "sha256": "7fb8fd266a087e69ec98abb307963ebf284612f80323a76e5190c6a99bdf0e60"
+      "sha256": "39929f20516447ac4a3c3e6b6b6bf7935ec5cee95e062dda2cefe94956eb2bf4"
     },
     {
       "arquivo": "Agendei/tarefas.php",
-      "sha256": "f354831cbe1a1f94da9afc21558a0b59b2a3e597c64dcc3928d39cae5260c235"
+      "sha256": "f7f154530ad31e30bcd1c148a98420158d3dfe8955c42ff5d8809769cab2a87f"
     },
     {
       "arquivo": "Agendei/tests/.htaccess",
@@ -720,107 +808,143 @@
     },
     {
       "arquivo": "Agendei/tests/acesso.php",
-      "sha256": "5d7b945e7dacda07ca230238d1e47b6aff29398418a86e9dc534966c3c4b3108"
+      "sha256": "1d4fa1517fca9e684fab850c500180d4207ba1ae48a02101182432cb0daee920"
     },
     {
       "arquivo": "Agendei/tests/api_falsa.php",
-      "sha256": "4c88dcda14a60b7f668e0db1df85ea1b4ce48c9422bf7db747a3aa1faa615bab"
+      "sha256": "313e33979a2ac3a858d2eb03b7562dbd30ba2620e62d0d6432746b2ddb4173ec"
+    },
+    {
+      "arquivo": "Agendei/tests/assinaturas_clientes.php",
+      "sha256": "0c5af1350d140ccb815e143a599c2dc7ba645193094246e96a5ce15e63748f85"
+    },
+    {
+      "arquivo": "Agendei/tests/bot_personalizado.php",
+      "sha256": "c69f69d00acd6779b4b080c4d974070b926c0e9c00c65e42dffadee9fe6d4184"
     },
     {
       "arquivo": "Agendei/tests/cadastro_empresa.php",
-      "sha256": "fc9c1cb47ca510edeb06d0cd066304a32325da1db92d6ae3b463365ee594b3ab"
+      "sha256": "c9f1307b966f20e01b7c83261047d6746174780753644612cdd8da6c3f0d1cf6"
     },
     {
       "arquivo": "Agendei/tests/cadastro_google.php",
-      "sha256": "8206d5c372cee73540a97f495337ad8f3614cf0d1b904edbff1258316388b2f7"
+      "sha256": "8de9ef8691527ea2bd0c61a1fd23e9f5555652fd5e32c8a63a7f591ef08a731c"
+    },
+    {
+      "arquivo": "Agendei/tests/cobranca.php",
+      "sha256": "336bc15658e3a16cd6fe7f408959e9c1501c266356ca84a9aa921cd6791c81d2"
     },
     {
       "arquivo": "Agendei/tests/email.php",
-      "sha256": "33d575782188b1b45ced6df3fc2a63c1ca653f38490a1c151de3f3980505d46e"
+      "sha256": "3ac68a78b85bdfe3d97a45c46bdb8f922aa7eb13ca3bcd1a68db77e8e313badb"
     },
     {
       "arquivo": "Agendei/tests/entrada_global.php",
-      "sha256": "c2a8d57c76657eddc983a38197df36c8169fd357bb2cfed673960146a311585e"
+      "sha256": "807501f1a6c965bece939d50e598876c9fe69e7a2bc7577e5affbd239e4bd664"
     },
     {
       "arquivo": "Agendei/tests/excluir_estabelecimento.php",
-      "sha256": "6c16585621b0a836b9402402610dd10d97ec45b33c4ffe7c46d7db6eb8e29ad1"
+      "sha256": "5e6105fe55010157710e1404c64f3ad965abd8a6414552b43bcd44daba7feec5"
     },
     {
       "arquivo": "Agendei/tests/filiais.php",
-      "sha256": "71ff6da73dfeef19cbe494e71916a33ef0e7537b4452f2ac9def1751a72b0016"
+      "sha256": "e7d62a4fe94d6d76b937c2332e89d7df818f7c16cdb698a367e122f40f66cd55"
     },
     {
       "arquivo": "Agendei/tests/fluxo_projeto.php",
-      "sha256": "8d17da3191679973656d4193e996b07c3fa083fe5d550bd1bdd3fdec8cec0137"
+      "sha256": "ae095cef4eedfcd66a2f19729bb041cbfbc6b6188ce97cff91a96a36e54d0b5b"
+    },
+    {
+      "arquivo": "Agendei/tests/legal.php",
+      "sha256": "897e139a03672ca14c8c4f8ef447164ebc0df13f5f5574a69d6198e661c7fbde"
     },
     {
       "arquivo": "Agendei/tests/lembrar_google.php",
-      "sha256": "5a35ccb989efac9e51e368df740caa8e0e6983afb75881df02da012497133e75"
+      "sha256": "317f005d960d946c644ebeae2c9bbd293d204616fab1986ba6be6de88eb2ac80"
     },
     {
       "arquivo": "Agendei/tests/lembretes.php",
-      "sha256": "001f66caeb23f0a9ddb4aa4139b536401636afc85208b40c90bd1b9bddf059c8"
+      "sha256": "31fa81e02391692642a9a3bca361437b22f3198e0b37575cb34e4d28ef365709"
     },
     {
       "arquivo": "Agendei/tests/master.php",
-      "sha256": "d8eacecda98bf0b7fa242a84483449477a5d5f01b04e9017e4e63af6cd2e1082"
+      "sha256": "2e711c59c102871cdffe4f3632fd9a67b11c8a8a0185143ef742b9a1f9637e14"
     },
     {
       "arquivo": "Agendei/tests/modelo_bd.php",
-      "sha256": "13adecdbded2076aae61b16f227cd1dc04201f1820989438264d7745a1d157f6"
+      "sha256": "e81ca4dd76ac82cd099a002aaf4bcb6b109b680bfccbf3933d4463c044f9f7eb"
     },
     {
       "arquivo": "Agendei/tests/multitenancy.php",
-      "sha256": "cee3cdfbf76b0330e8eae682c27d2cdc3b11b09d0dc06f9f7a4adc13af06e9e5"
+      "sha256": "1e82f82e3b5cbea93f5b4023b7b24f9da101edb7d58277c09844ce993cdcba7e"
+    },
+    {
+      "arquivo": "Agendei/tests/pagamento_avulso.php",
+      "sha256": "1af2694b80224442591bda05d45938006a8ac61b961bce53e28a627c8f3abd3c"
+    },
+    {
+      "arquivo": "Agendei/tests/planos_bot.php",
+      "sha256": "6f9e7d6263debed43f70c1ddaeaeef69d8d843a60b6150c491440b91fb5258d7"
     },
     {
       "arquivo": "Agendei/tests/qrcode.php",
-      "sha256": "adb32ae688b2c8e1345134d3f34a15020afdc390fabd8cbecd8889bdeba2dff4"
+      "sha256": "3f6f8dc82a799f12d009f53620cd875bcdd1c6a28d0bfc135a010089e7af8dd2"
     },
     {
       "arquivo": "Agendei/tests/requisitos.php",
-      "sha256": "24114e163644742e3551b3a5ca2436b4feda61898c17f7eed793ac7a7e0a4bcf"
+      "sha256": "dd2934af48d89dccaece96158a271b2d24ba9539c4eebfc4b5e40d9ae7c47cbe"
     },
     {
       "arquivo": "Agendei/tests/seguranca.php",
-      "sha256": "90d8fcab08c40f3699ca9341d6c5ef8d80276705c4e40fdb16a10a4eabd83477"
+      "sha256": "389b7701df1e02d4b30698c671147afd2558ab8275124bc9f9ec566dc202ede6"
+    },
+    {
+      "arquivo": "Agendei/tests/sinal_horarios.php",
+      "sha256": "3313b340b4130c866750ea0215d10bfb64fc69093be32fc373ad57a6c7e1442b"
     },
     {
       "arquivo": "Agendei/tests/smtp_falso.php",
-      "sha256": "18ddde5c0b920a441672ac1c3b231e02be9ac96c7336ae2efbccf09c8be8e75d"
+      "sha256": "bc2a2f307588e4f419ee592cb46947d6eff907633912430e39e2781b83c5cd2f"
     },
     {
       "arquivo": "Agendei/tests/totp.php",
-      "sha256": "d5c9db493309509406070746c82fad8fdc2dc1c92a975a4786fa7cb598c23226"
+      "sha256": "232820a73e1f5a861e924d30d01f95d1eb4e834dcc60c2a325cf5f1ec41e7d8a"
+    },
+    {
+      "arquivo": "Agendei/tests/verificacao_email.php",
+      "sha256": "2111d9889d1cb67a83bcf469247a77f8f95bc541693bfcd5356193c823b5c82c"
     },
     {
       "arquivo": "Agendei/trocar.php",
-      "sha256": "d5ee7a17de52c3a431925802c6441146c2048c150a6248d26fe05e4db7b5c05f"
+      "sha256": "3b06f7a8597bd78c9d6fa91af728e6173a675b2d06f9ede32716a4bd00cacb1b"
+    },
+    {
+      "arquivo": "Agendei/verificar_email.php",
+      "sha256": "589477b1a261844bae931e76b296ca39cb5070522533a4ae1927aaccc4d7e7e4"
     },
     {
       "arquivo": "Agendei/vincular.php",
-      "sha256": "78a166343ac0ce3e036ba793ae3b83fe7e18aded4757c39b62675282b8445761"
+      "sha256": "2031b145911761d862ec13a7eb2881e13db98d2a5ee3b83b4c3d069cb729784f"
     },
     {
       "arquivo": "Documentacao/AGENDEI - DOCUMENTAÇÃO DO PROJETO.doc",
-      "sha256": "3d580b4bafac69221083c2ab76f30bc01197bfaacd56d67ca640a3a3269b4509"
+      "sha256": "f92bd68d45e8ef1926cd3e2777c7286c3e8f3a6a84a7100be11ad60e4a4fd8c1"
     },
     {
       "arquivo": "Documentacao/AGENDEI - DOCUMENTAÇÃO DO PROJETO.docx",
-      "sha256": "0b771edaf38a791c84ac5f68c479226fd3ec87d45cccdcbe922b03027ba81964"
+      "sha256": "36f641222b9d9979a6f1c56b16bb8a897ff6867d4520296cabf0d04e215b13ef"
     },
     {
       "arquivo": "Documentacao/AGENDEI - DOCUMENTAÇÃO DO PROJETO.pdf",
-      "sha256": "f10f8254f7cbea58ba8b92a899b06f7d316f6f6a4ff135f8d798558f3ce4e248"
+      "sha256": "a04e5fad3be501700af1e64962d593a1f841f4681cae241788cbc1caaadf7e4b"
     },
     {
       "arquivo": "Documentacao/ANEXO - Dicionário de dados PostgreSQL.docx",
-      "sha256": "47ab2d6e3bcb5c9a1320cff19a0091a7133172b6d28a20ff4c5423c1949f7dba"
+      "sha256": "510462aec548df9d4aeaf1e4a348cde1bca38246a68ab475e904745af1c79191"
     },
     {
       "arquivo": "Documentacao/ANEXO - Dicionário de dados PostgreSQL.pdf",
-      "sha256": "693acf7312a43c27da127ccecc48bb075f2fa4f0210a3e99eea6c0265f8f5aa8"
+      "sha256": "35ff833431ac3c30749df887c1fbb858f67a3d94295b8d5f9e0e6379a7fc89b3"
     },
     {
       "arquivo": "Documentacao/der_01_nucleo.mmd",
@@ -828,7 +952,7 @@
     },
     {
       "arquivo": "Documentacao/der_01_nucleo.svg",
-      "sha256": "e010403d68fd60c1a8442bfc30f327f485385d7b8347d5000cd2e7a18449b096"
+      "sha256": "e46e8bf82db3187c855dddcf95135ef4ff339ad96b0808e1d34af6ac9ad43610"
     },
     {
       "arquivo": "Documentacao/der_02_disponibilidade.mmd",
@@ -836,7 +960,7 @@
     },
     {
       "arquivo": "Documentacao/der_02_disponibilidade.svg",
-      "sha256": "c33a9f486aa4b2fd9bfd0b70da7a2f78798549dcaf5e124bd52dae9083f3d219"
+      "sha256": "a15b8d0f4b29eb416b65ca5176b2b2a54eab6535d7dfcd8680a3a89ce979ae34"
     },
     {
       "arquivo": "Documentacao/der_03_reservas.mmd",
@@ -844,23 +968,23 @@
     },
     {
       "arquivo": "Documentacao/der_03_reservas.svg",
-      "sha256": "edbde53d78d554926eac82a7d4ae33d59297a27e84a45ef71f38603c89b40281"
+      "sha256": "6481c55cd4945846188c9f027df069307bc646541676b6588b7199ac7f697034"
     },
     {
       "arquivo": "Documentacao/der_04_atendimento.mmd",
-      "sha256": "56fc628ad4e43d9d325f0331a02a37caf352c2f1a90a5bc0b4c4de438d7f2471"
+      "sha256": "4a53813f77bd8a793b120ac8796166a959161f41b552961dd5a65403300fa55d"
     },
     {
       "arquivo": "Documentacao/der_04_atendimento.svg",
-      "sha256": "27c68b79cd96c488de5ca34169ccf0b457a9e1288083625d0e87cb7797f8abf0"
+      "sha256": "8ce6b8cc70e68ce91e98fcebfe6d84dd2c861d43a98ee46fcc3bd5d850eac078"
     },
     {
       "arquivo": "Documentacao/der_05_beneficios.mmd",
-      "sha256": "5c6bab7889c5a2604a5752db363c812c73e420d935bcf85debfefe62b5d89b1c"
+      "sha256": "4aa193a6122503d3d221ebac30f1074b1c95a271ecba9c80f7a2d28a668aa1c7"
     },
     {
       "arquivo": "Documentacao/der_05_beneficios.svg",
-      "sha256": "aecd6f1dab77a7b818f0946a91066eb84d97db0ba5da93363b67a9236ccc2073"
+      "sha256": "c062b31a3a350f481deeab069168f6c50005a747e486cb799193bdda9398c126"
     },
     {
       "arquivo": "Documentacao/der_06_plataforma.mmd",
@@ -868,7 +992,7 @@
     },
     {
       "arquivo": "Documentacao/der_06_plataforma.svg",
-      "sha256": "a6834fa8d43e7af84c7e446b12788540042d29b159f0dca3d9cd0f250460972e"
+      "sha256": "06ae605ade925b00b535f41be6ee9b90e50f9b3734e80a5d12626febbb990977"
     },
     {
       "arquivo": "Documentacao/der_07_seguranca.mmd",
@@ -876,35 +1000,39 @@
     },
     {
       "arquivo": "Documentacao/der_07_seguranca.svg",
-      "sha256": "710eea63790ff2ea809d8cb34a952526a1d0de358f58dbd4e5d15e614c9327e9"
+      "sha256": "016c22726d057fec3db646304b1e91f91b750fda1f97bf932ec99d51bc2e14dd"
     },
     {
       "arquivo": "Documentacao/der_mysql_completo.mmd",
-      "sha256": "2cf3a8d6ba59e4b065aae4b28f50201f65939ec8955bc83fea5ff58028cdeed3"
+      "sha256": "ac6f0801109877fc7fe6649dfaedb82a208710a788b5ceb515792f23ce8aab19"
     },
     {
       "arquivo": "Documentacao/der_pgsql_completo.mmd",
-      "sha256": "194088ba8a40997f804903628bd64510cd3a115ce7e70a0fb5f85e946ec1e340"
+      "sha256": "048e301f814fd9963dac277b7f1fe70e1a8958d5eebfaf4d0a1a0075f2f2b1df"
     },
     {
       "arquivo": "Documentacao/der_postgres_completo.svg",
-      "sha256": "0adba62bf5f19dc4ce1441279c24352a3827153408780239a6b24bbd631c88f5"
+      "sha256": "0829dcffe275fe8cd5da6e3639a97a4387baf8eb3bf8b9a38448034821b7c745"
     },
     {
       "arquivo": "Documentacao/DOCUMENTACAO_REVISADA.md",
-      "sha256": "0b2fac69cbb7b3862015e64b641895c4a6045f16205cd4c5b8907619e9594657"
+      "sha256": "38d905afb27d072b48589c9f0675c846c382730f240b221e895de809e8681e3a"
+    },
+    {
+      "arquivo": "Documentacao/Guia_Banca_Agendei.pdf",
+      "sha256": "0591cb6e0f7dd9c1c0ba2d29c70d049afd35d1e748fe1988b5c69e050c62c6c1"
     },
     {
       "arquivo": "Documentacao/LEIA_PRIMEIRO.md",
-      "sha256": "2664155f358903cdbd733016090f5a6e75f8a8566f0dc926752b7ac0e744297a"
+      "sha256": "d74f72dcdd7a9e4ac6d764a45fce09e07913d0b005c0239ed38dffcf4cc24319"
     },
     {
       "arquivo": "Documentacao/mer_01_pessoas_empresas.mmd",
-      "sha256": "373c55e5650a0c6648bb9d644ed7f8af3d93bd13dd787d0cf5976e9fd39c906b"
+      "sha256": "2cd469def597c561b63ffbdde7ac45eb8451ea22066d700902c0f46e8850e0f4"
     },
     {
       "arquivo": "Documentacao/mer_01_pessoas_empresas.svg",
-      "sha256": "7b31149b22d9d9c5e94172be9b61cb6a89a88bd2425579497c0fe9f8c9f134d8"
+      "sha256": "a0ba497e3be746b7addfb0e1aee3951d4e9c790e32eab91014898d4c1b629f34"
     },
     {
       "arquivo": "Documentacao/mer_02_agendamento.mmd",
@@ -912,51 +1040,63 @@
     },
     {
       "arquivo": "Documentacao/mer_02_agendamento.svg",
-      "sha256": "b2d6d29758fa4b3028e64bf201fb3612fb148904f8a57bc9da9faa8724b5efda"
+      "sha256": "c89525c4f345fa51748f5fd1e43be3758dd5e1a9ac4dc2b92f15a710a8a9d91c"
     },
     {
       "arquivo": "Documentacao/mer_03_comercial.mmd",
-      "sha256": "553aa5de6513120fc18132397e661e2d32a43f3dc4660e8d97bf0d4c1d48c8ba"
+      "sha256": "91c17bf89acb8c563d32ffad11314c758f0b183eb9f990c299c1f906712320c7"
     },
     {
       "arquivo": "Documentacao/mer_03_comercial.svg",
-      "sha256": "1098d89c10afdddeb71a79aa78bfb23d82d4ca766ca73cbb991f63ce4fa86718"
+      "sha256": "587966a54f0a513a181c3eedc1a940239b47798e61acd077c81e8329d3f9e14d"
+    },
+    {
+      "arquivo": "Documentacao/fontes/atualizar_entrega.py",
+      "sha256": "70acdaa92e9a61585382bf4ea6e6e9bed5843761048631bcef8a485b55ebaf18"
+    },
+    {
+      "arquivo": "Documentacao/fontes/atualizar_reunioes.py",
+      "sha256": "f42afefb46cfc2dd01c6b1890b8437621f2eb89bb7e5f00d651a0eb78ebc56a7"
     },
     {
       "arquivo": "Documentacao/fontes/capturas.json",
       "sha256": "91b9a0d1ec20825afd2c364bdf76bd4a3d5c35998cf4fe84d1bfddf3255e51a4"
     },
     {
+      "arquivo": "Documentacao/fontes/comum.py",
+      "sha256": "42417a019c809263b1db1b1776b8d3dc3684edeadc11eefcaefd80b21e38b14a"
+    },
+    {
       "arquivo": "Documentacao/fontes/empacotar.py",
-      "sha256": "c1abe0dc962e1b2111e3bb76d929f2ce78b8a4c17b5077f42b8bf19335e72907"
+      "sha256": "16f9795f447a1f6d7f49bcd475e4df631eaaf741529bb8314ab5c889911eb64b"
     },
     {
       "arquivo": "Documentacao/fontes/exportar_modelo.php",
-      "sha256": "03e056193105aff41edc41855974fe263b6eb809f74f67d18512c00570307468"
+      "sha256": "6716dd8e5ba4928f8db8292e2b663bd7199f887b9231d353196bb5868db95088"
     },
     {
       "arquivo": "Documentacao/fontes/exportar_word.ps1",
-      "sha256": "70031cec7a2463d11663f82d788129e4dc074ab6c060bf1caccca809a85971d6"
+      "sha256": "5395c9056814d4e36f8b42c20f191815e197aad8c22b2ea8619bddd97febec3d"
     },
     {
       "arquivo": "Documentacao/fontes/gerar_documentacao.py",
-      "sha256": "0f10cc96aba89cbd4535f3fce95e58db0803855ba0186dcc3775cbecf2be89e6"
+      "sha256": "42fb24b4b7f58e172f4b742d88f54cf0f8180469c84d1ad9d21602a81857032a"
     },
     {
       "arquivo": "Documentacao/fontes/gerar_mer.py",
-      "sha256": "f1381789ca67f6e689cb433b9a85863c4d318f5f0b7f3276622e0ae27b336c42"
+      "sha256": "3b940642db4e3b614bd272fcbb657e5087fbbf2416e06823dec1923cb72c158c"
     },
     {
       "arquivo": "Documentacao/fontes/modelos.json",
-      "sha256": "6da84ba2dc024574e5d24b9ab3a5b1029ef7cb6b28aa51e54c954d530fbeeaeb"
+      "sha256": "616f015df688236fcb500ad5ce43815878bba97f980d7e156a4a7338d0e6d00f"
     },
     {
       "arquivo": "Documentacao/fontes/preparar_visuais.py",
-      "sha256": "95571e1f88b4932b7cb9be2048428c0f5691def288db5169fafdd8a53d97a6bf"
+      "sha256": "8e25b1d04253fde496e71aa2a99df08dedb56d564094435fbcfac1e036ab1813"
     },
     {
       "arquivo": "Documentacao/fontes/relatos_ampliados.py",
-      "sha256": "82ba620ba211b5aa204cdf1dca16e44f1d8feeae84683eaf8e616f47a92f976b"
+      "sha256": "ed6094ddece7e90b75176f6296071083eab313725923ba1ffd1ca3d284474ae5"
     },
     {
       "arquivo": "Documentacao/imagens/cadastro_celular_recorte.png",
@@ -988,31 +1128,31 @@
     },
     {
       "arquivo": "Documentacao/imagens/der_02_disponibilidade.png",
-      "sha256": "916a8891586f33fea630c39ef826c95e9952b9262db803504ab96127655a6f51"
+      "sha256": "a791a7c9df09914fdb4f04c0cad9e236418845c2aca7680d4f01e380abad472a"
     },
     {
       "arquivo": "Documentacao/imagens/der_03_reservas.png",
-      "sha256": "6b87a21d2d7c1af3d0615228b01d749123119e3851f0c4d9c9338eff6047b81e"
+      "sha256": "5884142ecb3dc06de5becdb45d0120154113420937da0fd569d9e137cfe5fdbd"
     },
     {
       "arquivo": "Documentacao/imagens/der_04_atendimento.png",
-      "sha256": "eb3dce64d4b3ce2e5d1e43c5130189a69847db4fd391541efb00e9510a652e74"
+      "sha256": "ed9d56469cf15b9e3cd04559df5b9a82c8f031ad23b05d64febb8c8004fe73cd"
     },
     {
       "arquivo": "Documentacao/imagens/der_05_beneficios.png",
-      "sha256": "20c70f97a0a6d99d93422766160a3698823420620fcdbebf4afd0f345fb7f200"
+      "sha256": "04cdc11481dd607360912cd0cb9dced7f48a2d45d82ceb339f74a4be7ab566e4"
     },
     {
       "arquivo": "Documentacao/imagens/der_06_plataforma.png",
-      "sha256": "7da1d698bdf702d503ccd964fb07043ac47741ece2ca63746e83490f0cb67238"
+      "sha256": "68bbbf1484beacbfdfee46a35aa558f7e9b25affe2260ba9d9dc83ed3d096599"
     },
     {
       "arquivo": "Documentacao/imagens/der_07_seguranca.png",
-      "sha256": "2c61fc694db3a8ebfc09b927cd8f3cd7148254538b58b985f917f8baa89e34fa"
+      "sha256": "21b9eb11160470ed06f0cddb165639eb6b18b0fa46d8ad7a2ed117fd68d9ebe2"
     },
     {
       "arquivo": "Documentacao/imagens/der_postgres_completo.png",
-      "sha256": "d61bb614a0cf8d635cddb8dccddef8ef5a492068c27fc923a49ff3eb67adab88"
+      "sha256": "9a13ffcbbe30e598181c844f5d7ef68c157782228eaba0acc8ad79e0a3904456"
     },
     {
       "arquivo": "Documentacao/imagens/entrada_celular_recorte.png",
@@ -1044,15 +1184,15 @@
     },
     {
       "arquivo": "Documentacao/imagens/mer_01_pessoas_empresas.png",
-      "sha256": "40c5288c25d90ff2e24c6ab6ba0e4a90f92ec698a61715609c22d5ca989ee22f"
+      "sha256": "a8c1d1a2b63cc1de197d937b11c68a3304d385ef36977c7286ed965429b2ed77"
     },
     {
       "arquivo": "Documentacao/imagens/mer_02_agendamento.png",
-      "sha256": "75717a642ccbd5fe105ab958b416bacb0ec7eb0f3b77df931db35f18a1b98439"
+      "sha256": "f61ba718a6feb2493e49633c8b01cefa8386cb7a25196c9863913eddd0a9045b"
     },
     {
       "arquivo": "Documentacao/imagens/mer_03_comercial.png",
-      "sha256": "95009c03b9a29830603946878cd3e71406ab4ac4bb7094663e3ddfca0893ae9c"
+      "sha256": "491c03f190389bb94ca4f03331da685059d7a6a4b6ae45cf1312eca10a4ea07f"
     }
   ]
 }

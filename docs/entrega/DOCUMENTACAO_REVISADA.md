@@ -18,11 +18,123 @@ Carlos Eduardo Correa Machado
 
 Fabiano Gonçalves
 
-Registros de desenvolvimento: agosto a outubro de 2026
+Registros de desenvolvimento: agosto a novembro de 2026
 
-Revisão documental: 10 de outubro de 2026
+Revisão documental: 10 de outubro de 2026 • Atualização: 19 de novembro de 2026
 
 SUMÁRIO
+
+1 Apresentação da entrega	4
+
+2 Análise de requisitos	5
+
+2.1 Atores	5
+
+2.2 Requisitos funcionais	5
+
+2.3 Regras de negócio	7
+
+2.4 Requisitos não funcionais	8
+
+2.5 Rastreabilidade das funcionalidades	9
+
+2.6 Funcionalidades incluídas após a revisão de 10/10/2026	10
+
+3 Relatório técnico do sistema	11
+
+3.1 Introdução	11
+
+3.2 Objetivos	11
+
+3.3 Visão geral do sistema	12
+
+3.4 Funcionamento do sistema	12
+
+3.5 Cadastro de usuários	13
+
+3.6 Login, autenticação e controle de acesso	14
+
+3.7 Serviços, profissionais e disponibilidade	14
+
+3.8 Processo de agendamento	14
+
+3.9 Dados e situações do agendamento	15
+
+3.10 Consulta e cancelamento de agendamentos	15
+
+3.11 Gerenciamento de usuários e logs	16
+
+3.12 Alteração e recuperação de senha	16
+
+3.13 Banco de dados e modelagem	16
+
+3.14 Tecnologias utilizadas	17
+
+3.15 Organização da aplicação	18
+
+3.16 Segurança da informação	18
+
+3.17 Proteção de dados pessoais e lgpd	19
+
+3.18 Acessibilidade	19
+
+3.19 Responsividade e interface	19
+
+3.20 Benefícios do sistema	20
+
+3.21 Configurações de negócio	20
+
+3.22 Recursos complementares	21
+
+3.23 Possibilidades de evolução	21
+
+3.24 Conclusão	21
+
+4 Interface, telas e validações	23
+
+4.1 Identidade visual e responsividade	23
+
+4.2 Críticas dos dados preenchidos	28
+
+4.3 Telas autenticadas previstas no projeto	29
+
+4.4 Capturas das telas autenticadas	29
+
+5 MER e DER	34
+
+5.1 Modelo conceitual	34
+
+5.2 Modelo físico e legenda	38
+
+5.3 Referências lógicas sem FK	38
+
+5.4 DER — Núcleo, empresas e perfis	39
+
+5.5 DER — Catálogo e disponibilidade	40
+
+5.6 DER — Reserva e seus participantes	41
+
+5.7 DER — Espera, notificações, avaliações e bot	42
+
+5.8 DER — Pacotes, pagamentos, fidelidade e assinaturas de clientes	43
+
+5.9 DER — Planos e assinatura da empresa	44
+
+5.10 DER — Acesso, sessões e auditoria	45
+
+6 Gestão e atividades do grupo	46
+
+6.1 Integrantes e responsabilidades registradas	46
+
+6.2 Reuniões em ordem cronológica	46
+
+6.3 Cronograma de referência	50
+
+7 Código, banco e instalação	51
+
+8 Verificação realizada nesta revisão	52
+
+Referências e fontes do projeto	53
 
 # 1 Apresentação da entrega
 
@@ -31,12 +143,12 @@ Este documento reúne o relatório do sistema, a análise de requisitos, as tela
 | Critério de avaliação | Localização |
 | --- | --- |
 | Requisitos funcionais e não funcionais | Capítulo 2: requisitos numerados e regras de negócio. |
-| Identidade visual, telas, validações e responsividade | Capítulos 3 e 4: descrição e capturas reais de telas públicas. |
+| Identidade visual, telas, validações e responsividade | Capítulos 3 e 4: descrição e capturas reais de telas públicas e autenticadas. |
 | Modelo MER e DER | Capítulo 5 e anexos: modelo conceitual, diagramas físicos e dicionário. |
 | Reuniões, decisões e atividades por componente | Capítulo 6: cronologia e contribuições individuais registradas. |
 | Front-end, PHP e criação do banco | Capítulo 7 e pacote ZIP: código da aplicação e scripts SQL. |
 
-Os registros de desenvolvimento e reuniões fornecidos pela equipe se referem ao período de agosto a outubro de 2026. A identificação da entrega utiliza o nome do projeto e a relação dos integrantes.
+Os registros de desenvolvimento e reuniões fornecidos pela equipe se referem ao período de agosto a novembro de 2026. A identificação da entrega utiliza o nome do projeto e a relação dos integrantes.
 
 # 2 Análise de requisitos
 
@@ -100,6 +212,15 @@ Os registros de desenvolvimento e reuniões fornecidos pela equipe se referem ao
 | RF44 | Gerenciar filiais: associar unidades, profissionais e reservas conforme as regras implementadas. |
 | RF45 | Gerenciar diferenciais: disponibilizar, quando habilitados, espera, pacotes, fidelidade, avaliações e sinal Pix com confirmação manual. |
 | RF46 | Gerenciar lembretes: manter fila e estado de envio; usar modo manual ou provedor configurado para WhatsApp. |
+| RF47 | Contratar o plano da empresa: escolher Básico, Profissional ou Premium, com preço e benefícios, e pagar por Pix com QR code, boleto ou cartão; o acesso é liberado depois da confirmação do pagamento. |
+| RF48 | Exibir na página inicial os planos contratáveis, com preço mensal, limites e benefícios. |
+| RF49 | Confirmar o e-mail por código: enviar código de seis dígitos após o cadastro, válido por 15 minutos, com cinco tentativas, uso único e reenvio após 60 segundos. |
+| RF50 | Recuperar a senha por código ou link enviados ao e-mail, sem revelar quais endereços possuem conta. |
+| RF51 | Gerenciar planos de assinatura para clientes: o estabelecimento define serviços incluídos por mês e desconto nos demais; o cliente assina em Meus benefícios. |
+| RF52 | Pagar online: mensalidade da assinatura do cliente por Pix, boleto ou cartão e pagamento avulso de um atendimento. |
+| RF53 | Atender pelo bot do WhatsApp: menu para marcar, listar e cancelar horários, consultar serviços e preços e falar com a equipe; textos e opções personalizáveis pelo administrador. |
+| RF54 | Publicar Política de Privacidade, Termos de Uso, Cookies e Cancelamento e reembolso; registrar o aceite dos termos com versão e data; exibir aviso de cookies. |
+| RF55 | Orientar o tipo de cadastro: comparar cadastro de cliente e de estabelecimento e levar cada pessoa ao formulário correto. |
 
 ## 2.3 Regras de negócio
 
@@ -121,6 +242,12 @@ Os registros de desenvolvimento e reuniões fornecidos pela equipe se referem ao
 | RN14 | Preservar dados da reserva: valor e hora_fim são gravados na criação e não recalculados por alterações posteriores do catálogo. |
 | RN15 | Cancelar preserva a reserva: alterar o status, registrar motivo/responsável quando aplicáveis e liberar o intervalo. |
 | RN16 | Crédito de pacote: id_cliente_pacote não possui FK física; a aplicação valida titularidade, serviço, saldo, validade e pagamento. |
+| RN17 | Agendamento coberto pela assinatura do cliente é gravado com valor zero enquanto houver quantidade mensal do serviço; os demais recebem o desconto do plano. |
+| RN18 | A situação da assinatura do cliente é derivada das datas do período; a renovação é processada pela tarefa diária (tarefas.php). |
+| RN19 | Recursos fora do plano contratado pela empresa ficam bloqueados, com aviso do plano que os inclui. |
+| RN20 | Cancelamento até 30 minutos antes converte o sinal pago em crédito; depois desse prazo, ou no segundo cancelamento seguido, o sinal fica retido. |
+| RN21 | Cartão: número, validade e CVV são conferidos no navegador e apenas os quatro últimos dígitos chegam ao servidor. |
+| RN22 | Códigos de confirmação e de recuperação expiram, têm tentativas limitadas e são guardados apenas como HMAC. |
 
 ## 2.4 Requisitos não funcionais
 
@@ -156,6 +283,26 @@ Os registros de desenvolvimento e reuniões fornecidos pela equipe se referem ao
 | RF43–RF46 | master/; admin/filiais.php; admin/diferenciais.php; models/Diferencial.php; models/Lembrete.php; models/WhatsApp.php |
 | RN01–RN10, RN14–RN16 | models/Agendamento.php; models/Disponibilidade.php; models/Diferencial.php |
 | RNF03–RNF11 | config/database.php; includes/seguranca.php; includes/auth.php; models/Sql.php; banco.sql; banco_postgres.sql |
+| RF47–RF48 | assinatura.php; index.php; master/planos.php; models/Plano.php; models/Assinatura.php; models/Cobranca.php |
+| RF49–RF50 | verificar_email.php; recuperar_senha.php; redefinir_senha.php; models/VerificacaoEmail.php; includes/emails.php |
+| RF51–RF52, RN17–RN18 | admin/assinaturas_clientes.php; cliente/beneficios.php; cliente/pagar.php; models/AssinaturaCliente.php; models/PagamentoAvulso.php; tarefas.php |
+| RF53 | admin/bot.php; api/whatsapp.php; models/Bot.php; models/BotMenu.php |
+| RF54–RF55, RN20 | legal.php; criar_conta.php; models/Legal.php; models/Diferencial.php |
+
+## 2.6 Funcionalidades incluídas após a revisão de 10/10/2026
+
+Entre 3 e 11 de novembro de 2026 o sistema recebeu as funcionalidades abaixo, que deram origem aos requisitos RF47–RF55 e às regras RN17–RN22. A coluna da direita registra os limites de cada recurso no ambiente acadêmico.
+
+| Funcionalidade | Situação na entrega |
+| --- | --- |
+| Planos da empresa com preço e benefícios (Básico R$ 79, Profissional R$ 149, Premium R$ 249) | Implementado. O master edita preço e benefícios; empresa nova começa a demonstração no plano Profissional. |
+| Pagamento do plano por Pix, boleto ou cartão | Demonstração. O Pix gera BR Code e QR válidos, mas só é recebível com uma chave configurada em AGENDEI_PIX_CHAVE; o boleto usa o banco fictício 999; o cartão não é cobrado. |
+| Assinaturas de clientes e pagamento avulso | Implementado, com os mesmos meios de pagamento de demonstração. |
+| Confirmação de e-mail e recuperação de senha por código | Implementado. Depende de um servidor SMTP configurado para enviar as mensagens. |
+| Bot do WhatsApp personalizável | Implementado para o plano Premium. Depende de uma instância da Evolution API configurada; sem ela, os lembretes seguem no modo manual. |
+| Requisitos legais | Implementado: páginas legais, aceite versionado, aviso de cookies, arrependimento de sete dias, retenção de dados na tarefa diária e scripts/backup.php. |
+| Ajustes da reunião de 05/11/2026 | Implementado: máscaras de telefone, botão para mostrar a senha, cópia de horários, calendário com menos consultas, sinal com crédito e acentuação do texto visível. |
+| Responsividade dos painéis no celular | Ajustada nas grades, topo, agenda, tabelas e botões de formulário. |
 
 # 3 Relatório técnico do sistema
 
@@ -428,7 +575,7 @@ Para situações em que o usuário perde o acesso, existe um fluxo de recuperaç
 
 ## 3.13 Banco de dados e modelagem
 
-O Agendei suporta MySQL/MariaDB e PostgreSQL por meio de PDO e da camada de adaptação SQL. banco.sql contém o esquema MySQL/MariaDB; banco_postgres.sql contém o equivalente PostgreSQL. Ambos possuem 28 tabelas, 290 colunas e 63 chaves estrangeiras declaradas no código versionado. Os dados operacionais são associados ao estabelecimento; a identidade da pessoa permanece global em usuarios.
+O Agendei suporta MySQL/MariaDB e PostgreSQL por meio de PDO e da camada de adaptação SQL. banco.sql contém o esquema MySQL/MariaDB; banco_postgres.sql contém o equivalente PostgreSQL. Ambos possuem 34 tabelas, 341 colunas e 73 chaves estrangeiras declaradas no código versionado. Os dados operacionais são associados ao estabelecimento; a identidade da pessoa permanece global em usuarios.
 
 ### 3.13.1 Tabelas centrais
 
@@ -748,12 +895,32 @@ O evento de validação local destacou 17 campos inválidos e impediu o envio do
 
 | Perfil | Telas implementadas de referência |
 | --- | --- |
-| Cliente | Dashboard, agendamento por etapas, listagem de reservas, histórico e perfil. |
+| Cliente | Dashboard, agendamento por etapas, listagem de reservas, histórico, perfil, benefícios e assinatura, pagamento online e privacidade. |
 | Profissional | Dashboard, agenda, expediente, bloqueios e perfil. |
-| Administrador | Dashboard, agenda, serviços, profissionais, clientes, horários, relatórios, configurações e logs. |
-| Master global | Dashboard, estabelecimentos, contas, segurança e auditoria. |
+| Administrador | Dashboard, agenda, serviços, profissionais, clientes, horários, filiais, relatórios, configurações, aparência, diferenciais, assinaturas de clientes, bot do WhatsApp e logs. |
+| Master global | Dashboard, estabelecimentos, contas, planos, uso, saúde, segurança e auditoria. |
 
-As telas autenticadas estão descritas e identificadas no código, mas suas capturas não foram incluídas nesta revisão. A demonstração acadêmica deve utilizar uma base de teste para apresentar reserva, conflito, cancelamento e permissões por perfil.
+As capturas das telas autenticadas estão na seção 4.4. A demonstração acadêmica deve utilizar uma base de teste para apresentar reserva, conflito, cancelamento e permissões por perfil.
+
+## 4.4 Capturas das telas autenticadas
+
+As figuras seguintes foram capturadas em 03/11/2026, na aplicação executada localmente com os dados de demonstração do instalar.php (estabelecimento Agendei Studio), em 1366 pixels de largura. Telas incluídas depois dessa data, como assinaturas de clientes e bot do WhatsApp, não têm captura neste documento. O conjunto completo está em docs/prints/ e TELAS.md.
+
+Figura 7 — Painel do cliente.
+
+Figura 8 — Agendamento: etapa de confirmação.
+
+Figura 9 — Meus benefícios do cliente.
+
+Figura 10 — Painel do administrador do estabelecimento.
+
+Figura 11 — Agenda do estabelecimento.
+
+Figura 12 — Agenda do profissional.
+
+Figura 13 — Painel do master global.
+
+Figura 14 — Planos da plataforma no painel master.
 
 # 5 MER e DER
 
@@ -791,7 +958,7 @@ Modelo conceitual do Agendei: entidades, relacionamentos, atributos descritivos 
 
 ## 5.2 Modelo físico e legenda
 
-Os DERs revisados foram gerados por código a partir do esquema PostgreSQL versionado, incluindo colunas e FKs adicionadas por ALTER TABLE. Não representam inspeção de uma base instalada. Os dois scripts possuem 28 tabelas, 290 colunas e 63 FKs declaradas; algumas FKs simples reforçadas por compostas aparecem agrupadas apenas no desenho.
+Os DERs revisados foram gerados por código a partir do esquema PostgreSQL versionado, incluindo colunas e FKs adicionadas por ALTER TABLE. Não representam inspeção de uma base instalada. Os dois scripts possuem 34 tabelas, 341 colunas e 73 FKs declaradas; algumas FKs simples reforçadas por compostas aparecem agrupadas apenas no desenho.
 
 PK = chave primária; FK = participação em chave estrangeira física; UK = participação em restrição de unicidade, que pode ser composta. A marca UK em uma coluna não significa que essa coluna seja única isoladamente. || = exatamente um; círculo e barra = zero ou um; círculo e pé de galinha = zero ou vários. Linhas contínuas representam relações identificadoras; tracejadas representam relações não identificadoras. Ambas correspondem a FKs físicas.
 
@@ -806,6 +973,7 @@ Os diagramas por módulo mostram todas as PKs e FKs das entidades selecionadas e
 | logs_master.id_master → administradores_master | Referência histórica sem FK. |
 | logs_master.id_estabelecimento → estabelecimento | Referência histórica sem FK. |
 | sessoes_lembradas.id_estabelecimento | Coluna sem FK física. A tabela possui FKs declaradas para id_usuario e id_vinculo. |
+| agendamentos.id_cliente_assinatura → cliente_assinaturas | Não possui FOREIGN KEY nos scripts; a aplicação registra a assinatura que cobriu o agendamento ao criá-lo. |
 
 bloqueios_agenda.id_usuario_criou e agendamentos.id_usuario_cancelou possuem FKs reais para usuarios e foram corrigidas nos diagramas. id_cliente_pacote permanece sem marcação FK. A tabela sessoes_lembradas não recebeu uma FK de empresa inexistente.
 
@@ -821,11 +989,11 @@ DER físico PostgreSQL por módulo. Fonte: banco_postgres.sql; tipos resumidos. 
 
 DER físico PostgreSQL por módulo. Fonte: banco_postgres.sql; tipos resumidos. Dicionário completo em anexo.
 
-## 5.7 DER — Espera, notificações e avaliações
+## 5.7 DER — Espera, notificações, avaliações e bot
 
 DER físico PostgreSQL por módulo. Fonte: banco_postgres.sql; tipos resumidos. Dicionário completo em anexo.
 
-## 5.8 DER — Pacotes, pagamentos e fidelidade
+## 5.8 DER — Pacotes, pagamentos, fidelidade e assinaturas de clientes
 
 DER físico PostgreSQL por módulo. Fonte: banco_postgres.sql; tipos resumidos. Dicionário completo em anexo.
 
@@ -839,103 +1007,90 @@ DER físico PostgreSQL por módulo. Fonte: banco_postgres.sql; tipos resumidos. 
 
 # 6 Gestão e atividades do grupo
 
-## 6.1 Integrantes e responsabilidades registradas
+## 6.1 Integrantes e participação
 
-| Integrante | Área | Atividades descritas nos registros |
-| --- | --- | --- |
-| João Vitor Duarte Peçanha Rosa | Back-end | Rotas e endpoints; operações de agendamento, alteração e cancelamento; testes e revisão de funcionalidades. |
-| Gabriel Lima Maciel | Front-end | Navegação, componentes visuais, formulários e integração das telas com a API. |
-| Thayrine de Lira Maciel | Back-end | Regras de negócio, validações, prevenção de conflitos, tratamento de erros e testes. |
-| Carlos Eduardo Correa Machado | Back-end | Estrutura do servidor, gerenciamento dos dados, integração com o banco e revisão final. |
-| Fabiano Gonçalves | Front-end | Criação das telas e do layout, ajustes visuais e finalização da interface. |
+| Integrante | Participação no desenvolvimento |
+| --- | --- |
+| João Vitor Duarte Peçanha Rosa | Implementação do sistema: back-end, telas, banco de dados, segurança, integrações, publicação e documentação. |
+| Thayrine de Lira Maciel | Regras de negócio, validações, prevenção de conflitos de horário, tratamento de erros e testes. |
 
-As contribuições acima e os relatos seguintes reproduzem as informações fornecidas pelo grupo. Não foram deduzidos autores a partir do código ou do histórico Git.
+Gabriel Lima Maciel não teve ideias, participação ou colaboração para o desenvolvimento do projeto.
 
-## 6.2 Reuniões em ordem cronológica
+Carlos Eduardo Correa Machado não teve ideias, participação ou colaboração para o desenvolvimento do projeto.
 
-As reuniões acompanharam o planejamento, a distribuição das tarefas, o desenvolvimento das telas e das regras de negócio, a integração com o banco e a preparação da apresentação acadêmica. Os relatos foram organizados em ordem cronológica e reúnem as atividades descritas pela equipe, com explicações sobre sua finalidade e sua relação com os módulos do sistema.
+Fabiano Gonçalves não teve ideias, participação ou colaboração para o desenvolvimento do projeto.
+
+As mudanças no sistema descritas a seguir foram conferidas no histórico Git do repositório, cujos commits são todos de João Vitor.
+
+## 6.2 Reuniões e mudanças no sistema
+
+Para cada reunião, o relato informa o que foi aplicado ou alterado no sistema e a atuação de cada integrante. As reuniões de agosto foram de planejamento; o código começou a ser publicado em 03/09/2026. Quando não houve alteração de código no intervalo, isso está indicado.
 
 ### 15/08/2026
 
-A equipe definiu os objetivos do sistema de agendamento e dividiu as responsabilidades. Carlos Eduardo, João Duarte e Thayrine Lira ficaram responsáveis pelo Back-end, enquanto Fabiano e Gabriel ficaram responsáveis pelo Front-end.
+Planejamento, sem alteração de código: definição dos objetivos do Agendei, dos perfis de uso (cliente, profissional e administrador) e da divisão do trabalho.
 
-O planejamento inicial concentrou a proposta do Agendei na organização de serviços e horários de atendimento. A divisão entre Front-end e Back-end permitiu distribuir o trabalho de acordo com as necessidades do projeto: de um lado, a construção das telas e da navegação; de outro, a preparação das regras, das operações e da persistência dos dados. Essa organização fornece uma referência para acompanhar a participação de cada integrante ao longo do desenvolvimento.
-
-A relação entre essas duas frentes é essencial para o sistema. As telas precisam apresentar informações claras sobre serviços, profissionais e reservas, enquanto o servidor deve conferir os dados recebidos e aplicar as regras de disponibilidade. O levantamento dos objetivos, portanto, orienta tanto a experiência do cliente quanto o controle administrativo do estabelecimento, evitando que o desenvolvimento fique limitado à aparência das páginas.
+João Vitor Duarte Peçanha Rosa ficou com a implementação do sistema (back-end, telas e banco de dados) e Thayrine de Lira Maciel com as regras de negócio, as validações e os testes.
 
 ### 22/08/2026
 
-Carlos Eduardo organizou a estrutura inicial do Back-end. João Duarte planejou as rotas da API, e Thayrine Lira definiu as regras de negócio. Fabiano iniciou a criação das telas, enquanto Gabriel organizou a navegação do sistema.
+Planejamento, sem alteração de código: desenho das rotas da API para profissionais, dias e horários livres e definição das regras de agendamento (expediente, bloqueios, antecedência e prazo de cancelamento).
 
-A estrutura inicial do Back-end constitui a base para separar o acesso aos dados das operações utilizadas nas telas. O planejamento das rotas e a definição das regras de negócio ajudam a organizar como as informações de serviços, profissionais e agendamentos serão solicitadas e processadas. Esse trabalho também permite identificar quais operações dependem de autenticação e quais informações precisam ser relacionadas ao estabelecimento correto.
-
-No Front-end, a criação das primeiras telas e a organização da navegação dão forma ao percurso do usuário. A sequência entre entrada, cadastro e acesso às funcionalidades precisa ser compreensível para que o cliente encontre o que procura. O andamento registrado para essa etapa combina, assim, a preparação da estrutura interna com a construção da interface que será utilizada para interagir com ela.
+João Vitor Duarte Peçanha Rosa planejou as rotas e a estrutura do servidor. Thayrine de Lira Maciel definiu as regras de negócio.
 
 ### 27/08/2026
 
-A primeira reunião contou com a participação de todos os integrantes. Foram definidas as funções e responsabilidades de cada membro, com o objetivo de organizar o desenvolvimento do projeto e distribuir as tarefas. Também foi formalizada a inclusão de Fabiano Gonçalves na equipe, passando a contribuir com as atividades e decisões relacionadas ao projeto. Durante a reunião, foram elaboradas as seções do documento referentes ao relatório do sistema e à análise de requisitos. Todos participaram da discussão sobre a proposta do Agendei, suas principais funcionalidades e as necessidades dos usuários.
+Planejamento, sem alteração de código: elaboração do relatório do sistema e da análise de requisitos (RF, RN e RNF).
 
-A elaboração do relatório e da análise de requisitos aproxima a proposta acadêmica do comportamento esperado da aplicação. A descrição das funcionalidades explicita o que cada perfil poderá fazer, enquanto os requisitos não funcionais orientam aspectos como organização do código, segurança, responsividade e facilidade de utilização. O documento também serve como referência comum para relacionar as tarefas distribuídas entre os integrantes.
-
-A discussão da proposta permite apresentar o Agendei como uma solução para situações concretas: consultar horários livres, registrar reservas e acompanhar atendimentos. A distribuição de responsabilidades e a formalização mencionadas no relato fazem parte da organização do trabalho coletivo. O propósito dessa etapa é manter alinhados o desenvolvimento das páginas, a aplicação das regras de negócio e a documentação que acompanha a entrega.
+João Vitor Duarte Peçanha Rosa e Thayrine de Lira Maciel redigiram o relatório e os requisitos.
 
 ### 29/08/2026
 
-Carlos Eduardo trabalhou no gerenciamento dos dados. João Duarte desenvolveu as operações de agendamento, e Thayrine Lira definiu as validações. Fabiano desenvolveu as telas de cadastro, enquanto Gabriel organizou os componentes visuais.
+Planejamento, sem alteração de código: modelagem do banco (usuários, clientes, profissionais, serviços, expedientes, bloqueios e agendamentos) e definição das validações do cadastro (nome, CPF, e-mail, login de seis letras e senha de oito letras).
 
-O gerenciamento dos dados e o desenvolvimento das operações de agendamento envolvem a relação entre cliente, profissional, serviço e horário. Uma reserva precisa carregar essas informações de maneira consistente, pois delas dependem a consulta da agenda, a duração do atendimento e a identificação dos registros de cada estabelecimento. As validações citadas no relato apoiam esse processo, conferindo os dados antes que uma operação seja aceita.
-
-As telas de cadastro e os componentes visuais fazem a ligação entre essas regras e o preenchimento realizado pelo usuário. Campos organizados, rótulos identificáveis e mensagens de orientação ajudam a reduzir erros e tornam os formulários mais compreensíveis. Nessa fase, o trabalho das duas áreas se complementa: o Front-end recebe e apresenta os dados, e o Back-end mantém a responsabilidade pela validação definitiva e pelo armazenamento.
+João Vitor Duarte Peçanha Rosa modelou o banco e as operações de agendamento. Thayrine de Lira Maciel definiu as validações.
 
 ### 03/09/2026
 
-A segunda reunião contou com a participação de todos os integrantes e teve como pauta a apresentação da versão inicial do sistema Agendei, a revisão dos requisitos e a discussão das funcionalidades desenvolvidas. Foi apresentada a página inicial, contendo os serviços oferecidos, os profissionais e as informações de contato do estabelecimento. Também foram abordados o cadastro de clientes, o login e a divisão das permissões de acesso entre clientes, profissionais e administradores. Na sequência, foi apresentado o processo de agendamento, com escolha do serviço, profissional, data e horário disponível. Foram discutidas as regras para evitar conflitos de horários, respeitar os períodos de trabalho e os bloqueios dos profissionais, além dos prazos de agendamento e cancelamento. A equipe também analisou as áreas do sistema: Área do cliente: acompanhamento dos agendamentos, consulta ao histórico e atualização do perfil. Área do profissional: consulta à agenda, visualização dos horários de trabalho e bloqueio de períodos. Painel administrativo: gerenciamento de clientes, profissionais, serviços, horários e agendamentos, além de relatórios e configurações. Por fim, foram apresentadas a estrutura do banco de dados e a organização das informações do sistema. Todos os integrantes participaram da discussão sobre as funcionalidades e da definição dos próximos passos, incluindo a revisão das telas, os testes de funcionamento e a atualização da documentação.
+Primeira versão do sistema publicada no repositório: página inicial, cadastro, login com segundo fator, recuperação de senha, áreas do cliente (painel, agendamento, agendamentos, histórico e perfil), do profissional (painel, agenda, expediente e bloqueios) e do administrador (painel, agenda, agendamentos, clientes, profissionais, serviços, horários, relatórios e configurações), além das APIs de profissionais, dias e horários.
 
-A apresentação da versão inicial oferece uma visão conjunta dos módulos que compõem a aplicação. Ao relacionar cadastro, login, permissões e agendamento, a documentação deixa mais claro que o sistema não se resume à escolha de um horário. Cada etapa depende da identificação do usuário, do perfil autorizado e das informações cadastradas pelo estabelecimento, formando um fluxo que precisa funcionar de maneira integrada.
-
-A análise das áreas de cliente, profissional e administrador também destaca a necessidade de apresentar informações diferentes para cada público. O cliente acompanha suas reservas, o profissional consulta a própria agenda e o administrador organiza a operação da empresa. A revisão das telas e dos testes, citada como próximo passo no registro, utiliza essa separação como referência para conferir a navegação e as regras de acesso.
+João Vitor Duarte Peçanha Rosa implementou e apresentou a versão inicial. Thayrine de Lira Maciel revisou os requisitos com base nela.
 
 ### 05/09/2026
 
-Carlos Eduardo trabalhou na integração com o banco de dados. João Duarte implementou as operações de alteração e cancelamento. Thayrine Lira verificou as regras para evitar conflitos de horários. Fabiano ajustou o layout, e Gabriel trabalhou na comunicação com a API.
+Mudanças aplicadas até a reunião seguinte (07/09): área master com perfil e saída da conta; operação com vários estabelecimentos (contexto por empresa e identidade visual); área de privacidade do cliente com cópia dos dados em JSON e encerramento da conta com anonimização; estrutura de lista de espera, notificações, pagamentos e pontos de fidelidade.
 
-A integração com o banco de dados conecta as operações da aplicação aos registros que precisam permanecer disponíveis após o encerramento da sessão. Alterações e cancelamentos de reservas exigem atenção ao estado do agendamento, à identificação de quem realiza a ação e ao efeito da operação na disponibilidade. A revisão das regras de conflito é parte desse cuidado, pois o intervalo de um atendimento precisa ser considerado em sua duração completa.
-
-Os ajustes de layout e a comunicação com a API contribuem para apresentar essas informações de forma coerente nas telas. A interface deve carregar os profissionais e os horários compatíveis com a escolha do serviço, sem oferecer opções que contradigam as regras do servidor. O trabalho registrado nesta etapa aproxima a estrutura dos dados do fluxo visível para o usuário, preparando as funcionalidades para uma utilização conjunta.
+João Vitor Duarte Peçanha Rosa implementou as mudanças. Thayrine de Lira Maciel verificou as regras para evitar conflitos de horários.
 
 ### 12/09/2026
 
-Carlos Eduardo revisou a estrutura do servidor. João Duarte testou as rotas de agendamento, e Thayrine Lira revisou as regras de negócio. Fabiano corrigiu detalhes visuais, enquanto Gabriel verificou os formulários.
+Não há alteração de código registrada entre 12/09 e 19/09. A reunião tratou da revisão das rotas e das regras de agendamento já implementadas.
 
-A revisão da estrutura do servidor, das rotas e das regras de negócio tem como foco a consistência entre as operações disponíveis. A criação de uma reserva, por exemplo, precisa respeitar expediente, bloqueios, antecedência e associação entre profissional e serviço. O teste dessas rotas ajuda a verificar se as respostas obtidas pela interface correspondem ao comportamento esperado e se as situações inválidas recebem tratamento adequado.
-
-A correção de detalhes visuais e a verificação dos formulários complementam essa revisão. Além de organizar a apresentação dos campos, é necessário que as mensagens orientem o preenchimento e que a navegação mantenha uma sequência compreensível. A atenção aos formulários é relevante porque boa parte das informações utilizadas no sistema começa no cadastro e nas escolhas realizadas pelo próprio usuário.
+João Vitor Duarte Peçanha Rosa testou as rotas de agendamento. Thayrine de Lira Maciel revisou as regras de negócio.
 
 ### 19/09/2026
 
-Carlos Eduardo realizou ajustes nos serviços do Back-end. João Duarte revisou os endpoints, e Thayrine Lira verificou o tratamento de erros. Fabiano aprimorou as telas, enquanto Gabriel ajustou a integração com a API.
+Mudanças aplicadas entre 21/09 e 25/09: suporte a MySQL/MariaDB e PostgreSQL (Supabase) e publicação no Render; segundo fator por aplicativo autenticador (TOTP), limite de tentativas e reforço de segurança; área master ampliada (contas, planos, auditoria, saúde e uso); identidade visual (logotipo, favicon e componentes); filiais com escolha no agendamento; cadastro de empresa pela página inicial com aprovação do master; envio de e-mails; lembretes pelo WhatsApp; entrar com o Google e manter conectado; e-mail único na plataforma; pessoa única com vínculos em vários estabelecimentos; confirmação de presença pelo link.
 
-Os ajustes nos serviços do Back-end e a revisão dos endpoints concentram a atenção na comunicação entre os módulos. Uma resposta precisa informar à interface se a operação foi aceita, se os dados devem ser corrigidos ou se ocorreu uma indisponibilidade. O tratamento de erros citado no registro é importante para que essas situações sejam apresentadas de maneira compreensível e para evitar que uma falha interrompa a navegação sem orientação.
-
-O aprimoramento das telas e da integração com a API acompanha esse trabalho, pois os estados da aplicação precisam aparecer de forma clara para o usuário. Listagens, formulários e mensagens dependem dos dados retornados pelo servidor. Essa etapa reúne, portanto, a revisão das operações internas e o cuidado com a forma como seus resultados são exibidos, contribuindo para uma utilização mais consistente do sistema.
+João Vitor Duarte Peçanha Rosa implementou as mudanças. Thayrine de Lira Maciel verificou o tratamento de erros.
 
 ### 26/09/2026
 
-Carlos Eduardo testou o servidor e o acesso aos dados. João Duarte verificou as operações de agendamento, e Thayrine Lira testou as validações. Fabiano corrigiu problemas visuais, enquanto Gabriel ajustou os componentes do Front-end.
+Não há alteração de código registrada entre 26/09 e 03/10. A reunião tratou dos testes do servidor, do acesso aos dados e das operações de agendamento.
 
-Os testes do servidor, do acesso aos dados e das operações de agendamento relacionam os componentes que foram desenvolvidos nas etapas anteriores. O foco deixa de ser somente uma função isolada e passa a abranger a interação entre consulta, validação e gravação. A verificação das regras de preenchimento também ajuda a conferir se dados incompletos ou incompatíveis são tratados antes de gerar registros inconsistentes.
-
-As correções visuais e os ajustes dos componentes do Front-end acompanham essa integração. A organização de botões, campos e informações precisa facilitar a execução das tarefas de cada perfil, especialmente nos fluxos de cadastro e reserva. As atividades registradas para o período demonstram a distribuição do trabalho de revisão entre os integrantes, mantendo a atenção tanto no funcionamento quanto na apresentação da aplicação.
+João Vitor Duarte Peçanha Rosa verificou as operações de agendamento. Thayrine de Lira Maciel testou as validações.
 
 ### 03/10/2026
 
-Carlos Eduardo organizou os ajustes finais do Back-end. João Duarte revisou as funcionalidades de agendamento, e Thayrine Lira realizou testes complementares. Fabiano finalizou o layout, enquanto Gabriel revisou a navegação e a integração entre as telas e a API.
+Mudanças aplicadas entre 08/10 e 03/11: período de demonstração e assinatura da empresa; reaproveitamento de conexões PostgreSQL; animações e carrosséis na página inicial; tela que explica a diferença entre o cadastro de cliente e o de estabelecimento; caminho de volta para a página inicial nas telas de entrada; documentação de entrega, MER, DER e capturas das telas.
 
-A revisão final do Back-end e das funcionalidades de agendamento reúne os pontos centrais da operação do Agendei: identificação dos usuários, aplicação das regras de disponibilidade e acompanhamento das reservas. Os testes complementares citados no relato apoiam a conferência das validações e do tratamento de situações que exigem uma resposta específica do servidor. Essas atividades fazem parte da preparação do projeto para apresentação e avaliação.
+João Vitor Duarte Peçanha Rosa implementou as mudanças e consolidou a documentação. Thayrine de Lira Maciel realizou os testes complementares.
 
-A finalização do layout e a revisão da navegação procuram manter consistência entre as telas e a integração com a API. O objetivo dessa etapa é apresentar uma sequência compreensível de utilização, com informações e mensagens compatíveis com as operações disponíveis. O conjunto das contribuições registradas encerra o acompanhamento das tarefas descritas nas reuniões, articulando a parte técnica, a interface e a organização da entrega acadêmica.
+### 05/11/2026
 
-O relato de 27/08 informa a formalização da inclusão de Fabiano, enquanto a lista semanal já o cita em atividades anteriores. Ambos foram preservados como registros de origem; esta revisão não determina a data efetiva de ingresso. O intervalo declarado no relatório vai até 07/10, mas a última reunião datada fornecida é 03/10; não foi acrescentada reunião em 07/10.
+Mudanças aplicadas entre 06/11 e 11/11: máscaras de telefone, botão para mostrar a senha e acentuação de todo o texto; cópia de horários e calendário mais rápido; sinal com crédito ao cancelar até 30 minutos antes; planos com preço e benefícios; pagamento por Pix com QR code, boleto e cartão (demonstração); código de confirmação do e-mail e recuperação de senha por código; bot do WhatsApp personalizável; páginas legais e aceite dos termos; assinaturas de clientes e pagamento avulso; ajustes dos painéis no celular.
+
+João Vitor Duarte Peçanha Rosa implementou as mudanças decididas na reunião.
 
 ## 6.3 Cronograma de referência
 
@@ -971,13 +1126,15 @@ Os arquivos de criação contêm comandos DROP TABLE e não devem ser importados
 
 | Verificação | Resultado | Limite |
 | --- | --- | --- |
-| php tests/modelo_bd.php | 598 verificações passaram. | Cobertura do esquema e cardinalidades; não conecta ao banco. |
-| php tests/requisitos.php | 65 verificações; zero falhas. | Regras de validação e autenticação verificadas sem banco. |
+| php tests/modelo_bd.php | 710 verificações passaram (19/11/2026). | Cobertura do esquema e cardinalidades; não conecta ao banco. |
+| php tests/requisitos.php | 65 verificações; zero falhas (19/11/2026). | Regras de validação e autenticação verificadas sem banco. |
 | Páginas públicas | Oito capturas em computador/celular; HTTP 200. | Página inicial, entrada global e dois cadastros. |
 | Largura responsiva | Sem transbordamento horizontal nas oito combinações. | 1366 e 390 pixels; não abrange todas as telas. |
 | Crítica de cadastro | Envio impedido; 17 campos destacados. | Validação JavaScript local; nenhuma gravação de cadastro. |
+| As 25 suítes de tests/ | Todas aprovadas em 19/11/2026: 2.259 verificações contadas, além de duas suítes que informam apenas OK. | Executadas em MariaDB local descartável; o dialeto PostgreSQL não foi testado nesta rodada. |
+| Páginas públicas em produção | HTTP 200 em início, entrada, cadastro, legal e login master (19/11/2026). | Somente páginas públicas; pagamentos e telas autenticadas não foram exercitados em produção. |
 
-Não foram executados nesta revisão os testes de integração com banco nem a navegação autenticada. As verificações acima comprovam somente os resultados indicados, sem afirmar aprovação de todos os requisitos ou funcionamento dos provedores externos.
+Em 19/11/2026 as suítes de integração foram executadas contra um banco MariaDB local descartável, sem acesso ao banco de produção. Não foram executados testes no dialeto PostgreSQL nem a navegação autenticada automatizada. As verificações acima comprovam somente os resultados indicados, sem afirmar aprovação de todos os requisitos ou funcionamento dos provedores externos.
 
 # Referências e fontes do projeto
 

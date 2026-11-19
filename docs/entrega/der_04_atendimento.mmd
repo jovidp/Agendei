@@ -24,6 +24,15 @@ erDiagram
         integer id_profissional FK
         varchar status
     }
+    bot_opcoes {
+        integer id_bot_opcao PK
+        integer id_estabelecimento FK
+        varchar tipo
+    }
+    whatsapp_conversas {
+        integer id_estabelecimento PK,FK
+        varchar numero PK
+    }
     agendamentos {
         integer id_agendamento PK,UK
         integer id_cliente FK
@@ -92,3 +101,5 @@ erDiagram
     agendamentos ||..o| avaliacoes : "id_estabelecimento + id_agendamento"
     clientes ||..o{ avaliacoes : "id_estabelecimento + id_cliente"
     profissionais ||..o{ avaliacoes : "id_estabelecimento + id_profissional"
+    estabelecimento ||--o{ whatsapp_conversas : "id_estabelecimento"
+    estabelecimento ||..o{ bot_opcoes : "id_estabelecimento"

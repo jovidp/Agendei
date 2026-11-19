@@ -21,13 +21,21 @@ flowchart TB
     R6 ---|0..N| F
     E ---|1| R7{"Define"}
     R7 ---|0..N| Q
-    U --- AU(["Nome • e-mail • contatos"])
+    O["OPÇÃO DO BOT"]
+    W["CONVERSA DO WHATSAPP"]
+    E ---|1| R8{"Personaliza"}
+    R8 ---|0..N| O
+    E ---|1| R9{"Atende pelo bot"}
+    R9 ---|0..N| W
+    U --- AU(["Nome • e-mail • contatos • e-mail confirmado"])
     V --- AV(["Tipo • situação • login local"])
     E --- AE(["Nome • endereço • identidade visual"])
     Q --- AQ(["Chave • valor"])
-    class U,E,V,C,P,A,F,Q entity
-    class R1,R2,R3,R4,R5,R6,R7 relationship
-    class AU,AV,AE,AQ attribute
+    O --- AO(["Rótulo • resposta • ordem"])
+    W --- AW(["Número • etapa"])
+    class U,E,V,C,P,A,F,Q,O,W entity
+    class R1,R2,R3,R4,R5,R6,R7,R8,R9 relationship
+    class AU,AV,AE,AQ,AO,AW attribute
 
     classDef entity fill:#e9f3fa,stroke:#27617f,stroke-width:2px,color:#153b50;
     classDef relationship fill:#fff3d6,stroke:#ad8031,stroke-width:1.5px,color:#533b12;
