@@ -10,7 +10,8 @@ $tituloPagina    = $tituloPagina ?? 'Painel';
 $cssExtra        = $cssExtra ?? [];
 ?>
 <!DOCTYPE html>
-<html lang="pt-BR">
+<?php /* Sidebar recolhida vem do cookie (main.js grava): a pagina ja abre no estado certo, sem piscar. */ ?>
+<html lang="pt-BR"<?= ($_COOKIE['agendei_sidebar'] ?? '') === 'recolhida' ? ' class="sidebar-recolhida"' : '' ?>>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -44,35 +45,62 @@ $cssExtra        = $cssExtra ?? [];
             </form>
         </div>
 <?php endif; ?>
-        <div class="topo-painel">
-            <button type="button" class="botao-sidebar" aria-label="Abrir menu"><span></span></button>
-            <?php if (!ehMaster() || ehSimulacao()): ?>
-                <span class="topo-marca"><?= Tema::marca($estabelecimento) ?><strong><?= e($estabelecimento['nome']) ?></strong></span>
-            <?php endif; ?>
-            <div>
-                <h1><?= e($tituloPagina) ?></h1>
-                <?php if (!empty($subtituloTopo)): ?>
-                    <span class="subtitulo-topo"><?= e($subtituloTopo) ?></span>
+        <?php
+        // Trilha "Area > Pagina" acima do titulo; o inicio de cada perfil e o seu dashboard.
+        $areaPainel = [
+            'master' => ['Administração master', 'master/dashboard.php'],
+            'admin' => ['Administração', 'admin/dashboard.php'],
+            'profissional' => ['Área do profissional', 'profissional/dashboard.php'],
+            'cliente' => ['Área do cliente', 'cliente/dashboard.php'],
+        ][perfil()] ?? null;
+        $contaPainel = [
+            'master' => 'master/perfil.php', 'profissional' => 'profissional/perfil.php', 'cliente' => 'cliente/perfil.php',
+        ][perfil()] ?? null;
+        ?>
+        <header class="topo-painel">
+            <button type="button" class="botao-sidebar" aria-label="Abrir menu" aria-controls="sidebarPainel"><span></span></button>
+            <div class="topo-titulo">
+                <?php if ($areaPainel): ?>
+                    <nav class="trilha" aria-label="Você está em">
+                        <a href="<?= url($areaPainel[1]) ?>"><?= e($areaPainel[0]) ?></a>
+                        <span aria-hidden="true">/</span>
+                        <span aria-current="page"><?= e($tituloPagina) ?></span>
+                    </nav>
                 <?php endif; ?>
+                <h1><?= e($tituloPagina) ?><?php if (!empty($subtituloTopo)): ?> <span class="subtitulo-topo"><?= e($subtituloTopo) ?></span><?php endif; ?></h1>
             </div>
             <?php if (!empty($acoesTopo)): ?>
                 <div class="topo-acoes"><?= $acoesTopo ?></div>
             <?php endif; ?>
 
-            <?php /* Login e saida ficam no canto superior direito de todas as telas. */ ?>
-            <div class="usuario-topo">
-                <div class="usuario-topo-dados">
-                    <span class="usuario-topo-login"><?= e(usuarioLogin()) ?></span>
-                    <span class="usuario-topo-perfil"><?= e(perfilRotulo()) ?></span>
+            <?php /* Conta, troca de vinculo e saida ficam no menu do avatar, no canto superior direito. */ ?>
+            <details class="conta-topo">
+                <summary aria-label="Menu da conta de <?= e(usuarioNome()) ?>">
+                    <span class="avatar"><?= e(iniciais(usuarioNome())) ?></span>
+                    <span class="conta-topo-dados">
+                        <span class="conta-topo-login"><?= e(usuarioLogin()) ?></span>
+                        <span class="conta-topo-perfil"><?= e(perfilRotulo()) ?></span>
+                    </span>
+                    <?= icone('descer', 'conta-topo-seta') ?>
+                </summary>
+                <div class="conta-menu">
+                    <div class="conta-menu-cabecalho">
+                        <strong><?= e(usuarioNome()) ?></strong>
+                        <span><?= e(perfilRotulo()) ?></span>
+                    </div>
+                    <?php if ($contaPainel && !ehSimulacao()): ?>
+                        <a href="<?= url($contaPainel) ?>"><?= icone('perfil') ?> Meu perfil</a>
+                    <?php endif; ?>
+                    <?php if (!ehSimulacao()): ?>
+                        <a href="<?= url(ehMaster() ? 'master/autenticador.php' : 'autenticador.php') ?>"><?= icone('bloqueio') ?> Verificação em 2 etapas</a>
+                    <?php endif; ?>
+                    <?php if (!ehMaster() && !ehSimulacao() && podeTrocarVinculo()): ?>
+                        <a href="<?= url('trocar.php') ?>" title="Sua conta vale em mais de um lugar"><?= icone('clientes') ?> Trocar de estabelecimento</a>
+                    <?php endif; ?>
+                    <a class="conta-menu-sair" href="<?= url(ehMaster() ? 'master/logout.php' : 'logout.php') ?>"><?= icone('sair') ?> Sair</a>
                 </div>
-                <span class="avatar"><?= e(iniciais(usuarioNome())) ?></span>
-                <?php if (!ehMaster() && !ehSimulacao() && podeTrocarVinculo()): ?>
-                    <a class="btn btn-contorno btn-pequeno" href="<?= url('trocar.php') ?>" title="Sua conta vale em mais de um lugar">Trocar</a>
-                <?php endif; ?>
-                <a class="btn btn-contorno btn-pequeno"
-                   href="<?= url(ehMaster() ? 'master/logout.php' : 'logout.php') ?>">Sair</a>
-            </div>
-        </div>
+            </details>
+        </header>
 
         <div class="area-conteudo">
             <?php exibirFlash(); ?>

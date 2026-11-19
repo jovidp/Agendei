@@ -4,7 +4,8 @@
  * Pagamento online do cliente: mensalidade da assinatura (?mensalidade=id)
  * ou atendimento avulso (?agendamento=id), por Pix, boleto ou cartao.
  * Boleto e cartao sao de demonstracao (Cobranca); do cartao so chegam os 4
- * ultimos digitos (assets/js/assinatura.js). Quem confirma e o estabelecimento.
+ * ultimos digitos (assets/js/assinatura.js). A mensalidade e confirmada na
+ * simulacao (sem gateway); o avulso continua confirmado pelo estabelecimento.
  */
 require_once __DIR__ . '/../config/config.php';
 exigirLogin('cliente');
@@ -37,12 +38,33 @@ function cobrancaAtual(int $idMensalidade, int $idAgendamento, int $idCliente): 
         : null;
 }
 
+/**
+ * Sem gateway, a mensalidade e paga na simulacao: o cartao na hora e Pix/boleto
+ * pelo botao "Simular pagamento". Confere antes que a cobranca e deste cliente.
+ */
+function simularMensalidadePaga(int $idMensalidade, int $idCliente): void
+{
+    if (!AssinaturaCliente::cobrancaDoCliente($idMensalidade, $idCliente)
+        || !AssinaturaCliente::confirmarPagamento($idMensalidade)) {
+        definirFlash('erro', 'Esta mensalidade não está mais aguardando pagamento.');
+        redirecionar('cliente/beneficios.php');
+    }
+    definirFlash('assinado', 'Pagamento aprovado. Plano assinado com sucesso! Seus benefícios já estão valendo.');
+    redirecionar('cliente/beneficios.php');
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exigirCsrf();
+    if ($idMensalidade && post('acao') === 'simular_pagamento') {
+        simularMensalidadePaga($idMensalidade, $idCliente);
+    }
     try {
         $idMensalidade
             ? AssinaturaCliente::escolherMetodo($idMensalidade, $idCliente, post('metodo'), post('cartao_final') ?: null)
             : PagamentoAvulso::solicitar($idAgendamento, $idCliente, post('metodo'), post('cartao_final') ?: null);
+        if ($idMensalidade && post('metodo') === 'cartao') {
+            simularMensalidadePaga($idMensalidade, $idCliente);
+        }
         definirFlash('sucesso', 'Forma de pagamento registrada. O estabelecimento confirma o pagamento.');
     } catch (InvalidArgumentException | DomainException $erro) {
         definirFlash('erro', $erro->getMessage());
@@ -117,7 +139,14 @@ require RAIZ . '/includes/painel_header.php';
         <?php else: ?>
             <div class="alerta alerta-aviso"><div><span class="alerta-texto">O Pix não está disponível no momento. Escolha outra forma.</span></div></div>
         <?php endif; ?>
-        <p class="margem-topo">Depois do pagamento, o estabelecimento confirma e você vê aqui e em <?= $idMensalidade ? 'Meus benefícios' : 'Meus agendamentos' ?>.</p>
+        <?php if ($idMensalidade && in_array($metodo, ['pix', 'boleto'], true)): ?>
+            <form method="post" class="margem-topo"><?= campoCsrf() ?><input type="hidden" name="acao" value="simular_pagamento">
+                <button type="submit" class="btn">Simular pagamento</button>
+                <p class="ajuda-campo">Ambiente de demonstração: não há banco conectado. Este botão faz o papel do banco confirmando o pagamento e assina o plano.</p>
+            </form>
+        <?php else: ?>
+            <p class="margem-topo">Depois do pagamento, o estabelecimento confirma e você vê aqui e em <?= $idMensalidade ? 'Meus benefícios' : 'Meus agendamentos' ?>.</p>
+        <?php endif; ?>
         <a class="btn btn-contorno btn-pequeno margem-topo" href="<?= url('cliente/pagar.php?' . ($idMensalidade ? 'mensalidade=' . $idMensalidade : 'agendamento=' . $idAgendamento) . '&trocar=1') ?>">Trocar forma de pagamento</a>
     <?php endif; ?>
     </div>

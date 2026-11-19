@@ -43,6 +43,61 @@ class Relatorio
         ];
     }
 
+    /**
+     * Mesmos indicadores no periodo anterior, ate o mesmo ponto: semana de
+     * segunda ate hoje contra segunda ate o mesmo dia da semana passada; mes
+     * do dia 1 ate hoje contra o mesmo trecho do mes anterior. Assim a
+     * comparacao nao pune o meio da semana ou do mes.
+     */
+    public static function comparativos(?string $hoje = null): array
+    {
+        $hoje ??= date('Y-m-d');
+        $dia = new DateTimeImmutable($hoje);
+        $inicioSemana = $dia->modify('monday this week');
+        $inicioMes = $dia->modify('first day of this month');
+        $inicioMesAnterior = $inicioMes->modify('-1 month');
+        // Dia 31 vira o ultimo dia do mes anterior, quando ele for mais curto.
+        $fimMesAnterior = $inicioMesAnterior->modify('+' . (min((int) $dia->format('j'), (int) $inicioMesAnterior->format('t')) - 1) . ' days');
+        $f = fn (DateTimeImmutable $d) => $d->format('Y-m-d');
+        $ativos = ['agendado', 'confirmado', 'concluido'];
+        $periodo = fn (string $de, string $ate, array $filtro) => Agendamento::contar(['data_inicial' => $de, 'data_final' => $ate] + $filtro);
+
+        return [
+            'semana_atual'      => $periodo($f($inicioSemana), $hoje, ['status_em' => $ativos]),
+            'semana_anterior'   => $periodo($f($inicioSemana->modify('-7 days')), $f($dia->modify('-7 days')), ['status_em' => $ativos]),
+            'concluidos_atual'  => $periodo($f($inicioMes), $hoje, ['status' => 'concluido']),
+            'concluidos_anterior' => $periodo($f($inicioMesAnterior), $f($fimMesAnterior), ['status' => 'concluido']),
+            'realizado_atual'   => self::faturamento($f($inicioMes), $hoje, ['concluido']),
+            'realizado_anterior' => self::faturamento($f($inicioMesAnterior), $f($fimMesAnterior), ['concluido']),
+            'cancelados_atual'  => $periodo($f($inicioMes), $hoje, ['status' => 'cancelado']),
+            'cancelados_anterior' => $periodo($f($inicioMesAnterior), $f($fimMesAnterior), ['status' => 'cancelado']),
+        ];
+    }
+
+    /**
+     * Agendamentos validos (sem os cancelados) e valor de cada um dos ultimos
+     * $dias dias, ate hoje, com zero nos dias sem movimento.
+     */
+    public static function serieDiaria(int $dias = 14, ?string $hoje = null): array
+    {
+        $fim = new DateTimeImmutable($hoje ?? date('Y-m-d'));
+        $inicio = $fim->modify('-' . ($dias - 1) . ' days');
+        $porDia = [];
+        foreach (self::movimentoPorDia($inicio->format('Y-m-d'), $fim->format('Y-m-d')) as $linha) {
+            $porDia[substr((string) $linha['data_agendamento'], 0, 10)] = $linha;
+        }
+        $serie = [];
+        for ($d = $inicio; $d <= $fim; $d = $d->modify('+1 day')) {
+            $linha = $porDia[$d->format('Y-m-d')] ?? null;
+            $serie[] = [
+                'data'  => $d->format('Y-m-d'),
+                'total' => $linha ? (int) $linha['total'] - (int) $linha['cancelados'] : 0,
+                'valor' => $linha ? (float) $linha['valor_total'] : 0.0,
+            ];
+        }
+        return $serie;
+    }
+
     /** Soma dos valores dos agendamentos que nao foram cancelados. */
     public static function faturamento(string $dataInicial, string $dataFinal, ?array $status = null): float
     {

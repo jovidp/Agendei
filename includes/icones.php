@@ -24,6 +24,12 @@ function icone(string $nome, string $classe = 'sidebar-icone'): string
         'saude'         => '<path d="M3 12h4l2.5-6 4 12 2.5-6H21"/>',
         'voltar'        => '<path d="m15 18-6-6 6-6"/>',
         'avancar'       => '<path d="m9 18 6-6-6-6"/>',
+        'recolher'      => '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/><path d="m15 10-2 2 2 2"/>',
+        'dinheiro'      => '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M7 12h.01M17 12h.01"/>',
+        'concluido'     => '<circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/>',
+        'cancelado'     => '<circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/>',
+        'subir'         => '<path d="m6 15 6-6 6 6"/>',
+        'descer'        => '<path d="m6 9 6 6 6-6"/>',
     ];
 
     if (!isset($caminhos[$nome])) {

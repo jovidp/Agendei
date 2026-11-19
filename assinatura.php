@@ -3,8 +3,9 @@
  * Contratacao do plano, acessivel mesmo quando a demonstracao expirou.
  *
  * A empresa escolhe o plano (preco e beneficios vem da tabela planos, que o
- * master edita) e a forma de pagamento. O pagamento ainda e confirmado pelo
- * financeiro (Assinatura::confirmarPagamento): nao ha gateway. Pix e boleto
+ * master edita) e a forma de pagamento. Nao ha gateway: o cartao e aprovado na
+ * hora e Pix/boleto tem o botao "Simular pagamento" (Assinatura::confirmarPagamento);
+ * o master tambem pode confirmar. Pix e boleto
  * sao gerados por Cobranca (demonstracao); do cartao so chegam os 4 ultimos
  * digitos, porque os campos do cartao nao tem name e nunca saem do navegador.
  */
@@ -19,6 +20,15 @@ if (!ehAdmin() || ehSimulacao()) {
 $idEstabelecimento = Contexto::id();
 $planos = Plano::contrataveis();
 $planosPorId = array_column($planos, null, 'id_plano');
+
+/** Mensagem de plano assinado, com o fim do periodo pago. */
+function planoAssinado(int $idEstabelecimento): string
+{
+    $plano = Plano::doEstabelecimento($idEstabelecimento);
+    $ate = Assinatura::acessoAte(Assinatura::situacao($idEstabelecimento));
+    return 'Plano ' . ($plano['nome'] ?? '') . ' assinado com sucesso! O acesso da empresa está liberado'
+        . ($ate ? ' até ' . formatarData(substr($ate, 0, 10)) : '') . '.';
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exigirCsrf();
@@ -35,6 +45,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ''            => ['erro', 'Não há assinatura para cancelar.'],
         ];
         definirFlash(...$mensagens[$resultado]);
+        redirecionar('assinatura.php');
+    }
+
+    // Sem gateway: este botao faz o papel do banco avisando que o Pix/boleto foi pago.
+    if ($acao === 'simular_pagamento') {
+        if (Assinatura::situacao($idEstabelecimento)['status'] === 'pendente') {
+            Assinatura::confirmarPagamento($idEstabelecimento);
+            definirFlash('assinado', planoAssinado($idEstabelecimento));
+        }
         redirecionar('assinatura.php');
     }
 
@@ -63,11 +82,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     Plano::atribuir($idEstabelecimento, (int) $plano['id_plano'], 'Escolhido pela empresa');
     Assinatura::solicitarPagamento($idEstabelecimento, post('metodo'));
     $valor = formatarMoeda($plano['preco_mensal']);
-    definirFlash('sucesso', 'Plano ' . $plano['nome'] . ' escolhido. ' . match (post('metodo')) {
-        'pix'    => 'Pague ' . $valor . ' pelo QR code Pix abaixo.',
-        'boleto' => 'O boleto de ' . $valor . ' está logo abaixo.',
-        default  => 'O pagamento de ' . $valor . ' no cartão final ' . post('cartao_final') . ' está em análise.',
-    });
+    if (post('metodo') === 'cartao') {
+        // Simulacao: o cartao e aprovado na hora, como faria a operadora.
+        Assinatura::confirmarPagamento($idEstabelecimento);
+        definirFlash('assinado', 'Pagamento de ' . $valor . ' aprovado no cartão final ' . post('cartao_final') . '. ' . planoAssinado($idEstabelecimento));
+    } else {
+        definirFlash('sucesso', 'Plano ' . $plano['nome'] . ' escolhido. ' . (post('metodo') === 'pix'
+            ? 'Pague ' . $valor . ' pelo QR code Pix abaixo.'
+            : 'O boleto de ' . $valor . ' está logo abaixo.'));
+    }
     redirecionar('assinatura.php');
 }
 
@@ -89,7 +112,8 @@ require RAIZ . '/includes/painel_header.php';
 <?php elseif ($assinatura['status'] === 'ativa' && !empty($assinatura['data_cancelamento'])): ?>
     <p>Assinatura cancelada. O acesso continua até <strong><?= e(formatarData(substr((string) Assinatura::acessoAte($assinatura), 0, 10))) ?></strong> e não será renovado. Para continuar depois disso, escolha um plano quando o acesso encerrar.</p>
 <?php elseif ($emDia): ?>
-    <p>O acesso da empresa está liberado. Você pode trocar de plano abaixo quando quiser.</p>
+    <?php $ate = Assinatura::acessoAte($assinatura); ?>
+    <p>Plano <strong><?= e($planoAtual['nome'] ?? '') ?></strong> assinado. O acesso da empresa está liberado<?= $ate ? ' até <strong>' . e(formatarData(substr($ate, 0, 10))) . '</strong>' : '' ?>. Você pode trocar de plano abaixo quando quiser.</p>
 <?php elseif ($assinatura['status'] === 'pendente'): ?>
     <p>Recebemos sua escolha de pagamento por <strong><?= e(Assinatura::rotuloMetodo($assinatura['metodo_pagamento'] ?? null)) ?></strong>. O acesso é liberado assim que o pagamento for confirmado.</p>
     <?php if (($assinatura['metodo_pagamento'] ?? '') === 'pix'): $codigoPix = Cobranca::pix($preco, 'AGD' . $idEstabelecimento); ?>
@@ -107,9 +131,11 @@ require RAIZ . '/includes/painel_header.php';
         <label for="boleto-linha" class="ajuda-campo">Linha digitável:</label>
         <input type="text" id="boleto-linha" value="<?= e($boleto['linha']) ?>" readonly>
         <button type="button" class="btn btn-contorno margem-topo" data-copiar="boleto-linha">Copiar linha digitável</button>
-    <?php elseif (($assinatura['metodo_pagamento'] ?? '') === 'cartao'): ?>
-        <p>O pagamento no cartão está em análise pela operadora. Você não precisa fazer mais nada.</p>
     <?php endif; ?>
+    <form method="post" class="margem-topo"><?= campoCsrf() ?><input type="hidden" name="acao" value="simular_pagamento">
+        <button type="submit" class="btn">Simular pagamento</button>
+        <p class="ajuda-campo">Ambiente de demonstração: não há banco conectado. Este botão faz o papel do banco confirmando o pagamento e assina o plano.</p>
+    </form>
 <?php else: ?>
     <p>A demonstração de <?= Assinatura::DIAS_DEMO ?> dias terminou. Escolha um plano e a forma de pagamento para reativar sua empresa.</p>
 <?php endif; ?>

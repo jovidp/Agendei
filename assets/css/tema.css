@@ -13,17 +13,13 @@ body {
 #previaInicial[hidden] {
   display: none !important;
 }
+/* Nome longo quebra em ate duas linhas ao lado da logo (painel.css). */
 .sidebar-marca {
-  height: auto;
-  min-height: 60px;
-  padding-top: 10px;
-  padding-bottom: 10px;
-  flex-wrap: wrap;
   overflow-wrap: anywhere;
 }
 .sidebar-marca .marca-logo {
   max-width: 72px;
-  height: 36px;
+  height: 32px;
 }
 .marca {
   overflow-wrap: anywhere;
@@ -52,19 +48,9 @@ body {
 .btn-perigo:hover {
   color: var(--branco);
 }
-.sidebar-marca,
-.sidebar-perfil strong,
-.sidebar-perfil span,
-.sidebar-menu a,
-.sidebar-menu a:hover,
-.sidebar-menu a.ativo,
-.sidebar-menu .separador,
 .autenticacao-apresentacao,
 .autenticacao-apresentacao h2,
 .autenticacao-apresentacao .marca {
-  color: var(--sobre-primaria);
-}
-.sidebar-perfil .avatar {
   color: var(--sobre-primaria);
 }
 .etapa.ativa .etapa-numero,

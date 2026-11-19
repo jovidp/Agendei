@@ -264,6 +264,38 @@
         fundo.classList.remove("visivel");
       });
     }
+
+    // Recolher/expandir no computador; o cookie faz o painel ja abrir assim na proxima pagina.
+    var recolher = document.querySelector(".sidebar-recolher");
+    if (recolher) {
+      var raiz = document.documentElement;
+      var marcar = function () {
+        var recolhida = raiz.classList.contains("sidebar-recolhida");
+        recolher.setAttribute("aria-expanded", recolhida ? "false" : "true");
+        recolher.title = recolhida ? "Expandir menu" : "Recolher menu";
+        recolher.querySelector(".sr-only").textContent = recolher.title;
+      };
+      marcar();
+      recolher.addEventListener("click", function () {
+        var recolhida = raiz.classList.toggle("sidebar-recolhida");
+        document.cookie = "agendei_sidebar=" + (recolhida ? "recolhida" : "aberta") + "; path=/; max-age=31536000; SameSite=Lax";
+        marcar();
+      });
+    }
+
+    // Menu da conta (details): fecha ao clicar fora ou com Esc.
+    var conta = document.querySelector(".conta-topo");
+    if (conta) {
+      document.addEventListener("click", function (evento) {
+        if (conta.open && !conta.contains(evento.target)) conta.open = false;
+      });
+      document.addEventListener("keydown", function (evento) {
+        if (evento.key === "Escape" && conta.open) {
+          conta.open = false;
+          conta.querySelector("summary").focus();
+        }
+      });
+    }
   }
 
   // -----------------------------------------------------------------
@@ -697,8 +729,47 @@
 
   // -----------------------------------------------------------------
 
+  // -----------------------------------------------------------------
+  // Assinatura confirmada: o anel gira e a janela se abre com a logo
+  // -----------------------------------------------------------------
+
+  function iniciarAssinado() {
+    var janela = document.querySelector(".assinado");
+    if (!janela) return;
+    var botao = janela.querySelector(".assinado-fechar");
+    var semAnimacao = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var anterior = document.activeElement;
+
+    setTimeout(function () {
+      janela.classList.remove("girando");
+      botao.focus();
+      // Terminada a abertura, tira o recorte circular para a sombra aparecer inteira.
+      setTimeout(function () { janela.classList.add("aberto"); }, semAnimacao ? 0 : 750);
+    }, semAnimacao ? 0 : 1400);
+
+    function fechar() {
+      janela.classList.add("saindo");
+      document.removeEventListener("keydown", teclado);
+      setTimeout(function () { janela.remove(); }, semAnimacao ? 0 : 250);
+      if (anterior && anterior.focus) anterior.focus();
+    }
+
+    // Esc fecha; Tab fica no unico botao da janela (aria-modal).
+    function teclado(evento) {
+      if (evento.key === "Escape") fechar();
+      if (evento.key === "Tab") { evento.preventDefault(); botao.focus(); }
+    }
+
+    botao.addEventListener("click", fechar);
+    janela.addEventListener("click", function (evento) {
+      if (evento.target === janela && !janela.classList.contains("girando")) fechar();
+    });
+    document.addEventListener("keydown", teclado);
+  }
+
   // Inicializa os comportamentos somente depois que os elementos da página estão disponíveis.
   document.addEventListener("DOMContentLoaded", function () {
+    iniciarAssinado();
     iniciarMenus();
     iniciarAlertas();
     iniciarModais();

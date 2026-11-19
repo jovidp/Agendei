@@ -140,12 +140,39 @@ function obterFlash(): array
 function exibirFlash(): void
 {
     foreach (obterFlash() as $flash) {
-        $tipo = in_array($flash['tipo'], ['sucesso', 'erro', 'aviso', 'info'], true) ? $flash['tipo'] : 'info';
+        if ($flash['tipo'] === 'assinado') {
+            exibirAssinaturaConfirmada($flash['mensagem']);
+            continue;
+        }
+        $tipo =in_array($flash['tipo'], ['sucesso', 'erro', 'aviso', 'info'], true) ? $flash['tipo'] : 'info';
         echo '<div class="alerta alerta-' . $tipo . '" role="alert">'
             . '<span class="alerta-texto">' . e($flash['mensagem']) . '</span>'
             . '<button type="button" class="alerta-fechar" aria-label="Fechar">&times;</button>'
             . '</div>';
     }
+}
+
+/**
+ * Janela de assinatura confirmada (flash 'assinado'). Vem pronta no HTML, com a
+ * classe "girando"; assets/js/main.js anima a abertura e cuida do fechamento.
+ */
+function exibirAssinaturaConfirmada(string $mensagem): void
+{
+    echo '<div class="assinado girando" role="dialog" aria-modal="true" aria-labelledby="assinado-titulo" aria-describedby="assinado-texto">'
+        . '<div class="assinado-caixa">'
+        . '<span class="assinado-anel" aria-hidden="true"></span>'
+        . '<div class="assinado-conteudo">'
+        . '<svg class="assinado-logo" viewBox="0 0 48 48" width="72" height="72" aria-hidden="true">'
+        . '<path d="M15 6v7M33 6v7" stroke="#1F4E5F" stroke-width="3.6" stroke-linecap="round"/>'
+        . '<path d="M6 18a8 8 0 0 1 8-8h20a8 8 0 0 1 8 8v2H6z" fill="#5FAF8B"/>'
+        . '<path d="M6 20h36v16a8 8 0 0 1-8 8H14a8 8 0 0 1-8-8z" fill="#1F4E5F"/>'
+        . '<path class="assinado-check" d="M16 32 L21.5 37.5 L32.5 26" fill="none" stroke="#FFFFFF" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>'
+        . '</svg>'
+        . '<p class="assinado-marca">Agendei</p>'
+        . '<h2 id="assinado-titulo">Assinatura confirmada!</h2>'
+        . '<p id="assinado-texto">' . e($mensagem) . '</p>'
+        . '<button type="button" class="btn assinado-fechar">Continuar</button>'
+        . '</div></div></div>';
 }
 
 // ---------------------------------------------------------------------
