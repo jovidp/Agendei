@@ -79,9 +79,25 @@ $recursos = [
 
 <main>
 
-<?php /* Abertura: slogan, frase de apoio e um agendamento confirmado como o cliente ve. */ ?>
+<?php
+/*
+ * Abertura em carrossel: o slogan com um agendamento confirmado e, depois, um
+ * slide por recurso, cada um com o cartao desenhado em HTML. Sem JavaScript so
+ * o primeiro aparece (os demais vem com hidden); assets/js/inicio.js liga a troca.
+ */
+$slidesHeroi = [
+    ['Lembretes automáticos', 'Menos faltas, sem você lembrar ninguém.', 'O cliente recebe o lembrete no WhatsApp e confirma com um toque. Se não responder, o horário volta para a agenda.'],
+    ['Pagamento antecipado', 'Horário garantido com sinal no Pix.', 'Cobre um sinal na hora de marcar e acabe com o cliente que reserva e não aparece.'],
+    ['Gestão da agenda', 'A agenda da empresa inteira em uma tela.', 'Profissionais, serviços, filiais e expedientes organizados, sem conflito de horário.'],
+    ['Agendamento 24 horas', 'Seu cliente marca até de madrugada.', 'Ele só vê os horários realmente livres e marca em poucos passos, sem ligar e sem esperar resposta.'],
+    ['Relatórios', 'Saiba quanto entrou, sem planilha.', 'Faturamento, atendimentos e comissão de cada profissional, prontos no fim do mês.'],
+];
+$totalSlides = count($slidesHeroi) + 1;
+?>
 <section class="heroi-produto">
-    <div class="container heroi-grade">
+    <div class="container heroi-carrossel" data-heroi role="region" aria-roledescription="carrossel" aria-label="O que o <?= e(NOME_SISTEMA) ?> faz">
+    <div class="heroi-slides">
+    <div class="heroi-grade heroi-slide" role="group" aria-roledescription="slide" aria-label="1 de <?= $totalSlides ?>">
         <div class="heroi-texto">
             <span class="heroi-etiqueta">Agendamento online</span>
             <h1><?= e(MARCA_SLOGAN) ?></h1>
@@ -106,6 +122,82 @@ $recursos = [
             </dl>
             <div class="confirmacao-rodape">Lembrete enviado 24 h antes.</div>
         </div>
+    </div>
+
+    <?php foreach ($slidesHeroi as $i => [$etiqueta, $titulo, $texto]): ?>
+    <div class="heroi-grade heroi-slide" role="group" aria-roledescription="slide" aria-label="<?= $i + 2 ?> de <?= $totalSlides ?>" hidden>
+        <div class="heroi-texto">
+            <span class="heroi-etiqueta"><?= e($etiqueta) ?></span>
+            <h2><?= e($titulo) ?></h2>
+            <p><?= e($texto) ?></p>
+            <div class="heroi-acoes">
+                <a href="<?= url('cadastro_empresa.php') ?>" class="btn btn-grande btn-claro">Cadastrar minha empresa</a>
+                <a href="#como-funciona" class="btn btn-grande btn-vazado">Ver como funciona</a>
+            </div>
+        </div>
+
+        <?php if ($i === 0): ?>
+        <div class="cartao-confirmacao cartao-mensagem" aria-label="Exemplo de lembrete enviado ao cliente">
+            <div class="mensagem-contato">
+                <span class="mensagem-avatar"><?= simboloSistema(22, true) ?></span>
+                <div><strong>Studio Vila Nova</strong><span>Online</span></div>
+            </div>
+            <div class="mensagem-balao">
+                <p>Olá, Ana!</p>
+                <p>Lembrete: amanhã às 15:30, Corte e barba.</p>
+                <p>Confirma?</p>
+                <span class="mensagem-hora">✓✓ 14:20</span>
+            </div>
+            <span class="cartao-botao">Confirmar ✓</span>
+            <span class="cartao-botao cartao-botao-contorno">Remarcar</span>
+        </div>
+        <?php elseif ($i === 1): ?>
+        <div class="cartao-confirmacao cartao-pix" aria-label="Exemplo de sinal pago pelo Pix">
+            <div class="confirmacao-rodape">Sinal do agendamento</div>
+            <div class="pix-valor">R$ 20,00</div>
+            <div class="confirmacao-empresa">Corte e barba · Sex, 15:00</div>
+            <div class="pix-qr" aria-hidden="true"><?= QrCode::svg(NOME_SISTEMA . ' - exemplo de sinal', '') ?></div>
+            <span class="confirmacao-status">Pago via Pix</span>
+        </div>
+        <?php elseif ($i === 2): ?>
+        <div class="cartao-confirmacao cartao-agenda" aria-label="Exemplo da agenda do dia">
+            <div class="confirmacao-servico">Hoje · Ter, 29 de set</div>
+            <ul class="agenda-linhas">
+                <li><time>09:00</time><span><strong>Corte</strong>Rafael</span><em class="confirmacao-status">Confirmado</em></li>
+                <li><time>10:30</time><span><strong>Escova</strong>Júlia</span><em class="confirmacao-status status-aguardando">Aguardando</em></li>
+                <li><time>14:00</time><span><strong>Barba</strong>Rafael</span><em class="confirmacao-status">Confirmado</em></li>
+                <li><time>15:30</time><span class="agenda-livre">Livre <b>+</b></span></li>
+            </ul>
+        </div>
+        <?php elseif ($i === 3): ?>
+        <div class="cartao-confirmacao cartao-passo" aria-label="Exemplo da escolha de horário pelo cliente">
+            <div class="confirmacao-rodape">Passo 5 de 6</div>
+            <div class="passo-barra"><span></span></div>
+            <div class="confirmacao-servico">Escolha o horário</div>
+            <div class="horarios-chips">
+                <span>09:00</span><span>09:30</span><span>10:00</span><span>14:00</span><span class="chip-escolhido">15:30</span>
+            </div>
+            <span class="cartao-botao">Confirmar ›</span>
+        </div>
+        <?php else: ?>
+        <div class="cartao-confirmacao cartao-relatorio" aria-label="Exemplo do relatório do mês">
+            <div class="confirmacao-servico">Este mês</div>
+            <div class="relatorio-numero">128 <small>atendimentos</small></div>
+            <div class="relatorio-numero">R$ 9.840</div>
+            <div class="relatorio-barras" aria-hidden="true">
+                <span style="height:55%"></span><span style="height:80%"></span><span style="height:35%"></span><span style="height:65%"></span><span style="height:100%"></span><span style="height:45%"></span>
+            </div>
+            <div class="confirmacao-rodape">Comissão Rafael: <strong>R$ 1.230</strong></div>
+        </div>
+        <?php endif; ?>
+    </div>
+    <?php endforeach; ?>
+    </div>
+
+    <div class="heroi-controles" hidden>
+        <div class="heroi-pontos"></div>
+        <button type="button" class="heroi-pausa" data-pausa aria-label="Pausar a troca automática"></button>
+    </div>
     </div>
 </section>
 

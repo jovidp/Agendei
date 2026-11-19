@@ -201,6 +201,131 @@
 }
 
 /* ---------------------------------------------------------------------
+   Carrossel da abertura: os slides ocupam a mesma celula, entao a altura e a
+   do maior e nada pula na troca. O inativo some com visibility (sai do foco).
+   --------------------------------------------------------------------- */
+.heroi-slides { display: grid; grid-template-columns: minmax(0, 1fr); }
+.heroi-slide { grid-area: 1 / 1; min-width: 0; }
+.heroi-slide[hidden] { display: none; }
+.heroi-carrossel.pronto .heroi-slide { transition: opacity 500ms ease, visibility 500ms; }
+.heroi-carrossel.pronto .heroi-slide:not(.atual) { opacity: 0; visibility: hidden; }
+@media (prefers-reduced-motion: reduce) {
+  .heroi-carrossel.pronto .heroi-slide { transition: none; }
+}
+.heroi-texto h2 {
+  font-size: 46px;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+  margin-bottom: 18px;
+}
+
+.heroi-controles {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 36px;
+}
+.heroi-controles[hidden] { display: none; }
+.heroi-pontos { display: flex; gap: 8px; }
+.heroi-ponto {
+  width: 10px;
+  height: 10px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.35);
+  cursor: pointer;
+  transition: width 300ms ease, background-color 300ms ease;
+}
+.heroi-ponto[aria-current="true"] { width: 28px; background-color: #5faf8b; }
+.heroi-pausa {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+/* Duas barras (pausar) ou um triangulo (continuar), desenhados em CSS. */
+.heroi-pausa::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 10px;
+  width: 3px;
+  height: 10px;
+  background: #ffffff;
+  box-shadow: 6px 0 0 #ffffff;
+}
+.heroi-pausa.parado::before {
+  left: 12px;
+  width: 0;
+  height: 0;
+  background: none;
+  box-shadow: none;
+  border-style: solid;
+  border-width: 5px 0 5px 9px;
+  border-color: transparent transparent transparent #ffffff;
+}
+.heroi-ponto:focus-visible,
+.heroi-pausa:focus-visible { outline: 3px solid #5faf8b; outline-offset: 3px; }
+
+/* Pecas comuns dos cartoes dos slides. */
+.cartao-botao {
+  display: block;
+  margin-top: 12px;
+  padding: 11px;
+  border-radius: 8px;
+  background-color: #5faf8b;
+  color: #ffffff;
+  font-weight: 700;
+  text-align: center;
+}
+.cartao-botao-contorno { margin-top: 8px; background: transparent; border: 1px solid #1f4e5f; color: #1f4e5f; font-weight: 600; }
+
+.mensagem-contato { display: flex; align-items: center; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--borda); }
+.mensagem-avatar { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background-color: #1f4e5f; }
+.mensagem-contato strong { display: block; color: #1f4e5f; }
+.mensagem-contato span { font-size: 12.5px; color: var(--texto-secundario); }
+.mensagem-balao { position: relative; margin-top: 14px; padding: 12px 14px 22px; border-radius: 4px 14px 14px 14px; background-color: #eef2f4; font-size: 14.5px; }
+.mensagem-balao p { margin: 0 0 4px; }
+.mensagem-hora { position: absolute; right: 12px; bottom: 6px; font-size: 11.5px; color: #3f7f62; }
+
+.cartao-pix { text-align: center; }
+.cartao-pix .confirmacao-rodape { padding-top: 0; font-size: 15px; }
+.pix-valor { font-size: 34px; font-weight: 800; color: #1f4e5f; letter-spacing: -0.02em; }
+.pix-qr { width: 132px; margin: 14px auto; padding: 10px; border-radius: 10px; background-color: #eef2f4; }
+.pix-qr svg { display: block; width: 100%; height: auto; }
+
+.agenda-linhas { list-style: none; margin: 0; padding: 0; }
+.agenda-linhas li { display: flex; align-items: center; gap: 14px; padding: 10px 0; border-top: 1px solid var(--borda); }
+.agenda-linhas time { width: 46px; font-weight: 600; color: #1f4e5f; }
+.agenda-linhas li > span { flex: 1; font-size: 13px; color: var(--texto-secundario); }
+.agenda-linhas strong { display: block; font-size: 14.5px; color: #1f4e5f; }
+.agenda-linhas em { font-style: normal; }
+.status-aguardando { background-color: #fdf3d6; color: #8a6414; }
+.status-aguardando::before { background-color: #d4a52c; }
+.agenda-linhas .agenda-livre { display: flex; justify-content: space-between; padding: 8px 12px; border: 1px dashed #7fb0bd; border-radius: 8px; color: #3c7d8e; font-size: 14px; }
+
+.cartao-passo .confirmacao-rodape { padding-top: 0; }
+.passo-barra { height: 6px; margin: 8px 0 16px; border-radius: 999px; background-color: #e7ecee; }
+.passo-barra span { display: block; width: 83%; height: 100%; border-radius: inherit; background-color: #5faf8b; }
+.horarios-chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 6px; }
+.horarios-chips span { padding: 8px 0; border: 1px solid #1f4e5f; border-radius: 999px; text-align: center; font-size: 14.5px; color: #1f4e5f; }
+.horarios-chips .chip-escolhido { background-color: #5faf8b; border-color: #5faf8b; color: #ffffff; font-weight: 700; }
+
+.relatorio-numero { font-size: 30px; font-weight: 800; color: #1f4e5f; line-height: 1.2; letter-spacing: -0.02em; }
+.relatorio-numero small { font-size: 15px; font-weight: 500; letter-spacing: 0; }
+.relatorio-barras { display: flex; align-items: flex-end; gap: 10px; height: 96px; margin: 14px 0 4px; padding-bottom: 1px; border-bottom: 1px solid var(--borda); }
+.relatorio-barras span { flex: 1; border-radius: 4px 4px 0 0; background-color: #5faf8b; }
+.cartao-relatorio .confirmacao-rodape { margin: 8px -22px -18px; padding: 12px 22px; border-radius: 0 0 10px 10px; background-color: #f4f6f7; text-align: center; color: #1f4e5f; font-size: 14.5px; }
+
+/* ---------------------------------------------------------------------
    Argumentos e recursos
    --------------------------------------------------------------------- */
 
@@ -461,6 +586,9 @@
   .heroi-texto h1 {
     font-size: 42px;
   }
+  .heroi-texto h2 {
+    font-size: 36px;
+  }
 }
 
 @media (max-width: 760px) {
@@ -469,6 +597,9 @@
   }
   .heroi-texto h1 {
     font-size: 36px;
+  }
+  .heroi-texto h2 {
+    font-size: 30px;
   }
   .heroi-produto::after {
     width: 380px;

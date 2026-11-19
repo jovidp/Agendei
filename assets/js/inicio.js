@@ -63,6 +63,51 @@
     atualizar();
   });
 
+  // Carrossel da abertura: troca sozinho a cada 6 s. So para pelo botao de pausa
+  // ou enquanto o teclado navega dentro dele (o clique numa bolinha nao para).
+  var heroi = document.querySelector("[data-heroi]");
+  if (heroi) {
+    var slides = Array.from(heroi.querySelectorAll(".heroi-slide"));
+    var pontos = heroi.querySelector(".heroi-pontos");
+    var pausa = heroi.querySelector("[data-pausa]");
+    var atual = 0, cronometro = null, parado = false, emUso = false;
+
+    var botoes = slides.map(function (slide, i) {
+      slide.hidden = false;
+      var botao = document.createElement("button");
+      botao.type = "button";
+      botao.className = "heroi-ponto";
+      botao.setAttribute("aria-label", "Mostrar slide " + (i + 1) + " de " + slides.length);
+      botao.addEventListener("click", function () { mostrar(i); rodar(); });
+      pontos.appendChild(botao);
+      return botao;
+    });
+    function mostrar(i) {
+      atual = (i + slides.length) % slides.length;
+      slides.forEach(function (slide, j) { slide.classList.toggle("atual", j === atual); });
+      botoes.forEach(function (botao, j) { botao.setAttribute("aria-current", String(j === atual)); });
+    }
+    function rodar() {
+      clearInterval(cronometro);
+      cronometro = parado || emUso ? null : setInterval(function () { mostrar(atual + 1); }, 6000);
+      pausa.classList.toggle("parado", parado);
+      pausa.setAttribute("aria-label", parado ? "Continuar a troca automática" : "Pausar a troca automática");
+    }
+    pausa.addEventListener("click", function () { parado = !parado; rodar(); });
+    heroi.addEventListener("focusin", function (evento) {
+      if (!evento.target.matches(":focus-visible")) return;
+      emUso = true; rodar();
+    });
+    heroi.addEventListener("focusout", function (evento) {
+      if (emUso && !heroi.contains(evento.relatedTarget)) { emUso = false; rodar(); }
+    });
+
+    heroi.classList.add("pronto");
+    heroi.querySelector(".heroi-controles").hidden = false;
+    mostrar(0);
+    rodar();
+  }
+
   if (preferencia.matches || !window.IntersectionObserver || !Element.prototype.animate) return;
 
   var animacoes = new Map();

@@ -28,6 +28,12 @@ const MARCA_COR_PRIMARIA = '#1F4E5F';
 const MARCA_COR_DESTAQUE = '#5FAF8B';
 const MARCA_COR_CLARA    = '#F5F1EA';
 
+/** Desenho do simbolo (viewBox 48x48). Os SVGs de assets/img/ usam os mesmos caminhos. */
+const MARCA_PATH_CORPO = 'M0.4 12.8A7.5 7.5 0 0 1 7.9 5.3H35.1Q37 5.3 38.4 6.3L29.7 15.9H6.8Q5.8 15.9 5.8 16.9V38.8A2.9 2.9 0 0 0 8.7 41.7H35.3A2.65 2.65 0 0 1 35.3 47H8.3A7.9 7.9 0 0 1 0.4 39.1Z';
+const MARCA_PATH_ABAS  = 'M12.5 3.4v4.5M29.8 3.4v4.5';
+const MARCA_PATH_CHECK = 'M13.6 26.4L20.4 34L44.2 7.9';
+const MARCA_PATH_A     = 'M36.2 25.3L40.8 19.5L47.6 42.6A2.9 2.9 0 0 1 42 44.2ZM27.6 33.9L32.1 28.8H37.4L38.9 33.9Z';
+
 /**
  * Slogan oficial. Duas palavras que descrevem o simbolo (a agenda com o
  * "check") e a promessa do produto: o horario marcado e um horario garantido.
@@ -43,16 +49,17 @@ const MARCA_SLOGAN = 'Marcou, confirmou.';
 function simboloSistema(int $tamanho = 32, bool $invertida = false): string
 {
     $corpo = $invertida ? MARCA_COR_CLARA : MARCA_COR_PRIMARIA;
-    $check = $invertida ? MARCA_COR_PRIMARIA : '#FFFFFF';
+    $verde = MARCA_COR_DESTAQUE;
 
+    // Agenda aberta com o "check" saindo dela; a perna do "A" completa a inicial.
     // Cada parte leva uma classe para que o modo de alto contraste possa repintar o desenho.
     return '<svg class="marca-sistema-simbolo" width="' . $tamanho . '" height="' . $tamanho . '" '
         . 'viewBox="0 0 48 48" aria-hidden="true" focusable="false">'
-        . '<path class="marca-abas" d="M15 6v7M33 6v7" stroke="' . $corpo . '" stroke-width="3.6" stroke-linecap="round"/>'
-        . '<path class="marca-faixa" d="M6 18a8 8 0 0 1 8-8h20a8 8 0 0 1 8 8v2H6z" fill="' . MARCA_COR_DESTAQUE . '"/>'
-        . '<path class="marca-corpo" d="M6 20h36v16a8 8 0 0 1-8 8H14a8 8 0 0 1-8-8z" fill="' . $corpo . '"/>'
-        . '<path class="marca-check" d="M16 32 L21.5 37.5 L32.5 26" fill="none" stroke="' . $check . '" stroke-width="4.2" '
+        . '<path class="marca-corpo" d="' . MARCA_PATH_CORPO . '" fill="' . $corpo . '"/>'
+        . '<path class="marca-abas" d="' . MARCA_PATH_ABAS . '" stroke="' . $verde . '" stroke-width="4.8" stroke-linecap="round"/>'
+        . '<path class="marca-check" d="' . MARCA_PATH_CHECK . '" fill="none" stroke="' . $verde . '" stroke-width="4.9" '
         . 'stroke-linecap="round" stroke-linejoin="round"/>'
+        . '<path class="marca-faixa" d="' . MARCA_PATH_A . '" fill="' . $verde . '"/>'
         . '</svg>';
 }
 

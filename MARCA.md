@@ -12,7 +12,7 @@ controle de quem atende. Cada horario marcado e um horario garantido: o cliente
 sabe que foi atendido no pedido, o profissional sabe o que vem, e o
 estabelecimento para de perder tempo com confirmacao manual.
 
-O simbolo diz isso sem palavras: uma agenda com o "check" do horario marcado.
+O simbolo diz isso sem palavras: uma agenda aberta com o "check" do horario marcado saindo dela, e a perna do "A" de Agendei completando o desenho.
 Tudo o que a marca comunica deve caber nessa imagem.
 
 ## Slogan
@@ -64,8 +64,8 @@ A marca fala como um bom recepcionista: direto, cordial e sem enrolacao.
 
 | Nome | Codigo | Onde |
 | --- | --- | --- |
-| Primaria | `#1F4E5F` | corpo do simbolo, titulos, botoes, fundos escuros |
-| Destaque | `#5FAF8B` | faixa do simbolo, o "check", confirmacoes e sucesso |
+| Primaria | `#1F4E5F` | contorno da agenda, titulos, botoes, fundos escuros |
+| Destaque | `#5FAF8B` | argolas, o "check" e o "A" do simbolo, confirmacoes e sucesso |
 | Fundo | `#F5F1EA` | fundo das telas e versao clara do simbolo |
 | Branco | `#FFFFFF` | cartoes e texto sobre a primaria |
 

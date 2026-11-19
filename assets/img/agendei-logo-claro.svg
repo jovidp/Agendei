@@ -1,8 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 166 48" width="166" height="48" role="img" aria-label="Agendei">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 172 48" width="172" height="48" role="img" aria-label="Agendei">
   <title>Agendei</title>
-  <path d="M15 6v7M33 6v7" stroke="#F5F1EA" stroke-width="3.6" stroke-linecap="round"/>
-  <path d="M6 18a8 8 0 0 1 8-8h20a8 8 0 0 1 8 8v2H6z" fill="#5FAF8B"/>
-  <path d="M6 20h36v16a8 8 0 0 1-8 8H14a8 8 0 0 1-8-8z" fill="#F5F1EA"/>
-  <path d="M16 32 L21.5 37.5 L32.5 26" fill="none" stroke="#1F4E5F" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="54" y="33" fill="#FFFFFF" font-family="'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif" font-size="27" font-weight="700" letter-spacing="-0.4">Agendei</text>
+  <path d="M0.4 12.8A7.5 7.5 0 0 1 7.9 5.3H35.1Q37 5.3 38.4 6.3L29.7 15.9H6.8Q5.8 15.9 5.8 16.9V38.8A2.9 2.9 0 0 0 8.7 41.7H35.3A2.65 2.65 0 0 1 35.3 47H8.3A7.9 7.9 0 0 1 0.4 39.1Z" fill="#F5F1EA"/>
+  <path d="M12.5 3.4v4.5M29.8 3.4v4.5" stroke="#5FAF8B" stroke-width="4.8" stroke-linecap="round"/>
+  <path d="M13.6 26.4L20.4 34L44.2 7.9" fill="none" stroke="#5FAF8B" stroke-width="4.9" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M36.2 25.3L40.8 19.5L47.6 42.6A2.9 2.9 0 0 1 42 44.2ZM27.6 33.9L32.1 28.8H37.4L38.9 33.9Z" fill="#5FAF8B"/>
+  <text x="56" y="35" fill="#FFFFFF" font-family="Poppins, 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif" font-size="28" font-weight="700" letter-spacing="-0.4">Agendei</text>
 </svg>
