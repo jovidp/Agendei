@@ -1,35 +1,12 @@
 <?php
 
 /**
- * Assinaturas que o estabelecimento vende aos clientes: planos (servicos
- * incluidos por mes e desconto no restante) e assinantes, com a confirmacao
- * das mensalidades pagas por Pix.
+ * Assinatura mensal que o estabelecimento vende aos clientes (todos os planos
+ * do Agendei): um plano unico por empresa, que cobre todos os atendimentos, e
+ * os assinantes, com a confirmacao das mensalidades.
  */
 require_once __DIR__ . '/../config/config.php';
 exigirLogin('admin');
-
-if (!Plano::temRecurso('assinaturas_clientes')) {
-    $recursoFaltante = 'assinaturas_clientes';
-    $tituloPagina = 'Assinaturas de clientes';
-    require RAIZ . '/includes/fora_do_plano.php';
-}
-
-/** Monta os dados do plano a partir do formulario (quantidade vazia = ilimitado). */
-function planoDoFormulario(): array
-{
-    $servicos = [];
-    foreach ((array) ($_POST['incluir'] ?? []) as $idServico => $marcado) {
-        $quantidade = trim((string) ($_POST['quantidade'][$idServico] ?? ''));
-        $servicos[(int) $idServico] = $quantidade === '' ? null : $quantidade;
-    }
-    return [
-        'nome'                => post('nome'),
-        'descricao'           => post('descricao'),
-        'preco_mensal'        => post('preco_mensal'),
-        'desconto_percentual' => post('desconto_percentual'),
-        'servicos'            => $servicos,
-    ];
-}
 
 $erros = [];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -37,19 +14,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $acao = post('acao');
     try {
         if ($acao === 'salvar_plano') {
-            $idPlano = (int) post('id_plano_cliente');
-            if ($idPlano > 0) {
-                AssinaturaCliente::atualizarPlano($idPlano, planoDoFormulario());
-                definirFlash('sucesso', 'Plano atualizado. As mudanças valem para os próximos agendamentos.');
+            $dadosPlano = ['nome' => post('nome'), 'descricao' => post('descricao'), 'preco_mensal' => post('preco_mensal'), 'servicos' => []];
+            $existente = AssinaturaCliente::planoUnico();
+            if ($existente !== null) {
+                // Mantem a lista antiga de servicos do plano: nao muda o preco (tudo sai a zero), so o historico.
+                $dadosPlano['servicos'] = array_column($existente['servicos'], 'quantidade_mes', 'id_servico');
+                AssinaturaCliente::atualizarPlano((int) $existente['id_plano_cliente'], $dadosPlano);
+                definirFlash('sucesso', 'Plano atualizado. O preço novo vale a partir da próxima mensalidade.');
             } else {
-                AssinaturaCliente::criarPlano(planoDoFormulario());
-                definirFlash('sucesso', 'Plano criado.');
+                AssinaturaCliente::criarPlano($dadosPlano);
+                definirFlash('sucesso', 'Plano criado. Seus clientes já podem assinar em "Meus benefícios".');
             }
-        } elseif ($acao === 'status_plano') {
-            AssinaturaCliente::alterarStatusPlano((int) post('id_plano_cliente'), post('status') === 'ativo' ? 'ativo' : 'inativo');
-            definirFlash('sucesso', post('status') === 'ativo' ? 'Plano ativado.' : 'Plano desativado. Quem já assina continua com ele.');
-        } elseif ($acao === 'inscrever') {
-            AssinaturaCliente::assinar((int) post('id_cliente'), (int) post('id_plano_cliente'));
+        } elseif ($acao === 'status_plano' && ($existente = AssinaturaCliente::planoUnico()) !== null) {
+            AssinaturaCliente::alterarStatusPlano((int) $existente['id_plano_cliente'], post('status') === 'ativo' ? 'ativo' : 'inativo');
+            definirFlash('sucesso', post('status') === 'ativo' ? 'Plano ativado: os clientes já podem assinar.' : 'Plano pausado. Ninguém novo assina; quem já assina continua.');
+        } elseif ($acao === 'inscrever' && ($existente = AssinaturaCliente::planoUnico()) !== null) {
+            AssinaturaCliente::assinar((int) post('id_cliente'), (int) $existente['id_plano_cliente']);
             definirFlash('sucesso', 'Cliente inscrito. A assinatura começa quando a primeira mensalidade for confirmada.');
         } elseif ($acao === 'confirmar') {
             AssinaturaCliente::confirmarPagamento((int) post('id_cobranca'))
@@ -68,21 +48,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$edicao = get('acao') === 'editar' ? AssinaturaCliente::planoPorId((int) get('id')) : null;
-$formularioAberto = $edicao !== null || get('acao') === 'novo' || ($erros !== [] && post('acao') === 'salvar_plano');
-$incluidos = $edicao ? array_column($edicao['servicos'], 'quantidade_mes', 'id_servico') : [];
-$planos = AssinaturaCliente::planos();
-$planosAtivos = array_filter($planos, fn($p) => $p['status'] === 'ativo');
+$plano = AssinaturaCliente::planoUnico();
+$planoAtivo = $plano !== null && $plano['status'] === 'ativo';
+$planosAntigos = max(0, count(AssinaturaCliente::planos()) - 1);
 $assinantes = AssinaturaCliente::assinantes();
-$servicos = Servico::listar(['status' => 'ativo']);
 $clientes = Cliente::listar(['status' => 'ativo']);
 $semPix = Configuracao::obter('pix_chave') === '';
+// Depois de um erro, o formulario mostra o que foi digitado.
+$valor = fn(string $campo, string $doPlano) => $erros !== [] && post('acao') === 'salvar_plano' ? post($campo) : $doPlano;
 
 $tituloPagina  = 'Assinaturas de clientes';
-$subtituloTopo = 'Planos mensais que você vende aos seus clientes';
-$acoesTopo     = $formularioAberto
-    ? '<a href="' . url('admin/assinaturas_clientes.php') . '" class="btn btn-contorno btn-pequeno">Voltar</a>'
-    : '<a href="' . url('admin/assinaturas_clientes.php?acao=novo') . '" class="btn btn-pequeno">Novo plano</a>';
+$subtituloTopo = 'O plano mensal que você vende aos seus clientes';
 require_once RAIZ . '/includes/painel_header.php';
 ?>
 
@@ -94,76 +70,51 @@ require_once RAIZ . '/includes/painel_header.php';
     <div class="alerta alerta-aviso"><div><span class="alerta-texto">Cadastre a chave Pix em <a href="<?= url('admin/diferenciais.php') ?>">Diferenciais</a> para receber as mensalidades. Sem ela, ninguém consegue assinar.</span></div></div>
 <?php endif; ?>
 
-<?php if ($formularioAberto): ?>
-    <div class="cartao">
-        <div class="cartao-cabecalho"><h3><?= $edicao ? 'Editar plano' : 'Novo plano' ?></h3></div>
-        <div class="cartao-corpo">
-            <form method="post">
-                <?= campoCsrf() ?>
-                <input type="hidden" name="acao" value="salvar_plano">
-                <input type="hidden" name="id_plano_cliente" value="<?= (int) ($edicao['id_plano_cliente'] ?? 0) ?>">
+<div class="cartao">
+    <div class="cartao-cabecalho">
+        <h3>Seu plano de assinatura</h3>
+        <?php if ($plano !== null): ?><?= badgeStatus($plano['status']) ?><?php endif; ?>
+    </div>
+    <div class="cartao-corpo">
+        <p>O assinante paga só a mensalidade: <strong>todos os atendimentos saem de graça</strong> enquanto o plano estiver em dia.</p>
+        <form method="post">
+            <?= campoCsrf() ?>
+            <input type="hidden" name="acao" value="salvar_plano">
+            <div class="linha-campos">
                 <div class="campo">
                     <label for="nome">Nome do plano <span class="obrigatorio">*</span></label>
-                    <input type="text" id="nome" name="nome" maxlength="120" required value="<?= e($edicao['nome'] ?? post('nome')) ?>" placeholder="Ex.: Clube da Barba">
+                    <input type="text" id="nome" name="nome" maxlength="120" required value="<?= e($valor('nome', (string) ($plano['nome'] ?? ''))) ?>" placeholder="Ex.: Clube da Barba">
                 </div>
                 <div class="campo">
-                    <label for="descricao">Descrição</label>
-                    <textarea id="descricao" name="descricao" maxlength="500"><?= e($edicao['descricao'] ?? post('descricao')) ?></textarea>
+                    <label for="preco_mensal">Preço por mês (R$) <span class="obrigatorio">*</span></label>
+                    <input type="text" id="preco_mensal" name="preco_mensal" data-mascara="moeda" inputmode="numeric" required
+                        value="<?= e($valor('preco_mensal', $plano ? number_format((float) $plano['preco_mensal'], 2, ',', '') : '')) ?>">
                 </div>
-                <div class="linha-campos">
-                    <div class="campo">
-                        <label for="preco_mensal">Preço por mês (R$) <span class="obrigatorio">*</span></label>
-                        <input type="text" id="preco_mensal" name="preco_mensal" data-mascara="moeda" inputmode="numeric" required
-                            value="<?= e($edicao ? number_format((float) $edicao['preco_mensal'], 2, ',', '') : post('preco_mensal')) ?>">
-                    </div>
-                </div>
-                <p class="ajuda-campo">Com o plano ativo o assinante não paga nenhum atendimento: paga só a mensalidade.</p>
-                <div class="grupo-botoes">
-                    <button class="btn"><?= $edicao ? 'Salvar alterações' : 'Criar plano' ?></button>
-                    <a href="<?= url('admin/assinaturas_clientes.php') ?>" class="btn btn-contorno">Cancelar</a>
-                </div>
+            </div>
+            <div class="campo">
+                <label for="descricao">Benefícios e regras <span class="opcional">(o cliente vê este texto)</span></label>
+                <textarea id="descricao" name="descricao" maxlength="500" placeholder="Ex.: Corte e barba à vontade, com hora marcada."><?= e($valor('descricao', (string) ($plano['descricao'] ?? ''))) ?></textarea>
+            </div>
+            <div class="grupo-botoes">
+                <button class="btn"><?= $plano ? 'Salvar plano' : 'Criar plano' ?></button>
+            </div>
+        </form>
+        <?php if ($plano !== null): ?>
+            <form method="post" class="margem-topo"><?= campoCsrf() ?>
+                <input type="hidden" name="acao" value="status_plano">
+                <input type="hidden" name="status" value="<?= $planoAtivo ? 'inativo' : 'ativo' ?>">
+                <button class="btn btn-contorno btn-pequeno"><?= $planoAtivo ? 'Pausar novas assinaturas' : 'Voltar a vender o plano' ?></button>
             </form>
-        </div>
+        <?php endif; ?>
+        <?php if ($planosAntigos > 0): ?>
+            <p class="ajuda-campo margem-topo">Agora cada estabelecimento tem um plano só. <?= $planosAntigos ?> plano(s) antigo(s) não aceitam mais assinaturas novas; quem já assina continua até cancelar.</p>
+        <?php endif; ?>
     </div>
-<?php endif; ?>
-
-<div class="cartao">
-    <div class="cartao-cabecalho"><h3>Planos</h3></div>
-    <?php if ($planos === []): ?>
-        <div class="estado-vazio">
-            <strong>Nenhum plano criado</strong>
-            <p>Crie um plano mensal: o assinante paga só a mensalidade e nenhum atendimento.</p>
-            <a href="<?= url('admin/assinaturas_clientes.php?acao=novo') ?>" class="btn margem-topo">Novo plano</a>
-        </div>
-    <?php else: ?>
-        <div class="tabela-area"><table class="tabela">
-            <thead><tr><th>Plano</th><th>Preço</th><th>Cobertura</th><th>Status</th><th class="coluna-acoes">Ações</th></tr></thead>
-            <tbody>
-            <?php foreach ($planos as $p): ?>
-                <tr>
-                    <td><span class="celula-principal"><?= e($p['nome']) ?></span><?php if ($p['descricao']): ?><span class="celula-secundaria"><?= e(limitarTexto($p['descricao'], 60)) ?></span><?php endif; ?></td>
-                    <td><?= formatarMoeda($p['preco_mensal']) ?></td>
-                    <td>Todos os atendimentos</td>
-                    <td><?= badgeStatus($p['status']) ?></td>
-                    <td class="coluna-acoes">
-                        <a class="btn btn-contorno btn-pequeno" href="<?= url('admin/assinaturas_clientes.php?acao=editar&id=' . (int) $p['id_plano_cliente']) ?>">Editar</a>
-                        <form method="post" style="display:inline"><?= campoCsrf() ?>
-                            <input type="hidden" name="acao" value="status_plano">
-                            <input type="hidden" name="id_plano_cliente" value="<?= (int) $p['id_plano_cliente'] ?>">
-                            <input type="hidden" name="status" value="<?= $p['status'] === 'ativo' ? 'inativo' : 'ativo' ?>">
-                            <button class="btn btn-contorno btn-pequeno"><?= $p['status'] === 'ativo' ? 'Desativar' : 'Ativar' ?></button>
-                        </form>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table></div>
-    <?php endif; ?>
 </div>
 
 <div class="cartao">
     <div class="cartao-cabecalho"><h3>Assinantes</h3></div>
-    <?php if ($planosAtivos !== [] && $clientes !== []): ?>
+    <?php if ($planoAtivo && $clientes !== []): ?>
         <div class="cartao-corpo">
             <form method="post" class="barra-filtros">
                 <?= campoCsrf() ?>
@@ -172,12 +123,6 @@ require_once RAIZ . '/includes/painel_header.php';
                     <label for="id_cliente">Cliente</label>
                     <select id="id_cliente" name="id_cliente" required>
                         <?php foreach ($clientes as $c): ?><option value="<?= (int) $c['id_cliente'] ?>"><?= e($c['nome']) ?></option><?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="campo">
-                    <label for="plano_inscrever">Plano</label>
-                    <select id="plano_inscrever" name="id_plano_cliente" required>
-                        <?php foreach ($planosAtivos as $p): ?><option value="<?= (int) $p['id_plano_cliente'] ?>"><?= e($p['nome']) ?> — <?= formatarMoeda($p['preco_mensal']) ?></option><?php endforeach; ?>
                     </select>
                 </div>
                 <div class="campo"><button class="btn btn-contorno">Inscrever cliente</button></div>

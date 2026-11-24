@@ -101,9 +101,6 @@ foreach (['2026-01-15' => '2026-02-14', '2026-01-31' => '2026-02-28', '2028-01-3
 
 // 3. Validação do plano
 lanca(InvalidArgumentException::class, fn() => AssinaturaCliente::criarPlano(['nome' => 'X', 'descricao' => '', 'preco_mensal' => 10, 'desconto_percentual' => 101, 'servicos' => [$corte => 1]]), 'desconto acima de 100');
-$tudo = AssinaturaCliente::criarPlano(['nome' => 'Tudo incluso', 'descricao' => '', 'preco_mensal' => 10, 'desconto_percentual' => 0, 'servicos' => []]);
-verificar($tudo > 0, 'plano sem lista de serviços aceito');
-AssinaturaCliente::alterarStatusPlano($tudo, 'inativo');
 lanca(InvalidArgumentException::class, fn() => AssinaturaCliente::criarPlano(['nome' => '', 'descricao' => '', 'preco_mensal' => 10, 'desconto_percentual' => 0, 'servicos' => [$corte => 1]]), 'plano sem nome');
 lanca(InvalidArgumentException::class, fn() => AssinaturaCliente::criarPlano(['nome' => 'X', 'descricao' => '', 'preco_mensal' => 0, 'desconto_percentual' => 0, 'servicos' => [$corte => 1]]), 'plano de graça');
 
@@ -112,13 +109,17 @@ $plano = AssinaturaCliente::planoPorId($clube);
 verificar($plano !== null && count($plano['servicos']) === 2, 'plano com dois serviços');
 $porServico = array_column($plano['servicos'], 'quantidade_mes', 'id_servico');
 verificar((int) $porServico[$corte] === 4 && $porServico[$barba] === null, 'quantidades do plano');
+// Um plano por empresa (2026-11-24): o segundo é recusado, com ou sem lista de serviços.
+lanca(DomainException::class, fn() => AssinaturaCliente::criarPlano(['nome' => 'Tudo incluso', 'descricao' => '', 'preco_mensal' => 10, 'desconto_percentual' => 0, 'servicos' => []]), 'segundo plano na mesma empresa');
+verificar((int) AssinaturaCliente::planoUnico()['id_plano_cliente'] === $clube, 'plano único é o Clube');
 
 // Serviço que está num plano não some do catálogo (a exclusão quebraria a FK do plano).
 $hidratacao = Servico::criar(['nome' => 'Hidratação', 'descricao' => '', 'preco' => 60, 'duracao_minutos' => 30]);
 verificar(Servico::podeExcluir($hidratacao), 'serviço novo pode ser excluído');
-AssinaturaCliente::criarPlano(['nome' => 'Só hidratação', 'descricao' => '', 'preco_mensal' => 50, 'desconto_percentual' => 0, 'servicos' => [$hidratacao => 1]]);
+// Plano antigo com lista de serviços: o serviço listado continua protegido.
+AssinaturaCliente::atualizarPlano($clube, ['nome' => 'Clube', 'descricao' => 'Barba e cabelo', 'preco_mensal' => 99, 'desconto_percentual' => 15, 'servicos' => [$corte => 4, $barba => null, $hidratacao => 1]]);
 verificar(!Servico::podeExcluir($hidratacao), 'serviço em plano não pode ser excluído');
-AssinaturaCliente::alterarStatusPlano((int) linha("SELECT id_plano_cliente FROM planos_clientes WHERE nome = 'Só hidratação'")['id_plano_cliente'], 'inativo');
+AssinaturaCliente::atualizarPlano($clube, ['nome' => 'Clube', 'descricao' => 'Barba e cabelo', 'preco_mensal' => 99, 'desconto_percentual' => 15, 'servicos' => [$corte => 4, $barba => null]]);
 
 // 4. Assinar: pendente com a primeira cobrança; segunda assinatura recusada.
 $idAss = AssinaturaCliente::assinar($cliente, $clube, '2026-01-09');
@@ -180,7 +181,7 @@ Configuracao::definir('pix_chave', '', '');
 lanca(DomainException::class, fn() => AssinaturaCliente::assinar($outroCliente, $clube), 'sem chave Pix', 'A empresa ainda não configurou a chave Pix para receber assinaturas.');
 Configuracao::definir('pix_chave', 'chave@empresa.local', '');
 AssinaturaCliente::alterarStatusPlano($clube, 'inativo');
-verificar(AssinaturaCliente::planos(true) === [] && count(AssinaturaCliente::planos()) === 3, 'inativo fora da vitrine');
+verificar(AssinaturaCliente::planos(true) === [] && count(AssinaturaCliente::planos()) === 1, 'inativo fora da vitrine');
 lanca(DomainException::class, fn() => AssinaturaCliente::assinar($outroCliente, $clube), 'plano inativo');
 AssinaturaCliente::alterarStatusPlano($clube, 'ativo');
 verificar(count(AssinaturaCliente::assinantes()) === 2, 'lista de assinantes da empresa');
@@ -258,9 +259,8 @@ agendar($ana, $barba);
 verificar((int) Diferencial::pacotesDoCliente($ana)[0]['creditos_restantes'] === 10, 'coberto não gasta crédito de pacote');
 
 // Lia: assinante para o teste de conta encerrada abaixo.
-$umCorte = AssinaturaCliente::criarPlano(['nome' => 'Um corte', 'descricao' => '', 'preco_mensal' => 40, 'desconto_percentual' => 0, 'servicos' => [$corte => 1]]);
 $lia = Cliente::criar(['nome' => 'Lia', 'email' => 'lia@teste.local', 'senha' => 'Teste12345!', 'telefone' => '11944443333']);
-AssinaturaCliente::assinar($lia, $umCorte);
+AssinaturaCliente::assinar($lia, $clube);
 AssinaturaCliente::confirmarPagamento((int) AssinaturaCliente::daCliente($lia)['cobranca_pendente']['id_cobranca']);
 
 // Conta encerrada (LGPD): a assinatura para de cobrar.
@@ -276,11 +276,11 @@ verificar((int) linha("SELECT COUNT(*) n FROM cobrancas_assinatura_cliente WHERE
 $rui = Cliente::criar(['nome' => 'Rui', 'email' => 'rui@teste.local', 'senha' => 'Teste12345!', 'telefone' => '11933332222']);
 bd()->beginTransaction();
 bd()->prepare('SELECT id_cliente FROM clientes WHERE id_estabelecimento = ? AND id_cliente = ? FOR UPDATE')->execute([$idEmpresa, $rui]);
-bd()->prepare('INSERT INTO cliente_assinaturas (id_estabelecimento, id_cliente, id_plano_cliente) VALUES (?, ?, ?)')->execute([$idEmpresa, $rui, $umCorte]);
+bd()->prepare('INSERT INTO cliente_assinaturas (id_estabelecimento, id_cliente, id_plano_cliente) VALUES (?, ?, ?)')->execute([$idEmpresa, $rui, $clube]);
 $filho = sprintf(
     'define("TAREFA_AGENDADA", true); chdir(%s); require "config/database.php"; ob_start(); require "config/config.php"; ob_end_clean();'
     . ' Contexto::assumirTarefa(%d); try { AssinaturaCliente::assinar(%d, %d); exit(0); } catch (DomainException $e) { exit(3); }',
-    var_export(getcwd(), true), $idEmpresa, $rui, $umCorte
+    var_export(getcwd(), true), $idEmpresa, $rui, $clube
 );
 $segundo = proc_open([PHP_BINARY, '-r', $filho], [], $pipes);
 usleep(1500000); // o segundo pedido chega enquanto o primeiro ainda não confirmou

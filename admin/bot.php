@@ -8,9 +8,10 @@
 require_once __DIR__ . '/../config/config.php';
 exigirLogin('admin');
 
-// Bot fora do ar por enquanto (Plano::BENEFICIOS): a tela some, o codigo fica para religar.
 if (!Plano::temRecurso('bot_whatsapp')) {
-    redirecionar('admin/dashboard.php');
+    $recursoFaltante = 'bot_whatsapp';
+    $tituloPagina = 'Bot do WhatsApp';
+    require RAIZ . '/includes/fora_do_plano.php';
 }
 
 $erros = [];

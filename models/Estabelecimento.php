@@ -86,8 +86,11 @@ class Estabelecimento
         try {
             // CNPJ: obrigatorio no cadastro publico (cadastro_empresa.php); quem cria pelo master pode deixar vazio.
             $cnpj = apenasNumeros((string) ($dados['cnpj'] ?? ''));
-            $q = $db->prepare('INSERT INTO estabelecimento (nome, slug, status, cnpj) VALUES (?, ?, ?, ?)');
-            $q->execute([$dados['estabelecimento'], $dados['slug'], ($dados['status'] ?? 'ativo') === 'inativo' ? 'inativo' : 'ativo', $cnpj !== '' ? $cnpj : null]);
+            // Sem CNPJ a coluna nem entra no INSERT: funciona tambem em banco que ainda nao tem a coluna.
+            $colunas = ['nome' => $dados['estabelecimento'], 'slug' => $dados['slug'], 'status' => ($dados['status'] ?? 'ativo') === 'inativo' ? 'inativo' : 'ativo'];
+            if ($cnpj !== '') $colunas['cnpj'] = $cnpj;
+            $q = $db->prepare('INSERT INTO estabelecimento (' . implode(', ', array_keys($colunas)) . ') VALUES (' . implode(', ', array_fill(0, count($colunas), '?')) . ')');
+            $q->execute(array_values($colunas));
             $id = (int) $db->lastInsertId();
 
             $idUsuario = $pessoa !== null

@@ -18,9 +18,12 @@ class AssinaturaCliente
     // Planos
     // -----------------------------------------------------------------
 
-    /** Cria o plano; servicos = [id_servico => quantidade por mes, ou null para ilimitado]. */
+    /** Cria o plano da empresa; cada empresa tem um so (planoUnico). */
     public static function criarPlano(array $dados): int
     {
+        if (self::planoUnico() !== null) {
+            throw new DomainException('O estabelecimento já tem o seu plano de assinatura. Edite o plano existente.');
+        }
         $plano = self::validarPlano($dados);
         $db = bd();
         $db->beginTransaction();
@@ -103,6 +106,19 @@ class AssinaturaCliente
         return $planos;
     }
 
+    /**
+     * O plano de assinatura da empresa: desde 2026-11-24 cada empresa tem um so.
+     * Empresa que criou varios antes disso fica com o mais antigo; os outros
+     * deixam de aceitar assinaturas novas, e quem ja assina segue com o seu.
+     */
+    public static function planoUnico(): ?array
+    {
+        $planos = self::planos();
+        if ($planos === []) return null;
+        usort($planos, fn($a, $b) => (int) $a['id_plano_cliente'] <=> (int) $b['id_plano_cliente']);
+        return $planos[0];
+    }
+
     public static function planoPorId(int $id): ?array
     {
         foreach (self::planos() as $plano) {
@@ -122,8 +138,8 @@ class AssinaturaCliente
         if (Configuracao::obter('pix_chave') === '') {
             throw new DomainException('A empresa ainda não configurou a chave Pix para receber assinaturas.');
         }
-        $plano = self::planoPorId($idPlano);
-        if (!$plano || $plano['status'] !== 'ativo') {
+        $plano = self::planoUnico();
+        if (!$plano || (int) $plano['id_plano_cliente'] !== $idPlano || $plano['status'] !== 'ativo') {
             throw new DomainException('Este plano não está disponível.');
         }
         if (!Cliente::porId($idCliente)) {

@@ -10,14 +10,14 @@
 require_once __DIR__ . '/../config/config.php';
 exigirLogin('cliente');
 
-if (!Plano::temRecurso('diferenciais')) {
+$idCliente = (int) perfilId();
+$idMensalidade = (int) get('mensalidade');
+// A mensalidade da assinatura vale em todos os planos do Agendei; o pagamento avulso, so com 'diferenciais'.
+if (!$idMensalidade && !Plano::temRecurso('diferenciais')) {
     $recursoFaltante = 'diferenciais';
     $tituloPagina = 'Pagamento';
     require RAIZ . '/includes/fora_do_plano.php';
 }
-
-$idCliente = (int) perfilId();
-$idMensalidade = (int) get('mensalidade');
 $idAgendamento = (int) get('agendamento');
 $voltar = $idMensalidade ? 'cliente/beneficios.php' : 'cliente/agendamentos.php';
 

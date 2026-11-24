@@ -1,16 +1,13 @@
 <?php
 
 /**
- * Benefícios do cliente: lista de espera, fidelidade, pacotes, Pix e avaliações.
+ * Benefícios do cliente: assinatura mensal (todos os planos do Agendei) e, com
+ * o recurso 'diferenciais', lista de espera, fidelidade, pacotes e avaliações.
  */
 require_once __DIR__ . '/../config/config.php';
 exigirLogin('cliente');
 
-if (!Plano::temRecurso('diferenciais')) {
-    $recursoFaltante = 'diferenciais';
-    $tituloPagina = 'Meus benefícios';
-    require RAIZ . '/includes/fora_do_plano.php';
-}
+$temDiferenciais = Plano::temRecurso('diferenciais');
 
 $idCliente = (int) perfilId();
 $erros = [];
@@ -18,6 +15,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exigirCsrf();
     try {
         $acao = post('acao');
+        if (!$temDiferenciais && in_array($acao, ['lista', 'cancelar_lista', 'pacote', 'avaliar'], true)) {
+            throw new DomainException(Plano::avisoSemRecurso('diferenciais'));
+        }
         if ($acao === 'lista') {
             Diferencial::entrarLista(
                 $idCliente,
@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($acao === 'cancelar_lista') {
             Diferencial::cancelarLista((int) post('id_lista'), $idCliente);
             definirFlash('sucesso', 'Pedido de encaixe cancelado.');
-        } elseif ($acao === 'assinar' && Plano::temRecurso('assinaturas_clientes')) {
+        } elseif ($acao === 'assinar') {
             AssinaturaCliente::assinar($idCliente, (int) post('id_plano_cliente'));
             definirFlash('sucesso', 'Assinatura solicitada. Pague a primeira mensalidade pelo Pix abaixo; ela começa quando o estabelecimento confirmar.');
         } elseif ($acao === 'cancelar_assinatura') {
@@ -64,8 +64,9 @@ $pix = Configuracao::obter('pix_chave');
 // A pagina tambem gera a mensalidade que vence, para nao depender so da tarefa diaria.
 AssinaturaCliente::gerarRenovacoes();
 $minhaAssinatura = AssinaturaCliente::daCliente($idCliente);
-// Sem o beneficio no plano da empresa, ninguem assina de novo; quem ja assina segue ate cancelar.
-$planosAssinatura = Plano::temRecurso('assinaturas_clientes') ? AssinaturaCliente::planos(true) : [];
+// Um plano por empresa: a vitrine mostra o dela, se estiver ativo.
+$planoUnico = AssinaturaCliente::planoUnico();
+$planosAssinatura = $planoUnico && $planoUnico['status'] === 'ativo' ? [$planoUnico] : [];
 $nomeEmpresa = (string) (Contexto::dados()['nome'] ?? '');
 
 $tituloPagina = 'Meus benefícios';
@@ -76,6 +77,7 @@ require RAIZ . '/includes/painel_header.php';
         <ul><?php foreach ($erros as $erro): ?><li><?= e($erro) ?></li><?php endforeach; ?></ul>
     </div><?php endif; ?>
 
+<?php if ($temDiferenciais): ?>
 <div class="grade-indicadores">
     <div class="indicador indicador-destaque"><span class="indicador-rotulo">Pontos disponíveis</span><span class="indicador-valor"><?= (int)($cliente['pontos_fidelidade'] ?? 0) ?></span><span class="indicador-nota">Ganhos em atendimentos concluídos</span></div>
     <div class="indicador"><span class="indicador-rotulo">Pedidos de encaixe</span><span class="indicador-valor"><?= count(array_filter($lista, fn($i) => in_array($i['status'], ['aguardando', 'avisado'], true))) ?></span><span class="indicador-nota">Ativos</span></div>
@@ -136,6 +138,8 @@ require RAIZ . '/includes/painel_header.php';
     </div>
 </div>
 
+<?php endif; ?>
+
 <?php $mostrarVitrine = $planosAssinatura && (!$minhaAssinatura || $minhaAssinatura['situacao'] === 'encerrada'); ?>
 <?php if ($minhaAssinatura && $minhaAssinatura['situacao'] !== 'encerrada'): $a = $minhaAssinatura; $cob = $a['cobranca_pendente']; ?>
     <div class="cartao">
@@ -188,6 +192,7 @@ require RAIZ . '/includes/painel_header.php';
     </div>
 <?php endif; ?>
 
+<?php if ($temDiferenciais): ?>
 <div class="cartao">
     <div class="cartao-cabecalho">
         <h3>Pacotes disponíveis</h3>
@@ -288,6 +293,7 @@ require RAIZ . '/includes/painel_header.php';
             </table>
         </div>
     </div><?php endif; ?>
+<?php endif; ?>
 
 <div class="cartao">
     <div class="cartao-corpo"><a href="<?= url('cliente/privacidade.php') ?>">Privacidade: exportar meus dados ou encerrar minha conta</a></div>
