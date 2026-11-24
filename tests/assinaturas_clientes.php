@@ -101,7 +101,9 @@ foreach (['2026-01-15' => '2026-02-14', '2026-01-31' => '2026-02-28', '2028-01-3
 
 // 3. Validação do plano
 lanca(InvalidArgumentException::class, fn() => AssinaturaCliente::criarPlano(['nome' => 'X', 'descricao' => '', 'preco_mensal' => 10, 'desconto_percentual' => 101, 'servicos' => [$corte => 1]]), 'desconto acima de 100');
-lanca(InvalidArgumentException::class, fn() => AssinaturaCliente::criarPlano(['nome' => 'X', 'descricao' => '', 'preco_mensal' => 10, 'desconto_percentual' => 0, 'servicos' => []]), 'plano sem serviços');
+$tudo = AssinaturaCliente::criarPlano(['nome' => 'Tudo incluso', 'descricao' => '', 'preco_mensal' => 10, 'desconto_percentual' => 0, 'servicos' => []]);
+verificar($tudo > 0, 'plano sem lista de serviços aceito');
+AssinaturaCliente::alterarStatusPlano($tudo, 'inativo');
 lanca(InvalidArgumentException::class, fn() => AssinaturaCliente::criarPlano(['nome' => '', 'descricao' => '', 'preco_mensal' => 10, 'desconto_percentual' => 0, 'servicos' => [$corte => 1]]), 'plano sem nome');
 lanca(InvalidArgumentException::class, fn() => AssinaturaCliente::criarPlano(['nome' => 'X', 'descricao' => '', 'preco_mensal' => 0, 'desconto_percentual' => 0, 'servicos' => [$corte => 1]]), 'plano de graça');
 
@@ -178,7 +180,7 @@ Configuracao::definir('pix_chave', '', '');
 lanca(DomainException::class, fn() => AssinaturaCliente::assinar($outroCliente, $clube), 'sem chave Pix', 'A empresa ainda não configurou a chave Pix para receber assinaturas.');
 Configuracao::definir('pix_chave', 'chave@empresa.local', '');
 AssinaturaCliente::alterarStatusPlano($clube, 'inativo');
-verificar(AssinaturaCliente::planos(true) === [] && count(AssinaturaCliente::planos()) === 2, 'inativo fora da vitrine');
+verificar(AssinaturaCliente::planos(true) === [] && count(AssinaturaCliente::planos()) === 3, 'inativo fora da vitrine');
 lanca(DomainException::class, fn() => AssinaturaCliente::assinar($outroCliente, $clube), 'plano inativo');
 AssinaturaCliente::alterarStatusPlano($clube, 'ativo');
 verificar(count(AssinaturaCliente::assinantes()) === 2, 'lista de assinantes da empresa');
@@ -191,7 +193,7 @@ lanca(InvalidArgumentException::class, fn() => AssinaturaCliente::criarPlano(['n
 verificar(AssinaturaCliente::confirmarPagamento($cob) === false, 'cobrança de outra empresa');
 Contexto::assumirTarefa($idEmpresa);
 
-// 11. Benefício no agendamento: cota, ilimitado, desconto, cancelamento, sinal e pacote.
+// 11. Benefício no agendamento: tudo coberto no período, sinal e pacote.
 $profissional = Profissional::criar(['nome' => 'Carlos', 'email' => 'carlos@teste.local', 'senha' => 'Teste12345!', 'especialidade' => 'Barbeiro', 'servicos' => [$corte, $barba, $escova]]);
 for ($dia = 0; $dia <= 6; $dia++) {
     Horario::criar(['id_profissional' => $profissional, 'dia_semana' => $dia, 'hora_inicio' => '08:00:00', 'hora_fim' => '18:00:00']);
@@ -216,48 +218,36 @@ function agendar(int $idCliente, int $idServico): array
     verificar($r['sucesso'], 'agendamento recusado: ' . implode(' ', $r['erros']));
     return linha('SELECT * FROM agendamentos WHERE id_agendamento = ?', [$r['id_agendamento']]);
 }
+// Regra de 2026-11-24: com plano vigente o cliente paga só a mensalidade, nada por atendimento.
 $cortes = [];
-for ($i = 0; $i < 4; $i++) {
-    $cortes[] = $a = agendar($ana, $corte);
-    verificar((float) $a['valor'] === 0.0 && (int) $a['id_cliente_assinatura'] === $idAna, 'corte ' . ($i + 1) . ' coberto');
-}
-$a = agendar($ana, $corte);
-verificar((float) $a['valor'] === 38.25 && $a['id_cliente_assinatura'] === null, '5º corte com desconto: ' . $a['valor']);
 for ($i = 0; $i < 6; $i++) {
-    verificar((float) agendar($ana, $barba)['valor'] === 0.0, 'barba ilimitada ' . ($i + 1));
+    $cortes[] = $a = agendar($ana, $corte);
+    verificar((float) $a['valor'] === 0.0 && (int) $a['id_cliente_assinatura'] === $idAna, 'corte ' . ($i + 1) . ' coberto, sem cota');
 }
 $a = agendar($ana, $escova);
-verificar((float) $a['valor'] === 42.5 && $a['id_cliente_assinatura'] === null, 'escova fora do plano com desconto: ' . $a['valor']);
+verificar((float) $a['valor'] === 0.0 && (int) $a['id_cliente_assinatura'] === $idAna, 'serviço fora da lista também coberto: ' . $a['valor']);
+verificar(!PagamentoAvulso::pagavel($a, $ana), 'coberto não pede pagamento');
 
-Agendamento::cancelar((int) $cortes[0]['id_agendamento'], null, 'teste');
-$a = agendar($ana, $corte);
-verificar((float) $a['valor'] === 0.0 && (int) $a['id_cliente_assinatura'] === $idAna, 'cota devolvida pelo cancelamento');
-
-// Renovação paga adiantada: a cota do mês corrente não zera e o mês seguinte tem cota própria.
-$cobAna = AssinaturaCliente::gerarRenovacoes(date('Y-m-d', strtotime($assAna['periodo_fim'] . ' -1 day')));
+// Renovação paga adiantada mantém o uso do mês e cobre o mês seguinte.
+AssinaturaCliente::gerarRenovacoes(date('Y-m-d', strtotime($assAna['periodo_fim'] . ' -1 day')));
 AssinaturaCliente::confirmarPagamento((int) AssinaturaCliente::daCliente($ana)['cobranca_pendente']['id_cobranca']);
 $assAna = AssinaturaCliente::daCliente($ana);
-verificar($assAna['uso'][$corte] === 4, 'uso do mês corrente mantido depois de pagar adiantado: ' . json_encode($assAna['uso']));
-$a = agendar($ana, $corte);
-verificar((float) $a['valor'] === 38.25, 'cota do mês corrente continua esgotada depois de pagar adiantado');
+verificar($assAna['uso'][$corte] === 6, 'uso do mês corrente mantido depois de pagar adiantado: ' . json_encode($assAna['uso']));
 $mesSeguinte = (new DateTimeImmutable(AssinaturaCliente::janela($assAna, date('Y-m-d'))[1]))->modify('+1 day')->format('Y-m-d');
 bd()->beginTransaction();
 $proximo = AssinaturaCliente::beneficio($ana, $corte, $mesSeguinte, 45.0);
 bd()->rollBack();
-verificar($proximo['valor'] === 0.0, 'mês seguinte já pago tem cota nova');
+verificar($proximo['valor'] === 0.0, 'mês seguinte já pago coberto');
 $depois = (new DateTimeImmutable($assAna['periodo_fim']))->modify('+1 day')->format('Y-m-d');
 bd()->beginTransaction();
 $fora = AssinaturaCliente::beneficio($ana, $corte, $depois, 45.0);
 bd()->rollBack();
 verificar($fora === ['id_cliente_assinatura' => null, 'valor' => 45.0], 'depois do período paga o preço cheio');
 
-// Sinal e pacote não se somam ao coberto; o sinal sai sobre o valor com desconto.
+// Sinal e pacote não se somam ao coberto.
 Configuracao::definir('sinal_percentual', '50');
-$a = agendar($ana, $barba);
-verificar(linha('SELECT COUNT(*) n FROM pagamentos WHERE id_agendamento = ?', [$a['id_agendamento']])['n'] == 0, 'coberto não gera sinal');
 $a = agendar($ana, $escova);
-$sinal = linha('SELECT valor FROM pagamentos WHERE id_agendamento = ?', [$a['id_agendamento']]);
-verificar(($sinal['valor'] ?? null) !== null && (float) $sinal['valor'] === 21.25, 'sinal sobre o valor com desconto: ' . ($sinal['valor'] ?? 'nenhum'));
+verificar(linha('SELECT COUNT(*) n FROM pagamentos WHERE id_agendamento = ?', [$a['id_agendamento']])['n'] == 0, 'coberto não gera sinal');
 Configuracao::definir('sinal_percentual', '0');
 
 Diferencial::criarPacote(['id_servico' => $barba, 'nome' => '10 barbas', 'quantidade' => 10, 'validade_dias' => 90, 'preco' => 200]);
@@ -267,31 +257,11 @@ Diferencial::atualizarCompraPacote((int) $compra['id_cliente_pacote'], 'pago');
 agendar($ana, $barba);
 verificar((int) Diferencial::pacotesDoCliente($ana)[0]['creditos_restantes'] === 10, 'coberto não gasta crédito de pacote');
 
-// Admin reduz a cota abaixo do que já foi usado: o próximo paga com desconto, os feitos ficam como estão.
-AssinaturaCliente::atualizarPlano($clube, ['nome' => 'Clube', 'descricao' => '', 'preco_mensal' => 99, 'desconto_percentual' => 15, 'servicos' => [$corte => 1, $barba => null]]);
-$a = agendar($ana, $corte);
-verificar((float) $a['valor'] === 38.25, 'cota reduzida: próximo corte com desconto');
-verificar((float) linha('SELECT valor FROM agendamentos WHERE id_agendamento = ?', [$cortes[1]['id_agendamento']])['valor'] === 0.0, 'corte já coberto continua coberto');
-
-// Corrida pela última vaga da cota: a transação que já tirou a foto do banco
-// precisa ver o agendamento que outra acabou de gravar (REPEATABLE READ no MySQL).
+// Lia: assinante para o teste de conta encerrada abaixo.
 $umCorte = AssinaturaCliente::criarPlano(['nome' => 'Um corte', 'descricao' => '', 'preco_mensal' => 40, 'desconto_percentual' => 0, 'servicos' => [$corte => 1]]);
 $lia = Cliente::criar(['nome' => 'Lia', 'email' => 'lia@teste.local', 'senha' => 'Teste12345!', 'telefone' => '11944443333']);
 AssinaturaCliente::assinar($lia, $umCorte);
 AssinaturaCliente::confirmarPagamento((int) AssinaturaCliente::daCliente($lia)['cobranca_pendente']['id_cobranca']);
-[$dataCorrida, $horaCorrida] = array_shift($horarios);
-bd()->beginTransaction();
-bd()->query('SELECT COUNT(*) FROM servicos')->fetchColumn(); // abre a foto da transação
-$filho = sprintf(
-    'define("TAREFA_AGENDADA", true); chdir(%s); require "config/database.php"; ob_start(); require "config/config.php"; ob_end_clean();'
-    . ' Contexto::assumirTarefa(%d); $r = Agendamento::criar(["id_cliente" => %d, "id_profissional" => %d, "id_servico" => %d, "data" => %s, "hora_inicio" => %s, "observacao" => ""]);'
-    . ' exit($r["sucesso"] ? 0 : 1);',
-    var_export(getcwd(), true), $idEmpresa, $lia, $profissional, $corte, var_export($dataCorrida, true), var_export($horaCorrida, true)
-);
-verificar(proc_close(proc_open([PHP_BINARY, '-r', $filho], [], $pipes)) === 0, 'agendamento concorrente gravou');
-$corrida = AssinaturaCliente::beneficio($lia, $corte, $dataCorrida, 45.0);
-bd()->rollBack();
-verificar($corrida === ['id_cliente_assinatura' => null, 'valor' => 45.0], 'a última vaga não sai duas vezes: ' . json_encode($corrida));
 
 // Conta encerrada (LGPD): a assinatura para de cobrar.
 $liaAss = AssinaturaCliente::daCliente($lia);

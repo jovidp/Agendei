@@ -413,9 +413,8 @@ class AssinaturaCliente
 
     /**
      * Valor do agendamento para o cliente e a assinatura que o cobre (ou null).
-     * Chamar dentro da transacao do agendamento: a assinatura fica travada
-     * enquanto o uso e contado, para dois agendamentos simultaneos nao
-     * passarem juntos da cota.
+     * Com assinatura vigente na data o atendimento sai a zero. Chamar dentro
+     * da transacao do agendamento (a leitura trava a assinatura).
      * @return array{id_cliente_assinatura: ?int, valor: float}
      */
     public static function beneficio(int $idCliente, int $idServico, string $data, float $preco): array
@@ -429,18 +428,9 @@ class AssinaturaCliente
         $assinatura = $q->fetch();
         if (!$assinatura || !self::vigenteEm($assinatura, $data)) return $semBeneficio;
 
-        $plano = self::planoPorId((int) $assinatura['id_plano_cliente']);
-        if (!$plano) return $semBeneficio;
-        $id = (int) $assinatura['id_cliente_assinatura'];
-        foreach ($plano['servicos'] as $servico) {
-            if ($servico['id_servico'] !== $idServico) continue;
-            [$inicio, $fim] = self::janela($assinatura, $data);
-            $usado = self::uso($id, $idServico, $inicio, $fim, true);
-            if ($servico['quantidade_mes'] === null || $usado < $servico['quantidade_mes']) {
-                return ['id_cliente_assinatura' => $id, 'valor' => 0.0];
-            }
-        }
-        return ['id_cliente_assinatura' => null, 'valor' => round($preco * (1 - (int) $plano['desconto_percentual'] / 100), 2)];
+        // Regra do negocio (2026-11-24): com plano vigente o cliente paga so a
+        // mensalidade; todo atendimento na data coberta sai a zero, sem cota nem desconto.
+        return ['id_cliente_assinatura' => (int) $assinatura['id_cliente_assinatura'], 'valor' => 0.0];
     }
 
     /**
@@ -490,13 +480,13 @@ class AssinaturaCliente
             }
             $servicos[(int) $idServico] = $quantidade === null ? null : (int) $quantidade;
         }
-        if ($servicos === []) {
-            throw new InvalidArgumentException('Escolha pelo menos um serviço incluído no plano.');
-        }
-        $q = bd()->prepare('SELECT COUNT(*) FROM servicos WHERE id_estabelecimento = ? AND id_servico IN (' . implode(',', array_fill(0, count($servicos), '?')) . ')');
-        $q->execute(array_merge([Contexto::id()], array_keys($servicos)));
-        if ((int) $q->fetchColumn() !== count($servicos)) {
-            throw new InvalidArgumentException('Serviço inválido no plano.');
+        // Desde 2026-11-24 o plano cobre todos os atendimentos; a lista de servicos e opcional (planos antigos).
+        if ($servicos !== []) {
+            $q = bd()->prepare('SELECT COUNT(*) FROM servicos WHERE id_estabelecimento = ? AND id_servico IN (' . implode(',', array_fill(0, count($servicos), '?')) . ')');
+            $q->execute(array_merge([Contexto::id()], array_keys($servicos)));
+            if ((int) $q->fetchColumn() !== count($servicos)) {
+                throw new InvalidArgumentException('Serviço inválido no plano.');
+            }
         }
         $descricao = trim((string) ($dados['descricao'] ?? ''));
         return [

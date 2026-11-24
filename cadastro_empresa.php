@@ -2,6 +2,8 @@
 /** Cadastro publico com demonstracao de sete dias e identidade unica. */
 define('ENTRADA_LOCAL', true);
 define('PAGINA_PRODUTO', true);
+// Libera Contexto::assumir(): ao fim do cadastro a pessoa entra direto na empresa nova.
+define('ENTRADA_GLOBAL', true);
 require_once __DIR__ . '/config/config.php';
 
 bloquearSeLogado();
@@ -9,12 +11,20 @@ bloquearSeLogado();
 $erros = [];
 $dados = [
     'estabelecimento' => '',
+    'cnpj'            => '',
     'slug'            => '',
     'nome'            => '',
     'email'           => '',
     'telefone'        => '',
     'mensagem'        => '',
 ];
+
+// Plano escolhido no cadastro: vale na demonstracao e e o que se cobra depois dela.
+$planos = array_column(Plano::contrataveis(), null, 'id_plano');
+$idPlano = (int) (post('id_plano') ?: get('plano'));
+if (!isset($planos[$idPlano])) {
+    $idPlano = (int) (Plano::porNome(Plano::PADRAO_CADASTRO)['id_plano'] ?? array_key_first($planos) ?? 0);
+}
 
 // Cadastro iniciado pelo Google (google_login.php): nome e e-mail do
 // responsavel ja vem confirmados e preenchidos. A confirmacao vale so para
@@ -47,6 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $senha          = post('senha');
     $confirmacao    = post('confirmar_senha');
     $telefone       = apenasNumeros($dados['telefone']);
+    $cnpj           = apenasNumeros($dados['cnpj']);
 
     // E-mail que ja tem conta: a pessoa existe e sera vinculada como responsavel,
     // com a senha que ja tem. A senha digitada e a prova de que o e-mail e dela;
@@ -56,6 +67,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (mb_strlen($dados['estabelecimento']) < 2 || mb_strlen($dados['estabelecimento']) > 120) {
         $erros[] = 'Informe o nome da empresa.';
+    }
+    if (!validarCnpj($cnpj)) {
+        $erros[] = 'Informe um CNPJ válido.';
     }
     if (!preg_match('/^[a-z0-9](?:[a-z0-9-]{1,78}[a-z0-9])$/D', $dados['slug'])) {
         $erros[] = 'O endereço deve ter de 3 a 80 letras minúsculas, números ou hifens.';
@@ -85,17 +99,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     // Aceite dos Termos e da Politica: sem ele a conta nao e criada (o aceite e gravado com a versao).
+    if ($planos !== [] && !isset($planos[(int) post('id_plano')])) {
+        $erros[] = 'Escolha um plano.';
+    }
     if (post('aceite') !== '1') {
         $erros[] = 'Para criar a conta, aceite os Termos de Uso e a Política de Privacidade.';
     }
     if ($erros === [] && Solicitacao::slugEmUso($dados['slug'])) {
         $erros[] = 'Este endereço já está em uso. Escolha outro.';
     }
+    if ($erros === [] && Estabelecimento::cnpjEmUso($cnpj)) {
+        $erros[] = 'Este CNPJ já está cadastrado no Agendei. Se a empresa é sua, entre com a conta que a administra.';
+    }
 
     if ($erros === []) {
         try {
             $idEmpresa = Estabelecimento::contratar([
                 'estabelecimento' => $dados['estabelecimento'],
+                'cnpj'            => $cnpj,
                 'slug'            => $dados['slug'],
                 'nome'            => $dados['nome'],
                 'email'           => $dados['email'],
@@ -111,23 +132,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'detalhe' => 'demonstração de 7 dias',
             ]);
             Legal::registrarAceite($dados['email']);
+            if (post('comunicacoes') === '1') Legal::registrarComunicacoes($idEmpresa, $dados['email'], 'admin', true);
             // Conta nova: manda o codigo para confirmar o e-mail. Quem ja tinha conta continua como estava.
             if ($pessoaExistente === null) VerificacaoEmail::aposCadastro($dados['email'], $confirmadoPeloGoogle);
-            // Na demonstracao a empresa experimenta o plano padrao; escolhe o dela em Assinatura.
+            // A demonstracao ja roda no plano escolhido; ao fim dela, Assinatura cobra o mesmo plano.
             try {
-                $planoInicial = Plano::porNome(Plano::PADRAO_CADASTRO);
-                if ($planoInicial !== null) Plano::atribuir($idEmpresa, (int) $planoInicial['id_plano'], 'Plano da demonstração');
+                if ($idPlano > 0) Plano::atribuir($idEmpresa, $idPlano, 'Escolhido no cadastro');
             } catch (Throwable $erroPlano) {
                 error_log('Plano inicial não atribuído: ' . $erroPlano->getMessage());
             }
             limparFalhas('cadastro_empresa_ip', ipCliente());
             Google::limparCadastro();
-            definirFlash('sucesso', 'Sua empresa foi criada. Você tem 7 dias de demonstração grátis.');
-            redirecionar('login.php?estabelecimento=' . rawurlencode($dados['slug']));
+            $boasVindas = 'Sua empresa foi criada' . (isset($planos[$idPlano]) ? ' no plano ' . $planos[$idPlano]['nome'] : '')
+                . '. Você tem ' . Assinatura::DIAS_DEMO . ' dias grátis; depois, é só escolher como pagar em Assinatura.';
+
+            // Entra direto no painel, pelo mesmo caminho do entrar.php (inclusive o 2FA de quem ja tinha conta).
+            Contexto::assumir($idEmpresa);
+            $admin = null;
+            foreach (Usuario::vinculosPorEmail($dados['email']) as $vinculo) {
+                if ((int) $vinculo['id_estabelecimento'] === $idEmpresa && $vinculo['tipo'] === 'admin') {
+                    $admin = Usuario::porVinculo((int) $vinculo['id_vinculo']);
+                }
+            }
+            if ($admin === null || $admin['status'] !== 'ativo') {
+                definirFlash('sucesso', $boasVindas);
+                redirecionar('login.php?estabelecimento=' . rawurlencode($dados['slug']));
+            }
+            LogAutenticacao::registrar('login_sucesso', $dados['email'], $admin, null, cpfDoUsuario($admin));
+            if (exigeSegundoFator($admin)) {
+                iniciarSegundoFator($admin, $dados['email']);
+                redirecionar('dois_fatores.php');
+            }
+            registrarSessao($admin);
+            definirFlash('sucesso', $boasVindas);
+            header('Location: ' . destinoAposLogin());
+            exit;
         } catch (PDOException $erro) {
             error_log('Falha no cadastro de empresa: ' . $erro->getMessage());
-            $erros[] = $erro->getCode() === '23000'
-                ? 'Este endereço já está em uso. Escolha outro.'
+            // 23000 (MySQL) e 23505 (PostgreSQL): outro cadastro levou o endereço ou o CNPJ no mesmo instante.
+            $erros[] = in_array($erro->getCode(), ['23000', '23505'], true)
+                ? 'Este endereço ou CNPJ já está em uso. Confira e tente novamente.'
                 : 'Não foi possível enviar o cadastro. Tente novamente.';
         } catch (Throwable $erro) {
             error_log('Falha no cadastro de empresa: ' . $erro->getMessage());
@@ -146,6 +190,7 @@ $tituloPagina = 'Cadastrar empresa | ' . NOME_SISTEMA;
     <title><?= e($tituloPagina) ?></title>
     <link rel="stylesheet" href="<?= url('assets/css/style.css') ?>">
     <link rel="stylesheet" href="<?= url('assets/css/login.css') ?>">
+    <link rel="stylesheet" href="<?= url('assets/css/agendamento.css') ?>">
     <?php require RAIZ . '/includes/tema.php'; ?>
 </head>
 <body class="pagina-autenticacao">
@@ -168,7 +213,7 @@ $tituloPagina = 'Cadastrar empresa | ' . NOME_SISTEMA;
                 <?php /* Os dois cadastros do Agendei se confundem; este diz qual e e aponta o outro. */ ?>
                 <p class="aviso-tipo-cadastro">
                     <strong>Cadastro de estabelecimento.</strong>
-                    Cria a empresa e a sua conta de administrador, liberadas depois da aprovação.
+                    Cria a empresa e a sua conta de administrador, e você já entra no painel.
                     Quer só marcar um horário? <a href="<?= url('criar_conta.php#cliente') ?>">Crie uma conta de cliente</a>.
                 </p>
 
@@ -202,74 +247,121 @@ $tituloPagina = 'Cadastrar empresa | ' . NOME_SISTEMA;
                 <form method="post" id="formCadastroEmpresa" novalidate>
                     <?= campoCsrf() ?>
 
-                    <div class="linha-campos">
-                        <div class="campo">
-                            <label for="estabelecimento">Nome da empresa</label>
-                            <input type="text" id="estabelecimento" name="estabelecimento" value="<?= e($dados['estabelecimento']) ?>"
-                                   maxlength="120" required autofocus>
-                            <span class="mensagem-campo"></span>
-                        </div>
-                        <div class="campo">
-                            <label for="slug">Endereço da empresa</label>
-                            <input type="text" id="slug" name="slug" value="<?= e($dados['slug']) ?>"
-                                   maxlength="80" pattern="[a-z0-9][a-z0-9-]{1,78}[a-z0-9]" autocomplete="off" required>
-                            <span class="mensagem-campo"></span>
-                            <span class="ajuda-campo">Vira o link do seu login. Letras minúsculas, números e hifens.</span>
-                        </div>
-                    </div>
+                    <fieldset class="grupo-campos">
+                        <legend>Empresa</legend>
 
-                    <div class="linha-campos">
-                        <div class="campo">
-                            <label for="nome">Nome e sobrenome</label>
-                            <input type="text" id="nome" name="nome" value="<?= e($dados['nome']) ?>" maxlength="120" autocomplete="name" required>
-                            <span class="mensagem-campo"></span>
-                            <span class="ajuda-campo">De quem responde pela empresa. Ex.: Ana Souza.</span>
+                        <div class="linha-campos">
+                            <div class="campo">
+                                <label for="estabelecimento">Nome da empresa</label>
+                                <input type="text" id="estabelecimento" name="estabelecimento" value="<?= e($dados['estabelecimento']) ?>"
+                                       maxlength="120" required autofocus>
+                                <span class="mensagem-campo"></span>
+                            </div>
+                            <div class="campo">
+                                <label for="slug">Endereço da empresa</label>
+                                <input type="text" id="slug" name="slug" value="<?= e($dados['slug']) ?>"
+                                       maxlength="80" pattern="[a-z0-9][a-z0-9-]{1,78}[a-z0-9]" autocomplete="off" required>
+                                <span class="mensagem-campo"></span>
+                                <span class="ajuda-campo">Vira o link do seu login. Letras minúsculas, números e hifens.</span>
+                            </div>
                         </div>
-                        <div class="campo">
-                            <label for="telefone">Telefone ou WhatsApp</label>
-                            <input type="tel" id="telefone" name="telefone" value="<?= e($dados['telefone']) ?>" maxlength="20" autocomplete="tel"
-                                   data-mascara="telefone" inputmode="numeric" placeholder="(00) 00000-0000" required>
-                            <span class="mensagem-campo"></span>
-                        </div>
-                    </div>
 
-                    <div class="campo">
-                        <label for="email">E-mail</label>
-                        <input type="email" id="email" name="email" value="<?= e($dados['email']) ?>" maxlength="150" autocomplete="email" required>
-                        <span class="mensagem-campo"></span>
-                        <span class="ajuda-campo">Será o seu login e canal de contato. Se já tiver conta no Agendei, use a senha dela: a empresa nova entra na mesma conta.</span>
-                    </div>
-
-                    <div class="linha-campos">
                         <div class="campo">
-                            <label for="senha">Senha</label>
-                            <input type="password" id="senha" name="senha" minlength="6" autocomplete="new-password" required>
+                            <label for="cnpj">CNPJ</label>
+                            <input type="text" id="cnpj" name="cnpj" value="<?= e($dados['cnpj']) ?>"
+                                   data-mascara="cnpj" inputmode="numeric" placeholder="00.000.000/0000-00" autocomplete="off" required>
                             <span class="mensagem-campo"></span>
-                            <span class="ajuda-campo">Nova, ou a da sua conta se o e-mail já tiver uma.</span>
+                            <span class="ajuda-campo">Identifica a empresa que contrata o Agendei e vai nas cobranças e notas. Não aparece para os seus clientes.</span>
                         </div>
+
                         <div class="campo">
-                            <label for="confirmar_senha">Confirmar senha</label>
-                            <input type="password" id="confirmar_senha" name="confirmar_senha" minlength="6" autocomplete="new-password" required>
+                            <label for="mensagem">Conte um pouco sobre a empresa <span class="opcional">(opcional)</span></label>
+                            <textarea id="mensagem" name="mensagem" rows="3" maxlength="255"><?= e($dados['mensagem']) ?></textarea>
                             <span class="mensagem-campo"></span>
                         </div>
-                    </div>
+                    </fieldset>
 
-                    <div class="campo">
-                        <label for="mensagem">Conte um pouco sobre a empresa <span class="opcional">(opcional)</span></label>
-                        <textarea id="mensagem" name="mensagem" rows="3" maxlength="255"><?= e($dados['mensagem']) ?></textarea>
-                        <span class="mensagem-campo"></span>
-                    </div>
-
-                    <div class="campo campo-aceite">
-                        <div class="campo-checkbox">
-                            <input type="checkbox" id="aceite" name="aceite" value="1" <?= post('aceite') === '1' ? 'checked' : '' ?> required>
-                            <label for="aceite">Li e aceito os <a href="<?= url('legal.php?pagina=termos') ?>" target="_blank" rel="noopener">Termos de Uso</a> e a <a href="<?= url('legal.php?pagina=privacidade') ?>" target="_blank" rel="noopener">Política de Privacidade</a> <span class="obrigatorio">*</span></label>
+                    <?php if ($planos !== []): ?>
+                    <fieldset class="grupo-campos">
+                        <legend>Plano</legend>
+                        <div class="lista-opcoes planos-cadastro">
+                            <?php foreach ($planos as $id => $plano): ?>
+                                <div class="opcao">
+                                    <input type="radio" name="id_plano" id="plano<?= (int) $id ?>" value="<?= (int) $id ?>" required <?= $id === $idPlano ? 'checked' : '' ?>>
+                                    <label for="plano<?= (int) $id ?>">
+                                        <span class="opcao-conteudo">
+                                            <strong><?= e($plano['nome']) ?></strong>
+                                            <span class="plano-preco"><?= formatarMoeda($plano['preco_mensal']) ?><small>/mês</small></span>
+                                            <p><?= e($plano['descricao'] ?? '') ?></p>
+                                        </span>
+                                    </label>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
-                        <span class="mensagem-campo"></span>
-                    </div>
+                        <span class="ajuda-campo"><?= Assinatura::DIAS_DEMO ?> dias grátis, sem cartão. Só depois disso você paga o plano escolhido, e pode trocar quando quiser. <a href="<?= url('index.php#planos') ?>" target="_blank" rel="noopener">Comparar planos</a></span>
+                    </fieldset>
+                    <?php endif; ?>
+
+                    <fieldset class="grupo-campos">
+                        <legend>Responsável</legend>
+
+                        <div class="linha-campos">
+                            <div class="campo">
+                                <label for="nome">Nome e sobrenome</label>
+                                <input type="text" id="nome" name="nome" value="<?= e($dados['nome']) ?>" maxlength="120" autocomplete="name" required>
+                                <span class="mensagem-campo"></span>
+                                <span class="ajuda-campo">De quem responde pela empresa. Ex.: Ana Souza.</span>
+                            </div>
+                            <div class="campo">
+                                <label for="telefone">Telefone ou WhatsApp</label>
+                                <input type="tel" id="telefone" name="telefone" value="<?= e($dados['telefone']) ?>" maxlength="20" autocomplete="tel"
+                                       data-mascara="telefone" inputmode="numeric" placeholder="(00) 00000-0000" required>
+                                <span class="mensagem-campo"></span>
+                            </div>
+                        </div>
+
+                        <div class="campo">
+                            <label for="email">E-mail</label>
+                            <input type="email" id="email" name="email" value="<?= e($dados['email']) ?>" maxlength="150" autocomplete="email" required>
+                            <span class="mensagem-campo"></span>
+                            <span class="ajuda-campo">Será o seu login e canal de contato. Se já tiver conta no Agendei, use a senha dela: a empresa nova entra na mesma conta.</span>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="grupo-campos">
+                        <legend>Acesso</legend>
+
+                        <div class="linha-campos">
+                            <div class="campo">
+                                <label for="senha">Senha</label>
+                                <input type="password" id="senha" name="senha" minlength="6" autocomplete="new-password" required>
+                                <span class="mensagem-campo"></span>
+                                <span class="ajuda-campo">Nova, ou a da sua conta se o e-mail já tiver uma.</span>
+                            </div>
+                            <div class="campo">
+                                <label for="confirmar_senha">Confirmar senha</label>
+                                <input type="password" id="confirmar_senha" name="confirmar_senha" minlength="6" autocomplete="new-password" required>
+                                <span class="mensagem-campo"></span>
+                            </div>
+                        </div>
+
+                        <div class="campo campo-aceite">
+                            <div class="campo-checkbox">
+                                <input type="checkbox" id="aceite" name="aceite" value="1" <?= post('aceite') === '1' ? 'checked' : '' ?> required>
+                                <label for="aceite">Li e aceito os <a href="<?= url('legal.php?pagina=termos') ?>" target="_blank" rel="noopener">Termos de Uso</a> e a <a href="<?= url('legal.php?pagina=privacidade') ?>" target="_blank" rel="noopener">Política de Privacidade</a> <span class="obrigatorio">*</span></label>
+                            </div>
+                            <span class="mensagem-campo"></span>
+                        </div>
+
+                        <?php /* Consentimento opcional (LGPD art. 8): separado do aceite obrigatorio e desmarcado. */ ?>
+                        <div class="campo campo-checkbox">
+                            <input type="checkbox" id="comunicacoes" name="comunicacoes" value="1" <?= post('comunicacoes') === '1' ? 'checked' : '' ?>>
+                            <label for="comunicacoes">Quero receber dicas e novidades do Agendei por e-mail e WhatsApp <span class="opcional">(opcional, cancele quando quiser)</span></label>
+                        </div>
+                    </fieldset>
 
                     <div class="acoes-formulario">
-                        <button type="submit" class="btn btn-bloco btn-grande">Enviar cadastro</button>
+                        <button type="submit" class="btn btn-bloco btn-grande">Criar empresa e começar o teste grátis</button>
                     </div>
                 </form>
 

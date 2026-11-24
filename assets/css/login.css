@@ -502,3 +502,30 @@ form + .aviso-tipo-cadastro {
 .campo-aceite { margin-top: 4px; }
 .campo-aceite a { font-weight: 600; }
 .pagina-legal > .voltar-site { display: flex; width: fit-content; }
+
+/* Cadastro em etapas (Agendei.formularioEmEtapas em main.js): rotulos, trilho de progresso e navegacao. */
+.progresso-cadastro { margin-bottom: 18px; }
+.progresso-etapas { display: flex; gap: 6px; list-style: none; margin: 0 0 8px; padding: 0; counter-reset: etapa; }
+.progresso-etapas li { flex: 1; min-width: 0; font-size: 12.5px; color: var(--texto-secundario); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; counter-increment: etapa; }
+.progresso-etapas li::before { content: counter(etapa) ". "; font-weight: 700; }
+.progresso-etapas li.ativa { color: var(--cor-primaria); font-weight: 600; }
+.progresso-etapas li.concluida { color: var(--cor-secundaria-escura); }
+.progresso-etapas li.concluida::before { content: "\2713  "; }
+.progresso-trilho { height: 6px; border-radius: 3px; background-color: var(--borda); overflow: hidden; }
+.progresso-preenchido { height: 100%; width: 25%; background-color: var(--cor-primaria); transition: width 0.3s ease; }
+.progresso-texto { margin: 8px 0 0; font-size: 13px; color: var(--texto-secundario); }
+.navegacao-cadastro { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.navegacao-cadastro .btn:last-child { margin-left: auto; }
+.navegacao-cadastro .btn[hidden], .acoes-formulario[hidden], .grupo-campos[hidden] { display: none; }
+@media (max-width: 600px) {
+  /* No celular so o rotulo da etapa atual cabe; o texto abaixo da barra diz o resto. */
+  .progresso-etapas li:not(.ativa) { flex: 0 0 auto; }
+  .progresso-etapas li:not(.ativa) { font-size: 0; }
+  .progresso-etapas li:not(.ativa)::before { font-size: 12.5px; }
+}
+@media (prefers-reduced-motion: reduce) { .progresso-preenchido { transition: none; } }
+
+/* Escolha do plano no cadastro da empresa (cartoes .opcao de agendamento.css). */
+.planos-cadastro { grid-template-columns: 1fr; }
+.planos-cadastro .plano-preco { display: block; margin: 2px 0 4px; font-size: 18px; font-weight: 700; color: var(--cor-primaria); }
+.planos-cadastro .plano-preco small { font-size: 13px; font-weight: 400; color: var(--texto-secundario); }

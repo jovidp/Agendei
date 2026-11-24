@@ -31,7 +31,8 @@ class Plano
         'lembretes_whatsapp' => 'Lembretes automáticos por WhatsApp',
         'sinal_pix'          => 'Sinal por Pix no agendamento',
         'diferenciais'       => 'Fidelidade, pacotes, avaliações e comissões',
-        'bot_whatsapp'       => 'Bot de atendimento no WhatsApp (agenda pela conversa)',
+        'assinaturas_clientes' => 'Assinaturas mensais para os seus clientes',
+        // Bot de WhatsApp fora da venda por enquanto: sem chave aqui, temRecurso('bot_whatsapp') e sempre falso.
     ];
 
     /**
@@ -57,8 +58,8 @@ class Plano
          'limite_profissionais' => 2, 'limite_servicos' => 15, 'limite_agendamentos_mes' => null, 'recursos' => []],
         ['nome' => 'Profissional', 'preco_mensal' => 149.00, 'descricao' => 'Para a equipe que cresce: lembretes automáticos, sinal por Pix e fidelização.',
          'limite_profissionais' => 5, 'limite_servicos' => null, 'limite_agendamentos_mes' => null, 'recursos' => ['lembretes_whatsapp', 'sinal_pix', 'diferenciais']],
-        ['nome' => 'Premium', 'preco_mensal' => 249.00, 'descricao' => 'Tudo do Profissional, sem limites, e o bot que agenda pelo WhatsApp.',
-         'limite_profissionais' => null, 'limite_servicos' => null, 'limite_agendamentos_mes' => null, 'recursos' => ['lembretes_whatsapp', 'sinal_pix', 'diferenciais', 'bot_whatsapp']],
+        ['nome' => 'Premium', 'preco_mensal' => 249.00, 'descricao' => 'Tudo do Profissional, sem limite de equipe, e assinaturas mensais para os seus clientes.',
+         'limite_profissionais' => null, 'limite_servicos' => null, 'limite_agendamentos_mes' => null, 'recursos' => ['lembretes_whatsapp', 'sinal_pix', 'diferenciais', 'assinaturas_clientes']],
     ];
 
     /** Plano que a empresa recebe ao se cadastrar (durante a demonstracao). */

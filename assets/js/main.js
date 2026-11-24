@@ -324,6 +324,16 @@
       .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
   };
 
+  /** Formata até 14 dígitos como 00.000.000/0000-00. */
+  Agendei.mascaraCnpj = function (valor) {
+    valor = valor.replace(/\D/g, "").slice(0, 14);
+    return valor
+      .replace(/^(\d{2})(\d)/, "$1.$2")
+      .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+      .replace(/\.(\d{3})(\d)/, ".$1/$2")
+      .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+  };
+
   /** Formata o DDD e ajusta a separação para telefone fixo ou celular. */
   Agendei.mascaraTelefone = function (valor) {
     valor = valor.replace(/\D/g, "").slice(0, 11);
@@ -365,6 +375,7 @@
   function iniciarMascaras() {
     var mascaras = {
       cpf: Agendei.mascaraCpf,
+      cnpj: Agendei.mascaraCnpj,
       telefone: Agendei.mascaraTelefone,
       fixo: Agendei.mascaraFixo,
       cep: Agendei.mascaraCep,
@@ -645,12 +656,145 @@
     return true;
   };
 
+  /** Rejeita sequências repetidas e confere os dois dígitos verificadores do CNPJ. */
+  Agendei.validarCnpj = function (cnpj) {
+    cnpj = String(cnpj).replace(/\D/g, "");
+    if (cnpj.length !== 14 || /^(\d)\1{13}$/.test(cnpj)) {
+      return false;
+    }
+    for (var posicao = 12; posicao < 14; posicao++) {
+      var soma = 0;
+      var peso = posicao - 7;
+      for (var indice = 0; indice < posicao; indice++) {
+        soma += parseInt(cnpj.charAt(indice), 10) * peso;
+        peso = peso === 2 ? 9 : peso - 1;
+      }
+      var digito = soma % 11 < 2 ? 0 : 11 - (soma % 11);
+      if (parseInt(cnpj.charAt(posicao), 10) !== digito) {
+        return false;
+      }
+    }
+    return true;
+  };
+
   /** Verifica se o texto tem um formato de e-mail aceito pela validação. */
   Agendei.validarEmail = function (email) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(email).trim());
   };
 
   /** Evita duplo envio do formulario. */
+  // -----------------------------------------------------------------
+  // Formulario em etapas (cadastro de cliente e de empresa)
+  // -----------------------------------------------------------------
+
+  /**
+   * Mostra um fieldset.grupo-campos por vez, com barra de progresso montada a
+   * partir das legendas. validarBloco(elemento) confere só os campos dentro do
+   * elemento e devolve true/false. Sem JavaScript o formulário aparece inteiro.
+   * Devolve irPara(indice, focar) para quem precisa voltar a uma etapa.
+   */
+  Agendei.formularioEmEtapas = function (formulario, validarBloco) {
+    var etapas = formulario.querySelectorAll("fieldset.grupo-campos");
+    var acoes = formulario.querySelector(".acoes-formulario");
+    var total = etapas.length;
+    var atual = 0;
+
+    var progresso = document.createElement("div");
+    progresso.className = "progresso-cadastro";
+    var lista = document.createElement("ol");
+    lista.className = "progresso-etapas";
+    etapas.forEach(function (etapa) {
+      var item = document.createElement("li");
+      item.textContent = etapa.querySelector("legend").textContent;
+      lista.appendChild(item);
+    });
+    var trilho = document.createElement("div");
+    trilho.className = "progresso-trilho";
+    trilho.setAttribute("role", "progressbar");
+    trilho.setAttribute("aria-valuemin", "1");
+    trilho.setAttribute("aria-valuemax", String(total));
+    trilho.setAttribute("aria-label", "Progresso do cadastro");
+    var preenchido = document.createElement("div");
+    preenchido.className = "progresso-preenchido";
+    trilho.appendChild(preenchido);
+    var texto = document.createElement("p");
+    texto.className = "progresso-texto";
+    texto.setAttribute("aria-live", "polite");
+    progresso.append(lista, trilho, texto);
+    etapas[0].before(progresso);
+
+    var navegacao = document.createElement("div");
+    navegacao.className = "navegacao-cadastro";
+    var voltar = document.createElement("button");
+    voltar.type = "button";
+    voltar.className = "btn btn-contorno btn-grande";
+    voltar.textContent = "Voltar";
+    var avancar = document.createElement("button");
+    avancar.type = "button";
+    avancar.className = "btn btn-grande";
+    avancar.textContent = "Próximo";
+    navegacao.append(voltar, avancar);
+    etapas[total - 1].after(navegacao);
+
+    function irPara(i, focar) {
+      atual = i;
+      etapas.forEach(function (etapa, n) {
+        etapa.hidden = n !== i;
+      });
+      lista.querySelectorAll("li").forEach(function (item, n) {
+        item.classList.toggle("ativa", n === i);
+        item.classList.toggle("concluida", n < i);
+      });
+      preenchido.style.width = ((i + 1) / total) * 100 + "%";
+      trilho.setAttribute("aria-valuenow", String(i + 1));
+      texto.textContent = "Etapa " + (i + 1) + " de " + total + " · " + etapas[i].querySelector("legend").textContent;
+      voltar.hidden = i === 0;
+      avancar.hidden = i === total - 1;
+      acoes.hidden = i !== total - 1;
+      if (focar) {
+        var primeiro = etapas[i].querySelector("input, select, textarea");
+        if (primeiro) {
+          primeiro.focus();
+        }
+      }
+    }
+
+    function proxima() {
+      if (validarBloco(etapas[atual])) {
+        irPara(atual + 1, true);
+      }
+    }
+
+    voltar.addEventListener("click", function () {
+      irPara(atual - 1, true);
+    });
+    avancar.addEventListener("click", proxima);
+
+    // Enter numa etapa intermediária avança em vez de enviar; na última confere tudo.
+    formulario.addEventListener("submit", function (evento) {
+      if (atual < total - 1) {
+        evento.preventDefault();
+        proxima();
+        return;
+      }
+      if (!validarBloco(formulario)) {
+        evento.preventDefault();
+        // Leva à primeira etapa com erro (ex.: campo apagado depois de avançar).
+        for (var n = 0; n < total; n++) {
+          var invalido = etapas[n].querySelector(".invalido");
+          if (invalido) {
+            irPara(n, false);
+            invalido.focus();
+            break;
+          }
+        }
+      }
+    });
+
+    irPara(0, false);
+    return irPara;
+  };
+
   function iniciarProtecaoEnvio() {
     document.addEventListener("submit", function (evento) {
       var formulario = evento.target;

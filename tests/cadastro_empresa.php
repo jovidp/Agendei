@@ -238,6 +238,31 @@ verificar('demonstração expirada bloqueia', Assinatura::acessoBloqueado($idDem
 Assinatura::confirmarPagamento($idDemo);
 verificar('pagamento confirmado libera acesso', Assinatura::acessoBloqueado($idDemo), false);
 
+// CNPJ: digitos verificadores, gravacao so com digitos e unicidade.
+verificar('CNPJ válido aceito', validarCnpj('11.222.333/0001-81'), true);
+verificar('CNPJ com dígito errado recusado', validarCnpj('11.222.333/0001-82'), false);
+verificar('CNPJ repetido (000...) recusado', validarCnpj('00000000000000'), false);
+$idCnpj = Estabelecimento::contratar(['estabelecimento' => 'Empresa CNPJ', 'cnpj' => '11.222.333/0001-81', 'slug' => 'empresa-cnpj', 'nome' => 'Dono Cnpj', 'email' => 'cnpj@teste.local', 'senha' => 'senha-cnpj']);
+verificar('CNPJ gravado só com dígitos', Estabelecimento::porIdGlobal($idCnpj)['cnpj'], '11222333000181');
+verificar('CNPJ em uso reconhecido', Estabelecimento::cnpjEmUso('11.222.333/0001-81'), true);
+verificar('CNPJ livre', Estabelecimento::cnpjEmUso('45.723.174/0001-10'), false);
+try {
+    Estabelecimento::contratar(['estabelecimento' => 'Copia', 'cnpj' => '11222333000181', 'slug' => 'copia-cnpj', 'nome' => 'Outro Dono', 'email' => 'copia@teste.local', 'senha' => 'senha-copia']);
+    verificar('o banco recusa CNPJ duplicado', 'aceitou', 'recusou');
+} catch (PDOException $erro) {
+    verificar('o banco recusa CNPJ duplicado', 'recusou', 'recusou');
+}
+
+// Consentimento opcional: gravado no vinculo, revogavel.
+$vinculoCnpj = (int) bd()->query("SELECT id_vinculo FROM vinculos WHERE id_estabelecimento = $idCnpj AND tipo = 'admin'")->fetchColumn();
+verificar('sem consentimento por padrão', Legal::aceitaComunicacoes($vinculoCnpj), false);
+Legal::registrarComunicacoes($idCnpj, 'CNPJ@teste.local', 'admin', true);
+verificar('consentimento gravado', Legal::aceitaComunicacoes($vinculoCnpj), true);
+Legal::registrarComunicacoes($idCnpj, 'cnpj@teste.local', 'admin', false);
+verificar('consentimento revogado', Legal::aceitaComunicacoes($vinculoCnpj), false);
+verificar('menor de 12 anos detectado', idadeEmAnos(date('Y-m-d', strtotime('-12 years +1 day'))) < Legal::IDADE_MINIMA_CADASTRO, true);
+verificar('12 anos completos liberado', idadeEmAnos(date('Y-m-d', strtotime('-12 years'))) >= Legal::IDADE_MINIMA_CADASTRO, true);
+
 echo "\n";
 if ($falhas > 0) {
     echo "FALHOU: {$falhas} de {$total} verificações do cadastro de empresa.\n";

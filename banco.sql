@@ -63,6 +63,7 @@ CREATE TABLE `estabelecimento` (
   `facebook` varchar(120) DEFAULT NULL,
   `data_atualizacao` datetime DEFAULT NULL ON UPDATE current_timestamp(),
   `slug` varchar(80) NOT NULL,
+  `cnpj` char(14) DEFAULT NULL,
   `cor_primaria` char(7) NOT NULL DEFAULT '#1F4E5F',
   `cor_secundaria` char(7) NOT NULL DEFAULT '#5FAF8B',
   `cor_fundo` char(7) NOT NULL DEFAULT '#F5F1EA',
@@ -70,7 +71,8 @@ CREATE TABLE `estabelecimento` (
   `logo` mediumtext DEFAULT NULL,
   `status` enum('ativo','inativo') NOT NULL DEFAULT 'ativo',
   PRIMARY KEY (`id_estabelecimento`),
-  UNIQUE KEY `uk_estabelecimento_slug` (`slug`)
+  UNIQUE KEY `uk_estabelecimento_slug` (`slug`),
+  UNIQUE KEY `uk_estabelecimento_cnpj` (`cnpj`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Assinatura da plataforma. Empresas legadas podem nao ter linha: nesse caso
@@ -107,6 +109,7 @@ CREATE TABLE `administradores_master` (
   `totp_ativado_em` datetime DEFAULT NULL,
   `totp_ultimo_contador` bigint(20) DEFAULT NULL,
   `ultimo_acesso` datetime DEFAULT NULL,
+  `comunicacoes_aceitas_em` datetime DEFAULT NULL,
   `data_criacao` datetime NOT NULL DEFAULT current_timestamp(),
   `data_atualizacao` datetime DEFAULT NULL ON UPDATE current_timestamp(),
   PRIMARY KEY (`id_master`),

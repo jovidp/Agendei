@@ -97,8 +97,10 @@ require RAIZ . '/includes/painel_header.php';
             <?= campoCsrf() ?>
             <fieldset class="grupo-campos"><legend>Como você quer pagar?</legend>
                 <div class="linha-campos">
-                    <?php foreach ($metodos as $chave => $rotulo): ?>
-                        <label class="campo"><input type="radio" name="metodo" value="<?= e($chave) ?>" required <?= $metodo === $chave ? 'checked' : '' ?>> <strong><?= e($rotulo) ?></strong></label>
+                    <?php /* Sem chave Pix da empresa o Pix nao tem para onde ir: aparece desativado, com o motivo. */ ?>
+                    <?php foreach (Cobranca::METODOS as $chave => $rotulo): $disponivel = isset($metodos[$chave]); ?>
+                        <label class="campo"><input type="radio" name="metodo" value="<?= e($chave) ?>" required <?= $disponivel ? '' : 'disabled' ?> <?= $disponivel && $metodo === $chave ? 'checked' : '' ?>> <strong><?= e($rotulo) ?></strong>
+                            <?php if (!$disponivel): ?><span class="ajuda-campo">Indisponível: <?= e((string) (Contexto::dados()['nome'] ?? 'o estabelecimento')) ?> ainda não cadastrou a chave Pix.</span><?php endif; ?></label>
                     <?php endforeach; ?>
                 </div>
                 <div id="dados-cartao" class="margem-topo" hidden>

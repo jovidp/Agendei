@@ -56,120 +56,62 @@
   // Validacao do formulario
   // -----------------------------------------------------------------
 
-  /** Aplica todas as regras da especificação e impede o envio quando alguma falha. */
-  function validar(evento) {
-    var valido = true;
-
+  /** Regras da especificação: [campo, condição, mensagem]. */
+  function regras() {
     var nome = valor("nome").replace(/\s+/g, " ");
-    valido =
-      verificar(
-        "nome",
-        nome.length >= 15 && nome.length <= 80 && apenasLetras(nome),
-        "O nome deve ter de 15 a 80 caracteres, apenas letras.",
-      ) && valido;
-
     var nascimento = valor("data_nascimento");
     var data = new Date(nascimento + "T00:00:00");
-    valido =
-      verificar(
-        "data_nascimento",
-        nascimento !== "" && !isNaN(data.getTime()) && data < new Date(),
-        "Informe uma data de nascimento válida.",
-      ) && valido;
-
-    valido =
-      verificar("sexo", valor("sexo") !== "", "Selecione o sexo.") && valido;
-
     var materno = valor("nome_materno").replace(/\s+/g, " ");
-    valido =
-      verificar(
-        "nome_materno",
-        materno.length >= 5 && apenasLetras(materno),
-        "Informe o nome materno com no mínimo 5 letras.",
-      ) && valido;
-
-    valido =
-      verificar(
-        "cpf",
-        Agendei.validarCpf(valor("cpf")),
-        "Informe um CPF válido.",
-      ) && valido;
-
-    valido =
-      verificar(
-        "email",
-        Agendei.validarEmail(valor("email")),
-        "Informe um e-mail válido.",
-      ) && valido;
-
-    valido =
-      verificar(
-        "telefone",
-        digitos(valor("telefone")).length === 11,
-        "Informe o celular com DDD e 9 dígitos.",
-      ) && valido;
-
     var fixo = digitos(valor("telefone_fixo"));
-    valido =
-      verificar(
-        "telefone_fixo",
-        fixo === "" || fixo.length === 10,
-        "Informe o fixo com DDD e 8 dígitos.",
-      ) && valido;
-
-    valido =
-      verificar(
-        "cep",
-        digitos(valor("cep")).length === 8,
-        "Informe um CEP com oito dígitos.",
-      ) && valido;
-
-    valido =
-      verificar("logradouro", valor("logradouro") !== "", "Informe o logradouro.") &&
-      valido;
-    valido = verificar("numero", valor("numero") !== "", "Informe o número.") && valido;
-    valido = verificar("bairro", valor("bairro") !== "", "Informe o bairro.") && valido;
-    valido = verificar("cidade", valor("cidade") !== "", "Informe a cidade.") && valido;
-    valido = verificar("uf", valor("uf") !== "", "Selecione a UF.") && valido;
-
-    valido =
-      verificar(
-        "login",
-        /^[A-Za-z]{6}$/.test(valor("login")),
-        "O usuário deve ter exatamente 6 letras.",
-      ) && valido;
-
     var senha = valor("senha");
-    valido =
-      verificar(
-        "senha",
-        /^[A-Za-z]{8}$/.test(senha),
-        "A senha deve ter exatamente 8 letras.",
-      ) && valido;
+    return [
+      ["nome", nome.length >= 15 && nome.length <= 80 && apenasLetras(nome), "O nome deve ter de 15 a 80 caracteres, apenas letras."],
+      ["data_nascimento", nascimento !== "" && !isNaN(data.getTime()) && data < new Date(), "Informe uma data de nascimento válida."],
+      // O max do campo já é a data limite de idade (LGPD art. 14), calculada no PHP.
+      ["data_nascimento", nascimento === "" || nascimento <= campo("data_nascimento").max, "Menores de 12 anos não podem criar a própria conta. Peça a um responsável."],
+      ["sexo", valor("sexo") !== "", "Selecione o sexo."],
+      ["nome_materno", materno.length >= 5 && apenasLetras(materno), "Informe o nome materno com no mínimo 5 letras."],
+      ["cpf", Agendei.validarCpf(valor("cpf")), "Informe um CPF válido."],
+      ["email", Agendei.validarEmail(valor("email")), "Informe um e-mail válido."],
+      ["telefone", digitos(valor("telefone")).length === 11, "Informe o celular com DDD e 9 dígitos."],
+      ["telefone_fixo", fixo === "" || fixo.length === 10, "Informe o fixo com DDD e 8 dígitos."],
+      ["cep", digitos(valor("cep")).length === 8, "Informe um CEP com oito dígitos."],
+      ["logradouro", valor("logradouro") !== "", "Informe o logradouro."],
+      ["numero", valor("numero") !== "", "Informe o número."],
+      ["bairro", valor("bairro") !== "", "Informe o bairro."],
+      ["cidade", valor("cidade") !== "", "Informe a cidade."],
+      ["uf", valor("uf") !== "", "Selecione a UF."],
+      ["login", /^[A-Za-z]{6}$/.test(valor("login")), "O usuário deve ter exatamente 6 letras."],
+      ["senha", /^[A-Za-z]{8}$/.test(senha), "A senha deve ter exatamente 8 letras."],
+      ["confirmar_senha", valor("confirmar_senha") === senha && senha !== "", "As senhas não conferem."],
+      ["aceite", campo("aceite") ? campo("aceite").checked : true, "Aceite os Termos de Uso e a Política de Privacidade."],
+    ];
+  }
 
-    valido =
-      verificar(
-        "confirmar_senha",
-        valor("confirmar_senha") === senha && senha !== "",
-        "As senhas não conferem.",
-      ) && valido;
-
-    valido =
-      verificar(
-        "aceite",
-        campo("aceite") ? campo("aceite").checked : true,
-        "Aceite os Termos de Uso e a Política de Privacidade.",
-      ) && valido;
-
+  /** Confere só os campos que estão dentro do bloco recebido (uma etapa ou o formulário inteiro). */
+  function validarBloco(bloco) {
+    var valido = true;
+    var comErro = {};
+    regras().forEach(function (regra) {
+      var elemento = campo(regra[0]);
+      // Um campo com várias regras para na primeira que falha (a seguinte limparia o erro).
+      if (elemento && bloco.contains(elemento) && !comErro[regra[0]]) {
+        comErro[regra[0]] = !verificar(regra[0], regra[1], regra[2]);
+        valido = !comErro[regra[0]] && valido;
+      }
+    });
     if (!valido) {
-      evento.preventDefault();
-      var invalido = formulario.querySelector(".invalido");
+      var invalido = bloco.querySelector(".invalido");
       if (invalido) {
         invalido.focus();
       }
       Agendei.notificar("Corrija os campos destacados.", "erro");
     }
+    return valido;
   }
+
+  // Uma etapa por fieldset, com barra de progresso (main.js).
+  var irPara;
 
   /** Remove a indicação de erro quando o usuário volta a editar o campo. */
   function limparAoDigitar() {
@@ -188,13 +130,17 @@
       formulario.querySelectorAll(".invalido").forEach(function (elemento) {
         Agendei.limparErro(elemento);
       });
+      // O reset troca os valores depois do evento: volta à primeira etapa em seguida.
+      setTimeout(function () {
+        irPara(0, true);
+      }, 0);
     });
   }
 
   // Inicializa os comportamentos somente depois que os elementos da página estão disponíveis.
   document.addEventListener("DOMContentLoaded", function () {
     limparAoDigitar();
+    irPara = Agendei.formularioEmEtapas(formulario, validarBloco);
     iniciarLimpeza();
-    formulario.addEventListener("submit", validar);
   });
 })();

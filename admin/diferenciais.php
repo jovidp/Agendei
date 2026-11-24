@@ -179,7 +179,7 @@ require RAIZ . '/includes/painel_header.php';
 <button class="btn" type="submit">Salvar configurações</button>
 </form></div></div>
 
-<?php $botNoPlano = Plano::temRecurso('bot_whatsapp'); $botLigado = Configuracao::ativa('whatsapp_bot_ativo'); ?>
+<?php /* Bot fora do ar por enquanto: sem o beneficio em Plano::BENEFICIOS o cartao nao aparece. */ if (Plano::temRecurso('bot_whatsapp')): $botNoPlano = true; $botLigado = Configuracao::ativa('whatsapp_bot_ativo'); ?>
 <div class="cartao" id="bot"><div class="cartao-cabecalho"><h3>Bot de atendimento no WhatsApp</h3><?= $botNoPlano ? badgeStatus($botLigado && Bot::ligado() ? 'ativo' : 'inativo') : '' ?></div>
 <div class="cartao-corpo">
 <?php if (!$botNoPlano): ?>
@@ -207,6 +207,7 @@ require RAIZ . '/includes/painel_header.php';
     </div>
 <?php endif; ?>
 </div></div>
+<?php endif; ?>
 
 <div class="cartao" id="mensagens"><div class="cartao-cabecalho"><h3>Lembretes por WhatsApp</h3><form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="lembretes"><button class="btn btn-pequeno" type="submit"><?= $whatsappAtivo ? 'Enviar agora' : 'Atualizar fila' ?></button></form></div>
 <div class="cartao-corpo">

@@ -20,7 +20,13 @@ if (get('exportar') === '1') {
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && post('acao') === 'comunicacoes') {
+    // Revogar tem de ser tao facil quanto consentir (LGPD art. 8, par. 5): um clique, sem senha.
+    exigirCsrf();
+    Legal::registrarComunicacoes(Contexto::id(), (string) ($cliente['email'] ?? ''), 'cliente', post('comunicacoes') === '1');
+    definirFlash('sucesso', post('comunicacoes') === '1' ? 'Pronto: você passa a receber novidades e promoções.' : 'Pronto: você não recebe mais novidades e promoções.');
+    redirecionar('cliente/privacidade.php');
+} elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exigirCsrf();
     if (!Usuario::senhaConfere($idUsuario, post('senha'))) {
         $erros[] = 'A senha informada está incorreta.';
@@ -60,6 +66,18 @@ require RAIZ . '/includes/painel_header.php';
                 <div class="campo"><label for="senha">Senha atual</label><input type="password" id="senha" name="senha" required autocomplete="current-password"></div><button class="btn btn-perigo" type="submit" data-confirmar="Esta ação encerra permanentemente sua conta. Continuar?">Encerrar conta</button>
             </form>
         </div>
+    </div>
+</div>
+<?php $aceitaComunicacoes = Legal::aceitaComunicacoes((int) vinculoId()); ?>
+<div class="cartao">
+    <div class="cartao-cabecalho"><h3>Novidades e promoções</h3></div>
+    <div class="cartao-corpo">
+        <p><?= $aceitaComunicacoes
+            ? 'Você aceitou receber novidades e promoções por e-mail e WhatsApp. Os avisos dos seus agendamentos continuam chegando de qualquer forma.'
+            : 'Você não recebe novidades nem promoções. Os avisos dos seus agendamentos continuam chegando normalmente.' ?></p>
+        <form method="post"><?= campoCsrf() ?><input type="hidden" name="acao" value="comunicacoes"><input type="hidden" name="comunicacoes" value="<?= $aceitaComunicacoes ? '0' : '1' ?>">
+            <button class="btn <?= $aceitaComunicacoes ? 'btn-contorno' : '' ?>" type="submit"><?= $aceitaComunicacoes ? 'Não quero mais receber' : 'Quero receber' ?></button>
+        </form>
     </div>
 </div>
 <div class="cartao">

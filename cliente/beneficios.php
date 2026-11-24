@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($acao === 'cancelar_lista') {
             Diferencial::cancelarLista((int) post('id_lista'), $idCliente);
             definirFlash('sucesso', 'Pedido de encaixe cancelado.');
-        } elseif ($acao === 'assinar') {
+        } elseif ($acao === 'assinar' && Plano::temRecurso('assinaturas_clientes')) {
             AssinaturaCliente::assinar($idCliente, (int) post('id_plano_cliente'));
             definirFlash('sucesso', 'Assinatura solicitada. Pague a primeira mensalidade pelo Pix abaixo; ela começa quando o estabelecimento confirmar.');
         } elseif ($acao === 'cancelar_assinatura') {
@@ -64,7 +64,8 @@ $pix = Configuracao::obter('pix_chave');
 // A pagina tambem gera a mensalidade que vence, para nao depender so da tarefa diaria.
 AssinaturaCliente::gerarRenovacoes();
 $minhaAssinatura = AssinaturaCliente::daCliente($idCliente);
-$planosAssinatura = AssinaturaCliente::planos(true);
+// Sem o beneficio no plano da empresa, ninguem assina de novo; quem ja assina segue ate cancelar.
+$planosAssinatura = Plano::temRecurso('assinaturas_clientes') ? AssinaturaCliente::planos(true) : [];
 $nomeEmpresa = (string) (Contexto::dados()['nome'] ?? '');
 
 $tituloPagina = 'Meus benefícios';
@@ -150,12 +151,7 @@ require RAIZ . '/includes/painel_header.php';
                 <p>Mês atual: <?= formatarData($a['mes_atual'][0]) ?> a <?= formatarData($a['mes_atual'][1]) ?>. Pago até <?= formatarData($a['periodo_fim']) ?>.</p>
             <?php endif; ?>
             <?php if (!empty($a['plano'])): ?>
-                <ul>
-                    <?php foreach ($a['plano']['servicos'] as $s): $usado = $a['uso'][$s['id_servico']] ?? 0; ?>
-                        <li><?= e($s['nome']) ?>: <?= $s['quantidade_mes'] === null ? 'ilimitado' : (int) $usado . ' de ' . (int) $s['quantidade_mes'] . ' usados neste mês' ?></li>
-                    <?php endforeach; ?>
-                    <?php if ((int) $a['plano']['desconto_percentual'] > 0): ?><li><?= (int) $a['plano']['desconto_percentual'] ?>% de desconto nos demais serviços</li><?php endif; ?>
-                </ul>
+                <p>Todos os seus atendimentos estão inclusos: você paga só a mensalidade.</p>
             <?php endif; ?>
             <?php if ($cob): ?>
                 <h4 class="margem-topo">Mensalidade de <?= formatarMoeda($cob['valor']) ?></h4>
@@ -179,10 +175,7 @@ require RAIZ . '/includes/painel_header.php';
             <div class="cartao-corpo">
                 <h3><?= e($p['nome']) ?></h3>
                 <?php if ($p['descricao']): ?><p><?= e($p['descricao']) ?></p><?php endif; ?>
-                <ul>
-                    <?php foreach ($p['servicos'] as $s): ?><li><?= e($s['nome']) ?>: <?= $s['quantidade_mes'] === null ? 'ilimitado' : (int) $s['quantidade_mes'] . 'x por mês' ?></li><?php endforeach; ?>
-                    <?php if ((int) $p['desconto_percentual'] > 0): ?><li><?= (int) $p['desconto_percentual'] ?>% de desconto nos demais serviços</li><?php endif; ?>
-                </ul>
+                <p>Todos os atendimentos inclusos: você paga só a mensalidade.</p>
                 <strong><?= formatarMoeda($p['preco_mensal']) ?> por mês</strong>
                 <form method="post" class="margem-topo"><?= campoCsrf() ?><input type="hidden" name="acao" value="assinar"><input type="hidden" name="id_plano_cliente" value="<?= (int) $p['id_plano_cliente'] ?>"><button class="btn btn-pequeno">Assinar</button></form>
             </div>

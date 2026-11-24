@@ -391,6 +391,35 @@ function validarCpf(string $cpf): bool
     return true;
 }
 
+/** CNPJ com 14 digitos, sem sequencia repetida e com os dois digitos verificadores. */
+function validarCnpj(string $cnpj): bool
+{
+    $cnpj = apenasNumeros($cnpj);
+    if (strlen($cnpj) !== 14 || preg_match('/^(\d)\1{13}$/', $cnpj)) {
+        return false;
+    }
+    foreach ([12, 13] as $posicao) {
+        $soma = 0;
+        $peso = $posicao - 7;
+        for ($indice = 0; $indice < $posicao; $indice++) {
+            $soma += (int) $cnpj[$indice] * $peso;
+            $peso = $peso === 2 ? 9 : $peso - 1;
+        }
+        $digito = $soma % 11 < 2 ? 0 : 11 - $soma % 11;
+        if ((int) $cnpj[$posicao] !== $digito) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/** Idade completa em anos na data de hoje ("YYYY-MM-DD"); data invalida volta -1. */
+function idadeEmAnos(string $data): int
+{
+    $nascimento = DateTimeImmutable::createFromFormat('!Y-m-d', $data);
+    return $nascimento ? $nascimento->diff(new DateTimeImmutable('today'))->y : -1;
+}
+
 /** Valida "YYYY-MM-DD". */
 function validarData(string $data): bool
 {

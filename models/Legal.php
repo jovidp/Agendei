@@ -17,6 +17,9 @@ class Legal
     public const MESES_NOTIFICACOES = 12;
     public const ANOS_AUDITORIA = 5;
 
+    /** LGPD art. 14: abaixo disto e crianca, e o cadastro cabe ao responsavel. */
+    public const IDADE_MINIMA_CADASTRO = 12;
+
     private const AMBIENTE = [
         'nome'      => 'AGENDEI_FORNECEDOR_NOME',
         'documento' => 'AGENDEI_FORNECEDOR_DOCUMENTO',
@@ -101,5 +104,39 @@ class Legal
         Sql::garantirColuna('usuarios', 'termos_versao', 'VARCHAR(20) NULL');
         Sql::garantirColuna('usuarios', 'termos_aceitos_em', Sql::tipoDataHora());
         Sql::garantirColuna('assinaturas', 'data_cancelamento', Sql::tipoDataHora());
+        // Consentimento opcional (LGPD art. 8): vale para a relacao com uma empresa, por isso fica no vinculo.
+        Sql::garantirColuna('vinculos', 'comunicacoes_aceitas_em', Sql::tipoDataHora());
+        // CNPJ da empresa: anulavel para as empresas antigas; o indice unico aceita varios NULL nos dois bancos.
+        Sql::garantirColuna('estabelecimento', 'cnpj', 'VARCHAR(14) NULL');
+        bd()->exec('CREATE UNIQUE INDEX IF NOT EXISTS uk_estabelecimento_cnpj ON estabelecimento (cnpj)');
+    }
+
+    /**
+     * Liga ou desliga o consentimento opcional de novidades por e-mail e WhatsApp
+     * no vinculo da pessoa com a empresa. Falha (coluna ainda nao criada) vai ao
+     * log e nao desfaz o cadastro.
+     */
+    public static function registrarComunicacoes(int $idEstabelecimento, string $email, string $tipo, bool $aceita): void
+    {
+        try {
+            $q = bd()->prepare('UPDATE vinculos SET comunicacoes_aceitas_em = ' . ($aceita ? 'CURRENT_TIMESTAMP' : 'NULL') . '
+                WHERE id_estabelecimento = ? AND tipo = ? AND id_usuario = (SELECT id_usuario FROM usuarios WHERE email = ?)');
+            $q->execute([$idEstabelecimento, $tipo, mb_strtolower(trim($email))]);
+        } catch (PDOException $erro) {
+            error_log('Consentimento de comunicações não gravado para ' . $email . ': ' . $erro->getMessage());
+        }
+    }
+
+    /** Se a pessoa aceitou receber novidades da empresa (vinculo da sessao). */
+    public static function aceitaComunicacoes(int $idVinculo): bool
+    {
+        try {
+            $q = bd()->prepare('SELECT comunicacoes_aceitas_em FROM vinculos WHERE id_vinculo = ?');
+            $q->execute([$idVinculo]);
+            $aceitoEm = $q->fetchColumn();
+            return $aceitoEm !== null && $aceitoEm !== false;
+        } catch (PDOException $erro) {
+            return false;
+        }
     }
 }

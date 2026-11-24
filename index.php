@@ -342,7 +342,7 @@ $planosHome = Plano::contrataveis() ?: array_map(fn($p) => ['recursos' => implod
                             <li class="<?= $item['incluso'] ? 'incluso' : 'fora' ?>"><span class="sr-only"><?= $item['incluso'] ? 'Inclui:' : 'Não inclui:' ?></span><?= e($item['texto']) ?></li>
                         <?php endforeach; ?>
                     </ul>
-                    <a href="<?= url('cadastro_empresa.php') ?>" class="btn btn-bloco<?= $destaque ? '' : ' btn-contorno' ?>">Testar <?= Assinatura::DIAS_DEMO ?> dias grátis</a>
+                    <a href="<?= url('cadastro_empresa.php' . (isset($plano['id_plano']) ? '?plano=' . (int) $plano['id_plano'] : '')) ?>" class="btn btn-bloco<?= $destaque ? '' : ' btn-contorno' ?>">Testar <?= Assinatura::DIAS_DEMO ?> dias grátis</a>
                 </article>
             <?php endforeach; ?>
         </div>

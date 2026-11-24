@@ -76,6 +76,7 @@ CREATE TABLE estabelecimento (
   facebook              VARCHAR(120) DEFAULT NULL,
   data_atualizacao      TIMESTAMP DEFAULT NULL,
   slug                  VARCHAR(80) NOT NULL,
+  cnpj                  VARCHAR(14) DEFAULT NULL,
   cor_primaria          VARCHAR(7) NOT NULL DEFAULT '#1F4E5F',
   cor_secundaria        VARCHAR(7) NOT NULL DEFAULT '#5FAF8B',
   cor_fundo             VARCHAR(7) NOT NULL DEFAULT '#F5F1EA',
@@ -84,6 +85,7 @@ CREATE TABLE estabelecimento (
   status                VARCHAR(7) NOT NULL DEFAULT 'ativo',
   CONSTRAINT pk_estabelecimento PRIMARY KEY (id_estabelecimento),
   CONSTRAINT uk_estabelecimento_slug UNIQUE (slug),
+  CONSTRAINT uk_estabelecimento_cnpj UNIQUE (cnpj),
   CONSTRAINT ck_estabelecimento_status CHECK (status IN ('ativo','inativo'))
 );
 
@@ -190,6 +192,7 @@ CREATE TABLE vinculos (
   status             VARCHAR(7) NOT NULL DEFAULT 'ativo',
   login              VARCHAR(6) DEFAULT NULL,
   ultimo_acesso      TIMESTAMP DEFAULT NULL,
+  comunicacoes_aceitas_em TIMESTAMP DEFAULT NULL,
   data_criacao       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT pk_vinculos PRIMARY KEY (id_vinculo),
   CONSTRAINT uk_vinculos_registro UNIQUE (id_estabelecimento, id_vinculo),

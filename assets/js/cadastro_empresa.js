@@ -73,26 +73,39 @@
     return elemento ? String(elemento.value).trim() : "";
   }
 
-  formulario.addEventListener("submit", function (evento) {
+  /** Confere só os campos dentro do bloco (uma etapa ou o formulário inteiro). */
+  function validarBloco(bloco) {
     var telefone = valor("telefone").replace(/\D/g, "");
+    var aceite = formulario.elements.aceite;
+    var regras = [
+      ["estabelecimento", valor("estabelecimento").length >= 2, "Informe o nome da empresa."],
+      ["slug", /^[a-z0-9][a-z0-9-]{1,78}[a-z0-9]$/.test(valor("slug")), "Use de 3 a 80 letras minúsculas, números ou hifens."],
+      ["cnpj", Agendei.validarCnpj(valor("cnpj")), "Informe um CNPJ válido."],
+      ["nome", nomeComSobrenome(valor("nome")), "Informe seu nome e sobrenome."],
+      ["telefone", telefone.length === 10 || telefone.length === 11, "Informe o telefone com DDD."],
+      ["email", /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor("email")), "Informe um e-mail válido."],
+      ["senha", formulario.elements.senha.value.length >= 6, "A senha deve ter pelo menos 6 caracteres."],
+      ["confirmar_senha", formulario.elements.confirmar_senha.value === formulario.elements.senha.value, "As senhas não conferem."],
+      ["aceite", !aceite || aceite.checked, "Aceite os Termos de Uso e a Política de Privacidade."],
+    ];
     var valido = true;
-
-    valido = verificar("estabelecimento", valor("estabelecimento").length >= 2, "Informe o nome da empresa.") && valido;
-    valido = verificar("slug", /^[a-z0-9][a-z0-9-]{1,78}[a-z0-9]$/.test(valor("slug")), "Use de 3 a 80 letras minúsculas, números ou hifens.") && valido;
-    valido = verificar("nome", nomeComSobrenome(valor("nome")), "Informe seu nome e sobrenome.") && valido;
-    valido = verificar("telefone", telefone.length === 10 || telefone.length === 11, "Informe o telefone com DDD.") && valido;
-    valido = verificar("email", /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor("email")), "Informe um e-mail válido.") && valido;
-    valido = verificar("senha", formulario.elements.senha.value.length >= 6, "A senha deve ter pelo menos 6 caracteres.") && valido;
-    valido = verificar("confirmar_senha", formulario.elements.confirmar_senha.value === formulario.elements.senha.value, "As senhas não conferem.") && valido;
-
-    valido = verificar("aceite", !formulario.elements.aceite || formulario.elements.aceite.checked, "Aceite os Termos de Uso e a Política de Privacidade.") && valido;
-
+    regras.forEach(function (regra) {
+      var elemento = formulario.elements[regra[0]];
+      if (elemento && bloco.contains(elemento)) {
+        valido = verificar(regra[0], regra[1], regra[2]) && valido;
+      }
+    });
     if (!valido) {
-      evento.preventDefault();
-      var primeiroErro = formulario.querySelector(".campo-invalido input, .campo-invalido textarea, .invalido");
+      var primeiroErro = bloco.querySelector(".invalido");
       if (primeiroErro) {
         primeiroErro.focus();
       }
     }
+    return valido;
+  }
+
+  // Uma etapa por fieldset, com barra de progresso (main.js).
+  document.addEventListener("DOMContentLoaded", function () {
+    Agendei.formularioEmEtapas(formulario, validarBloco);
   });
 })();

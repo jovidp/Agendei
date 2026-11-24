@@ -8,8 +8,8 @@
 require_once __DIR__ . '/../config/config.php';
 exigirLogin('admin');
 
-if (!Plano::temRecurso('diferenciais')) {
-    $recursoFaltante = 'diferenciais';
+if (!Plano::temRecurso('assinaturas_clientes')) {
+    $recursoFaltante = 'assinaturas_clientes';
     $tituloPagina = 'Assinaturas de clientes';
     require RAIZ . '/includes/fora_do_plano.php';
 }
@@ -116,29 +116,8 @@ require_once RAIZ . '/includes/painel_header.php';
                         <input type="text" id="preco_mensal" name="preco_mensal" data-mascara="moeda" inputmode="numeric" required
                             value="<?= e($edicao ? number_format((float) $edicao['preco_mensal'], 2, ',', '') : post('preco_mensal')) ?>">
                     </div>
-                    <div class="campo">
-                        <label for="desconto_percentual">Desconto nos outros serviços (%)</label>
-                        <input type="number" id="desconto_percentual" name="desconto_percentual" min="0" max="100"
-                            value="<?= (int) ($edicao['desconto_percentual'] ?? post('desconto_percentual', '0')) ?>">
-                    </div>
                 </div>
-                <fieldset class="grupo-campos">
-                    <legend>Serviços incluídos</legend>
-                    <p class="ajuda-campo">Marque o que o plano cobre e quantas vezes por mês. Deixe a quantidade vazia para ilimitado.</p>
-                    <?php foreach ($servicos as $s): $id = (int) $s['id_servico']; $marcado = array_key_exists($id, $incluidos) || isset($_POST['incluir'][$id]); ?>
-                        <div class="linha-campos">
-                            <div class="campo-checkbox">
-                                <input type="checkbox" id="incluir_<?= $id ?>" name="incluir[<?= $id ?>]" value="1" <?= $marcado ? 'checked' : '' ?>>
-                                <label for="incluir_<?= $id ?>"><?= e($s['nome']) ?> <span class="celula-secundaria"><?= formatarMoeda($s['preco']) ?></span></label>
-                            </div>
-                            <div class="campo">
-                                <label for="quantidade_<?= $id ?>">Vezes por mês</label>
-                                <input type="number" id="quantidade_<?= $id ?>" name="quantidade[<?= $id ?>]" min="1" placeholder="Ilimitado"
-                                    value="<?= e((string) ($incluidos[$id] ?? ($_POST['quantidade'][$id] ?? ''))) ?>">
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                </fieldset>
+                <p class="ajuda-campo">Com o plano ativo o assinante não paga nenhum atendimento: paga só a mensalidade.</p>
                 <div class="grupo-botoes">
                     <button class="btn"><?= $edicao ? 'Salvar alterações' : 'Criar plano' ?></button>
                     <a href="<?= url('admin/assinaturas_clientes.php') ?>" class="btn btn-contorno">Cancelar</a>
@@ -153,19 +132,18 @@ require_once RAIZ . '/includes/painel_header.php';
     <?php if ($planos === []): ?>
         <div class="estado-vazio">
             <strong>Nenhum plano criado</strong>
-            <p>Crie um plano mensal com serviços incluídos e desconto para os assinantes.</p>
+            <p>Crie um plano mensal: o assinante paga só a mensalidade e nenhum atendimento.</p>
             <a href="<?= url('admin/assinaturas_clientes.php?acao=novo') ?>" class="btn margem-topo">Novo plano</a>
         </div>
     <?php else: ?>
         <div class="tabela-area"><table class="tabela">
-            <thead><tr><th>Plano</th><th>Preço</th><th>Incluídos por mês</th><th>Desconto</th><th>Status</th><th class="coluna-acoes">Ações</th></tr></thead>
+            <thead><tr><th>Plano</th><th>Preço</th><th>Cobertura</th><th>Status</th><th class="coluna-acoes">Ações</th></tr></thead>
             <tbody>
             <?php foreach ($planos as $p): ?>
                 <tr>
                     <td><span class="celula-principal"><?= e($p['nome']) ?></span><?php if ($p['descricao']): ?><span class="celula-secundaria"><?= e(limitarTexto($p['descricao'], 60)) ?></span><?php endif; ?></td>
                     <td><?= formatarMoeda($p['preco_mensal']) ?></td>
-                    <td><?= e(implode(', ', array_map(fn($s) => $s['nome'] . ' (' . ($s['quantidade_mes'] ?? 'ilimitado') . ')', $p['servicos']))) ?></td>
-                    <td><?= (int) $p['desconto_percentual'] ?>%</td>
+                    <td>Todos os atendimentos</td>
                     <td><?= badgeStatus($p['status']) ?></td>
                     <td class="coluna-acoes">
                         <a class="btn btn-contorno btn-pequeno" href="<?= url('admin/assinaturas_clientes.php?acao=editar&id=' . (int) $p['id_plano_cliente']) ?>">Editar</a>

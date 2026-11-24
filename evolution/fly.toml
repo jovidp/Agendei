@@ -1,0 +1,29 @@
+# Evolution API (WhatsApp do bot e dos lembretes). Banco: Supabase, schema "evolution".
+# Deploy: flyctl deploy -c evolution/fly.toml
+app = "agendei-evolution"
+primary_region = "gru"
+
+[build]
+  image = "evoapicloud/evolution-api:v2.3.8"
+
+[env]
+  SERVER_URL = "https://agendei-evolution.fly.dev"
+  SERVER_PORT = "8080"
+  DATABASE_PROVIDER = "postgresql"
+  DATABASE_CONNECTION_CLIENT_NAME = "evolution"
+  CACHE_REDIS_ENABLED = "false"
+  CACHE_LOCAL_ENABLED = "true"
+  LOG_LEVEL = "ERROR,WARN,INFO"
+  DEL_INSTANCE = "false"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  # Sempre ligada: o WhatsApp mantem uma conexao aberta e o webhook precisa responder.
+  auto_stop_machines = "off"
+  min_machines_running = 1
+
+[[vm]]
+  memory = "1gb"
+  cpu_kind = "shared"
+  cpus = 1

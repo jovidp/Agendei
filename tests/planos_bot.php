@@ -60,7 +60,8 @@ verificar(array_column($planos, 'nome') === ['Básico', 'Profissional', 'Premium
 verificar((float) $planos[0]['preco_mensal'] === 79.0 && (float) $planos[2]['preco_mensal'] === 249.0, 'Preços padrão errados.');
 verificar(Plano::menorPreco() === 79.0, 'O menor preço deveria ser o do Básico.');
 verificar(Plano::recursosDe($planos[1]) === ['lembretes_whatsapp', 'sinal_pix', 'diferenciais'], 'Benefícios do Profissional errados.');
-verificar(Plano::menorCom('bot_whatsapp')['nome'] === 'Premium', 'O bot deveria começar no Premium.');
+verificar(Plano::menorCom('bot_whatsapp') === null, 'O bot está fora de venda: nenhum plano deveria tê-lo.');
+verificar(Plano::menorCom('assinaturas_clientes')['nome'] === 'Premium', 'Assinaturas de clientes deveriam começar no Premium.');
 [$basico, $profissional, $premium] = $planos;
 
 // Editar preço e benefícios pelo formato do formulário.
@@ -99,7 +100,7 @@ $semSinal = Agendamento::criar(['id_cliente' => $cliente, 'id_profissional' => $
 verificar($semSinal['sucesso'] && Diferencial::sinalDoAgendamento((int) $semSinal['id_agendamento']) === null, 'No Básico o agendamento não deveria gerar sinal.');
 
 Plano::atribuir($idEmpresa, (int) $premium['id_plano']);
-verificar(Plano::temRecurso('bot_whatsapp') && Plano::temRecurso('sinal_pix'), 'O Premium deveria ter bot e sinal.');
+verificar(!Plano::temRecurso('bot_whatsapp') && Plano::temRecurso('sinal_pix') && Plano::temRecurso('assinaturas_clientes'), 'O Premium deveria ter sinal e assinaturas, e não o bot.');
 
 // ---------------------------------------------------------------------
 // 3. Conversa com o bot
@@ -110,7 +111,8 @@ Configuracao::definir('whatsapp_url', 'http://127.0.0.1:1');
 Configuracao::definir('whatsapp_instancia', 'agendei');
 Configuracao::definir('whatsapp_token', 'token-teste');
 Configuracao::definir('whatsapp_bot_ativo', '1');
-verificar(Bot::ligado(), 'Com plano, chave e Evolution o bot deveria ligar.');
+verificar(!Bot::ligado(), 'Bot fora de venda não liga nem com Evolution e chave.');
+// A conversa abaixo continua testada direto em Bot::atender, para o bot voltar pronto.
 
 $numero = '5511987654321';
 $fala = fn(string $texto, string $id = '') => (string) Bot::atender($numero, $texto, $id);
@@ -183,23 +185,9 @@ try {
     [$codigo] = $post('chave-errada', $evento('menu'));
     verificar($codigo === 404, 'Chave errada deveria dar 404, deu ' . $codigo);
 
+    // Bot fora de venda: o webhook aceita a chave, mas ignora a mensagem.
     [$codigo, $corpo] = $post($chave, $evento('menu', false, 'W2'));
-    verificar($codigo === 200 && ($corpo['respondidas'] ?? 0) === 1, 'O webhook deveria responder a mensagem: ' . json_encode([$codigo, $corpo]));
-    $enviado = json_decode((string) @file_get_contents($captura), true);
-    verificar(($enviado['caminho'] ?? '') === '/message/sendText/agendei' && ($enviado['corpo']['number'] ?? '') === $numero, 'A resposta não saiu pela Evolution: ' . json_encode($enviado));
-    verificar(str_contains((string) ($enviado['corpo']['text'] ?? ''), 'Olá, Ana!'), 'O texto enviado deveria ser o menu.');
-
-    [, $corpo] = $post($chave, $evento('menu', true, 'W3'));
-    verificar(($corpo['respondidas'] ?? -1) === 0, 'Mensagem enviada pela própria empresa não deveria ter resposta.');
-
-    $grupo = $evento('menu', false, 'W4');
-    $grupo['data']['key']['remoteJid'] = '120363000000@g.us';
-    [, $corpo] = $post($chave, $grupo);
-    verificar(($corpo['respondidas'] ?? -1) === 0, 'O bot não deveria responder em grupo.');
-
-    Configuracao::definir('whatsapp_bot_ativo', '0');
-    [, $corpo] = $post($chave, $evento('menu', false, 'W5'));
-    verificar(isset($corpo['ignorado']), 'Bot desligado deveria ignorar o evento.');
+    verificar($codigo === 200 && isset($corpo['ignorado']), 'Com o bot fora de venda o webhook deveria ignorar: ' . json_encode([$codigo, $corpo]));
 } finally {
     foreach ([$app, $evolution] as $proc) { proc_terminate($proc); proc_close($proc); }
 }

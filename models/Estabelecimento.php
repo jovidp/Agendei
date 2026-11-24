@@ -84,8 +84,10 @@ class Estabelecimento
         if (!empty($dados['iniciar_demo'])) Assinatura::garantirEstrutura();
         $db->beginTransaction();
         try {
-            $q = $db->prepare('INSERT INTO estabelecimento (nome, slug, status) VALUES (?, ?, ?)');
-            $q->execute([$dados['estabelecimento'], $dados['slug'], ($dados['status'] ?? 'ativo') === 'inativo' ? 'inativo' : 'ativo']);
+            // CNPJ: obrigatorio no cadastro publico (cadastro_empresa.php); quem cria pelo master pode deixar vazio.
+            $cnpj = apenasNumeros((string) ($dados['cnpj'] ?? ''));
+            $q = $db->prepare('INSERT INTO estabelecimento (nome, slug, status, cnpj) VALUES (?, ?, ?, ?)');
+            $q->execute([$dados['estabelecimento'], $dados['slug'], ($dados['status'] ?? 'ativo') === 'inativo' ? 'inativo' : 'ativo', $cnpj !== '' ? $cnpj : null]);
             $id = (int) $db->lastInsertId();
 
             $idUsuario = $pessoa !== null
@@ -106,6 +108,14 @@ class Estabelecimento
             if ($db->inTransaction()) $db->rollBack();
             throw $erro;
         }
+    }
+
+    /** CNPJ ja usado por outra empresa (so digitos). */
+    public static function cnpjEmUso(string $cnpj): bool
+    {
+        $q = bd()->prepare('SELECT 1 FROM estabelecimento WHERE cnpj = ? LIMIT 1');
+        $q->execute([apenasNumeros($cnpj)]);
+        return (bool) $q->fetchColumn();
     }
 
     /**

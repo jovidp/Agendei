@@ -83,6 +83,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if (!validarData($dados['data_nascimento']) || strtotime($dados['data_nascimento']) > time()) {
         $erros[] = 'Informe uma data de nascimento válida.';
+    } elseif (idadeEmAnos($dados['data_nascimento']) < Legal::IDADE_MINIMA_CADASTRO) {
+        // LGPD art. 14: dados de crianca so com consentimento de um responsavel, que entao faz o cadastro.
+        $erros[] = 'Menores de ' . Legal::IDADE_MINIMA_CADASTRO . ' anos não podem criar a própria conta. Peça a um responsável para fazer o cadastro e os agendamentos.';
     }
     if (!in_array($dados['sexo'], ['F', 'M', 'O'], true)) {
         $erros[] = 'Selecione o sexo.';
@@ -160,6 +163,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
 
             Legal::registrarAceite($dados['email']);
+            if (post('comunicacoes') === '1') Legal::registrarComunicacoes(Contexto::id(), $dados['email'], 'cliente', true);
             // Conta criada: manda o codigo para confirmar o e-mail (quem veio do Google ja nasce confirmado).
             VerificacaoEmail::aposCadastro($dados['email'], is_array($googleCadastro) && ($googleCadastro['email'] ?? '') === $dados['email']);
             Google::limparCadastro();
@@ -176,6 +180,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $estabelecimento = Estabelecimento::dados();
 // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
+// Data de nascimento mais recente aceita (LGPD art. 14), usada no max do campo.
+$nascimentoMaximo = date('Y-m-d', strtotime('-' . Legal::IDADE_MINIMA_CADASTRO . ' years'));
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -272,8 +278,9 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
                         <div class="campo">
                             <label for="data_nascimento">Data de nascimento <span class="obrigatorio">*</span></label>
                             <input type="date" id="data_nascimento" name="data_nascimento"
-                                   value="<?= e($dados['data_nascimento']) ?>" max="<?= date('Y-m-d') ?>" required>
+                                   value="<?= e($dados['data_nascimento']) ?>" max="<?= $nascimentoMaximo ?>" required>
                             <span class="mensagem-campo"></span>
+                            <span class="ajuda-campo">A partir de <?= Legal::IDADE_MINIMA_CADASTRO ?> anos. Para menores, o responsável faz o cadastro.</span>
                         </div>
 
                         <div class="campo">
@@ -285,6 +292,7 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
                                 <option value="O" <?= $dados['sexo'] === 'O' ? 'selected' : '' ?>>Outro</option>
                             </select>
                             <span class="mensagem-campo"></span>
+                            <span class="ajuda-campo">Só para o atendimento; não é usado para decisões automáticas.</span>
                         </div>
                     </div>
 
@@ -294,6 +302,7 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
                             <input type="text" id="nome_materno" name="nome_materno"
                                    value="<?= e($dados['nome_materno']) ?>" maxlength="120" required>
                             <span class="mensagem-campo"></span>
+                            <span class="ajuda-campo">Confirma a sua identidade se você perder o acesso à conta.</span>
                         </div>
 
                         <div class="campo">
@@ -301,6 +310,7 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
                             <input type="text" id="cpf" name="cpf" value="<?= e($dados['cpf']) ?>"
                                    data-mascara="cpf" inputmode="numeric" placeholder="000.000.000-00" required>
                             <span class="mensagem-campo"></span>
+                            <span class="ajuda-campo">Evita contas duplicadas e identifica você nos pagamentos. Não é mostrado a ninguém.</span>
                         </div>
                     </div>
                 </fieldset>
@@ -421,15 +431,21 @@ $tituloPagina = 'Criar conta | ' . $estabelecimento['nome'];
                             <span class="mensagem-campo"></span>
                         </div>
                     </div>
-                </fieldset>
 
-                <div class="campo campo-aceite">
-                    <div class="campo-checkbox">
-                        <input type="checkbox" id="aceite" name="aceite" value="1" <?= post('aceite') === '1' ? 'checked' : '' ?> required>
-                        <label for="aceite">Li e aceito os <a href="<?= url('legal.php?pagina=termos') ?>" target="_blank" rel="noopener">Termos de Uso</a> e a <a href="<?= url('legal.php?pagina=privacidade') ?>" target="_blank" rel="noopener">Política de Privacidade</a> <span class="obrigatorio">*</span></label>
+                    <div class="campo campo-aceite">
+                        <div class="campo-checkbox">
+                            <input type="checkbox" id="aceite" name="aceite" value="1" <?= post('aceite') === '1' ? 'checked' : '' ?> required>
+                            <label for="aceite">Li e aceito os <a href="<?= url('legal.php?pagina=termos') ?>" target="_blank" rel="noopener">Termos de Uso</a> e a <a href="<?= url('legal.php?pagina=privacidade') ?>" target="_blank" rel="noopener">Política de Privacidade</a> <span class="obrigatorio">*</span></label>
+                        </div>
+                        <span class="mensagem-campo"></span>
                     </div>
-                    <span class="mensagem-campo"></span>
-                </div>
+
+                    <?php /* Consentimento opcional (LGPD art. 8): separado do aceite obrigatorio e desmarcado. */ ?>
+                    <div class="campo campo-checkbox">
+                        <input type="checkbox" id="comunicacoes" name="comunicacoes" value="1" <?= post('comunicacoes') === '1' ? 'checked' : '' ?>>
+                        <label for="comunicacoes">Quero receber novidades e promoções de <?= e($estabelecimento['nome']) ?> por e-mail e WhatsApp <span class="opcional">(opcional, cancele quando quiser em Privacidade)</span></label>
+                    </div>
+                </fieldset>
 
                 <div class="acoes-formulario">
                     <button type="submit" class="btn btn-bloco btn-grande">Enviar</button>

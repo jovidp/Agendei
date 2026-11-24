@@ -149,11 +149,12 @@ Configuracao::definir('sinal_percentual', '0');
 $a4 = agendar($ana, $barba);
 verificar((float) $a4['valor'] === 0.0 && !PagamentoAvulso::pagavel($a4, $ana), 'coberto pela assinatura não é pagável');
 $a5 = agendar($ana, $corte);
-verificar(PagamentoAvulso::valorAPagar($a5) === 45.0, 'assinante paga avulso com desconto');
-PagamentoAvulso::solicitar((int) $a5['id_agendamento'], $ana, 'boleto', null);
+verificar((float) $a5['valor'] === 0.0 && !PagamentoAvulso::pagavel($a5, $ana), 'assinante não paga atendimento fora da lista');
+$a5 = agendar($bia, $corte);
+PagamentoAvulso::solicitar((int) $a5['id_agendamento'], $bia, 'boleto', null);
 Agendamento::cancelar((int) $a5['id_agendamento'], null, 'teste', true);
 verificar(PagamentoAvulso::pendente((int) $a5['id_agendamento'])['status'] === 'cancelado', 'cancelar cancela o avulso pendente');
-verificar(!PagamentoAvulso::pagavel(Agendamento::porId($a5['id_agendamento']), $ana), 'cancelado não é pagável');
+verificar(!PagamentoAvulso::pagavel(Agendamento::porId($a5['id_agendamento']), $bia), 'cancelado não é pagável');
 Agendamento::cancelar((int) $a1['id_agendamento'], null, 'teste', true);
 verificar(PagamentoAvulso::pendente((int) $a1['id_agendamento'])['status'] === 'pago', 'avulso pago continua pago no cancelamento');
 
