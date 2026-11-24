@@ -14,33 +14,62 @@ class Relatorio
         $inicioMes    = date('Y-m-01');
         $fimMes       = date('Y-m-t');
 
-        return [
-            'agendamentos_hoje'   => Agendamento::contar([
-                'data'      => $hoje,
-                'status_em' => ['agendado', 'confirmado', 'concluido'],
-            ]),
-            'agendamentos_semana' => Agendamento::contar([
-                'data_inicial' => $inicioSemana,
-                'data_final'   => $fimSemana,
-                'status_em'    => ['agendado', 'confirmado', 'concluido'],
-            ]),
-            'clientes_total'      => Cliente::total(),
-            'clientes_ativos'     => Cliente::total('ativo'),
-            'servicos_realizados' => Agendamento::contar([
-                'data_inicial' => $inicioMes,
-                'data_final'   => $fimMes,
-                'status'       => 'concluido',
-            ]),
-            'faturamento_mes'     => self::faturamento($inicioMes, $fimMes),
-            'faturamento_realizado_mes' => self::faturamento($inicioMes, $fimMes, ['concluido']),
-            'cancelamentos_mes'   => Agendamento::contar([
-                'data_inicial' => $inicioMes,
-                'data_final'   => $fimMes,
-                'status'       => 'cancelado',
-            ]),
+        $ativos = ['agendado', 'confirmado', 'concluido'];
+        $agregados = self::agregar([
+            'agendamentos_hoje'         => ['conta', $hoje, $hoje, $ativos],
+            'agendamentos_semana'       => ['conta', $inicioSemana, $fimSemana, $ativos],
+            'servicos_realizados'       => ['conta', $inicioMes, $fimMes, ['concluido']],
+            'faturamento_mes'           => ['soma', $inicioMes, $fimMes, $ativos],
+            'faturamento_realizado_mes' => ['soma', $inicioMes, $fimMes, ['concluido']],
+            'cancelamentos_mes'         => ['conta', $inicioMes, $fimMes, ['cancelado']],
+        ]);
+
+        return $agregados + [
+            'clientes_total'       => Cliente::total(),
+            'clientes_ativos'      => Cliente::total('ativo'),
             'profissionais_ativos' => Profissional::total('ativo'),
             'servicos_ativos'      => Servico::total('ativo'),
         ];
+    }
+
+    /**
+     * Varias contagens e somas de agendamentos numa consulta so. Cada metrica e
+     * [tipo 'conta'|'soma', data inicial, data final, status aceitos]. O dashboard
+     * pedia uma consulta por numero, e cada uma e uma ida ao banco remoto.
+     */
+    private static function agregar(array $metricas): array
+    {
+        $colunas = [];
+        $parametros = [];
+        $datas = [];
+        foreach (array_values($metricas) as $i => [$tipo, $de, $ate, $status]) {
+            $parametros[":de$i"] = $de;
+            $parametros[":ate$i"] = $ate;
+            $marcadores = [];
+            foreach (array_values($status) as $j => $valor) {
+                $parametros[":s{$i}_$j"] = $valor;
+                $marcadores[] = ":s{$i}_$j";
+            }
+            $colunas[] = 'COALESCE(SUM(CASE WHEN data_agendamento BETWEEN :de' . $i . ' AND :ate' . $i
+                . ' AND status IN (' . implode(', ', $marcadores) . ') THEN ' . ($tipo === 'soma' ? 'valor' : '1')
+                . ' ELSE 0 END), 0) AS m' . $i;
+            $datas[] = $de;
+            $datas[] = $ate;
+        }
+        // O intervalo total deixa o indice de data recortar as linhas antes das somas.
+        $parametros[':de_total'] = min($datas);
+        $parametros[':ate_total'] = max($datas);
+
+        $consulta = bd()->prepare('SELECT ' . implode(', ', $colunas) . ' FROM agendamentos
+            WHERE id_estabelecimento = ' . Contexto::id() . ' AND data_agendamento BETWEEN :de_total AND :ate_total');
+        $consulta->execute($parametros);
+        $linha = $consulta->fetch();
+
+        $resultado = [];
+        foreach (array_keys($metricas) as $i => $nome) {
+            $resultado[$nome] = $metricas[$nome][0] === 'soma' ? (float) $linha['m' . $i] : (int) $linha['m' . $i];
+        }
+        return $resultado;
     }
 
     /**
@@ -60,18 +89,18 @@ class Relatorio
         $fimMesAnterior = $inicioMesAnterior->modify('+' . (min((int) $dia->format('j'), (int) $inicioMesAnterior->format('t')) - 1) . ' days');
         $f = fn (DateTimeImmutable $d) => $d->format('Y-m-d');
         $ativos = ['agendado', 'confirmado', 'concluido'];
-        $periodo = fn (string $de, string $ate, array $filtro) => Agendamento::contar(['data_inicial' => $de, 'data_final' => $ate] + $filtro);
+        $mesAnterior = [$f($inicioMesAnterior), $f($fimMesAnterior)];
 
-        return [
-            'semana_atual'      => $periodo($f($inicioSemana), $hoje, ['status_em' => $ativos]),
-            'semana_anterior'   => $periodo($f($inicioSemana->modify('-7 days')), $f($dia->modify('-7 days')), ['status_em' => $ativos]),
-            'concluidos_atual'  => $periodo($f($inicioMes), $hoje, ['status' => 'concluido']),
-            'concluidos_anterior' => $periodo($f($inicioMesAnterior), $f($fimMesAnterior), ['status' => 'concluido']),
-            'realizado_atual'   => self::faturamento($f($inicioMes), $hoje, ['concluido']),
-            'realizado_anterior' => self::faturamento($f($inicioMesAnterior), $f($fimMesAnterior), ['concluido']),
-            'cancelados_atual'  => $periodo($f($inicioMes), $hoje, ['status' => 'cancelado']),
-            'cancelados_anterior' => $periodo($f($inicioMesAnterior), $f($fimMesAnterior), ['status' => 'cancelado']),
-        ];
+        return self::agregar([
+            'semana_atual'        => ['conta', $f($inicioSemana), $hoje, $ativos],
+            'semana_anterior'     => ['conta', $f($inicioSemana->modify('-7 days')), $f($dia->modify('-7 days')), $ativos],
+            'concluidos_atual'    => ['conta', $f($inicioMes), $hoje, ['concluido']],
+            'concluidos_anterior' => ['conta', ...$mesAnterior, ['concluido']],
+            'realizado_atual'     => ['soma', $f($inicioMes), $hoje, ['concluido']],
+            'realizado_anterior'  => ['soma', ...$mesAnterior, ['concluido']],
+            'cancelados_atual'    => ['conta', $f($inicioMes), $hoje, ['cancelado']],
+            'cancelados_anterior' => ['conta', ...$mesAnterior, ['cancelado']],
+        ]);
     }
 
     /**

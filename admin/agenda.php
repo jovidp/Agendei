@@ -47,18 +47,20 @@ $profissionaisGrade = $idProfissional > 0
     ? array_values(array_filter($profissionais, fn($p) => (int) $p['id_profissional'] === $idProfissional))
     : $profissionais;
 
-$dataIteracao = $inicioPeriodo;
-while ($dataIteracao <= $fimPeriodo) {
-    $diaSemana = (int) date('w', strtotime($dataIteracao));
+// Dias da semana do periodo; as faixas de cada profissional vem numa consulta so.
+$diasPeriodo = [];
+for ($dataIteracao = $inicioPeriodo; $dataIteracao <= $fimPeriodo; $dataIteracao = date('Y-m-d', strtotime($dataIteracao . ' +1 day'))) {
+    $diasPeriodo[(int) date('w', strtotime($dataIteracao))] = true;
+}
 
-    foreach ($profissionaisGrade as $profissional) {
-        foreach (Horario::faixasAtivas((int) $profissional['id_profissional'], $diaSemana) as $faixa) {
-            $inicioGrade = min($inicioGrade, horaParaMinutos($faixa['hora_inicio']));
-            $fimGrade    = max($fimGrade, horaParaMinutos($faixa['hora_fim']));
+foreach ($profissionaisGrade as $profissional) {
+    foreach (Horario::porProfissional((int) $profissional['id_profissional']) as $faixa) {
+        if ($faixa['status'] !== 'ativo' || !isset($diasPeriodo[(int) $faixa['dia_semana']])) {
+            continue;
         }
+        $inicioGrade = min($inicioGrade, horaParaMinutos($faixa['hora_inicio']));
+        $fimGrade    = max($fimGrade, horaParaMinutos($faixa['hora_fim']));
     }
-
-    $dataIteracao = date('Y-m-d', strtotime($dataIteracao . ' +1 day'));
 }
 
 foreach ($agendamentos as $agendamento) {

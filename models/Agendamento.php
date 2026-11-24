@@ -68,6 +68,15 @@ class Agendamento
         return (int) ($consulta->fetch()['total'] ?? 0);
     }
 
+    /** Total de agendamentos (historico inteiro) de cada profissional, numa consulta so: [id_profissional => total]. */
+    public static function totaisPorProfissional(): array
+    {
+        return array_map('intval', bd()->query(
+            'SELECT id_profissional, COUNT(*) FROM agendamentos
+             WHERE id_estabelecimento = ' . Contexto::id() . ' GROUP BY id_profissional'
+        )->fetchAll(PDO::FETCH_KEY_PAIR));
+    }
+
     /** Separa as condições SQL dos valores enviados ao PDO para reutilizar os filtros. */
     private static function montarFiltros(array $filtros): array
     {

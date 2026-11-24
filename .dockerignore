@@ -28,3 +28,8 @@ docs
 
 # Copias do banco geradas por scripts/backup.php
 backups/
+
+# Arquivos locais de ferramentas.
+.playwright-mcp
+preview_assinado.html
+fly.toml

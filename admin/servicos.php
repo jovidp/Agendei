@@ -108,6 +108,7 @@ $formularioAberto = in_array($acaoTela, ['novo', 'editar'], true) || $erros !== 
 $busca   = get('busca');
 $status  = get('status');
 $lista   = Servico::listar(array_filter(['busca' => $busca, 'status' => $status]));
+$usoServicos = $lista === [] ? [] : Servico::resumoUso();
 
 // Define o título e os demais dados de apresentação utilizados pelo cabeçalho.
 $tituloPagina  = 'Serviços';
@@ -238,7 +239,7 @@ require_once RAIZ . '/includes/painel_header.php';
                 </thead>
                 <tbody>
                     <?php foreach ($lista as $servico): ?>
-                        <?php $totalProfissionais = count(Profissional::porServico((int) $servico['id_servico'])); ?>
+                        <?php $totalProfissionais = $usoServicos[(int) $servico['id_servico']]['profissionais'] ?? 0; ?>
                         <tr>
                             <td><?= (int) $servico['id_servico'] ?></td>
                             <td>
@@ -266,7 +267,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                     </button>
                                 </form>
 
-                                <?php if (Servico::podeExcluir((int) $servico['id_servico'])): ?>
+                                <?php if ($usoServicos[(int) $servico['id_servico']]['excluivel'] ?? false): ?>
                                     <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
                                         <?= campoCsrf() ?>
                                         <input type="hidden" name="acao" value="excluir">

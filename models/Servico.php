@@ -135,6 +135,35 @@ class Servico
         return (int) $q->fetchColumn() === 0;
     }
 
+    /**
+     * Para a lista do admin, numa consulta so: profissionais ativos de cada
+     * servico e se ele ainda pode ser excluido (mesma regra de podeExcluir).
+     * @return array<int, array{profissionais: int, excluivel: bool}>
+     */
+    public static function resumoUso(): array
+    {
+        $id = Contexto::id();
+        $linhas = bd()->query(
+            'SELECT s.id_servico,
+                (SELECT COUNT(*) FROM profissional_servico ps
+                    INNER JOIN profissionais p ON p.id_profissional = ps.id_profissional
+                    INNER JOIN vinculos v ON v.id_vinculo = p.id_vinculo AND v.id_estabelecimento = ' . $id . '
+                    WHERE ps.id_estabelecimento = ' . $id . ' AND ps.id_servico = s.id_servico AND v.status = \'ativo\') AS profissionais,
+                (SELECT COUNT(*) FROM agendamentos a WHERE a.id_estabelecimento = ' . $id . ' AND a.id_servico = s.id_servico)
+                + (SELECT COUNT(*) FROM plano_cliente_servicos pc WHERE pc.id_estabelecimento = ' . $id . ' AND pc.id_servico = s.id_servico) AS usos
+             FROM servicos s WHERE s.id_estabelecimento = ' . $id
+        )->fetchAll();
+
+        $resumo = [];
+        foreach ($linhas as $linha) {
+            $resumo[(int) $linha['id_servico']] = [
+                'profissionais' => (int) $linha['profissionais'],
+                'excluivel'     => (int) $linha['usos'] === 0,
+            ];
+        }
+        return $resumo;
+    }
+
     /** Conta as reservas vinculadas ao serviço, inclusive as do histórico. */
     public static function totalAgendamentos(int $idServico): int
     {

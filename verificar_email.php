@@ -32,11 +32,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirecionar('verificar_email.php');
 }
 
-// Entrou em outro aparelho, ou o codigo venceu: ja manda um novo (com o mesmo intervalo do botao).
-if (!VerificacaoEmail::codigoAtivo($idUsuario) && Email::configurado()) {
-    VerificacaoEmail::reenviar($idUsuario, $email, $nome);
-}
-
+// Sem envio automatico ao abrir: o codigo do cadastro ja foi mandado, e um
+// segundo e-mail so sai quando a pessoa pede (botao abaixo).
 $tituloPagina = 'Confirmar e-mail';
 $ocultarAvisoEmail = true;
 require RAIZ . '/includes/painel_header.php';
@@ -48,7 +45,7 @@ require RAIZ . '/includes/painel_header.php';
         <?php if (VerificacaoEmail::codigoAtivo($idUsuario)): ?>
             <p>Enviamos um código de 6 dígitos para <strong><?= e(VerificacaoEmail::mascarar($email)) ?></strong>. Ele vale por <?= VerificacaoEmail::VALIDADE_MINUTOS ?> minutos.</p>
         <?php else: ?>
-            <p>Ainda não conseguimos enviar o código para <strong><?= e(VerificacaoEmail::mascarar($email)) ?></strong>. Toque em <strong>Reenviar código</strong> daqui a pouco.</p>
+            <p>Toque em <strong>Enviar código</strong> para receber um código de 6 dígitos em <strong><?= e(VerificacaoEmail::mascarar($email)) ?></strong>. O código do cadastro só vale no mesmo navegador e por <?= VerificacaoEmail::VALIDADE_MINUTOS ?> minutos.</p>
         <?php endif; ?>
 
         <form method="post">
@@ -64,7 +61,7 @@ require RAIZ . '/includes/painel_header.php';
         <p class="ajuda-campo codigo-email-dica">Não chegou? Olhe a caixa de spam ou de promoções.</p>
         <form method="post" class="codigo-email-acoes">
             <?= campoCsrf() ?>
-            <button type="submit" name="acao" value="reenviar" class="btn btn-contorno" formnovalidate>Reenviar código</button>
+            <button type="submit" name="acao" value="reenviar" class="btn btn-contorno" formnovalidate><?= VerificacaoEmail::codigoAtivo($idUsuario) ? 'Reenviar código' : 'Enviar código' ?></button>
         </form>
     </div>
 </div>

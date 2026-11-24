@@ -121,7 +121,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $disponivel = Plano::disponivel();
 $planos = Plano::listar();
 $empresas = Estabelecimento::listarTodos();
-$vinculos = Plano::porEstabelecimento();
+$vinculos = Plano::porEstabelecimento(array_column($empresas, 'id_estabelecimento'));
+$usoEmpresas = Plano::usoDeTodas();
 $emEdicao = $acaoTela === 'editar' ? Plano::porId((int) get('id')) : null;
 
 // Uma edicao recusada volta pelo POST, sem o id na URL. Sem isto o formulario
@@ -258,7 +259,7 @@ require RAIZ . '/includes/painel_header.php';
                     <?php
                     $idEmpresa = (int) $empresa['id_estabelecimento'];
                     $vinculo = $vinculos[$idEmpresa] ?? null;
-                    $situacao = Plano::situacao($idEmpresa);
+                    $situacao = Plano::situacao($idEmpresa, $usoEmpresas[$idEmpresa] ?? []);
                     ?>
                     <tr>
                         <td class="celula-principal"><?= e($empresa['nome']) ?><span class="celula-secundaria"><?= e($empresa['slug']) ?></span></td>

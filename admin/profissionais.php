@@ -198,6 +198,7 @@ if ($erros !== [] && isset($_POST['servicos'])) {
 $busca  = get('busca');
 $status = get('status');
 $lista  = Profissional::listar(array_filter(['busca' => $busca, 'status' => $status]));
+$agendamentosPorProfissional = $lista === [] ? [] : Agendamento::totaisPorProfissional();
 $servicosDisponiveis = Servico::listar();
 
 // Filiais para o select e um mapa id => nome para a listagem (uma consulta so).
@@ -449,7 +450,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                     </button>
                                 </form>
 
-                                <?php if (Agendamento::contar(['id_profissional' => (int) $profissional['id_profissional']]) === 0): ?>
+                                <?php if (($agendamentosPorProfissional[(int) $profissional['id_profissional']] ?? 0) === 0): ?>
                                     <?php /* Formulário de alteração: os dados serão validados novamente pelo servidor. */ ?><form method="post" style="display:inline">
                                         <?= campoCsrf() ?>
                                         <input type="hidden" name="acao" value="excluir">

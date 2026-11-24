@@ -203,21 +203,29 @@ class Plano
         return self::$vinculos[$idEstabelecimento] = ($q->fetch() ?: null);
     }
 
-    /** Plano de cada empresa, indexado pelo id do estabelecimento. */
-    public static function porEstabelecimento(): array
+    /**
+     * Plano de cada empresa, indexado pelo id do estabelecimento. Ja guarda
+     * cada linha no cache de doEstabelecimento(); as empresas de $semPlano que
+     * nao aparecem ficam guardadas como "sem plano", para a tela do master nao
+     * repetir a consulta empresa por empresa.
+     */
+    public static function porEstabelecimento(array $semPlano = []): array
     {
         if (!self::disponivel()) {
             return [];
         }
 
         $linhas = bd()->query(
-            'SELECT ep.id_estabelecimento, p.nome, p.id_plano
+            'SELECT p.*, ep.id_estabelecimento, ep.data_inicio, ep.observacao
              FROM estabelecimento_plano ep JOIN planos p ON p.id_plano = ep.id_plano'
         )->fetchAll();
 
         $mapa = [];
         foreach ($linhas as $linha) {
             $mapa[(int) $linha['id_estabelecimento']] = $linha;
+        }
+        foreach ($semPlano as $id) {
+            self::$vinculos[(int) $id] = $mapa[(int) $id] ?? null;
         }
         return $mapa;
     }
@@ -344,10 +352,38 @@ class Plano
         };
     }
 
-    /** Situacao de cada recurso para a tela do master: usado, teto e excedente. */
-    public static function situacao(int $idEstabelecimento): array
+    /**
+     * Consumo de todas as empresas em tres consultas, no formato de uso():
+     * [id_estabelecimento => [recurso => total]]. Empresa sem nada fica de fora.
+     */
+    public static function usoDeTodas(): array
     {
-        $uso = self::uso($idEstabelecimento);
+        $consultas = [
+            'profissionais' => 'SELECT p.id_estabelecimento, COUNT(*) FROM profissionais p
+                                JOIN vinculos v ON v.id_vinculo = p.id_vinculo
+                                WHERE v.status = \'ativo\' GROUP BY p.id_estabelecimento',
+            'servicos' => 'SELECT id_estabelecimento, COUNT(*) FROM servicos WHERE status = \'ativo\' GROUP BY id_estabelecimento',
+            'agendamentos_mes' => 'SELECT id_estabelecimento, COUNT(*) FROM agendamentos
+                                   WHERE data_criacao >= ? AND status <> \'cancelado\' GROUP BY id_estabelecimento',
+        ];
+        $uso = [];
+        foreach ($consultas as $recurso => $sql) {
+            $q = bd()->prepare($sql);
+            $q->execute($recurso === 'agendamentos_mes' ? [date('Y-m-01 00:00:00')] : []);
+            foreach ($q->fetchAll(PDO::FETCH_KEY_PAIR) as $id => $total) {
+                $uso[(int) $id][$recurso] = (int) $total;
+            }
+        }
+        return $uso;
+    }
+
+    /**
+     * Situacao de cada recurso para a tela do master: usado, teto e excedente.
+     * $uso vem de usoDeTodas() quando a tela percorre varias empresas.
+     */
+    public static function situacao(int $idEstabelecimento, ?array $uso = null): array
+    {
+        $uso ??= self::uso($idEstabelecimento);
         $situacao = [];
 
         foreach (self::RECURSOS as $recurso => $rotulo) {

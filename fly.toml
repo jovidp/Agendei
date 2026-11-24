@@ -1,0 +1,16 @@
+# Fly.io em Sao Paulo (gru), na mesma cidade do Supabase (sa-east-1).
+app = "agendei"
+primary_region = "gru"
+
+[http_service]
+  internal_port = 80
+  force_https = true
+  # Uma maquina sempre ligada: sem isso o primeiro acesso espera ela acordar.
+  auto_stop_machines = "off"
+  min_machines_running = 1
+
+[[vm]]
+  # 512 MB: o Dockerfile limita o Apache a 8 processos pensando nesse tamanho.
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1
