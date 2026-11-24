@@ -5,9 +5,11 @@ primary_region = "gru"
 [http_service]
   internal_port = 80
   force_https = true
-  # Uma maquina sempre ligada: sem isso o primeiro acesso espera ela acordar.
-  auto_stop_machines = "off"
-  min_machines_running = 1
+  # Suspende sem acesso e acorda no proximo (cobra so o tempo ligada); o agendador
+  # externo que chama tarefas.php tambem acorda a maquina.
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  min_machines_running = 0
 
 [[vm]]
   # 512 MB: o Dockerfile limita o Apache a 8 processos pensando nesse tamanho.
