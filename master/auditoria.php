@@ -50,9 +50,9 @@ require RAIZ . '/includes/painel_header.php';
 <div class="cartao">
     <form method="get" class="barra-filtros">
         <div class="campo">
-            <label for="acao">Acao</label>
+            <label for="acao">Ação</label>
             <select id="acao" name="acao" data-envia-ao-mudar>
-                <option value="">Todas as acoes</option>
+                <option value="">Todas as ações</option>
                 <?php foreach (LogMaster::ACOES as $chave => $rotulo): ?>
                     <option value="<?= e($chave) ?>" <?= $acao === $chave ? 'selected' : '' ?>><?= e($rotulo) ?></option>
                 <?php endforeach; ?>
@@ -95,7 +95,7 @@ require RAIZ . '/includes/painel_header.php';
                     <tr>
                         <th>Dia e hora</th>
                         <th>Master</th>
-                        <th>Acao</th>
+                        <th>Ação</th>
                         <th>Estabelecimento</th>
                         <th>Alvo</th>
                         <th>Detalhe</th>

@@ -117,7 +117,7 @@ require_once RAIZ . '/includes/painel_header.php';
                     <option value="">Todos</option>
                     <?php foreach (Agendamento::STATUS as $opcao): ?>
                         <option value="<?= e($opcao) ?>" <?= $status === $opcao ? 'selected' : '' ?>>
-                            <?= e(ucfirst($opcao)) ?>
+                            <?= e(rotuloStatus($opcao)) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -142,7 +142,7 @@ require_once RAIZ . '/includes/painel_header.php';
                         <th>Horário</th>
                         <th>Status</th>
                         <th>Valor</th>
-                        <th class="coluna-acoes">Acoes</th>
+                        <th class="coluna-acoes">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -200,7 +200,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                         data-campo-horario="<?= formatarHora($agendamento['hora_inicio']) ?> as <?= formatarHora($agendamento['hora_fim']) ?>"
                                         data-campo-duracao="<?= e(duracaoTexto((int) $agendamento['duracao_minutos'])) ?>"
                                         data-campo-valor="<?= formatarMoeda($agendamento['valor']) ?>"
-                                        data-campo-status="<?= e(ucfirst($agendamento['status'])) ?>"
+                                        data-campo-status="<?= e(rotuloStatus($agendamento['status'])) ?>"
                                         data-campo-observacao="<?= e($agendamento['observacao'] ?: 'Sem observações.') ?>">
                                     Detalhes
                                 </button>

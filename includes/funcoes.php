@@ -580,8 +580,8 @@ function enderecoTexto(array $usuario): string
 // Interface
 // ---------------------------------------------------------------------
 
-/** Badge discreta de status de agendamento. */
-function badgeStatus(string $status): string
+/** Rótulo de exibição de um status (com acento: 'concluido' vira 'Concluído'). */
+function rotuloStatus(string $status): string
 {
     $rotulos = [
         'agendado'   => 'Agendado',
@@ -603,8 +603,13 @@ function badgeStatus(string $status): string
         'publicada'  => 'Publicada',
         'oculta'     => 'Oculta',
     ];
-    $rotulo = $rotulos[$status] ?? ucfirst($status);
-    return '<span class="badge badge-' . e($status) . '">' . e($rotulo) . '</span>';
+    return $rotulos[$status] ?? ucfirst($status);
+}
+
+/** Badge discreta de status de agendamento. */
+function badgeStatus(string $status): string
+{
+    return '<span class="badge badge-' . e($status) . '">' . e(rotuloStatus($status)) . '</span>';
 }
 
 /**

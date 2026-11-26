@@ -239,7 +239,7 @@ require_once RAIZ . '/includes/painel_header.php';
                 <option value="">Todos</option>
                 <?php foreach (Agendamento::STATUS as $opcao): ?>
                     <option value="<?= e($opcao) ?>" <?= get('status') === $opcao ? 'selected' : '' ?>>
-                        <?= e(ucfirst($opcao)) ?>
+                        <?= e(rotuloStatus($opcao)) ?>
                     </option>
                 <?php endforeach; ?>
             </select>
@@ -310,7 +310,7 @@ require_once RAIZ . '/includes/painel_header.php';
                         <th>Profissional</th>
                         <th>Valor</th>
                         <th>Status</th>
-                        <th class="coluna-acoes">Acoes</th>
+                        <th class="coluna-acoes">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -341,7 +341,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                     data-campo-data="<?= e(dataExtenso($agendamento['data_agendamento'])) ?>"
                                     data-campo-horario="<?= formatarHora($agendamento['hora_inicio']) ?> as <?= formatarHora($agendamento['hora_fim']) ?>"
                                     data-campo-valor="<?= formatarMoeda($agendamento['valor']) ?>"
-                                    data-campo-status="<?= e(ucfirst($agendamento['status'])) ?>"
+                                    data-campo-status="<?= e(rotuloStatus($agendamento['status'])) ?>"
                                     data-campo-origem="<?= e(ucfirst($agendamento['origem'])) ?>"
                                     data-campo-observacao="<?= e($agendamento['observacao'] ?: 'Sem observações.') ?>">
                                     Detalhes

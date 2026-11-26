@@ -17,6 +17,7 @@ erDiagram
         varchar facebook "NULL"
         timestamp data_atualizacao "NULL"
         varchar slug UK "NOT NULL"
+        varchar cnpj UK "NULL"
         varchar cor_primaria "NOT NULL"
         varchar cor_secundaria "NOT NULL"
         varchar cor_fundo "NOT NULL"
@@ -88,6 +89,7 @@ erDiagram
         varchar status "NOT NULL"
         varchar login UK "NULL"
         timestamp ultimo_acesso "NULL"
+        timestamp comunicacoes_aceitas_em "NULL"
         timestamp data_criacao "NOT NULL"
     }
     clientes {

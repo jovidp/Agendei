@@ -123,7 +123,7 @@ require RAIZ . '/includes/painel_header.php';
         <div class="tabela-area">
             <table class="tabela">
                 <thead>
-                    <tr><th>Fluxo</th><th>Chave</th><th>Falhas</th><th>Primeira falha</th><th>Libera em</th><th class="coluna-acoes">Acao</th></tr>
+                    <tr><th>Fluxo</th><th>Chave</th><th>Falhas</th><th>Primeira falha</th><th>Libera em</th><th class="coluna-acoes">Ação</th></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($bloqueios as $bloqueio): ?>
@@ -179,7 +179,7 @@ require RAIZ . '/includes/painel_header.php';
                 <option value="login_falha" <?= $evento === 'login_falha' ? 'selected' : '' ?>>Falha no login</option>
                 <option value="2fa_falha" <?= $evento === '2fa_falha' ? 'selected' : '' ?>>Resposta 2FA incorreta</option>
                 <option value="2fa_bloqueio" <?= $evento === '2fa_bloqueio' ? 'selected' : '' ?>>Bloqueio após 3 tentativas</option>
-                <option value="logout" <?= $evento === 'logout' ? 'selected' : '' ?>>Saida do sistema</option>
+                <option value="logout" <?= $evento === 'logout' ? 'selected' : '' ?>>Saída do sistema</option>
             </select>
         </div>
 

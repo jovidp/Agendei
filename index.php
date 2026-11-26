@@ -196,7 +196,6 @@ $totalSlides = count($slidesHeroi) + 1;
 
     <div class="heroi-controles" hidden>
         <div class="heroi-pontos"></div>
-        <button type="button" class="heroi-pausa" data-pausa aria-label="Pausar a troca automática"></button>
     </div>
     </div>
 </section>

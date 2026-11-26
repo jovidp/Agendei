@@ -107,7 +107,7 @@ require_once RAIZ . '/includes/painel_header.php';
 <div class="grade-painel">
     <div class="cartao">
         <div class="cartao-cabecalho">
-            <h3>Proximos agendamentos</h3>
+            <h3>Próximos agendamentos</h3>
             <a href="<?= url('cliente/agendamentos.php') ?>" class="btn-texto">Ver todos</a>
         </div>
 

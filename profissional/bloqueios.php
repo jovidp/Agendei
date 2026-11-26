@@ -115,7 +115,7 @@ require_once RAIZ . '/includes/painel_header.php';
                         <th>Horário</th>
                         <th>Motivo</th>
                         <th>Situação</th>
-                        <th class="coluna-acoes">Acoes</th>
+                        <th class="coluna-acoes">Ações</th>
                     </tr>
                 </thead>
                 <tbody>

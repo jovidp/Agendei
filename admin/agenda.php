@@ -227,7 +227,7 @@ require_once RAIZ . '/includes/painel_header.php';
                                             data-campo-data="<?= e(dataExtenso($agendamento['data_agendamento'])) ?>"
                                             data-campo-horario="<?= formatarHora($agendamento['hora_inicio']) ?> as <?= formatarHora($agendamento['hora_fim']) ?>"
                                             data-campo-valor="<?= formatarMoeda($agendamento['valor']) ?>"
-                                            data-campo-status="<?= e(ucfirst($agendamento['status'])) ?>"
+                                            data-campo-status="<?= e(rotuloStatus($agendamento['status'])) ?>"
                                             data-campo-observacao="<?= e($agendamento['observacao'] ?: 'Sem observações.') ?>">
                                             <strong><?= formatarHora($agendamento['hora_inicio']) ?> <?= e(limitarTexto($agendamento['nome_cliente'], 18)) ?></strong>
                                             <span><?= e(limitarTexto($agendamento['nome_servico'], 22)) ?></span>

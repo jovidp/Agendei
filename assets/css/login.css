@@ -497,6 +497,11 @@ form + .aviso-tipo-cadastro {
   .tabela-legal thead th { white-space: normal; }
   .tabela-legal tbody td, .tabela-legal thead th { padding-left: 10px; padding-right: 10px; }
 }
+/* Em 320px as três colunas só cabem com letra e espaçamento menores. */
+@media (max-width: 340px) {
+  .tabela-legal { font-size: 13px; }
+  .tabela-legal tbody td, .tabela-legal thead th { padding-left: 6px; padding-right: 6px; }
+}
 
 /* Aceite dos Termos e da Politica nos cadastros. */
 .campo-aceite { margin-top: 4px; }

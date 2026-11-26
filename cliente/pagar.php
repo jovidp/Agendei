@@ -116,7 +116,6 @@ require RAIZ . '/includes/painel_header.php';
                     <input type="hidden" name="cartao_final" id="cartao-final">
                     <p class="mensagem-campo" id="cartao-erro" role="alert"></p>
                 </div>
-                <p class="ajuda-campo">Ambiente de demonstração: os dados do cartão são conferidos no seu navegador e não são enviados nem guardados. Só os 4 últimos dígitos ficam registrados.</p>
             </fieldset>
             <button class="btn">Continuar</button>
         </form>

@@ -240,8 +240,15 @@
     var menuSite = document.querySelector(".menu-site");
 
     if (botaoMenu && menuSite) {
+      botaoMenu.setAttribute("aria-expanded", "false");
       botaoMenu.addEventListener("click", function () {
-        menuSite.classList.toggle("aberto");
+        botaoMenu.setAttribute("aria-expanded", String(menuSite.classList.toggle("aberto")));
+      });
+      // O cabeçalho é fixo: sem fechar, o menu aberto cobre a seção para onde o link levou.
+      menuSite.addEventListener("click", function (evento) {
+        if (!evento.target.closest("a")) return;
+        menuSite.classList.remove("aberto");
+        botaoMenu.setAttribute("aria-expanded", "false");
       });
     }
 

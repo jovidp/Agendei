@@ -211,7 +211,7 @@ require RAIZ . '/includes/painel_header.php';
     <?php else: ?>
         <div class="tabela-area">
             <table class="tabela">
-                <thead><tr><th>Plano</th><th>Preço</th><th>Benefícios</th><th>Profissionais</th><th>Serviços</th><th>Agendamentos/mes</th><th>Empresas</th><th>Status</th><th class="coluna-acoes">Acoes</th></tr></thead>
+                <thead><tr><th>Plano</th><th>Preço</th><th>Benefícios</th><th>Profissionais</th><th>Serviços</th><th>Agendamentos/mês</th><th>Empresas</th><th>Status</th><th class="coluna-acoes">Ações</th></tr></thead>
                 <tbody>
                 <?php foreach ($planos as $plano): ?>
                     <tr>

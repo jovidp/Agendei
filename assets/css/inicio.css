@@ -241,39 +241,7 @@
   transition: width 300ms ease, background-color 300ms ease;
 }
 .heroi-ponto[aria-current="true"] { width: 28px; background-color: #5faf8b; }
-.heroi-pausa {
-  position: relative;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 50%;
-  background: transparent;
-  cursor: pointer;
-}
-/* Duas barras (pausar) ou um triangulo (continuar), desenhados em CSS. */
-.heroi-pausa::before {
-  content: "";
-  position: absolute;
-  left: 11px;
-  top: 10px;
-  width: 3px;
-  height: 10px;
-  background: #ffffff;
-  box-shadow: 6px 0 0 #ffffff;
-}
-.heroi-pausa.parado::before {
-  left: 12px;
-  width: 0;
-  height: 0;
-  background: none;
-  box-shadow: none;
-  border-style: solid;
-  border-width: 5px 0 5px 9px;
-  border-color: transparent transparent transparent #ffffff;
-}
-.heroi-ponto:focus-visible,
-.heroi-pausa:focus-visible { outline: 3px solid #5faf8b; outline-offset: 3px; }
+.heroi-ponto:focus-visible { outline: 3px solid #5faf8b; outline-offset: 3px; }
 
 /* Pecas comuns dos cartoes dos slides. */
 .cartao-botao {

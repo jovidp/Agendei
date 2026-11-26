@@ -17,6 +17,7 @@ erDiagram
         varchar facebook "NULL"
         datetime data_atualizacao "NULL"
         varchar slug UK "NOT NULL"
+        char cnpj UK "NULL"
         char cor_primaria "NOT NULL"
         char cor_secundaria "NOT NULL"
         char cor_fundo "NOT NULL"
@@ -88,6 +89,7 @@ erDiagram
         enum status "NOT NULL"
         varchar login UK "NULL"
         datetime ultimo_acesso "NULL"
+        datetime comunicacoes_aceitas_em "NULL"
         datetime data_criacao "NOT NULL"
     }
     clientes {

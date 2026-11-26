@@ -63,14 +63,13 @@
     atualizar();
   });
 
-  // Carrossel da abertura: troca sozinho a cada 6 s. So para pelo botao de pausa
-  // ou enquanto o teclado navega dentro dele (o clique numa bolinha nao para).
+  // Carrossel da abertura: troca sozinho a cada 6 s. So para enquanto o teclado
+  // navega dentro dele (o clique numa bolinha nao para).
   var heroi = document.querySelector("[data-heroi]");
   if (heroi) {
     var slides = Array.from(heroi.querySelectorAll(".heroi-slide"));
     var pontos = heroi.querySelector(".heroi-pontos");
-    var pausa = heroi.querySelector("[data-pausa]");
-    var atual = 0, cronometro = null, parado = false, emUso = false;
+    var atual = 0, cronometro = null, emUso = false;
 
     var botoes = slides.map(function (slide, i) {
       slide.hidden = false;
@@ -89,11 +88,8 @@
     }
     function rodar() {
       clearInterval(cronometro);
-      cronometro = parado || emUso ? null : setInterval(function () { mostrar(atual + 1); }, 6000);
-      pausa.classList.toggle("parado", parado);
-      pausa.setAttribute("aria-label", parado ? "Continuar a troca automática" : "Pausar a troca automática");
+      cronometro = emUso ? null : setInterval(function () { mostrar(atual + 1); }, 6000);
     }
-    pausa.addEventListener("click", function () { parado = !parado; rodar(); });
     heroi.addEventListener("focusin", function (evento) {
       if (!evento.target.matches(":focus-visible")) return;
       emUso = true; rodar();

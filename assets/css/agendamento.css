@@ -5,7 +5,8 @@
 /* Divide a tela entre as etapas de escolha e o resumo da reserva. */
 .fluxo-agendamento {
   display: grid;
-  grid-template-columns: 1fr 300px;
+  /* minmax(0, ...): os rótulos das etapas (nowrap) não podem alargar a coluna e empurrar o resumo para fora da tela. */
+  grid-template-columns: minmax(0, 1fr) 300px;
   gap: 20px;
   align-items: start;
 }
@@ -26,7 +27,7 @@
 }
 
 .etapa {
-  flex: 1;
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   gap: 9px;
@@ -470,8 +471,8 @@
   flex-wrap: wrap;
 }
 
-/* Ajusta a disposição dos componentes para janelas de até 1000 pixels. */
-@media (max-width: 1000px) {
+/* Resumo abaixo das etapas até 1300px: o menu lateral do painel ocupa 236px e as seis etapas precisam de ~680px. */
+@media (max-width: 1300px) {
   .fluxo-agendamento {
     grid-template-columns: 1fr;
   }

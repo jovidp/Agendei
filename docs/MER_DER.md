@@ -46,7 +46,7 @@ próprias de relatório ou comissão. Os atributos de cada entidade estão no di
 
 ### Perfis e master
 
-usuarios identifica a pessoa, com e-mail unico na plataforma. vinculos.tipo distingue cliente, profissional e admin por empresa. Uma pessoa pode ter varios vinculos; clientes, profissionais e administradores possuem id_vinculo unico e id_usuario nao exclusivo. As FKs compostas associam cada perfil ao vinculo da mesma empresa. administradores_master contem as contas globais e nao pertence a estabelecimento.
+usuarios identifica a pessoa, com e-mail único na plataforma. vinculos.tipo distingue cliente, profissional e admin por empresa. Uma pessoa pode ter vários vínculos; clientes, profissionais e administradores possuem id_vinculo único e id_usuario não exclusivo. As FKs compostas associam cada perfil ao vínculo da mesma empresa. administradores_master contém as contas globais e não pertence a estabelecimento.
 
 ### Isolamento das empresas
 
@@ -110,6 +110,7 @@ erDiagram
         varchar facebook "NULL"
         datetime data_atualizacao "NULL"
         varchar slug UK "NOT NULL"
+        char cnpj UK "NULL"
         char cor_primaria "NOT NULL"
         char cor_secundaria "NOT NULL"
         char cor_fundo "NOT NULL"
@@ -181,6 +182,7 @@ erDiagram
         enum status "NOT NULL"
         varchar login UK "NULL"
         datetime ultimo_acesso "NULL"
+        datetime comunicacoes_aceitas_em "NULL"
         datetime data_criacao "NOT NULL"
     }
     clientes {
@@ -609,6 +611,7 @@ flowchart LR
 | `facebook` | `varchar(120)` | Sim | — |
 | `data_atualizacao` | `datetime` | Sim | — |
 | `slug` | `varchar(80)` | Não | UK |
+| `cnpj` | `char(14)` | Sim | UK |
 | `cor_primaria` | `char(7)` | Não | — |
 | `cor_secundaria` | `char(7)` | Não | — |
 | `cor_fundo` | `char(7)` | Não | — |
@@ -637,6 +640,7 @@ CREATE TABLE `estabelecimento` (
   `facebook` varchar(120) DEFAULT NULL,
   `data_atualizacao` datetime DEFAULT NULL ON UPDATE current_timestamp(),
   `slug` varchar(80) NOT NULL,
+  `cnpj` char(14) DEFAULT NULL,
   `cor_primaria` char(7) NOT NULL DEFAULT '#1F4E5F',
   `cor_secundaria` char(7) NOT NULL DEFAULT '#5FAF8B',
   `cor_fundo` char(7) NOT NULL DEFAULT '#F5F1EA',
@@ -644,7 +648,8 @@ CREATE TABLE `estabelecimento` (
   `logo` mediumtext DEFAULT NULL,
   `status` enum('ativo','inativo') NOT NULL DEFAULT 'ativo',
   PRIMARY KEY (`id_estabelecimento`),
-  UNIQUE KEY `uk_estabelecimento_slug` (`slug`)
+  UNIQUE KEY `uk_estabelecimento_slug` (`slug`),
+  UNIQUE KEY `uk_estabelecimento_cnpj` (`cnpj`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
@@ -802,6 +807,7 @@ CREATE TABLE `usuarios` (
 | `status` | `enum('ativo','inativo')` | Não | — |
 | `login` | `varchar(6)` | Sim | UK |
 | `ultimo_acesso` | `datetime` | Sim | — |
+| `comunicacoes_aceitas_em` | `datetime` | Sim | — |
 | `data_criacao` | `datetime` | Não | — |
 
 Definição literal (inclui defaults, chaves compostas e CHECKs):
@@ -815,6 +821,7 @@ CREATE TABLE `vinculos` (
   `status` enum('ativo','inativo') NOT NULL DEFAULT 'ativo',
   `login` varchar(6) DEFAULT NULL,
   `ultimo_acesso` datetime DEFAULT NULL,
+  `comunicacoes_aceitas_em` datetime DEFAULT NULL,
   `data_criacao` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id_vinculo`),
   UNIQUE KEY `uk_vinculos_registro` (`id_estabelecimento`,`id_vinculo`),
@@ -1986,6 +1993,7 @@ CREATE TABLE `bot_opcoes` (
 | `facebook` | `VARCHAR(120)` | Sim | — |
 | `data_atualizacao` | `TIMESTAMP` | Sim | — |
 | `slug` | `VARCHAR(80)` | Não | UK |
+| `cnpj` | `VARCHAR(14)` | Sim | UK |
 | `cor_primaria` | `VARCHAR(7)` | Não | — |
 | `cor_secundaria` | `VARCHAR(7)` | Não | — |
 | `cor_fundo` | `VARCHAR(7)` | Não | — |
@@ -2014,6 +2022,7 @@ CREATE TABLE estabelecimento (
   facebook              VARCHAR(120) DEFAULT NULL,
   data_atualizacao      TIMESTAMP DEFAULT NULL,
   slug                  VARCHAR(80) NOT NULL,
+  cnpj                  VARCHAR(14) DEFAULT NULL,
   cor_primaria          VARCHAR(7) NOT NULL DEFAULT '#1F4E5F',
   cor_secundaria        VARCHAR(7) NOT NULL DEFAULT '#5FAF8B',
   cor_fundo             VARCHAR(7) NOT NULL DEFAULT '#F5F1EA',
@@ -2022,6 +2031,7 @@ CREATE TABLE estabelecimento (
   status                VARCHAR(7) NOT NULL DEFAULT 'ativo',
   CONSTRAINT pk_estabelecimento PRIMARY KEY (id_estabelecimento),
   CONSTRAINT uk_estabelecimento_slug UNIQUE (slug),
+  CONSTRAINT uk_estabelecimento_cnpj UNIQUE (cnpj),
   CONSTRAINT ck_estabelecimento_status CHECK (status IN ('ativo','inativo'))
 );
 ```
@@ -2185,6 +2195,7 @@ CREATE TABLE usuarios (
 | `status` | `VARCHAR(7)` | Não | — |
 | `login` | `VARCHAR(6)` | Sim | UK |
 | `ultimo_acesso` | `TIMESTAMP` | Sim | — |
+| `comunicacoes_aceitas_em` | `TIMESTAMP` | Sim | — |
 | `data_criacao` | `TIMESTAMP` | Não | — |
 
 Definição literal (inclui defaults, chaves compostas e CHECKs):
@@ -2198,6 +2209,7 @@ CREATE TABLE vinculos (
   status             VARCHAR(7) NOT NULL DEFAULT 'ativo',
   login              VARCHAR(6) DEFAULT NULL,
   ultimo_acesso      TIMESTAMP DEFAULT NULL,
+  comunicacoes_aceitas_em TIMESTAMP DEFAULT NULL,
   data_criacao       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT pk_vinculos PRIMARY KEY (id_vinculo),
   CONSTRAINT uk_vinculos_registro UNIQUE (id_estabelecimento, id_vinculo),

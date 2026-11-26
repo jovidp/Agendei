@@ -121,7 +121,7 @@ require_once RAIZ . '/includes/painel_header.php';
                             <th>Serviço</th>
                             <th>Valor</th>
                             <th>Status</th>
-                            <th class="coluna-acoes">Acoes</th>
+                            <th class="coluna-acoes">Ações</th>
                         </tr>
                     </thead>
                     <tbody>

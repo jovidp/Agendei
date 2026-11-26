@@ -1432,21 +1432,9 @@ legend {
   }
 }
 
-/* Ajusta a disposição dos componentes para janelas de até 760 pixels. */
-@media (max-width: 760px) {
-  body {
-    font-size: 14.5px;
-  }
-  h1 {
-    font-size: 26px;
-  }
-  .destaque-texto h1 {
-    font-size: 27px;
-  }
-  .secao {
-    padding: 40px 0;
-  }
-
+/* Menu do cabeçalho vira botão até 1000px: abaixo disso os seis links quebram em
+   várias linhas e, perto de 768px, empurram o "Entrar" para fora da tela. */
+@media (max-width: 1000px) {
   .botao-menu {
     display: block;
   }
@@ -1480,6 +1468,23 @@ legend {
   .cabecalho-conteudo {
     position: relative;
   }
+}
+
+/* Ajusta a disposição dos componentes para janelas de até 760 pixels. */
+@media (max-width: 760px) {
+  body {
+    font-size: 14.5px;
+  }
+  h1 {
+    font-size: 26px;
+  }
+  .destaque-texto h1 {
+    font-size: 27px;
+  }
+  .secao {
+    padding: 40px 0;
+  }
+
   .acoes-cabecalho .btn-contorno {
     display: none;
   }

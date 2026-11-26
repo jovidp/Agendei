@@ -18,7 +18,7 @@ class LogMaster
     /** Acoes registradas, com o rotulo exibido na tela de auditoria. */
     public const ACOES = [
         'login'                  => 'Entrada na área master',
-        'logout'                 => 'Saida da área master',
+        'logout'                 => 'Saída da área master',
         'estabelecimento_criado' => 'Estabelecimento criado',
         'assinatura_cancelada'   => 'Assinatura cancelada pela empresa',
         'estabelecimento_status' => 'Acesso do estabelecimento alterado',

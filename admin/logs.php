@@ -71,7 +71,7 @@ require_once RAIZ . '/includes/painel_header.php';
                 <option value="login_falha" <?= $evento === 'login_falha' ? 'selected' : '' ?>>Falha no login</option>
                 <option value="2fa_falha" <?= $evento === '2fa_falha' ? 'selected' : '' ?>>Resposta 2FA incorreta</option>
                 <option value="2fa_bloqueio" <?= $evento === '2fa_bloqueio' ? 'selected' : '' ?>>Bloqueio após 3 tentativas</option>
-                <option value="logout" <?= $evento === 'logout' ? 'selected' : '' ?>>Saida do sistema</option>
+                <option value="logout" <?= $evento === 'logout' ? 'selected' : '' ?>>Saída do sistema</option>
             </select>
         </div>
 

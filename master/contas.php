@@ -224,14 +224,14 @@ require RAIZ . '/includes/painel_header.php';
         <div class="tabela-area">
             <table class="tabela">
                 <thead>
-                    <tr><th>Conta</th><th>Último acesso</th><th>Criada em</th><th>Status</th><th>Acoes</th></tr>
+                    <tr><th>Conta</th><th>Último acesso</th><th>Criada em</th><th>Status</th><th>Ações</th></tr>
                 </thead>
                 <tbody>
                 <?php foreach ($contas as $conta): ?>
                     <tr>
                         <td class="celula-principal">
                             <strong><?= e($conta['nome']) ?></strong>
-                            <span class="celula-secundaria"><?= e($conta['email']) ?><?= (int) $conta['id_master'] === $idSessao ? ' (voce)' : '' ?></span>
+                            <span class="celula-secundaria"><?= e($conta['email']) ?><?= (int) $conta['id_master'] === $idSessao ? ' (você)' : '' ?></span>
                         </td>
                         <td><?= $conta['ultimo_acesso'] ? e(formatarData(substr((string) $conta['ultimo_acesso'], 0, 10))) : '-' ?></td>
                         <td><?= e(formatarData(substr((string) $conta['data_criacao'], 0, 10))) ?></td>

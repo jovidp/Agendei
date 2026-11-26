@@ -94,7 +94,7 @@ require RAIZ . '/includes/painel_header.php';
                         <th>Estabelecimento</th>
                         <th>Último acesso</th>
                         <th>Status</th>
-                        <th class="coluna-acoes">Acoes</th>
+                        <th class="coluna-acoes">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
